@@ -1,5 +1,14 @@
-import { carbsFill, cph, dist, distanceAtTime, timeAtDistance } from './fuel';
-import type { Fill, FoodItem, MixSettings, PlanState, RouteInput, ShopStop, Vessel } from './types';
+import { carbsFill, cph, dist, distanceAtTime, prof, timeAtDistance } from './fuel';
+import type {
+  Fill,
+  FoodItem,
+  FoodLibEntry,
+  MixSettings,
+  PlanState,
+  RouteInput,
+  ShopStop,
+  Vessel,
+} from './types';
 
 export const CONCENTRATED_MIX_THRESHOLD_G_PER_100ML = 15;
 
@@ -128,4 +137,74 @@ export function planIzoRefills(
   }
 
   return { fills, newShops, finalBalance: Math.max(0, remaining), stopXs };
+}
+
+const CLIMB_GRAD_THRESHOLD_PCT = 4;
+const CLIMB_MIN_LENGTH_KM = 1;
+
+export function findClimbStarts(route: RouteInput, fromX: number, toX: number): number[] {
+  const P = prof(route);
+  const starts: number[] = [];
+  let runStart: number | null = null;
+
+  for (const p of P.pts) {
+    const inWindow = p.x >= fromX && p.x <= toX;
+    const climbing = inWindow && p.grad >= CLIMB_GRAD_THRESHOLD_PCT;
+    if (climbing && runStart === null) runStart = p.x;
+    if (!climbing && runStart !== null) {
+      if (p.x - runStart >= CLIMB_MIN_LENGTH_KM) starts.push(runStart);
+      runStart = null;
+    }
+  }
+  if (runStart !== null && P.D - runStart >= CLIMB_MIN_LENGTH_KM) starts.push(runStart);
+
+  return starts;
+}
+
+export function selectItemsForAmount(
+  selection: FoodSelectionEntry[],
+  foodLib: FoodLibEntry[],
+  amountToPlace: number,
+): FoodLibEntry[] {
+  const items: FoodLibEntry[] = [];
+  let total = 0;
+
+  for (const entry of selection) {
+    for (let i = 0; i < entry.count; i++) {
+      const libEntry = foodLib.find((f) => f.key === entry.key);
+      if (!libEntry) break;
+      items.push(libEntry);
+      total += libEntry.carbs;
+      if (total >= amountToPlace) return items;
+    }
+  }
+
+  return items;
+}
+
+export function placeItemsEvenly(
+  items: FoodLibEntry[],
+  startX: number,
+  D: number,
+  route: RouteInput,
+): DraftFood[] {
+  const n = items.length;
+  if (n === 0) return [];
+
+  const span = Math.max(1, D - startX);
+  const slotWidth = span / n;
+  const climbXs = route.useGpx && route.gpxTrack ? findClimbStarts(route, startX, D) : [];
+  let climbIdx = 0;
+
+  return items.map((entry, i) => {
+    let x = startX + slotWidth * (i + 0.5);
+    while (climbIdx < climbXs.length && climbXs[climbIdx] < x - slotWidth / 2) climbIdx++;
+    if (climbIdx < climbXs.length && climbXs[climbIdx] < x + slotWidth / 2) {
+      x = climbXs[climbIdx];
+      climbIdx++;
+    }
+    const from = Math.round(Math.max(startX, Math.min(D, x)));
+    const to = entry.cont ? Math.min(D, from + (entry.span || 18)) : from;
+    return { key: entry.key, carbs: entry.carbs, ml: entry.ml, cont: !!entry.cont, from, to };
+  });
 }

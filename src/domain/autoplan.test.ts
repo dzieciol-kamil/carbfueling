@@ -1,6 +1,23 @@
 import { describe, expect, test } from 'vitest';
-import { bucketVessels, planIzoRefills, sequentialFills, shortRideFills } from './autoplan';
-import type { MixSettings, PlanState, RouteInput, ShopStop, Vessel } from './types';
+import {
+  bucketVessels,
+  findClimbStarts,
+  planIzoRefills,
+  placeItemsEvenly,
+  selectItemsForAmount,
+  sequentialFills,
+  shortRideFills,
+} from './autoplan';
+import type { FoodSelectionEntry } from './autoplan';
+import type {
+  FoodLibEntry,
+  GpxTrack,
+  MixSettings,
+  PlanState,
+  RouteInput,
+  ShopStop,
+  Vessel,
+} from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
@@ -188,5 +205,84 @@ describe('planIzoRefills', () => {
     const result = planIzoRefills(route, [], mix, [], 40, 30, []);
     expect(result.fills).toEqual([]);
     expect(result.finalBalance).toBe(30);
+  });
+});
+
+describe('findClimbStarts', () => {
+  test('no GPX track configured on the route: caller is responsible for not calling this — with a flat synthetic-mode elevation profile passed as a real track, a genuine flat track finds nothing', () => {
+    const flatTrack: GpxTrack = { id: 1, ele: new Array(11).fill(100) };
+    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: flatTrack });
+    expect(findClimbStarts(route, 0, 100)).toEqual([]);
+  });
+
+  test('detects a single sustained climb and reports its start x', () => {
+    const ele = [100, 100, 100, 100, 100, 100, 700, 700, 700, 700, 700]; // climb between km 50 and 60
+    const track: GpxTrack = { id: 1, ele };
+    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: track });
+    const starts = findClimbStarts(route, 0, 100);
+    expect(starts).toHaveLength(1);
+    expect(starts[0]).toBeGreaterThan(48);
+    expect(starts[0]).toBeLessThan(56);
+  });
+
+  test('restricts detection to the given [fromX, toX] window', () => {
+    const ele = [100, 100, 100, 100, 100, 100, 700, 700, 700, 700, 700];
+    const track: GpxTrack = { id: 1, ele };
+    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: track });
+    expect(findClimbStarts(route, 0, 45)).toEqual([]);
+  });
+});
+
+const gelEntry: FoodLibEntry = { key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 };
+const bananaEntry: FoodLibEntry = { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 };
+
+describe('selectItemsForAmount', () => {
+  test('walks selection in order, respecting counts, stopping once the amount is reached', () => {
+    const selection: FoodSelectionEntry[] = [
+      { key: 'banana', count: 2 },
+      { key: 'gel', count: 3 },
+    ];
+    const items = selectItemsForAmount(selection, [bananaEntry, gelEntry], 50);
+    // 2 bananas = 46g (not enough), pulls in 1 gel = 68g total, stops
+    expect(items.map((i) => i.key)).toEqual(['banana', 'banana', 'gel']);
+  });
+
+  test('returns fewer items than the full selection when the amount is small', () => {
+    const selection: FoodSelectionEntry[] = [{ key: 'banana', count: 3 }];
+    const items = selectItemsForAmount(selection, [bananaEntry], 20);
+    expect(items).toHaveLength(1);
+  });
+
+  test('stops when selection is exhausted, even if amount is not fully reached', () => {
+    const selection: FoodSelectionEntry[] = [{ key: 'banana', count: 1 }];
+    const items = selectItemsForAmount(selection, [bananaEntry], 200);
+    expect(items).toHaveLength(1);
+  });
+});
+
+describe('placeItemsEvenly', () => {
+  test('spaces items evenly across [startX, D] when no GPX track is present', () => {
+    const route = makeRoute({ distance: 100, speed: 25, useGpx: false });
+    const foods = placeItemsEvenly([bananaEntry, gelEntry], 40, 100, route);
+    expect(foods).toHaveLength(2);
+    expect(foods[0].from).toBeLessThan(foods[1].from);
+    foods.forEach((f) => {
+      expect(f.from).toBeGreaterThanOrEqual(40);
+      expect(f.from).toBeLessThanOrEqual(100);
+    });
+  });
+
+  test('biases a slot to a nearby climb start when a GPX track is present', () => {
+    const ele = [100, 100, 100, 100, 100, 100, 700, 700, 700, 700, 700]; // climb ~50-60
+    const track: GpxTrack = { id: 1, ele };
+    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: track });
+    const foods = placeItemsEvenly([bananaEntry], 0, 100, route); // single item, even slot center = 50
+    expect(foods[0].from).toBeGreaterThan(48);
+    expect(foods[0].from).toBeLessThan(60);
+  });
+
+  test('empty item list returns no foods', () => {
+    const route = makeRoute();
+    expect(placeItemsEvenly([], 0, 100, route)).toEqual([]);
   });
 });
