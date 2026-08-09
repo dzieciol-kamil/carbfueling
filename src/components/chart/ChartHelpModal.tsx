@@ -29,6 +29,12 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
     }
   }
 
+  // Header padding kept in sync with panelStyle's own padding-top/sides: the sticky
+  // header below bridges this gap with a matching negative margin so the panel's white
+  // background can never peek out above it while the diagram content scrolls underneath.
+  const panelPadTop = desktop ? 18 : 16;
+  const panelPadX = desktop ? 20 : 18;
+
   const panelStyle: CSSProperties = desktop
     ? {
         position: 'fixed',
@@ -42,7 +48,7 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
         border: '1px solid var(--border)',
         borderRadius: 14,
         boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
-        padding: '18px 20px',
+        padding: `${panelPadTop}px ${panelPadX}px 18px`,
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
@@ -58,7 +64,7 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
         background: '#fff',
         borderRadius: '16px 16px 0 0',
         boxShadow: '0 -12px 40px rgba(0,0,0,0.22)',
-        padding: '16px 18px calc(16px + env(safe-area-inset-bottom))',
+        padding: `${panelPadTop}px ${panelPadX}px calc(16px + env(safe-area-inset-bottom))`,
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
@@ -81,6 +87,17 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
+                position: 'sticky',
+                top: 0,
+                marginTop: -panelPadTop,
+                marginLeft: -panelPadX,
+                marginRight: -panelPadX,
+                paddingTop: panelPadTop,
+                paddingLeft: panelPadX,
+                paddingRight: panelPadX,
+                paddingBottom: 6,
+                background: '#fff',
+                zIndex: 1,
               }}
             >
               <span style={{ fontSize: 15, fontWeight: 700 }}>{strings.chartHelpTitle}</span>

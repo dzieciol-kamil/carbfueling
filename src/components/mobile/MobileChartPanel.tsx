@@ -5,10 +5,10 @@ import { useAppStore, type YMode } from '../../store/appStore';
 import { MobileChart } from './MobileChart';
 import { MobileLaneStrip } from './MobileLaneStrip';
 
-const Y_MODES: { mode: YMode; label: string }[] = [
+const Y_MODES: { mode: YMode; label?: string }[] = [
   { mode: 'rate', label: 'g/h' },
   { mode: 'fluid', label: 'ml/h' },
-  { mode: 'sum', label: 'suma' },
+  { mode: 'sum' },
 ];
 
 function segBtnStyle(active: boolean): CSSProperties {
@@ -54,15 +54,15 @@ export function MobileChartPanel() {
 
   const distanceKm = dist(route);
   const showEye = !!route.gpxTrack && route.useGpx;
+  const profileMode = gpxPeek && showEye;
 
-  const narration =
-    gpxPeek && showEye
-      ? strings.narrationProfile
-      : yMode === 'fluid'
-        ? strings.narrationFluid
-        : yMode === 'sum'
-          ? strings.narrationSum
-          : strings.narrationRate;
+  const narration = profileMode
+    ? strings.narrationProfile
+    : yMode === 'fluid'
+      ? strings.narrationFluid
+      : yMode === 'sum'
+        ? strings.narrationSum
+        : strings.narrationRate;
 
   const axisPoints = [0, distanceKm / 3, (distanceKm * 2) / 3, distanceKm];
 
@@ -96,7 +96,7 @@ export function MobileChartPanel() {
                 style={segBtnStyle(yMode === mode)}
                 onClick={() => setYMode(mode)}
               >
-                {label}
+                {label ?? strings.sumMode}
               </button>
             ))}
           </div>
@@ -143,7 +143,7 @@ export function MobileChartPanel() {
                 km
               </button>
               <button type="button" style={xBtnStyle(xUnit === 'h')} onClick={() => setXUnit('h')}>
-                godz
+                {strings.axisTime}
               </button>
             </div>
           </div>
@@ -155,6 +155,8 @@ export function MobileChartPanel() {
             onClick={openChartHelp}
             title={strings.chartHelpBtnLabel}
             aria-label={strings.chartHelpBtnLabel}
+            aria-hidden={profileMode}
+            tabIndex={profileMode ? -1 : undefined}
             style={{
               flexShrink: 0,
               width: 30,
@@ -171,6 +173,8 @@ export function MobileChartPanel() {
               justifyContent: 'center',
               padding: 0,
               cursor: 'pointer',
+              opacity: profileMode ? 0 : 1,
+              pointerEvents: profileMode ? 'none' : 'auto',
             }}
           >
             ?

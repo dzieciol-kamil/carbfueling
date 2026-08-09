@@ -323,7 +323,7 @@ export const STR: Record<Lang, StringTable> = {
     profile: 'Profil',
     addGear: 'Dodaj bidon',
     savedLocally: 'Zapisane lokalnie',
-    canCarry: 'Może wozić:',
+    canCarry: 'Może zawierać:',
     gelPartsLabel: 'porcje',
     gearHint:
       'Nazwa, pojemność i to, co dany bidon może wozić. Żel dzieli się na tyle porcji, ile tu ustawisz.',
@@ -582,7 +582,7 @@ export const STR: Record<Lang, StringTable> = {
     mixHintMobile:
       'Skład izo i żelu. Zmiana przelicza gramaturę dla każdego napełnienia i limit wchłaniania.',
     absCapNoteMobile: 'Przy tej proporcji limit to {cap} g/h — kropkowana linia na wykresie.',
-    gelPartsStepper: 'Porcje żelu z jednego napełnienia',
+    gelPartsStepper: 'Liczba porcji żelu',
     foodStepwise: 'stopniowo',
     foodAddProduct: '+ Dodaj produkt',
     meWeight: 'Waga',
