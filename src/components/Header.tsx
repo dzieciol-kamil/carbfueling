@@ -7,6 +7,7 @@ import {
 } from '../domain/settingsExport';
 import { LANGS, t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { AutoplanFlow } from './autoplan/AutoplanFlow';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 
 export function Header() {
@@ -143,6 +144,8 @@ export function Header() {
             </div>
           )}
         </div>
+
+        <AutoplanFlow variant="desktop" />
 
         <div style={{ position: 'relative' }}>
           <button

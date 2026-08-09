@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
+import { AutoplanFlow } from '../autoplan/AutoplanFlow';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
 import { MobileGear } from './MobileGear';
@@ -79,24 +80,27 @@ export function MobileApp() {
           <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
             CARB FUELING
           </span>
-          <button
-            type="button"
-            data-tour="route-summary"
-            onClick={openRouteSheet}
-            style={{
-              border: '1px solid var(--chip-border)',
-              borderRadius: 999,
-              padding: '6px 11px',
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: 'var(--muted)',
-              background: '#fff',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              data-tour="route-summary"
+              onClick={openRouteSheet}
+              style={{
+                border: '1px solid var(--chip-border)',
+                borderRadius: 999,
+                padding: '6px 11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: 'var(--muted)',
+                background: '#fff',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
+            </button>
+            <AutoplanFlow variant="mobile" />
+          </div>
         </div>
 
         {tab === 'plan' && (
