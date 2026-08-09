@@ -1,4 +1,4 @@
-import { carbsFill, cph, dist, distanceAtTime, prof, timeAtDistance } from './fuel';
+import { carbsFill, cph, dist, distanceAtTime, prof, sweat, timeAtDistance } from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -207,4 +207,29 @@ export function placeItemsEvenly(
     const to = entry.cont ? Math.min(D, from + (entry.span || 18)) : from;
     return { key: entry.key, carbs: entry.carbs, ml: entry.ml, cont: !!entry.cont, from, to };
   });
+}
+
+export function fluidCapacityStopX(
+  route: RouteInput,
+  waterVessels: Vessel[],
+  firstPlannedStopX: number,
+): number | null {
+  const totalCapacityMl = waterVessels.reduce((a, v) => a + v.vol, 0);
+  const sweatRate = sweat(route);
+  if (sweatRate <= 0 || totalCapacityMl <= 0) return null;
+  const maxHours = totalCapacityMl / sweatRate;
+  const maxX = distanceAtTime(route, maxHours);
+  return maxX < firstPlannedStopX ? Math.round(maxX) : null;
+}
+
+export function assignWaterLegs(waterVessels: Vessel[], stopXs: number[], D: number): DraftFill[] {
+  const bounds = [0, ...stopXs.slice().sort((a, b) => a - b), D];
+  const fills: DraftFill[] = [];
+  for (let i = 0; i < bounds.length - 1; i++) {
+    const from = bounds[i];
+    const to = bounds[i + 1];
+    if (to - from < 1) continue;
+    waterVessels.forEach((v) => fills.push({ gid: v.gid, content: 'water', from, to }));
+  }
+  return fills;
 }

@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import {
+  assignWaterLegs,
   bucketVessels,
   findClimbStarts,
+  fluidCapacityStopX,
   planIzoRefills,
   placeItemsEvenly,
   selectItemsForAmount,
@@ -284,5 +286,54 @@ describe('placeItemsEvenly', () => {
   test('empty item list returns no foods', () => {
     const route = makeRoute();
     expect(placeItemsEvenly([], 0, 100, route)).toEqual([]);
+  });
+});
+
+describe('fluidCapacityStopX', () => {
+  test('returns null when carried water capacity already covers the leg to the first planned stop', () => {
+    const route = makeRoute({ distance: 100, speed: 25, temp: 15, intensity: 'low', weight: 75 });
+    // sweat() at temp<=15, low intensity, weight 75 -> base=380, iB=0 -> 380 ml/h
+    // a 100km / 25kph = 4h ride: 40km leg = 1.6h -> ~608ml needed, one 750ml vessel covers it
+    const result = fluidCapacityStopX(route, [waterBottle], 40);
+    expect(result).toBeNull();
+  });
+
+  test('returns an earlier stop x when carried water capacity runs out before the first planned stop', () => {
+    const route = makeRoute({ distance: 100, speed: 25, temp: 35, intensity: 'high', weight: 90 });
+    const smallBottle: Vessel = {
+      gid: 'g9',
+      name: 'Small',
+      vol: 400,
+      allowed: ['water'],
+      gelParts: 1,
+    };
+    const result = fluidCapacityStopX(route, [smallBottle], 80);
+    expect(result).not.toBeNull();
+    expect(result as number).toBeLessThan(80);
+  });
+
+  test('no water-capable vessels at all returns null (nothing to size against)', () => {
+    const route = makeRoute();
+    expect(fluidCapacityStopX(route, [], 40)).toBeNull();
+  });
+});
+
+describe('assignWaterLegs', () => {
+  test('gives each water vessel one fill per leg between consecutive stop boundaries', () => {
+    const fills = assignWaterLegs([waterBottle], [30, 70], 100);
+    expect(fills).toEqual([
+      { gid: 'g4', content: 'water', from: 0, to: 30 },
+      { gid: 'g4', content: 'water', from: 30, to: 70 },
+      { gid: 'g4', content: 'water', from: 70, to: 100 },
+    ]);
+  });
+
+  test('no stops at all: one fill spanning the whole route per water vessel', () => {
+    const fills = assignWaterLegs([waterBottle], [], 100);
+    expect(fills).toEqual([{ gid: 'g4', content: 'water', from: 0, to: 100 }]);
+  });
+
+  test('no water vessels: no fills', () => {
+    expect(assignWaterLegs([], [30], 100)).toEqual([]);
   });
 });
