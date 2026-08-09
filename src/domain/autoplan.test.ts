@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   assignWaterLegs,
+  autoplan,
   bucketVessels,
   findClimbStarts,
   fluidCapacityStopX,
@@ -335,5 +336,63 @@ describe('assignWaterLegs', () => {
 
   test('no water vessels: no fills', () => {
     expect(assignWaterLegs([], [30], 100)).toEqual([]);
+  });
+});
+
+describe('autoplan (integration)', () => {
+  test('short ride (<1h): water-only fills, no food, no shops, selection ignored', () => {
+    const route = makeRoute({ mode: 'time', hours: 0, minutes: 40 });
+    const state = makePlan({ route, gear: [bidon], foodLib: [bananaEntry] });
+    const result = autoplan(state, [{ key: 'banana', count: 5 }]);
+    expect(result.fills.every((f) => f.content === 'water')).toBe(true);
+    expect(result.foods).toEqual([]);
+    expect(result.newShops).toEqual([]);
+  });
+
+  test('start izo + full selection already covers target: refill legs get water, fewer items placed than selected', () => {
+    const route = makeRoute({ distance: 40, speed: 25 }); // 1.6h ride, small target
+    const mix = makeMix({ conc: 8.4 });
+    const state = makePlan({
+      route,
+      mix,
+      gear: [bidon],
+      foodLib: [bananaEntry],
+    });
+    const result = autoplan(state, [{ key: 'banana', count: 5 }]);
+    expect(result.fills.some((f) => f.content === 'izo')).toBe(true);
+    // no izo refill fill should exist beyond the single start fill, since balance <= 0
+    expect(result.fills.filter((f) => f.content === 'izo')).toHaveLength(1);
+    expect(result.foods.length).toBeLessThan(5);
+  });
+
+  test('long route with limited gear/food: izo refill inserted, remaining shortfall left visible (not fabricated)', () => {
+    const route = makeRoute({ distance: 300, speed: 25 }); // 12h ride, large target
+    const mix = makeMix({ conc: 8.4 });
+    const state = makePlan({
+      route,
+      mix,
+      gear: [bidon],
+      foodLib: [bananaEntry],
+    });
+    const result = autoplan(state, [{ key: 'banana', count: 1 }]);
+    const izoFills = result.fills.filter((f) => f.content === 'izo');
+    expect(izoFills.length).toBeGreaterThan(1); // start fill + at least one refill
+    expect(result.newShops.length).toBeGreaterThan(0);
+  });
+
+  test('gear with a gel-capable vessel: gel fill is one-shot, never appears more than once for that vessel', () => {
+    const route = makeRoute({ distance: 200, speed: 25 });
+    const mix = makeMix({ conc: 8.4 });
+    const state = makePlan({
+      route,
+      mix,
+      gear: [bidon, flask],
+      foodLib: [bananaEntry],
+    });
+    const result = autoplan(state, [{ key: 'banana', count: 2 }]);
+    const gelFillsForFlask = result.fills.filter((f) => f.gid === 'g3' && f.content === 'gel');
+    expect(gelFillsForFlask).toHaveLength(1);
+    // flask never gets an izo refill continuation either
+    expect(result.fills.filter((f) => f.gid === 'g3' && f.content === 'izo')).toHaveLength(0);
   });
 });

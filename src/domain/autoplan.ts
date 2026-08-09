@@ -1,4 +1,13 @@
-import { carbsFill, cph, dist, distanceAtTime, prof, sweat, timeAtDistance } from './fuel';
+import {
+  carbsFill,
+  cph,
+  dist,
+  distanceAtTime,
+  prof,
+  sweat,
+  timeAtDistance,
+  totalHours,
+} from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -232,4 +241,66 @@ export function assignWaterLegs(waterVessels: Vessel[], stopXs: number[], D: num
     waterVessels.forEach((v) => fills.push({ gid: v.gid, content: 'water', from, to }));
   }
   return fills;
+}
+
+export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): AutoplanResult {
+  const { route, mix, gear, foodLib } = state;
+  const shops = (state as any).shops || [];
+  const D = dist(route);
+
+  if (totalHours(route) < 1) {
+    return { fills: shortRideFills(state), foods: [], newShops: [] };
+  }
+
+  const { gelVessels, izoVessels, waterOnly, reservedWaterVessel } = bucketVessels(gear, mix);
+
+  const gel = sequentialFills(gelVessels, 'gel', route, gear, mix);
+  const izoStart = sequentialFills(izoVessels, 'izo', route, gear, mix);
+  const startCarbs = gel.totalCarbs + izoStart.totalCarbs;
+
+  const target = totalHours(route) * cph(route);
+  const selectedFoodCarbs = selection.reduce((a, s) => {
+    const entry = foodLib.find((f) => f.key === s.key);
+    return a + (entry ? entry.carbs * s.count : 0);
+  }, 0);
+  const balance = target - startCarbs - selectedFoodCarbs;
+
+  const refill =
+    balance > 0 && izoVessels.length > 0
+      ? planIzoRefills(route, gear, mix, izoVessels, izoStart.endX, balance, shops)
+      : {
+          fills: [] as DraftFill[],
+          newShops: [] as DraftShop[],
+          finalBalance: 0,
+          stopXs: [] as number[],
+        };
+
+  const refillAmount = balance > 0 && izoVessels.length > 0 ? balance - refill.finalBalance : 0;
+  const totalBottleCarbs = startCarbs + refillAmount;
+  const foodTarget = Math.max(0, target - totalBottleCarbs);
+  const items = selectItemsForAmount(selection, foodLib, foodTarget);
+  const foods = placeItemsEvenly(items, izoStart.endX, D, route);
+
+  const waterVessels = [...waterOnly, ...(reservedWaterVessel ? [reservedWaterVessel] : [])];
+  let stopXs = refill.stopXs;
+  let extraShops: DraftShop[] = [];
+  const firstStopX = stopXs.length ? Math.min(...stopXs) : D;
+  const fluidStopX = fluidCapacityStopX(route, waterVessels, firstStopX);
+  if (fluidStopX !== null && fluidStopX > 0) {
+    const nearExisting = shops.find((s: any) => Math.abs(s.at - fluidStopX) < 3);
+    if (nearExisting) {
+      stopXs = [...stopXs, nearExisting.at];
+    } else {
+      stopXs = [...stopXs, fluidStopX];
+      extraShops = [{ at: fluidStopX }];
+    }
+  }
+
+  const waterFills = assignWaterLegs(waterVessels, stopXs, D);
+
+  return {
+    fills: [...gel.fills, ...izoStart.fills, ...refill.fills, ...waterFills],
+    foods,
+    newShops: [...refill.newShops, ...extraShops],
+  };
 }
