@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { autoplan, type FoodSelectionEntry } from '../domain/autoplan';
 import {
   bestGapSpan,
   clampFillToDistance,
@@ -204,6 +205,8 @@ interface AppState {
   updateFoodLibEntry: (key: string, patch: Partial<FoodLibEntry>) => void;
   removeFoodLibEntry: (key: string) => void;
   addFoodLibEntry: () => void;
+
+  applyAutoplan: (selection: FoodSelectionEntry[]) => void;
 }
 
 const defaultRoute: RouteInput = {
@@ -649,6 +652,43 @@ export const useAppStore = create<AppState>()(
           return {
             foodLib: [...s.foodLib, { key: 'u' + s.nextFoodKey, pl: name, en: name, carbs: 25 }],
             nextFoodKey: s.nextFoodKey + 1,
+          };
+        }),
+
+      // Wholesale-replaces fills/foods with a freshly computed plan (see domain/autoplan.ts)
+      // rather than merging, mirroring loadTourDemoData's replace-not-append precedent — an
+      // autoplan run is meant to stand in for the current plan, not pile onto it. Shops are
+      // the exception: existing shop stops are preserved and only autoplan's newly-required
+      // stops are appended, since planIzoRefills already reuses existing shops where possible.
+      applyAutoplan: (selection) =>
+        set((s) => {
+          const result = autoplan(s, selection);
+
+          let fid = s.nextFid;
+          const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
+
+          let foodId = s.nextFoodId;
+          const foods: FoodItem[] = result.foods.map((f) => {
+            const entry = s.foodLib.find((e) => e.key === f.key);
+            const name = entry ? entry[s.ui.lang] || entry.en : f.key;
+            return { ...f, id: foodId++, name };
+          });
+
+          let shopId = s.nextShopId;
+          const defaultShopName = t(s.ui.lang).shopDefaultName;
+          const newShops: ShopStop[] = result.newShops.map((sh) => ({
+            ...sh,
+            id: shopId++,
+            name: defaultShopName,
+          }));
+
+          return {
+            fills,
+            foods,
+            shops: [...s.shops, ...newShops],
+            nextFid: fid,
+            nextFoodId: foodId,
+            nextShopId: shopId,
           };
         }),
     }),

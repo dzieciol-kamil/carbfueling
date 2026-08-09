@@ -180,6 +180,49 @@ describe('loadTourDemoData', () => {
   });
 });
 
+describe('applyAutoplan', () => {
+  test('replaces fills/foods, appends new shops, and advances the fid/shop id counters', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [{ fid: 999, gid: 'g1', content: 'water', from: 0, to: 10 }],
+      foods: [],
+      shops: [{ id: 1, at: 5, name: 'Existing' }],
+    });
+    const before = useAppStore.getState();
+    const beforeFid = before.nextFid;
+    const beforeShopId = before.nextShopId;
+
+    useAppStore.getState().applyAutoplan([]);
+
+    const after = useAppStore.getState();
+    expect(after.fills.every((f) => f.fid >= beforeFid)).toBe(true);
+    expect(after.fills.some((f) => f.fid === 999)).toBe(false); // old fill replaced
+    expect(after.shops.some((s) => s.id === 1 && s.name === 'Existing')).toBe(true); // preserved
+    expect(after.nextFid).toBeGreaterThan(beforeFid);
+    if (after.shops.length > before.shops.length) {
+      expect(after.nextShopId).toBeGreaterThan(beforeShopId);
+    }
+  });
+
+  test('resolves food names from foodLib in the current UI language and advances nextFoodId', () => {
+    useAppStore.setState({
+      route: route({ distance: 100, speed: 25 }),
+      gear: [], // no vessels => no bottle carbs, forcing the whole target onto food
+      foods: [],
+      ui: { ...useAppStore.getState().ui, lang: 'pl' },
+    });
+    const beforeFoodId = useAppStore.getState().nextFoodId;
+
+    useAppStore.getState().applyAutoplan([{ key: 'gel', count: 5 }]);
+
+    const after = useAppStore.getState();
+    expect(after.foods.length).toBeGreaterThan(0);
+    expect(after.foods.every((f) => f.name === 'Żel energetyczny')).toBe(true);
+    expect(after.foods.every((f) => f.id >= beforeFoodId)).toBe(true);
+    expect(after.nextFoodId).toBeGreaterThan(beforeFoodId);
+  });
+});
+
 describe('mobile ui state', () => {
   test('setTab switches tab and clears selKey', () => {
     useAppStore.getState().setSelKey('f1');
