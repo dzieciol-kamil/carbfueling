@@ -46,7 +46,7 @@ export function MobilePlanList() {
   const openMixSheet = useAppStore((s) => s.openMixSheet);
   const strings = t(lang);
 
-  const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
+  const summary = planSummary({ route, mix, gear, fills, foods, foodLib, shops });
   const distanceKm = dist(route);
 
   const carbPct =

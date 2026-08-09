@@ -101,4 +101,5 @@ export interface PlanState {
   fills: Fill[];
   foods: FoodItem[];
   foodLib: FoodLibEntry[];
+  shops: ShopStop[];
 }

@@ -244,8 +244,7 @@ export function assignWaterLegs(waterVessels: Vessel[], stopXs: number[], D: num
 }
 
 export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): AutoplanResult {
-  const { route, mix, gear, foodLib } = state;
-  const shops = (state as any).shops || [];
+  const { route, mix, gear, foodLib, shops } = state;
   const D = dist(route);
 
   if (totalHours(route) < 1) {
@@ -287,7 +286,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
   const firstStopX = stopXs.length ? Math.min(...stopXs) : D;
   const fluidStopX = fluidCapacityStopX(route, waterVessels, firstStopX);
   if (fluidStopX !== null && fluidStopX > 0) {
-    const nearExisting = shops.find((s: any) => Math.abs(s.at - fluidStopX) < 3);
+    const nearExisting = shops.find((s) => Math.abs(s.at - fluidStopX) < 3);
     if (nearExisting) {
       stopXs = [...stopXs, nearExisting.at];
     } else {

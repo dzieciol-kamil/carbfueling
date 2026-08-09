@@ -68,6 +68,7 @@ function makePlan(overrides: Partial<PlanState> = {}): PlanState {
     fills: [],
     foods: [],
     foodLib: [],
+    shops: [],
     ...overrides,
   };
 }
@@ -394,5 +395,32 @@ describe('autoplan (integration)', () => {
     expect(gelFillsForFlask).toHaveLength(1);
     // flask never gets an izo refill continuation either
     expect(result.fills.filter((f) => f.gid === 'g3' && f.content === 'izo')).toHaveLength(0);
+  });
+
+  test('water vessel capacity constraint creates stops for refilling', () => {
+    // Hot, intense conditions with long distance and small water capacity
+    // causes water to run out before route ends
+    const route = makeRoute({ distance: 100, speed: 25, temp: 35, intensity: 'high', weight: 90 });
+    const smallWater: Vessel = {
+      gid: 'g5',
+      name: 'Small Water',
+      vol: 300,
+      allowed: ['water'],
+      gelParts: 1,
+    };
+    const mix = makeMix({ conc: 8.4 });
+    const state = makePlan({
+      route,
+      mix,
+      gear: [bidon, smallWater],
+      foodLib: [bananaEntry],
+    });
+    // Minimal selection to avoid needing izo refills (which would also create stops)
+    const result = autoplan(state, [{ key: 'banana', count: 1 }]);
+
+    // Water vessel should have multiple fills, indicating a stop was created
+    // due to water capacity constraint
+    const waterFills = result.fills.filter((f) => f.content === 'water' && f.gid === 'g5');
+    expect(waterFills.length).toBeGreaterThanOrEqual(2);
   });
 });

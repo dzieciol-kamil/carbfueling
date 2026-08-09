@@ -67,10 +67,11 @@ export function SummaryCards() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
+  const shops = useAppStore((s) => s.shops);
   const lang = useAppStore((s) => s.ui.lang);
   const strings = t(lang);
 
-  const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
+  const summary = planSummary({ route, mix, gear, fills, foods, foodLib, shops });
   const carbColor = statusColor(summary.coverage, 'var(--carb)');
   const hydColor = statusColor(summary.hydrationPct, 'var(--water)');
   const recovery = recoveryCarbs(route.weight);

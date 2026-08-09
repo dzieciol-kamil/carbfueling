@@ -52,6 +52,7 @@ export function ChartCard() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
+  const shops = useAppStore((s) => s.shops);
   const lang = useAppStore((s) => s.ui.lang);
   const yMode = useAppStore((s) => s.ui.yMode);
   const xUnit = useAppStore((s) => s.ui.xUnit);
@@ -61,7 +62,7 @@ export function ChartCard() {
   const openChartHelp = useAppStore((s) => s.openChartHelp);
   const strings = t(lang);
 
-  const planState = { route, mix, gear, fills, foods, foodLib };
+  const planState = { route, mix, gear, fills, foods, foodLib, shops };
   const summary = planSummary(planState);
 
   const showEaten = yMode === 'sum' && summary.totalCarbs - summary.absorbedTotal > 5;
