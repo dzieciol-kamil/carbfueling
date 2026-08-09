@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { bucketVessels, sequentialFills, shortRideFills } from './autoplan';
-import type { MixSettings, PlanState, RouteInput, Vessel } from './types';
+import { bucketVessels, planIzoRefills, sequentialFills, shortRideFills } from './autoplan';
+import type { MixSettings, PlanState, RouteInput, ShopStop, Vessel } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
@@ -146,5 +146,47 @@ describe('sequentialFills', () => {
     expect(fills).toEqual([]);
     expect(totalCarbs).toBe(0);
     expect(endX).toBe(0);
+  });
+});
+
+describe('planIzoRefills', () => {
+  test("balance already <= 0 is the caller's job to avoid calling this — with balance 0, does nothing", () => {
+    const route = makeRoute();
+    const mix = makeMix();
+    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 0, []);
+    expect(result.fills).toEqual([]);
+    expect(result.newShops).toEqual([]);
+    expect(result.finalBalance).toBe(0);
+    expect(result.stopXs).toEqual([]);
+  });
+
+  test('positive balance with no existing shop creates one and refills izo, no special naming', () => {
+    const route = makeRoute({ distance: 100, speed: 25 });
+    const mix = makeMix({ conc: 8.4 }); // 650ml bidon = 54.6g per fill
+    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 30, []);
+    expect(result.newShops).toHaveLength(1);
+    expect(result.newShops[0].at).toBe(40);
+    expect(result.fills).toHaveLength(1);
+    expect(result.fills[0]).toMatchObject({ gid: 'g1', content: 'izo' });
+    expect(result.fills[0].from).toBeCloseTo(40, 0);
+    expect(result.finalBalance).toBe(0); // 54.6g of capacity easily covers a 30g gap
+  });
+
+  test('snaps to an existing shop stop at/after the izo-end point instead of creating a new one', () => {
+    const route = makeRoute({ distance: 100, speed: 25 });
+    const mix = makeMix({ conc: 8.4 });
+    const existingShops: ShopStop[] = [{ id: 1, at: 55, name: 'Sklep' }];
+    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 30, existingShops);
+    expect(result.newShops).toEqual([]);
+    expect(result.stopXs).toEqual([55]);
+    expect(result.fills[0].from).toBeCloseTo(55, 0);
+  });
+
+  test('no izo capacity left (empty vessel list) leaves the gap uncovered rather than looping forever', () => {
+    const route = makeRoute({ distance: 100, speed: 25 });
+    const mix = makeMix();
+    const result = planIzoRefills(route, [], mix, [], 40, 30, []);
+    expect(result.fills).toEqual([]);
+    expect(result.finalBalance).toBe(30);
   });
 });

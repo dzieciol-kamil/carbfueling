@@ -1,4 +1,4 @@
-import { carbsFill, cph, dist, distanceAtTime } from './fuel';
+import { carbsFill, cph, dist, distanceAtTime, timeAtDistance } from './fuel';
 import type { Fill, FoodItem, MixSettings, PlanState, RouteInput, ShopStop, Vessel } from './types';
 
 export const CONCENTRATED_MIX_THRESHOLD_G_PER_100ML = 15;
@@ -82,4 +82,50 @@ export function sequentialFills(
   });
 
   return { fills, totalCarbs, endX };
+}
+
+export function planIzoRefills(
+  route: RouteInput,
+  gear: Vessel[],
+  mix: MixSettings,
+  izoVessels: Vessel[],
+  izoStartEndX: number,
+  balance: number,
+  existingShops: ShopStop[],
+): { fills: DraftFill[]; newShops: DraftShop[]; finalBalance: number; stopXs: number[] } {
+  const D = dist(route);
+  const rate = cph(route);
+  const fills: DraftFill[] = [];
+  const newShops: DraftShop[] = [];
+  const stopXs: number[] = [];
+
+  let cursor = izoStartEndX;
+  let remaining = balance;
+
+  while (remaining > 0 && cursor < D && izoVessels.length > 0) {
+    const nextExisting = existingShops.filter((s) => s.at >= cursor).sort((a, b) => a.at - b.at)[0];
+    const stopX = nextExisting ? nextExisting.at : Math.round(cursor);
+    if (!nextExisting) newShops.push({ at: stopX });
+    stopXs.push(stopX);
+
+    let legCarbs = 0;
+    let legHours = timeAtDistance(route, stopX);
+    izoVessels.forEach((v) => {
+      const maxCarbs = carbsFill({ fid: 0, gid: v.gid, content: 'izo', from: 0, to: 0 }, gear, mix);
+      const take = Math.min(maxCarbs, Math.max(0, remaining - legCarbs));
+      if (take <= 0) return;
+      const hours = rate > 0 ? take / rate : 0;
+      const fromX = distanceAtTime(route, legHours);
+      const toX = Math.min(D, distanceAtTime(route, legHours + hours));
+      fills.push({ gid: v.gid, content: 'izo', from: fromX, to: toX });
+      legCarbs += take;
+      legHours += hours;
+    });
+
+    remaining -= legCarbs;
+    if (legCarbs <= 0) break; // no vessel had spare capacity — stop rather than loop forever
+    cursor = Math.max(stopX + 1, distanceAtTime(route, legHours));
+  }
+
+  return { fills, newShops, finalBalance: Math.max(0, remaining), stopXs };
 }
