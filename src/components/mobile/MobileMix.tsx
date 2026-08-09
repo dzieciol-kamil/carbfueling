@@ -91,7 +91,7 @@ export function MobileMix() {
     onChange: (src: CitricSource) => void,
     disabled = false,
   ) => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
+    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
       {CITRIC_SOURCES.map((src) => {
         const isActive = active === src;
         return (
@@ -152,7 +152,7 @@ export function MobileMix() {
     disabled = false,
     preset: RatioPreset = 'custom',
   ) => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
+    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
       {RATIO_PRESETS.map((r) => {
         const caption = presetCaption(r, forGel);
         const active = value === r && preset === presetTagFor(r);
