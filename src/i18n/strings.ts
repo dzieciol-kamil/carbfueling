@@ -292,6 +292,7 @@ export interface StringTable {
   importPlanConfirmConfirm: string;
   importPlanError: string;
   importPlanSuccess: string;
+  exportPlanError: string;
   recoveryLabel: string;
   recoveryHint: string;
 }
@@ -650,6 +651,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       'Nie udało się wczytać pliku — sprawdź, czy to poprawny eksport planu z Carb Fueling.',
     importPlanSuccess: 'Plan zaimportowany.',
+    exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
@@ -1004,6 +1006,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
+    exportPlanError: 'Could not save the file. Please try again.',
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
