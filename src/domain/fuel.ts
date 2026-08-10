@@ -16,10 +16,11 @@ const FLUID_ABSORPTION_CAP_ML_H = 750;
 /**
  * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
  * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
- * giving carbs a head start instead of demanding fresh intake from km 0. Matches the autoplan
- * short-ride hydration gate (`sweatLoss < weight_kg × 15`) — one physiological quantity, kept in
- * sync between "should we even plan water" (autoplan.ts) and "what does the chart require" (here).
- * Deliberately below the ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
+ * giving carbs a head start instead of demanding fresh intake from km 0. Same value (weight_kg ×
+ * 15) is planned for autoplan.ts's short-ride hydration gate ("should we even plan water") — not
+ * implemented there yet, so there's no enforced coupling today; keep the two in sync by hand if
+ * one changes. Deliberately below the ~2% ACSM danger-limit figure so the app doesn't plan right
+ * up to the edge.
  */
 const HYDRATION_BUFFER_ML_PER_KG = 15;
 const PROFILE_SAMPLES = 160;

@@ -18,8 +18,7 @@ const WIDTH = 800;
 const HEIGHT = 168;
 const GUT_LIMIT = 60;
 
-type RateKey =
-  'rate' | 'needRate' | 'fluidRate' | 'sweatRate' | 'fluidNeedRate' | 'absorbed' | 'need' | 'gut';
+type RateKey = 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate' | 'absorbed' | 'need' | 'gut';
 
 function polyline(
   arr: Sample[],
