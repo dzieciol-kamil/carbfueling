@@ -70,11 +70,9 @@ export interface Sample {
   active: ActiveSource;
   rate: number;
   needRate: number;
-  /** Instantaneous per-step derivative of `ml` — NOT EMA-smoothed (unlike `rate`/`needRate`,
-   *  which smooth real carb digestion lag). Water has no equivalent physiology, and `ml` is
-   *  already a smooth, deterministic curve, so a plain derivative is exact and instant. */
+  /** Actual fluid delivery rate — causally smoothed (double-pass EMA, ~6min time constant) so
+   *  fill-boundary transitions ease in as a gentle S-curve instead of an instant cliff. */
   fluidRate: number;
-  sweatRate: number;
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
    *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
    *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
@@ -528,7 +526,6 @@ export function samples(state: PlanState): Sample[] {
       rate: 0,
       needRate: 0,
       fluidRate: 0,
-      sweatRate,
       fluidNeed: totalFluidNeed * (eff(route, x) / tot),
       fluidNeedRate: 0,
     });
