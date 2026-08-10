@@ -797,6 +797,35 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
       expect(p.fluidRate).toBeCloseTo(250, 6);
     });
   });
+
+  test('a fill boundary (bottle swap at a stop) never drops before the bottle actually ends, then eases in gently', () => {
+    const gear: Vessel[] = [
+      { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water'], gelParts: 1 },
+    ];
+    // A short first leg (high ml/km rate) followed by a long second leg (lower rate) — the shape
+    // a bottle swap at a stop actually produces.
+    const fills: Fill[] = [
+      { fid: 1, gid: 'g1', content: 'water', from: 0, to: 40 },
+      { fid: 2, gid: 'g1', content: 'water', from: 40, to: 100 },
+    ];
+    const S = samples(makePlan({ route, gear, fills }));
+    const before = S.filter((p) => p.x <= 40);
+    const first = before[0].fluidRate;
+    // Strictly causal: nothing drops while the bottle is still nominally in use, right up to and
+    // including the boundary itself.
+    before.forEach((p) => expect(p.fluidRate).toBeCloseTo(first, 6));
+
+    const after = S.filter((p) => p.x > 40 && p.x <= 55);
+    // S-curve onset, not an instant jump: the very first step past the boundary is a small
+    // fraction of the first leg's own rate, not most of the total drop in one step.
+    const firstDrop = first - after[0].fluidRate;
+    const totalDrop = first - after[after.length - 1].fluidRate;
+    expect(firstDrop).toBeLessThan(totalDrop * 0.3);
+    // Monotonically settling toward the second leg's rate, no overshoot below it.
+    for (let i = 1; i < after.length; i++) {
+      expect(after[i].fluidRate).toBeLessThanOrEqual(after[i - 1].fluidRate + 1e-9);
+    }
+  });
 });
 
 describe('rateStats', () => {
