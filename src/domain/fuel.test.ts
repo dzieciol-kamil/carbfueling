@@ -718,40 +718,50 @@ describe('samples', () => {
   });
 });
 
-describe('samples: fluidNeed / fluidNeedRate (hydration buffer, linear ramp)', () => {
+describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effort-weighted)', () => {
   // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
-  // Buffer = weight*15 = 1125ml. Ramp window rampHours = 2*buffer/sweatRate = 3.2143h (a linear
-  // ramp to sweatRate over that span has area = sweatRate*rampHours/2 = buffer, so the long-run
-  // total past the ramp is identical to the old hard-threshold model — only the shape changes).
-  // dt = hrs/N = 4/160 = 0.025h/sample; rampHours -> sample index 128.57.
+  // sweatLoss = 700*4 = 2800ml, well above the buffer (weight*15=1125ml), so totalFluidNeed is
+  // the full, undiscounted 2800ml — not reduced by the buffer and not by COVERAGE_TARGET_PCT
+  // (85% is a badge-only tolerance, not part of what the line itself asks for). Distributed by
+  // eff(x)/tot exactly like carbs' `need` — no GPX here, so effort=1 everywhere and eff(x)/tot
+  // reduces to x/D (a straight line), matching a flat ml/h target rate.
   const route = makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' });
 
-  test('fluidNeed is 0 at the start line and rises immediately (no flat-zero plateau)', () => {
+  test('fluidNeed is a straight line in distance to the full sweat loss when there is no GPX profile', () => {
     const S = samples(makePlan({ route }));
     expect(S[0].fluidNeed).toBe(0);
-    // t=1.6h (index 64): still inside the 3.2143h ramp -> sweatRate*t^2/(2*rampHours)
-    expect(S[64].fluidNeed).toBeCloseTo((700 * 1.6 * 1.6) / (2 * 3.214285714), 3); // ~278.8ml
-    expect(S[64].fluidNeed).toBeGreaterThan(0);
+    expect(S[80].fluidNeed).toBeCloseTo(2800 * 0.5, 3); // midpoint -> half the total
+    expect(S[160].fluidNeed).toBeCloseTo(2800, 3); // the full sweat loss, not an 85%-discounted figure
   });
 
-  test('fluidNeed matches the same long-run total as the old hard-threshold model past the ramp', () => {
+  test('fluidNeed rises immediately from the start (no flat-zero plateau) and monotonically throughout', () => {
     const S = samples(makePlan({ route }));
-    // t=4h (index 160), past the 3.2143h ramp: buffer + sweatRate*(t-rampHours) = 1675ml —
-    // identical total to the old model's `sweatRate*hours - buffer`, so stop-count math derived
-    // from it (docs/tests/autoplan-scenarios.md) is unaffected by this change.
-    expect(S[160].fluidNeed).toBeCloseTo(700 * 4 - 1125, 3);
-  });
-
-  test('fluidNeed rises monotonically throughout, no plateau-then-jump discontinuity', () => {
-    const S = samples(makePlan({ route }));
+    expect(S[1].fluidNeed).toBeGreaterThan(0); // nonzero right after the start line
     for (let i = 1; i < S.length; i++) {
       expect(S[i].fluidNeed).toBeGreaterThanOrEqual(S[i - 1].fluidNeed);
     }
   });
 
-  test('a mild ride whose whole duration fits inside the ramp window still shows a small rising curve, not a flat 0', () => {
-    // Mirrors water-scenario #3 (short/mild): under the old hard-threshold model this stayed at
-    // literal 0 for the entire route, which rendered as an invisible line overlapping the axis.
+  test('a real GPX climb in the first half pulls more of the requirement onto itself than its distance share', () => {
+    const gpxRoute = makeRoute({
+      distance: 100,
+      speed: 25,
+      weight: 75,
+      temp: 20,
+      intensity: 'mid',
+      useGpx: true,
+      gpxTrack: { id: 1, ele: [0, 500, 500] }, // climbs first half, flat second half
+    });
+    const S = samples(makePlan({ route: gpxRoute }));
+    // Same pattern as prof()'s own "cumTime gives disproportionate weight to a climb" test.
+    expect(S[80].fluidNeed).toBeGreaterThan(S[160].fluidNeed / 2);
+    // The total at the finish is unaffected by how it's distributed along the way.
+    expect(S[160].fluidNeed).toBeCloseTo(2800, 3);
+  });
+
+  test('a mild ride where the buffer covers the whole route keeps fluidNeed at a flat 0 throughout', () => {
+    // Mirrors water-scenario #3 (short/mild): sweat*hours never exceeds weight*15, so there is
+    // honestly nothing to actively plan for.
     const mildRoute = makeRoute({
       distance: 20,
       speed: 25,
@@ -760,23 +770,20 @@ describe('samples: fluidNeed / fluidNeedRate (hydration buffer, linear ramp)', (
       intensity: 'low',
     });
     const S = samples(makePlan({ route: mildRoute }));
-    expect(S[0].fluidNeed).toBe(0);
-    expect(S[S.length - 1].fluidNeed).toBeGreaterThan(0);
-    expect(S[S.length - 1].fluidNeed).toBeLessThan(85 * 15); // never reaches a full buffer's worth
+    S.forEach((p) => expect(p.fluidNeed).toBe(0));
   });
 
-  test('fluidNeedRate starts at 0 and stays non-negative and finite throughout (no NaN/step artifacts)', () => {
+  test('fluidNeedRate starts at 0, stays non-negative and finite, and settles near sweatRate itself', () => {
     const S = samples(makePlan({ route }));
     expect(S[0].fluidNeedRate).toBe(0);
     S.forEach((p) => {
       expect(Number.isFinite(p.fluidNeedRate)).toBe(true);
       expect(p.fluidNeedRate).toBeGreaterThanOrEqual(0);
     });
-  });
-
-  test('fluidNeedRate never overshoots sweatRate (a smooth ramp approaches it from below, unlike a step)', () => {
-    const S = samples(makePlan({ route }));
-    S.forEach((p) => expect(p.fluidNeedRate).toBeLessThanOrEqual(700 + 1e-9));
+    // Flat target rate = totalFluidNeed/hours = 2800/4 = 700ml/h = sweatRate exactly (no discount
+    // applied); a constant-rate EMA settles close to it well before the ride ends.
+    expect(S[160].fluidNeedRate).toBeGreaterThan(680);
+    expect(S[160].fluidNeedRate).toBeLessThan(700 + 1e-9);
   });
 });
 

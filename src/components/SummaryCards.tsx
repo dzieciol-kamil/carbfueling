@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { planSummary, recoveryCarbs } from '../domain/fuel';
+import { COVERAGE_TARGET_PCT, planSummary, recoveryCarbs } from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
@@ -9,7 +9,7 @@ function fmt(n: number): string {
 }
 
 function statusColor(pct: number, goodColor: string): string {
-  if (pct >= 85) return goodColor;
+  if (pct >= COVERAGE_TARGET_PCT) return goodColor;
   if (pct < 60) return '#B4552F';
   return '#D2703F';
 }
