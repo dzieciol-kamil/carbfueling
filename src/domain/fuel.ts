@@ -12,6 +12,16 @@ import type {
 } from './types';
 
 const FLUID_ABSORPTION_CAP_ML_H = 750;
+
+/**
+ * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
+ * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
+ * giving carbs a head start instead of demanding fresh intake from km 0. Matches the autoplan
+ * short-ride hydration gate (`sweatLoss < weight_kg × 15`) — one physiological quantity, kept in
+ * sync between "should we even plan water" (autoplan.ts) and "what does the chart require" (here).
+ * Deliberately below the ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
+ */
+const HYDRATION_BUFFER_ML_PER_KG = 15;
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
@@ -52,6 +62,12 @@ export interface Sample {
   needRate: number;
   fluidRate: number;
   sweatRate: number;
+  /** Cumulative fluid the rider should have replaced by this point — 0 until accumulated sweat
+   *  loss exceeds the hydration buffer, then rises 1:1 with loss beyond it. See
+   *  `HYDRATION_BUFFER_ML_PER_KG`. */
+  fluidNeed: number;
+  /** EMA-smoothed rate of `fluidNeed`, the fluid-mode equivalent of `needRate` for carbs. */
+  fluidNeedRate: number;
 }
 
 export interface RateStats {
@@ -423,6 +439,7 @@ export function samples(state: PlanState): Sample[] {
   const dt = hrs / N;
   const sweatRate = sweat(route);
 
+  const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
   const out: Sample[] = [];
   let gut = preRideGut(route, cap);
   let absorbed = 0;
@@ -479,6 +496,8 @@ export function samples(state: PlanState): Sample[] {
       needRate: 0,
       fluidRate: 0,
       sweatRate,
+      fluidNeed: Math.max(0, sweatRate * (i * dt) - hydrationBuffer),
+      fluidNeedRate: 0,
     });
   }
 
@@ -506,15 +525,19 @@ export function samples(state: PlanState): Sample[] {
 
   let needRateEma = 0;
   let fluidRateEma = 0;
+  let fluidNeedRateEma = 0;
   for (let i = 0; i <= N; i++) {
     if (i > 0) {
       rateEma += alpha * ((out[i].absorbed - out[i - 1].absorbed) / dt - rateEma);
       needRateEma += alpha * ((out[i].need - out[i - 1].need) / dt - needRateEma);
       fluidRateEma += alpha * ((out[i].ml - out[i - 1].ml) / dt - fluidRateEma);
+      fluidNeedRateEma +=
+        alpha * ((out[i].fluidNeed - out[i - 1].fluidNeed) / dt - fluidNeedRateEma);
     }
     out[i].rate = rateEma;
     out[i].needRate = needRateEma;
     out[i].fluidRate = fluidRateEma;
+    out[i].fluidNeedRate = fluidNeedRateEma;
   }
 
   return out;

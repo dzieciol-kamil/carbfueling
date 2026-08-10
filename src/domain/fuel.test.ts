@@ -717,6 +717,60 @@ describe('samples', () => {
   });
 });
 
+describe('samples: fluidNeed / fluidNeedRate (hydration buffer)', () => {
+  // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
+  // Buffer = weight*15 = 1125ml, exhausted at 1125/700=1.607h -> sample index 1125/700/dt
+  // where dt=hrs/N=4/160=0.025h/sample, i.e. index 64.29 (17.5ml of loss per sample step).
+  const route = makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' });
+
+  test('fluidNeed stays at 0 while cumulative sweat loss is still inside the buffer', () => {
+    const S = samples(makePlan({ route }));
+    expect(S[0].fluidNeed).toBe(0);
+    expect(S[64].fluidNeed).toBe(0); // 17.5*64=1120ml lost, still under the 1125ml buffer
+  });
+
+  test('fluidNeed rises 1:1 with loss once the buffer is exhausted, buffer subtracted once', () => {
+    const S = samples(makePlan({ route }));
+    expect(S[65].fluidNeed).toBeCloseTo(17.5 * 65 - 1125, 6); // 12.5ml
+    expect(S[160].fluidNeed).toBeCloseTo(700 * 4 - 1125, 6); // 1675ml total, not the raw 2800ml
+  });
+
+  test('a mild ride that never exceeds the buffer keeps fluidNeed at 0 for the whole route', () => {
+    // Mirrors water-scenario #3 (short/mild -> buffer absorbs everything): low sweat rate over
+    // a route short enough that total loss never crosses weight*15.
+    const mildRoute = makeRoute({
+      distance: 20,
+      speed: 25,
+      weight: 85,
+      temp: 10,
+      intensity: 'low',
+    });
+    const S = samples(makePlan({ route: mildRoute }));
+    S.forEach((p) => expect(p.fluidNeed).toBe(0));
+  });
+
+  test('fluidNeedRate starts at 0 (no pre-ride sweat) and converges toward sweatRate once the buffer is long gone', () => {
+    const S = samples(makePlan({ route }));
+    expect(S[0].fluidNeedRate).toBe(0);
+    // ~2.4h of constant post-buffer loss (>4 EMA time constants of 0.5h) converges close, not
+    // exactly, to the steady-state rate — EMA lag never fully closes.
+    expect(S[160].fluidNeedRate).toBeGreaterThan(690);
+    expect(S[160].fluidNeedRate).toBeLessThan(700);
+  });
+
+  test('fluidNeedRate stays 0 throughout while the buffer never runs out', () => {
+    const mildRoute = makeRoute({
+      distance: 20,
+      speed: 25,
+      weight: 85,
+      temp: 10,
+      intensity: 'low',
+    });
+    const S = samples(makePlan({ route: mildRoute }));
+    S.forEach((p) => expect(p.fluidNeedRate).toBe(0));
+  });
+});
+
 describe('rateStats', () => {
   test('zero positions in the plan: coverage 0%, dry stretch spans the whole ride', () => {
     const plan = makePlan({
