@@ -5,6 +5,7 @@ import {
   parseSettingsImport,
   serializeSettingsExport,
   settingsExportFileName,
+  type PlanFeedback,
 } from '../../domain/settingsExport';
 import { LANGS, t } from '../../i18n/strings';
 import {
@@ -13,6 +14,7 @@ import {
   useAppStore,
   type ViewMode,
 } from '../../store/appStore';
+import { saveTextFile } from '../../utils/fileSave';
 import { CoffeeIcon, GitHubIcon } from '../Footer';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -38,7 +40,7 @@ export function MobileProfile() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [importFeedback, setImportFeedback] = useState<'error' | 'success' | null>(null);
+  const [planFeedback, setPlanFeedback] = useState<PlanFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleReplay = () => {
@@ -54,17 +56,14 @@ export function MobileProfile() {
     else setViewMode(v);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    setPlanFeedback(null);
     const file = buildSettingsExport(getSettingsExportData());
-    const blob = new Blob([serializeSettingsExport(file)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = settingsExportFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      await saveTextFile(serializeSettingsExport(file), settingsExportFileName());
+    } catch {
+      setPlanFeedback('export-error');
+    }
   };
 
   const handleImportPick = () => fileInputRef.current?.click();
@@ -79,18 +78,18 @@ export function MobileProfile() {
   };
 
   const applyImportedFile = async (file: File) => {
-    setImportFeedback(null);
+    setPlanFeedback(null);
     try {
       const text = await file.text();
       const result = parseSettingsImport(text);
       if (!result.ok) {
-        setImportFeedback('error');
+        setPlanFeedback('import-error');
         return;
       }
       importSettings(result.data);
-      setImportFeedback('success');
+      setPlanFeedback('import-success');
     } catch {
-      setImportFeedback('error');
+      setPlanFeedback('import-error');
     }
   };
 
@@ -285,16 +284,20 @@ export function MobileProfile() {
             e.target.value = '';
           }}
         />
-        {importFeedback && (
+        {planFeedback && (
           <p
             style={{
               margin: 0,
               fontSize: 12,
               lineHeight: 1.5,
-              color: importFeedback === 'error' ? '#B3402A' : 'var(--muted-2)',
+              color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
             }}
           >
-            {importFeedback === 'error' ? strings.importPlanError : strings.importPlanSuccess}
+            {planFeedback === 'import-error'
+              ? strings.importPlanError
+              : planFeedback === 'import-success'
+                ? strings.importPlanSuccess
+                : strings.exportPlanError}
           </p>
         )}
       </div>

@@ -4,9 +4,11 @@ import {
   parseSettingsImport,
   serializeSettingsExport,
   settingsExportFileName,
+  type PlanFeedback,
 } from '../domain/settingsExport';
 import { LANGS, t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { saveTextFile } from '../utils/fileSave';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 
 export function Header() {
@@ -18,27 +20,24 @@ export function Header() {
   const importSettings = useAppStore((s) => s.importSettings);
   const [langOpen, setLangOpen] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [importFeedback, setImportFeedback] = useState<'error' | 'success' | null>(null);
+  const [planFeedback, setPlanFeedback] = useState<PlanFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const strings = t(lang);
 
   useEffect(() => {
-    if (!importFeedback) return;
-    const timer = setTimeout(() => setImportFeedback(null), 4000);
+    if (!planFeedback) return;
+    const timer = setTimeout(() => setPlanFeedback(null), 4000);
     return () => clearTimeout(timer);
-  }, [importFeedback]);
+  }, [planFeedback]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    setPlanFeedback(null);
     const file = buildSettingsExport(getSettingsExportData());
-    const blob = new Blob([serializeSettingsExport(file)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = settingsExportFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      await saveTextFile(serializeSettingsExport(file), settingsExportFileName());
+    } catch {
+      setPlanFeedback('export-error');
+    }
   };
 
   const handleImportPick = () => fileInputRef.current?.click();
@@ -53,18 +52,18 @@ export function Header() {
   };
 
   const applyImportedFile = async (file: File) => {
-    setImportFeedback(null);
+    setPlanFeedback(null);
     try {
       const text = await file.text();
       const result = parseSettingsImport(text);
       if (!result.ok) {
-        setImportFeedback('error');
+        setPlanFeedback('import-error');
         return;
       }
       importSettings(result.data);
-      setImportFeedback('success');
+      setPlanFeedback('import-success');
     } catch {
-      setImportFeedback('error');
+      setPlanFeedback('import-error');
     }
   };
 
@@ -120,7 +119,7 @@ export function Header() {
               e.target.value = '';
             }}
           />
-          {importFeedback && (
+          {planFeedback && (
             <div
               style={{
                 position: 'absolute',
@@ -135,11 +134,15 @@ export function Header() {
                 boxShadow: '0 14px 34px rgba(0,0,0,0.14)',
                 fontSize: 12,
                 lineHeight: 1.5,
-                color: importFeedback === 'error' ? '#B3402A' : 'var(--muted-2)',
+                color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
                 zIndex: 60,
               }}
             >
-              {importFeedback === 'error' ? strings.importPlanError : strings.importPlanSuccess}
+              {planFeedback === 'import-error'
+                ? strings.importPlanError
+                : planFeedback === 'import-success'
+                  ? strings.importPlanSuccess
+                  : strings.exportPlanError}
             </div>
           )}
         </div>

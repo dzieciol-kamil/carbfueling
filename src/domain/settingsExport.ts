@@ -61,6 +61,9 @@ export interface SettingsExportFile {
   data: SettingsExportData;
 }
 
+/** Import/export outcome shown in the Header (desktop) and MobileProfile (mobile) feedback banner. */
+export type PlanFeedback = 'import-error' | 'import-success' | 'export-error';
+
 export function buildSettingsExport(
   data: SettingsExportData,
   now: Date = new Date(),
