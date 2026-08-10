@@ -21,7 +21,16 @@ const GUT_LIMIT = 60;
 const WIDTH = 800;
 
 type NumericSampleKey =
-  'intake' | 'absorbed' | 'gut' | 'ml' | 'need' | 'rate' | 'needRate' | 'fluidRate' | 'sweatRate';
+  | 'intake'
+  | 'absorbed'
+  | 'gut'
+  | 'ml'
+  | 'need'
+  | 'rate'
+  | 'needRate'
+  | 'fluidRate'
+  | 'sweatRate'
+  | 'fluidNeedRate';
 
 function polyline(
   samplesArr: Sample[],
@@ -65,7 +74,7 @@ export function Chart({ height, showAxis }: ChartProps) {
   const fluidMode = yMode === 'fluid';
   const rateMode = yMode === 'rate' || fluidMode;
   const yk: NumericSampleKey = fluidMode ? 'fluidRate' : rateMode ? 'rate' : 'absorbed';
-  const nk: NumericSampleKey = fluidMode ? 'sweatRate' : rateMode ? 'needRate' : 'need';
+  const nk: NumericSampleKey = fluidMode ? 'fluidNeedRate' : rateMode ? 'needRate' : 'need';
   const izoCarbs = fills
     .filter((f) => f.content === 'izo')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
@@ -76,7 +85,7 @@ export function Chart({ height, showAxis }: ChartProps) {
   const capY = fluidMode ? FLUID_CAP : cap;
 
   const maxY = fluidMode
-    ? Math.max(FLUID_CAP * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.sweatRate))) * 1.1
+    ? Math.max(FLUID_CAP * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate))) * 1.1
     : rateMode
       ? Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15
       : Math.max(1, ...S.map((p) => Math.max(p.intake, p.need))) * 1.08;
