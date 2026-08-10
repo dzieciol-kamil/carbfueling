@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
+import { AutoplanFlow } from '../autoplan/AutoplanFlow';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
 import { MobileGear } from './MobileGear';
@@ -73,30 +74,52 @@ export function MobileApp() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            // The wordmark, the route chip and the autoplan button need ~444px of intrinsic width
+            // together, so on a 375px-class phone they have to wrap — without this the wordmark
+            // broke onto two lines and the autoplan button was clipped off the right edge.
+            flexWrap: 'wrap',
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
-            CARB FUELING
-          </span>
-          <button
-            type="button"
-            data-tour="route-summary"
-            onClick={openRouteSheet}
+          <span
             style={{
-              border: '1px solid var(--chip-border)',
-              borderRadius: 999,
-              padding: '6px 11px',
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: 'var(--muted)',
-              background: '#fff',
-              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
               whiteSpace: 'nowrap',
             }}
           >
-            {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
-          </button>
+            CARB FUELING
+          </span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <button
+              type="button"
+              data-tour="route-summary"
+              onClick={openRouteSheet}
+              style={{
+                border: '1px solid var(--chip-border)',
+                borderRadius: 999,
+                padding: '6px 11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: 'var(--muted)',
+                background: '#fff',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
+            </button>
+            <AutoplanFlow variant="mobile" />
+          </div>
         </div>
 
         {tab === 'plan' && (

@@ -71,6 +71,10 @@ export interface ShopStop {
   id: number;
   at: number;
   name: string;
+  /** True when this stop was created by autoplan() itself (as opposed to a rider placing it
+   *  by hand, e.g. via addShop or GPX import). Lets a later autoplan run offer to clean up
+   *  only its own previously-generated stops, never a rider-placed one. */
+  autoCreated?: boolean;
 }
 
 export interface FoodItem {
@@ -101,4 +105,5 @@ export interface PlanState {
   fills: Fill[];
   foods: FoodItem[];
   foodLib: FoodLibEntry[];
+  shops: ShopStop[];
 }

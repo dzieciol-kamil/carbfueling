@@ -294,6 +294,20 @@ export interface StringTable {
   importPlanSuccess: string;
   recoveryLabel: string;
   recoveryHint: string;
+  autoplanButton: string;
+  autoplanConfirmReplaceTitle: string;
+  autoplanConfirmReplaceBody: string;
+  autoplanConfirmReplaceCancel: string;
+  autoplanConfirmReplaceConfirm: string;
+  autoplanRemovePrevStopsLabel: string;
+  autoplanDialogTitle: string;
+  autoplanDialogHint: string;
+  autoplanDialogCountLabel: string;
+  autoplanDialogConfirm: string;
+  autoplanDialogCancel: string;
+  autoplanShortRideNote: string;
+  autoplanAppliedNote: string;
+  autoplanAppliedDismiss: string;
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -653,6 +667,23 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
+    autoplanButton: 'Zaproponuj plan',
+    autoplanConfirmReplaceTitle: 'Zastąpić obecny plan?',
+    autoplanConfirmReplaceBody:
+      'To nadpisze obecne napełnienia i produkty na trasie nową propozycją. Punkty sklepów zostają.',
+    autoplanConfirmReplaceCancel: 'Anuluj',
+    autoplanConfirmReplaceConfirm: 'Zastąp',
+    autoplanRemovePrevStopsLabel: 'Usuń też wcześniej zaproponowane stopy sklepowe',
+    autoplanDialogTitle: 'Co masz ze sobą?',
+    autoplanDialogHint:
+      'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
+    autoplanDialogCountLabel: 'Ile sztuk',
+    autoplanDialogConfirm: 'Zaproponuj plan',
+    autoplanDialogCancel: 'Anuluj',
+    autoplanShortRideNote:
+      'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
+    autoplanAppliedNote: 'To propozycja bazowa — dostosuj do własnych doświadczeń i preferencji.',
+    autoplanAppliedDismiss: 'OK',
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -1007,6 +1038,24 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
+    autoplanButton: 'Suggest a plan',
+    autoplanConfirmReplaceTitle: 'Replace the current plan?',
+    autoplanConfirmReplaceBody:
+      'This will overwrite your current fills and food with a new suggestion. Shop stops stay.',
+    autoplanConfirmReplaceCancel: 'Cancel',
+    autoplanConfirmReplaceConfirm: 'Replace',
+    autoplanRemovePrevStopsLabel: 'Also remove previously suggested shop stops',
+    autoplanDialogTitle: 'What are you carrying?',
+    autoplanDialogHint:
+      "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
+    autoplanDialogCountLabel: 'Count',
+    autoplanDialogConfirm: 'Suggest plan',
+    autoplanDialogCancel: 'Cancel',
+    autoplanShortRideNote:
+      "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",
+    autoplanAppliedNote:
+      'This is a starting suggestion — adjust it to your own experience and preferences.',
+    autoplanAppliedDismiss: 'OK',
   },
 };
 

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 interface ConfirmDialogProps {
   title: string;
   body: string;
@@ -5,6 +7,9 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   onCancel: () => void;
   onConfirm: () => void;
+  /** Optional extra content rendered between the body text and the button row, e.g. a
+   *  checkbox for a per-confirmation option. Omitted entirely by most call sites. */
+  children?: ReactNode;
 }
 
 export function ConfirmDialog({
@@ -14,6 +19,7 @@ export function ConfirmDialog({
   confirmLabel,
   onCancel,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <div
@@ -52,6 +58,7 @@ export function ConfirmDialog({
       >
         <span style={{ fontSize: 15, fontWeight: 700 }}>{title}</span>
         <span style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ink-soft)' }}>{body}</span>
+        {children}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button
             onClick={onCancel}

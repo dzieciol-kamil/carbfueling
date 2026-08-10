@@ -180,6 +180,122 @@ describe('loadTourDemoData', () => {
   });
 });
 
+describe('applyAutoplan', () => {
+  test('replaces fills/foods, appends new shops, and advances the fid/shop id counters', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [{ fid: 999, gid: 'g1', content: 'water', from: 0, to: 10 }],
+      foods: [],
+      shops: [{ id: 1, at: 5, name: 'Existing' }],
+    });
+    const before = useAppStore.getState();
+    const beforeFid = before.nextFid;
+    const beforeShopId = before.nextShopId;
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    const after = useAppStore.getState();
+    expect(after.fills.every((f) => f.fid >= beforeFid)).toBe(true);
+    expect(after.fills.some((f) => f.fid === 999)).toBe(false); // old fill replaced
+    expect(after.shops.some((s) => s.id === 1 && s.name === 'Existing')).toBe(true); // preserved
+    expect(after.nextFid).toBeGreaterThan(beforeFid);
+    if (after.shops.length > before.shops.length) {
+      expect(after.nextShopId).toBeGreaterThan(beforeShopId);
+    }
+  });
+
+  test('resolves food names from foodLib in the current UI language and advances nextFoodId', () => {
+    useAppStore.setState({
+      route: route({ distance: 100, speed: 25 }),
+      gear: [], // no vessels => no bottle carbs, forcing the whole target onto food
+      foods: [],
+      ui: { ...useAppStore.getState().ui, lang: 'pl' },
+    });
+    const beforeFoodId = useAppStore.getState().nextFoodId;
+
+    useAppStore.getState().applyAutoplan([{ key: 'gel', count: 5 }], false);
+
+    const after = useAppStore.getState();
+    expect(after.foods.length).toBeGreaterThan(0);
+    expect(after.foods.every((f) => f.name === 'Żel energetyczny')).toBe(true);
+    expect(after.foods.every((f) => f.id >= beforeFoodId)).toBe(true);
+    expect(after.nextFoodId).toBeGreaterThan(beforeFoodId);
+  });
+
+  test('tags newly created shops as autoCreated', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [],
+      foods: [],
+      shops: [],
+    });
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    const after = useAppStore.getState();
+    expect(after.shops.length).toBeGreaterThan(0);
+    expect(after.shops.every((s) => s.autoCreated === true)).toBe(true);
+  });
+
+  describe('removePreviousAutoStops toggle', () => {
+    // A manual shop id far outside the auto-assigned range (which starts at nextShopId, here
+    // 501) so it can never collide with an id the store hands out to an autoplan-created shop.
+    function setupWithAutoShopsAndOneManualShop() {
+      useAppStore.setState({
+        route: route({ distance: 300, speed: 25 }),
+        fills: [],
+        foods: [],
+        shops: [{ id: 1, at: 40, name: 'Manual stop' }],
+        nextShopId: 501,
+      });
+      // First run creates at least one autoCreated shop to build on top of.
+      useAppStore.getState().applyAutoplan([], false);
+      const s = useAppStore.getState();
+      expect(s.shops.some((sh) => sh.autoCreated)).toBe(true);
+      expect(s.shops.some((sh) => sh.id === 1 && sh.name === 'Manual stop')).toBe(true);
+    }
+
+    test('false: a second run keeps prior autoplan shops and adds the new ones', () => {
+      setupWithAutoShopsAndOneManualShop();
+      const before = useAppStore.getState();
+      const priorAutoShopIds = before.shops.filter((sh) => sh.autoCreated).map((sh) => sh.id);
+
+      // Grow the route so the second run needs refill points beyond what the first run's
+      // stops already cover — otherwise planIzoRefills would legitimately reuse the existing
+      // stops and add none, which wouldn't exercise the "adds new ones" half of this test.
+      useAppStore.setState({ route: route({ distance: 600, speed: 25 }) });
+      useAppStore.getState().applyAutoplan([], false);
+
+      const after = useAppStore.getState();
+      expect(after.shops.some((sh) => sh.id === 1 && sh.name === 'Manual stop')).toBe(true);
+      for (const id of priorAutoShopIds) {
+        expect(after.shops.some((sh) => sh.id === id)).toBe(true);
+      }
+      expect(after.shops.filter((sh) => sh.autoCreated).length).toBeGreaterThan(
+        priorAutoShopIds.length,
+      );
+    });
+
+    test('true: a second run removes prior autoplan shops but never a manually-added one', () => {
+      setupWithAutoShopsAndOneManualShop();
+      const before = useAppStore.getState();
+      const priorAutoShopIds = before.shops.filter((sh) => sh.autoCreated).map((sh) => sh.id);
+      expect(priorAutoShopIds.length).toBeGreaterThan(0);
+
+      useAppStore.getState().applyAutoplan([], true);
+
+      const after = useAppStore.getState();
+      expect(after.shops.some((sh) => sh.id === 1 && sh.name === 'Manual stop')).toBe(true);
+      for (const id of priorAutoShopIds) {
+        expect(after.shops.some((sh) => sh.id === id)).toBe(false);
+      }
+      // The new run still needs stops at the same route positions, so it recreates them
+      // (fresh ids) rather than leaving the rider with none.
+      expect(after.shops.some((sh) => sh.autoCreated)).toBe(true);
+    });
+  });
+});
+
 describe('mobile ui state', () => {
   test('setTab switches tab and clears selKey', () => {
     useAppStore.getState().setSelKey('f1');

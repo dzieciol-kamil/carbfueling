@@ -48,7 +48,7 @@ export function MobileChart() {
   const strings = t(lang);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const planState = { route, mix, gear, fills, foods, foodLib };
+  const planState = { route, mix, gear, fills, foods, foodLib, shops };
   const S = samples(planState);
   const D = dist(route);
   const P = prof(route);
