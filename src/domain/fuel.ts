@@ -23,6 +23,15 @@ const FLUID_ABSORPTION_CAP_ML_H = 750;
  * up to the edge.
  */
 const HYDRATION_BUFFER_ML_PER_KG = 15;
+
+/**
+ * The coverage percentage the UI treats as "good enough" — `SummaryCards.tsx`'s `statusColor`
+ * turns the requirement/hydration bars green at this threshold, for both carbs and water. This is
+ * a tolerance the *badge* applies on top of the honest 100% target (see `fluidNeed` on `Sample`),
+ * not a discount baked into what any chart line asks for — one shared number instead of a
+ * duplicated magic literal.
+ */
+export const COVERAGE_TARGET_PCT = 85;
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
@@ -63,9 +72,10 @@ export interface Sample {
   needRate: number;
   fluidRate: number;
   sweatRate: number;
-  /** Cumulative fluid the rider should have replaced by this point. Ramps from 0 up to the raw
-   *  sweat-loss rate over the first `rampHours` (chosen so the ramp accounts for exactly one
-   *  hydration buffer), then tracks 1:1 with loss beyond that. See `HYDRATION_BUFFER_ML_PER_KG`. */
+  /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
+   *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
+   *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
+   *  `COVERAGE_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
   fluidNeed: number;
   /** EMA-smoothed rate of `fluidNeed`, the fluid-mode equivalent of `needRate` for carbs. */
   fluidNeedRate: number;
@@ -441,22 +451,25 @@ export function samples(state: PlanState): Sample[] {
   const sweatRate = sweat(route);
 
   const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
-  // The buffer isn't spent instantly at some threshold km — that produced a hard corner in
-  // fluidNeed (flat 0, then an abrupt jump to the full sweat rate), which after EMA smoothing
-  // still showed up as a sharp "knee" on the chart, and a flat-zero stretch that's visually
-  // indistinguishable from a missing line. Instead the requirement ramps up linearly from 0 to
-  // sweatRate over `rampHours`, chosen so the ramp's own area under the curve equals exactly one
-  // buffer (rampHours = 2×buffer/sweatRate — a linear ramp to `sweatRate` over that span integrates
-  // to sweatRate×rampHours/2 = buffer) — so the long-run total (and every stop-count formula
-  // derived from it) is unchanged, only the shape of the first stretch is smoothed.
-  const rampHours = sweatRate > 0 ? (2 * hydrationBuffer) / sweatRate : 0;
-  function fluidNeedAt(hoursElapsed: number): number {
-    if (sweatRate <= 0) return 0;
-    if (hoursElapsed <= rampHours) {
-      return (sweatRate * hoursElapsed * hoursElapsed) / (2 * rampHours);
-    }
-    return hydrationBuffer + sweatRate * (hoursElapsed - rampHours);
-  }
+  const sweatLoss = sweatRate * hrs;
+  // Unlike carbs, fluid has no real digestion-lag physiology (the stomach passes water on to the
+  // gut quickly; there's no enzyme-limited absorption cap the way there is for carbs), so a
+  // time-varying "ramp" had no physiological basis. Real hydration guidance is stated as a flat
+  // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
+  //
+  // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
+  // `COVERAGE_TARGET_PCT` (85%) and not sweat loss minus the buffer. The chart's job is to show
+  // the honest physiological target; 85% is a separate, more lenient tolerance the *badge* applies
+  // on top (via `statusColor`) to decide "is this still good enough," not something baked into
+  // what the line itself asks for. An earlier version used the buffer here and made the chart say
+  // "you're above the line" while the badge still said "79%, short" for the same plan — confirmed
+  // on a real reproduction; using the true 100% total instead means falling short of the total
+  // always shows up as the actual line dipping below the target somewhere, honestly.
+  //
+  // Below the short-ride gate (sweatLoss < buffer — the same threshold that decides whether
+  // autoplan bothers suggesting water stops at all) there's honestly nothing to plan for, so the
+  // target stays at 0 rather than asking for a loss too small to act on.
+  const totalFluidNeed = sweatLoss < hydrationBuffer ? 0 : sweatLoss;
   const out: Sample[] = [];
   let gut = preRideGut(route, cap);
   let absorbed = 0;
@@ -513,7 +526,7 @@ export function samples(state: PlanState): Sample[] {
       needRate: 0,
       fluidRate: 0,
       sweatRate,
-      fluidNeed: fluidNeedAt(i * dt),
+      fluidNeed: totalFluidNeed * (eff(route, x) / tot),
       fluidNeedRate: 0,
     });
   }
