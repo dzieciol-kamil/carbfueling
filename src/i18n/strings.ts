@@ -299,6 +299,7 @@ export interface StringTable {
   autoplanConfirmReplaceBody: string;
   autoplanConfirmReplaceCancel: string;
   autoplanConfirmReplaceConfirm: string;
+  autoplanRemovePrevStopsLabel: string;
   autoplanDialogTitle: string;
   autoplanDialogHint: string;
   autoplanDialogCountLabel: string;
@@ -672,6 +673,7 @@ export const STR: Record<Lang, StringTable> = {
       'To nadpisze obecne napełnienia i produkty na trasie nową propozycją. Punkty sklepów zostają.',
     autoplanConfirmReplaceCancel: 'Anuluj',
     autoplanConfirmReplaceConfirm: 'Zastąp',
+    autoplanRemovePrevStopsLabel: 'Usuń też wcześniej zaproponowane stopy sklepowe',
     autoplanDialogTitle: 'Co masz ze sobą?',
     autoplanDialogHint:
       'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
@@ -1042,6 +1044,7 @@ export const STR: Record<Lang, StringTable> = {
       'This will overwrite your current fills and food with a new suggestion. Shop stops stay.',
     autoplanConfirmReplaceCancel: 'Cancel',
     autoplanConfirmReplaceConfirm: 'Replace',
+    autoplanRemovePrevStopsLabel: 'Also remove previously suggested shop stops',
     autoplanDialogTitle: 'What are you carrying?',
     autoplanDialogHint:
       "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",

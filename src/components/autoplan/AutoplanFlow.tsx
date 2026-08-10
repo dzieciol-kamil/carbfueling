@@ -65,13 +65,19 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
+  const shops = useAppStore((s) => s.shops);
   const applyAutoplan = useAppStore((s) => s.applyAutoplan);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
+  // Pre-checked: this toggle only ever removes shops autoplan itself created on a prior
+  // run (never a rider-placed one), so defaulting to "clean up after yourself" suits the
+  // common case of a rider re-running autoplan a few times while dialing in food choices.
+  const [removePreviousAutoStops, setRemovePreviousAutoStops] = useState(true);
+  const hasPreviousAutoStops = shops.some((sh) => sh.autoCreated);
 
   function proceedAfterConfirm() {
     if (totalHours(route) < 1) {
-      applyAutoplan([]);
+      applyAutoplan([], hasPreviousAutoStops && removePreviousAutoStops);
       setPhase('appliedNote');
       return;
     }
@@ -81,6 +87,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   function handleTrigger() {
     const hasExisting = fills.length > 0 || foods.length > 0;
     if (hasExisting) {
+      setRemovePreviousAutoStops(true);
       setPhase('confirmReplace');
       return;
     }
@@ -105,7 +112,27 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
           confirmLabel={strings.autoplanConfirmReplaceConfirm}
           onCancel={() => setPhase('idle')}
           onConfirm={proceedAfterConfirm}
-        />
+        >
+          {hasPreviousAutoStops && (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 12.5,
+                color: 'var(--ink-soft)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={removePreviousAutoStops}
+                onChange={(e) => setRemovePreviousAutoStops(e.target.checked)}
+              />
+              {strings.autoplanRemovePrevStopsLabel}
+            </label>
+          )}
+        </ConfirmDialog>
       )}
 
       {phase === 'foodSelect' && (
@@ -114,7 +141,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
           lang={lang}
           onCancel={() => setPhase('idle')}
           onConfirm={(selection) => {
-            applyAutoplan(selection);
+            applyAutoplan(selection, hasPreviousAutoStops && removePreviousAutoStops);
             setPhase('appliedNote');
           }}
         />
