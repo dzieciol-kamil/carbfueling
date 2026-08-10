@@ -718,27 +718,40 @@ describe('samples', () => {
   });
 });
 
-describe('samples: fluidNeed / fluidNeedRate (hydration buffer)', () => {
+describe('samples: fluidNeed / fluidNeedRate (hydration buffer, linear ramp)', () => {
   // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
-  // Buffer = weight*15 = 1125ml, exhausted at 1125/700=1.607h -> sample index 1125/700/dt
-  // where dt=hrs/N=4/160=0.025h/sample, i.e. index 64.29 (17.5ml of loss per sample step).
+  // Buffer = weight*15 = 1125ml. Ramp window rampHours = 2*buffer/sweatRate = 3.2143h (a linear
+  // ramp to sweatRate over that span has area = sweatRate*rampHours/2 = buffer, so the long-run
+  // total past the ramp is identical to the old hard-threshold model — only the shape changes).
+  // dt = hrs/N = 4/160 = 0.025h/sample; rampHours -> sample index 128.57.
   const route = makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' });
 
-  test('fluidNeed stays at 0 while cumulative sweat loss is still inside the buffer', () => {
+  test('fluidNeed is 0 at the start line and rises immediately (no flat-zero plateau)', () => {
     const S = samples(makePlan({ route }));
     expect(S[0].fluidNeed).toBe(0);
-    expect(S[64].fluidNeed).toBe(0); // 17.5*64=1120ml lost, still under the 1125ml buffer
+    // t=1.6h (index 64): still inside the 3.2143h ramp -> sweatRate*t^2/(2*rampHours)
+    expect(S[64].fluidNeed).toBeCloseTo((700 * 1.6 * 1.6) / (2 * 3.214285714), 3); // ~278.8ml
+    expect(S[64].fluidNeed).toBeGreaterThan(0);
   });
 
-  test('fluidNeed rises 1:1 with loss once the buffer is exhausted, buffer subtracted once', () => {
+  test('fluidNeed matches the same long-run total as the old hard-threshold model past the ramp', () => {
     const S = samples(makePlan({ route }));
-    expect(S[65].fluidNeed).toBeCloseTo(17.5 * 65 - 1125, 6); // 12.5ml
-    expect(S[160].fluidNeed).toBeCloseTo(700 * 4 - 1125, 6); // 1675ml total, not the raw 2800ml
+    // t=4h (index 160), past the 3.2143h ramp: buffer + sweatRate*(t-rampHours) = 1675ml —
+    // identical total to the old model's `sweatRate*hours - buffer`, so stop-count math derived
+    // from it (docs/tests/autoplan-scenarios.md) is unaffected by this change.
+    expect(S[160].fluidNeed).toBeCloseTo(700 * 4 - 1125, 3);
   });
 
-  test('a mild ride that never exceeds the buffer keeps fluidNeed at 0 for the whole route', () => {
-    // Mirrors water-scenario #3 (short/mild -> buffer absorbs everything): low sweat rate over
-    // a route short enough that total loss never crosses weight*15.
+  test('fluidNeed rises monotonically throughout, no plateau-then-jump discontinuity', () => {
+    const S = samples(makePlan({ route }));
+    for (let i = 1; i < S.length; i++) {
+      expect(S[i].fluidNeed).toBeGreaterThanOrEqual(S[i - 1].fluidNeed);
+    }
+  });
+
+  test('a mild ride whose whole duration fits inside the ramp window still shows a small rising curve, not a flat 0', () => {
+    // Mirrors water-scenario #3 (short/mild): under the old hard-threshold model this stayed at
+    // literal 0 for the entire route, which rendered as an invisible line overlapping the axis.
     const mildRoute = makeRoute({
       distance: 20,
       speed: 25,
@@ -747,28 +760,23 @@ describe('samples: fluidNeed / fluidNeedRate (hydration buffer)', () => {
       intensity: 'low',
     });
     const S = samples(makePlan({ route: mildRoute }));
-    S.forEach((p) => expect(p.fluidNeed).toBe(0));
+    expect(S[0].fluidNeed).toBe(0);
+    expect(S[S.length - 1].fluidNeed).toBeGreaterThan(0);
+    expect(S[S.length - 1].fluidNeed).toBeLessThan(85 * 15); // never reaches a full buffer's worth
   });
 
-  test('fluidNeedRate starts at 0 (no pre-ride sweat) and converges toward sweatRate once the buffer is long gone', () => {
+  test('fluidNeedRate starts at 0 and stays non-negative and finite throughout (no NaN/step artifacts)', () => {
     const S = samples(makePlan({ route }));
     expect(S[0].fluidNeedRate).toBe(0);
-    // ~2.4h of constant post-buffer loss (>4 EMA time constants of 0.5h) converges close, not
-    // exactly, to the steady-state rate — EMA lag never fully closes.
-    expect(S[160].fluidNeedRate).toBeGreaterThan(690);
-    expect(S[160].fluidNeedRate).toBeLessThan(700);
+    S.forEach((p) => {
+      expect(Number.isFinite(p.fluidNeedRate)).toBe(true);
+      expect(p.fluidNeedRate).toBeGreaterThanOrEqual(0);
+    });
   });
 
-  test('fluidNeedRate stays 0 throughout while the buffer never runs out', () => {
-    const mildRoute = makeRoute({
-      distance: 20,
-      speed: 25,
-      weight: 85,
-      temp: 10,
-      intensity: 'low',
-    });
-    const S = samples(makePlan({ route: mildRoute }));
-    S.forEach((p) => expect(p.fluidNeedRate).toBe(0));
+  test('fluidNeedRate never overshoots sweatRate (a smooth ramp approaches it from below, unlike a step)', () => {
+    const S = samples(makePlan({ route }));
+    S.forEach((p) => expect(p.fluidNeedRate).toBeLessThanOrEqual(700 + 1e-9));
   });
 });
 
