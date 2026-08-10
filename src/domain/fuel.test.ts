@@ -773,17 +773,29 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
     S.forEach((p) => expect(p.fluidNeed).toBe(0));
   });
 
-  test('fluidNeedRate starts at 0, stays non-negative and finite, and settles near sweatRate itself', () => {
+  test('fluidNeedRate is exactly flat at sweatRate from km 0 (no EMA warm-up curve)', () => {
     const S = samples(makePlan({ route }));
-    expect(S[0].fluidNeedRate).toBe(0);
+    // Not smoothed like needRate/rate: with no GPX, fluidNeed is perfectly linear in x, so its
+    // per-step derivative is the same constant (totalFluidNeed/hours = 2800/4 = 700 = sweatRate,
+    // no discount applied) at every single sample, immediately — including index 0.
     S.forEach((p) => {
       expect(Number.isFinite(p.fluidNeedRate)).toBe(true);
-      expect(p.fluidNeedRate).toBeGreaterThanOrEqual(0);
+      expect(p.fluidNeedRate).toBeCloseTo(700, 6);
     });
-    // Flat target rate = totalFluidNeed/hours = 2800/4 = 700ml/h = sweatRate exactly (no discount
-    // applied); a constant-rate EMA settles close to it well before the ride ends.
-    expect(S[160].fluidNeedRate).toBeGreaterThan(680);
-    expect(S[160].fluidNeedRate).toBeLessThan(700 + 1e-9);
+  });
+
+  test('fluidRate is also exactly flat from km 0 for a single continuous fill (no EMA warm-up curve)', () => {
+    const gear: Vessel[] = [
+      { gid: 'g1', name: 'Bidon', vol: 1000, allowed: ['water'], gelParts: 1 },
+    ];
+    const fills: Fill[] = [{ fid: 1, gid: 'g1', content: 'water', from: 0, to: 100 }];
+    const S = samples(makePlan({ route, gear, fills }));
+    // 1000ml delivered evenly over the 4h ride = 250ml/h constant, immediately — not ramping up
+    // from 0 the way an EMA-smoothed rate would.
+    S.forEach((p) => {
+      expect(Number.isFinite(p.fluidRate)).toBe(true);
+      expect(p.fluidRate).toBeCloseTo(250, 6);
+    });
   });
 });
 
@@ -896,6 +908,20 @@ describe('planSummary', () => {
     });
     expect(planSummary(zeroHrsPlan).sweatLoss).toBe(0);
     expect(planSummary(zeroHrsPlan).hydrationPct).toBe(100);
+  });
+
+  test('a mild ride under the short-ride buffer gate reports full hydration coverage, not a raw 0%', () => {
+    // Regression: sweatLoss > 0 but below weight*15 (the same gate that zeroes samples()'s
+    // fluidNeed target) used to divide fluidPlanned by the raw sweatLoss anyway, so a mild ride
+    // with no water fills reported 0%/red even though the chart's target line was flat 0
+    // (nothing to actively cover) — the two disagreed in the exact opposite direction of the
+    // original chart-vs-badge mismatch this rework set out to fix.
+    const mildPlan = makePlan({
+      route: makeRoute({ distance: 20, speed: 25, weight: 85, temp: 10, intensity: 'low' }),
+    });
+    const summary = planSummary(mildPlan);
+    expect(summary.sweatLoss).toBe(344); // round(430 * 0.8h), under the 85*15=1275ml buffer
+    expect(summary.hydrationPct).toBe(100);
   });
 });
 

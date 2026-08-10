@@ -69,6 +69,9 @@ export interface Sample {
   active: ActiveSource;
   rate: number;
   needRate: number;
+  /** Instantaneous per-step derivative of `ml` — NOT EMA-smoothed (unlike `rate`/`needRate`,
+   *  which smooth real carb digestion lag). Water has no equivalent physiology, and `ml` is
+   *  already a smooth, deterministic curve, so a plain derivative is exact and instant. */
   fluidRate: number;
   sweatRate: number;
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
@@ -76,7 +79,7 @@ export interface Sample {
    *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
    *  `COVERAGE_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
   fluidNeed: number;
-  /** EMA-smoothed rate of `fluidNeed`, the fluid-mode equivalent of `needRate` for carbs. */
+  /** Instantaneous per-step derivative of `fluidNeed` — see `fluidRate`, same reasoning. */
   fluidNeedRate: number;
 }
 
@@ -553,20 +556,28 @@ export function samples(state: PlanState): Sample[] {
   }
 
   let needRateEma = 0;
-  let fluidRateEma = 0;
-  let fluidNeedRateEma = 0;
   for (let i = 0; i <= N; i++) {
     if (i > 0) {
       rateEma += alpha * ((out[i].absorbed - out[i - 1].absorbed) / dt - rateEma);
       needRateEma += alpha * ((out[i].need - out[i - 1].need) / dt - needRateEma);
-      fluidRateEma += alpha * ((out[i].ml - out[i - 1].ml) / dt - fluidRateEma);
-      fluidNeedRateEma +=
-        alpha * ((out[i].fluidNeed - out[i - 1].fluidNeed) / dt - fluidNeedRateEma);
     }
     out[i].rate = rateEma;
     out[i].needRate = needRateEma;
-    out[i].fluidRate = fluidRateEma;
-    out[i].fluidNeedRate = fluidNeedRateEma;
+  }
+
+  // fluidRate and fluidNeedRate deliberately skip the EMA above: `rate`/`needRate` smooth real
+  // carb events (eating, gut digestion) that genuinely lag behind intake — water has no equivalent
+  // physiology (the stomach passes fluid on quickly, and `ml`/`fluidNeed` are both already smooth,
+  // deterministic curves, not noisy real-world samples), so running either through the same
+  // lagging filter only adds a fake "warm-up" curve with no physiological meaning (confirmed on a
+  // real deployed preview: both lines visibly curved before flattening/tracking, instead of
+  // starting together from km 0 the way the underlying fills actually do). A plain per-step
+  // derivative is exact and instant for both. Index 0 has no prior sample to difference against,
+  // so it copies index 1 rather than reporting a false dip to 0.
+  for (let i = 0; i <= N; i++) {
+    const j = i === 0 ? 1 : i;
+    out[i].fluidRate = dt > 0 ? (out[j].ml - out[j - 1].ml) / dt : 0;
+    out[i].fluidNeedRate = dt > 0 ? (out[j].fluidNeed - out[j - 1].fluidNeed) / dt : 0;
   }
 
   return out;
@@ -668,7 +679,16 @@ export function planSummary(state: PlanState): PlanSummary {
     fills.filter((f) => f.content !== 'gel').reduce((a, f) => a + volOf(f, gear), 0) +
     foods.reduce((a, f) => a + (f.ml || 0), 0);
   const sweatLoss = Math.round(sweat(route) * hrs);
-  const hydrationPct = sweatLoss > 0 ? Math.round((fluidPlanned / sweatLoss) * 100) : 100;
+  // Below the short-ride buffer gate (the same one that zeroes the chart's fluidNeed target —
+  // see samples() above), there's honestly nothing to actively cover, so this reports "fully
+  // met" rather than dividing by a raw sweatLoss the chart itself has already decided doesn't
+  // apply — otherwise a mild/short ride with zero fills showed the chart's target line flat at
+  // 0 (satisfied) while this badge showed 0%, red: the same disagreement this whole rework set
+  // out to eliminate, just in the opposite direction.
+  const hydrationPct =
+    sweatLoss > 0 && sweatLoss >= route.weight * HYDRATION_BUFFER_ML_PER_KG
+      ? Math.round((fluidPlanned / sweatLoss) * 100)
+      : 100;
 
   const { coverage, samples: S } = rateStats(state);
 
