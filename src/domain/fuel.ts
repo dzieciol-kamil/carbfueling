@@ -63,9 +63,9 @@ export interface Sample {
   needRate: number;
   fluidRate: number;
   sweatRate: number;
-  /** Cumulative fluid the rider should have replaced by this point — 0 until accumulated sweat
-   *  loss exceeds the hydration buffer, then rises 1:1 with loss beyond it. See
-   *  `HYDRATION_BUFFER_ML_PER_KG`. */
+  /** Cumulative fluid the rider should have replaced by this point. Ramps from 0 up to the raw
+   *  sweat-loss rate over the first `rampHours` (chosen so the ramp accounts for exactly one
+   *  hydration buffer), then tracks 1:1 with loss beyond that. See `HYDRATION_BUFFER_ML_PER_KG`. */
   fluidNeed: number;
   /** EMA-smoothed rate of `fluidNeed`, the fluid-mode equivalent of `needRate` for carbs. */
   fluidNeedRate: number;
@@ -441,6 +441,22 @@ export function samples(state: PlanState): Sample[] {
   const sweatRate = sweat(route);
 
   const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
+  // The buffer isn't spent instantly at some threshold km — that produced a hard corner in
+  // fluidNeed (flat 0, then an abrupt jump to the full sweat rate), which after EMA smoothing
+  // still showed up as a sharp "knee" on the chart, and a flat-zero stretch that's visually
+  // indistinguishable from a missing line. Instead the requirement ramps up linearly from 0 to
+  // sweatRate over `rampHours`, chosen so the ramp's own area under the curve equals exactly one
+  // buffer (rampHours = 2×buffer/sweatRate — a linear ramp to `sweatRate` over that span integrates
+  // to sweatRate×rampHours/2 = buffer) — so the long-run total (and every stop-count formula
+  // derived from it) is unchanged, only the shape of the first stretch is smoothed.
+  const rampHours = sweatRate > 0 ? (2 * hydrationBuffer) / sweatRate : 0;
+  function fluidNeedAt(hoursElapsed: number): number {
+    if (sweatRate <= 0) return 0;
+    if (hoursElapsed <= rampHours) {
+      return (sweatRate * hoursElapsed * hoursElapsed) / (2 * rampHours);
+    }
+    return hydrationBuffer + sweatRate * (hoursElapsed - rampHours);
+  }
   const out: Sample[] = [];
   let gut = preRideGut(route, cap);
   let absorbed = 0;
@@ -497,7 +513,7 @@ export function samples(state: PlanState): Sample[] {
       needRate: 0,
       fluidRate: 0,
       sweatRate,
-      fluidNeed: Math.max(0, sweatRate * (i * dt) - hydrationBuffer),
+      fluidNeed: fluidNeedAt(i * dt),
       fluidNeedRate: 0,
     });
   }
