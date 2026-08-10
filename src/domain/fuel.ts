@@ -566,20 +566,60 @@ export function samples(state: PlanState): Sample[] {
     out[i].needRate = needRateEma;
   }
 
-  // fluidRate and fluidNeedRate deliberately skip the EMA above: `rate`/`needRate` smooth real
-  // carb events (eating, gut digestion) that genuinely lag behind intake — water has no equivalent
-  // physiology (the stomach passes fluid on quickly, and `ml`/`fluidNeed` are both already smooth,
-  // deterministic curves, not noisy real-world samples), so running either through the same
-  // lagging filter only adds a fake "warm-up" curve with no physiological meaning (confirmed on a
-  // real deployed preview: both lines visibly curved before flattening/tracking, instead of
-  // starting together from km 0 the way the underlying fills actually do). A plain per-step
-  // derivative is exact and instant for both. Index 0 has no prior sample to difference against,
-  // so it copies index 1 rather than reporting a false dip to 0.
-  for (let i = 0; i <= N; i++) {
-    const j = i === 0 ? 1 : i;
-    out[i].fluidRate = dt > 0 ? (out[j].ml - out[j - 1].ml) / dt : 0;
-    out[i].fluidNeedRate = dt > 0 ? (out[j].fluidNeed - out[j - 1].fluidNeed) / dt : 0;
+  // fluidRate and fluidNeedRate deliberately skip the long (~30min) EMA above: `rate`/`needRate`
+  // smooth real carb events (eating, gut digestion) that genuinely lag behind intake by that much
+  // — water has no equivalent physiology, and `ml`/`fluidNeed` are both already smooth,
+  // deterministic curves, so the long filter only added a fake "warm-up" curve at the start of the
+  // ride with no physiological meaning (confirmed on a real deployed preview). But a *plain* raw
+  // derivative isn't right either: it turns every fill boundary (a bottle running out, a new one
+  // starting) into a perfectly vertical cliff, which looks broken even though the underlying event
+  // is real (confirmed on the same preview, zoomed into one bottle's start/end).
+  //
+  // A *symmetric* (forward+backward averaged) filter was tried and rejected: it eases the curve
+  // downward slightly *before* the fill boundary too, which is simply wrong — the bottle is still
+  // full and being drunk right up to the boundary, so the rate must not start dropping until the
+  // fill actually ends. It has to stay strictly causal (never react before the event happens).
+  //
+  // But a *single* forward-only EMA isn't quite right either: its steepest change lands
+  // immediately at the very first step after the boundary, then eases off — an exponential decay,
+  // not a rounded onset, so the top of the transition still reads as a small cliff. The fix is a
+  // *cascaded* EMA — the same short filter applied twice in sequence, still 100% causal (each pass
+  // only ever looks backward), but its step response starts at zero slope and eases into the
+  // steepest part in the middle, then eases out — a proper S-curve onset instead of an instant jump.
+  const fluidTau = 0.1; // ~6 minutes
+  const fluidAlpha = dt > 0 ? 1 - Math.exp(-dt / fluidTau) : 1;
+  function causalSmoothRate(cumulative: number[]): number[] {
+    const n = cumulative.length;
+    if (n < 2 || dt <= 0) return cumulative.map(() => 0);
+    const raw = new Array<number>(n).fill(0);
+    for (let i = 1; i < n; i++) raw[i] = (cumulative[i] - cumulative[i - 1]) / dt;
+    raw[0] = raw[1];
+
+    const pass1 = new Array<number>(n);
+    let ema = raw[0];
+    pass1[0] = ema;
+    for (let i = 1; i < n; i++) {
+      ema += fluidAlpha * (raw[i] - ema);
+      pass1[i] = ema;
+    }
+
+    const pass2 = new Array<number>(n);
+    ema = pass1[0];
+    pass2[0] = ema;
+    for (let i = 1; i < n; i++) {
+      ema += fluidAlpha * (pass1[i] - ema);
+      pass2[i] = ema;
+    }
+
+    return pass2;
   }
+
+  const fluidRates = causalSmoothRate(out.map((p) => p.ml));
+  const fluidNeedRates = causalSmoothRate(out.map((p) => p.fluidNeed));
+  out.forEach((p, i) => {
+    p.fluidRate = fluidRates[i];
+    p.fluidNeedRate = fluidNeedRates[i];
+  });
 
   return out;
 }
