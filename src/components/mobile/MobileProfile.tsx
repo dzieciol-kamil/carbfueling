@@ -5,6 +5,7 @@ import {
   parseSettingsImport,
   serializeSettingsExport,
   settingsExportFileName,
+  type PlanFeedback,
 } from '../../domain/settingsExport';
 import { LANGS, t } from '../../i18n/strings';
 import {
@@ -18,8 +19,6 @@ import { CoffeeIcon, GitHubIcon } from '../Footer';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { MobileStepper } from './MobileStepper';
-
-type PlanFeedback = 'import-error' | 'import-success' | 'export-error';
 
 export function MobileProfile() {
   const lang = useAppStore((s) => s.ui.lang);

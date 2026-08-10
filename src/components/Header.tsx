@@ -4,13 +4,12 @@ import {
   parseSettingsImport,
   serializeSettingsExport,
   settingsExportFileName,
+  type PlanFeedback,
 } from '../domain/settingsExport';
 import { LANGS, t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { saveTextFile } from '../utils/fileSave';
 import { ConfirmDialog } from './ui/ConfirmDialog';
-
-type PlanFeedback = 'import-error' | 'import-success' | 'export-error';
 
 export function Header() {
   const lang = useAppStore((s) => s.ui.lang);

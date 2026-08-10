@@ -14,9 +14,11 @@ export async function saveTextFile(
 ): Promise<void> {
   if ('showSaveFilePicker' in window) {
     try {
+      const dot = filename.lastIndexOf('.');
+      const ext = dot >= 0 ? filename.slice(dot) : '';
       const handle = await window.showSaveFilePicker({
         suggestedName: filename,
-        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        types: [{ description: mimeType, accept: { [mimeType]: ext ? [ext] : [] } }],
       });
       const writable = await handle.createWritable();
       await writable.write(new Blob([content], { type: mimeType }));
