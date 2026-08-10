@@ -74,13 +74,32 @@ export function MobileApp() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            // The wordmark, the route chip and the autoplan button need ~444px of intrinsic width
+            // together, so on a 375px-class phone they have to wrap — without this the wordmark
+            // broke onto two lines and the autoplan button was clipped off the right edge.
+            flexWrap: 'wrap',
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <span
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+            }}
+          >
             CARB FUELING
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
             <button
               type="button"
               data-tour="route-summary"
