@@ -29,7 +29,6 @@ type NumericSampleKey =
   | 'rate'
   | 'needRate'
   | 'fluidRate'
-  | 'sweatRate'
   | 'fluidNeedRate';
 
 function polyline(

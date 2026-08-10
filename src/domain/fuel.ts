@@ -16,10 +16,11 @@ const FLUID_ABSORPTION_CAP_ML_H = 750;
 /**
  * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
  * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
- * giving carbs a head start instead of demanding fresh intake from km 0. Matches the autoplan
- * short-ride hydration gate (`sweatLoss < weight_kg × 15`) — one physiological quantity, kept in
- * sync between "should we even plan water" (autoplan.ts) and "what does the chart require" (here).
- * Deliberately below the ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
+ * giving carbs a head start instead of demanding fresh intake from km 0. Deliberately below the
+ * ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
+ * NOTE: `autoplan.ts`'s short-ride water gate is still the old `totalHours(route) < 1` check, not
+ * this threshold — see project_autoplan_water_refill_rule memory; the two need to be reconciled
+ * when autoplan.ts itself is updated to match this design.
  */
 const HYDRATION_BUFFER_ML_PER_KG = 15;
 
@@ -69,17 +70,17 @@ export interface Sample {
   active: ActiveSource;
   rate: number;
   needRate: number;
-  /** Instantaneous per-step derivative of `ml` — NOT EMA-smoothed (unlike `rate`/`needRate`,
-   *  which smooth real carb digestion lag). Water has no equivalent physiology, and `ml` is
-   *  already a smooth, deterministic curve, so a plain derivative is exact and instant. */
+  /** Actual fluid delivery rate. Causally smoothed (double-pass EMA, ~6min time constant) so
+   *  fill-boundary transitions ease in as a gentle S-curve instead of an instant cliff, while never
+   *  drifting the line before a change has actually happened (no lookahead, unlike a symmetric
+   *  filter — the value at a boundary reflects only samples up to and including it). */
   fluidRate: number;
-  sweatRate: number;
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
    *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
    *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
    *  `COVERAGE_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
   fluidNeed: number;
-  /** Instantaneous per-step derivative of `fluidNeed` — see `fluidRate`, same reasoning. */
+  /** Instantaneous requirement rate — same causal double-pass smoothing as `fluidRate`. */
   fluidNeedRate: number;
 }
 
@@ -527,7 +528,6 @@ export function samples(state: PlanState): Sample[] {
       rate: 0,
       needRate: 0,
       fluidRate: 0,
-      sweatRate,
       fluidNeed: totalFluidNeed * (eff(route, x) / tot),
       fluidNeedRate: 0,
     });
