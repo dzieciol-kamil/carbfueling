@@ -36,23 +36,28 @@ const mobileButtonStyle: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-const noteStyle: CSSProperties = {
-  position: 'fixed',
-  left: '50%',
-  bottom: 20,
-  transform: 'translateX(-50%)',
-  zIndex: 210,
-  maxWidth: 'calc(100vw - 28px)',
-  background: 'var(--ink)',
-  color: '#fff',
-  borderRadius: 12,
-  padding: '10px 14px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  fontSize: 12.5,
-  boxShadow: '0 14px 34px rgba(0,0,0,0.28)',
-};
+function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
+  return {
+    position: 'fixed',
+    left: '50%',
+    // Mobile's bottom tab bar (MobileApp.tsx) sits below the content in normal
+    // flow, not as a fixed overlay — clear it explicitly so the toast doesn't
+    // cover its icons.
+    bottom: variant === 'mobile' ? 76 : 20,
+    transform: 'translateX(-50%)',
+    zIndex: 210,
+    maxWidth: 'calc(100vw - 28px)',
+    background: 'var(--ink)',
+    color: '#fff',
+    borderRadius: 12,
+    padding: '10px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    fontSize: 12.5,
+    boxShadow: '0 14px 34px rgba(0,0,0,0.28)',
+  };
+}
 
 export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const lang = useAppStore((s) => s.ui.lang);
@@ -116,7 +121,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
       )}
 
       {phase === 'appliedNote' && (
-        <div style={noteStyle}>
+        <div style={noteStyle(variant)}>
           <span>
             {totalHours(route) < 1 ? strings.autoplanShortRideNote : strings.autoplanAppliedNote}
           </span>
