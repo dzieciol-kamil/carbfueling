@@ -18,7 +18,7 @@ const WIDTH = 800;
 const HEIGHT = 168;
 const GUT_LIMIT = 60;
 
-type RateKey = 'rate' | 'needRate' | 'fluidRate' | 'sweatRate' | 'absorbed' | 'need' | 'gut';
+type RateKey = 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate' | 'absorbed' | 'need' | 'gut';
 
 function polyline(
   arr: Sample[],
@@ -57,7 +57,7 @@ export function MobileChart() {
   const sumMode = yMode === 'sum';
   const rateMode = !sumMode;
   const yk: RateKey = fluidMode ? 'fluidRate' : rateMode ? 'rate' : 'absorbed';
-  const nk: RateKey = fluidMode ? 'sweatRate' : rateMode ? 'needRate' : 'need';
+  const nk: RateKey = fluidMode ? 'fluidNeedRate' : rateMode ? 'needRate' : 'need';
   const izoCarbs = fills
     .filter((f) => f.content === 'izo')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
@@ -67,7 +67,7 @@ export function MobileChart() {
   const cap = absCap(mix, izoCarbs, gelCarbs);
 
   const rawMaxY = fluidMode
-    ? Math.max(750 * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.sweatRate))) * 1.1
+    ? Math.max(750 * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate))) * 1.1
     : rateMode
       ? Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15
       : Math.max(1, ...S.map((p) => Math.max(p.absorbed, p.need))) * 1.08;
