@@ -174,22 +174,36 @@ function median(xs: number[]): number {
 }
 
 /**
- * The hydration counterpart of `coverage`. `planSummary().hydrationPct` is a plain
- * `fluidPlanned / sweatLoss` ratio, so it scores "drink three bottles in the first 60km, then
- * trickle one litre over the remaining 239" as 91% — the number the rider laughed at on mix-9.
- * Integrating `min(fluidRate, fluidNeedRate)` the way `rateStats` does for carbs is what actually
- * sees where on the route the fluid landed.
+ * The lowest point of the fluid delivery line, as a share of the target rate there.
+ *
+ * The rider's rule: the line may wave, the ride may end at 100% or above, but it must never sag
+ * below 85% of the target anywhere. That is a stronger and far more legible statement than any
+ * route-total percentage — `planSummary().hydrationPct` is a plain `fluidPlanned / sweatLoss` sum
+ * ratio, which is why it scored "drink everything by km 130, then trickle a litre over the last
+ * 239" at 91% and looked healthy.
+ *
+ * Measured on the raw per-sample deltas rather than `fluidRate`/`fluidNeedRate`: those two are
+ * double-EMA smoothed for the chart's sake, which makes the ratio meaningless for the first few
+ * kilometres (delivery ramps up from a standing start while the requirement doesn't). The smoothing
+ * never undershoots, so a plan that holds the floor on the raw series holds it on the chart too.
  */
-function fluidCoveragePct(state: PlanState): number {
+function worstFluidPct(state: PlanState, D: number): number {
   const S = samples(state);
   const dt = totalHours(state.route) / (S.length - 1);
-  let met = 0;
-  let need = 0;
-  for (const s of S) {
-    met += Math.min(s.fluidRate, s.fluidNeedRate) * dt;
-    need += s.fluidNeedRate * dt;
+  // The last stretch is exempt for the same reason products can't be eaten there: a plan that has
+  // to keep pouring across the finish line isn't a better plan, and carbs delivered there don't
+  // absorb in time anyway.
+  const cutoff = D * (1 - FINISH_GAP_FRACTION);
+  let worst = Infinity;
+  for (let i = 1; i < S.length; i++) {
+    if (S[i].x > cutoff) break;
+    const need = (S[i].fluidNeed - S[i - 1].fluidNeed) / dt;
+    // Below the short-ride buffer gate there is no requirement to fall short of.
+    if (need < 1) continue;
+    const got = (S[i].ml - S[i - 1].ml) / dt;
+    worst = Math.min(worst, (got / need) * 100);
   }
-  return need > 0 ? Math.round((met / need) * 100) : 100;
+  return worst === Infinity ? 100 : Math.round(worst);
 }
 
 /**
@@ -295,7 +309,7 @@ function expectThen(r: Run, then: Then): void {
   // --- combined-only rules ----------------------------------------------------------------
   expectStopsMerged(r);
   expectStopProducts(r);
-  expectNoTrickleLeg(r);
+  expectFluidNeverSags(r);
   expectProductsSpanTheRoute(r);
   expectNotWorseThanEvenSpread(r);
 }
@@ -325,20 +339,21 @@ function expectStopProducts(r: Run): void {
 }
 
 /**
- * R4: a vessel's legs are comparable to each other. Catches the mix-9 shape — two normal legs and
- * then one litre smeared over the last 239km, which is not a hydration plan, it's a rounding error.
- * Relative on purpose: how long a leg *should* be depends on what the rider packed.
+ * R4: the fluid line never sags below 85% of the target, anywhere on the route. It may wave above
+ * it and the ride may finish at 100%+ — what it may not do is dip.
+ *
+ * This is the whole capacity rule restated pointwise: since a load's delivery rate is
+ * `volume / leg duration`, the floor caps how long a leg may be (`vol / (0.85 × need)`), and the
+ * stop count falls out of that. One bottle just means shorter legs and more top-ups — never a leg
+ * stretched thin enough to sag, which is what produced the mix-9 shape (105 ml/h against an
+ * 820 ml/h target for the last 239km, while the badge still read 91%).
  */
-function expectNoTrickleLeg(r: Run): void {
-  for (const v of r.state.gear) {
-    const own = r.result.fills.filter((f) => f.gid === v.gid);
-    if (own.length < 3) continue;
-    const legs = own.map((f) => f.to - f.from);
-    expect(
-      Math.max(...legs),
-      `${v.gid} has a leg way out of line with its siblings`,
-    ).toBeLessThanOrEqual(2 * median(legs));
-  }
+function expectFluidNeverSags(r: Run): void {
+  const worst = worstFluidPct(r.planned, r.D);
+  expect(
+    worst,
+    'the fluid line sags below the floor somewhere on the route',
+  ).toBeGreaterThanOrEqual(GREEN_PCT);
 }
 
 /**
@@ -357,16 +372,15 @@ function expectProductsSpanTheRoute(r: Run): void {
 }
 
 /**
- * R3/R5: the plan the search settled on must beat the naive "spread everything evenly" plan — for
- * carbs *and* for where the fluid actually lands. This is the threshold-free form of the rider's
- * "you fill up as best you can with what you've got": no promised percentage, just a floor made of
- * the same resources arranged the dumbest way.
+ * R3/R5, carbs only: the plan the search settled on must beat the naive "spread everything evenly"
+ * arrangement of the same resources. This is the threshold-free form of the rider's "you fill up as
+ * best you can with what you've got" — no promised percentage, just a floor made of the same items
+ * laid out the dumbest way. Fluid doesn't need it: `expectFluidNeverSags` says something stronger.
  */
 function expectNotWorseThanEvenSpread(r: Run): void {
   if (r.planned.fills.length + r.planned.foods.length < 2) return;
   const even = evenlySpread(r.planned, r.D);
   expect(planSummary(r.planned).coverage + 1).toBeGreaterThanOrEqual(planSummary(even).coverage);
-  expect(fluidCoveragePct(r.planned) + 1).toBeGreaterThanOrEqual(fluidCoveragePct(even));
 }
 
 describe('autoplan combined scenarios — water + izo', () => {
