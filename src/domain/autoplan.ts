@@ -1004,6 +1004,31 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         setCount(pick.k, pick.n);
       }
 
+      // R2: a product the rider can only buy needs a shop to buy it at, and if the bottles never run
+      // dry the plan has to make one. Topping a bottle up there is what turns a grid point into a
+      // real stop — and it costs the rider nothing they weren't already paying, since they are
+      // standing at the shop either way.
+      for (let guard = 0; guard < G * Math.max(1, knobs.length); guard++) {
+        const want = Math.min(shopItemCount, G - 1);
+        const have = stopLegs(timelines, G).size;
+        if (have >= want) break;
+        const gain = (k: Knob) => {
+          if (countOf(k) >= capacityOf(k)) return -1;
+          const was = countOf(k);
+          setCount(k, was + 1);
+          const after = stopLegs(timelines, G).size;
+          setCount(k, was);
+          return after - have;
+        };
+        const pick = timelines
+          .filter((t) => t.canWater)
+          .map((t) => ({ k: { t } as Knob, gain: gain({ t } as Knob) }))
+          .filter((m) => m.gain > 0)
+          .sort((a, b) => b.gain - a.gain || b.k.t.vol - a.k.t.vol)[0];
+        if (!pick) break;
+        setCount(pick.k, countOf(pick.k) + 1);
+      }
+
       // Every bottle gets topped up at a stop the plan is already making — that is what standing at
       // a shop is for, and it costs the rider nothing but the seconds to fill. Only there, though:
       // never a stop of its own, and never more water than the ride is going to sweat out. The flask

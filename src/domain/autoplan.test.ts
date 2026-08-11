@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  SHOP_SNAP_KM,
   autoplan,
   bucketVessels,
   findClimbStarts,
@@ -202,6 +203,58 @@ describe('placeItemsEvenly', () => {
   test('empty item list returns no foods', () => {
     const route = makeRoute();
     expect(placeItemsEvenly([], 0, 100, route)).toEqual([]);
+  });
+});
+
+/**
+ * A `needsStop` product is one nobody carries — a cola, an ice cream. The rider picked it, so it has
+ * to end up in the plan, and the only place it can be eaten is a shop. On a ride whose bottles never
+ * run dry there is no refill to hang it on, which used to make it vanish silently: its carbs and its
+ * fluid were already spent from the budget, and then the plan came back with no food in it at all.
+ */
+describe('autoplan (products that have to be bought)', () => {
+  const cola: FoodLibEntry = {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    carbs: 35,
+    ml: 330,
+    needsStop: true,
+  };
+  const bigBottle: Vessel = { gid: 'g9', name: 'Big', vol: 1000, allowed: ['water'], gelParts: 1 };
+  // 60km at 25kph on a mild day: one litre covers the whole ride, so nothing else asks for a stop.
+  const state = makePlan({
+    route: makeRoute({ distance: 60 }),
+    gear: [bigBottle],
+    foodLib: [cola],
+  });
+  const result = autoplan(state, [{ key: 'cola', count: 3 }]);
+
+  test('the colas the rider picked are in the plan', () => {
+    expect(result.foods.map((f) => f.key)).toEqual(['cola', 'cola', 'cola']);
+  });
+
+  test('each one is eaten at a stop, which the plan creates for it', () => {
+    expect(result.newShops.length).toBeGreaterThan(0);
+    result.foods.forEach((f) => {
+      const atStop = result.newShops.some((s) => Math.abs(s.at - f.from) <= SHOP_SNAP_KM);
+      expect(atStop, `${f.key} at ${f.from.toFixed(1)}km is not at a stop`).toBe(true);
+    });
+  });
+
+  test('they are spread over three shops, not bought three at a time at one', () => {
+    const shopFor = (x: number) =>
+      result.newShops.findIndex((s) => Math.abs(s.at - x) <= SHOP_SNAP_KM);
+    const used = new Set(result.foods.map((f) => shopFor(f.from)));
+    expect(used.size).toBe(3);
+  });
+
+  test('a stop it created is a real refill, not a bookmark', () => {
+    const boundaries = result.fills.map((f) => f.from);
+    result.newShops.forEach((s) => {
+      const refills = boundaries.some((b) => Math.abs(b - s.at) <= SHOP_SNAP_KM);
+      expect(refills, `stop at ${s.at.toFixed(1)}km refills nothing`).toBe(true);
+    });
   });
 });
 
