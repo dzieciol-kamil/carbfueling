@@ -4,19 +4,15 @@ import {
   autoplan,
   bucketVessels,
   findClimbStarts,
-  fluidCapacityStopX,
   gelVesselWaterFills,
   minStopX,
-  planIzoRefills,
   placeItemsEvenly,
-  plannedStreamRate,
   selectItemsForAmount,
-  sequentialFills,
   shortRideFills,
   waterFillsForVessels,
 } from './autoplan';
 import type { FoodSelectionEntry } from './autoplan';
-import { absCap, cph, planSummary, rateStats, sweat, timeAtDistance, totalHours } from './fuel';
+import { planSummary, rateStats, sweat, totalHours } from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -147,161 +143,6 @@ describe('bucketVessels', () => {
   });
 });
 
-describe('sequentialFills', () => {
-  test('multiple izo vessels get sequential, non-overlapping ranges (not parallel)', () => {
-    const route = makeRoute({ distance: 100, speed: 25 }); // 4h ride
-    const mix = makeMix({ conc: 8.4 }); // carbsFill(650ml) = 54.6g, carbsFill(500ml)=42g
-    const { fills, totalCarbs, endX } = sequentialFills(
-      [bidon, bidon2],
-      'izo',
-      route,
-      [bidon, bidon2],
-      mix,
-    );
-    expect(fills).toHaveLength(2);
-    expect(fills[0].from).toBe(0);
-    expect(fills[0].to).toBeGreaterThan(0);
-    expect(fills[1].from).toBe(fills[0].to); // sequential: vessel 2 starts where vessel 1 ends
-    expect(fills[1].to).toBeGreaterThan(fills[1].from);
-    expect(totalCarbs).toBeCloseTo(54.6 + 42, 1);
-    expect(endX).toBe(fills[1].to);
-  });
-
-  test('an izo fill never lasts longer than the bottle physically does at the sweat rate', () => {
-    // 60km / 2.4h ride: 54.6g of izo at the (halved, parallel-stream) 22.5 g/h rate would stretch
-    // the single 650ml bidon over the whole route, leaving no room for any water fill on it.
-    const route = makeRoute({ distance: 60, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    const { fills } = sequentialFills([bidon], 'izo', route, [bidon], mix, 22.5);
-    const bottleHours = bidon.vol / sweat(route);
-    expect(fills[0].to).toBeLessThan(60);
-    expect(timeAtDistance(route, fills[0].to)).toBeCloseTo(bottleHours, 2);
-  });
-
-  test('gel fills are not fluid and keep their carb-driven length', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    const mix = makeMix({ conc: 8.4, gelConc: 60 });
-    const { fills } = sequentialFills([flask], 'gel', route, [flask], mix, 37.5);
-    // 250ml at 60g/100ml = 150g at 37.5 g/h = 4h = the whole ride, far past 250ml of drinking
-    expect(fills[0].to).toBeCloseTo(100, 0);
-  });
-
-  test('empty vessel list returns no fills and zero carbs', () => {
-    const route = makeRoute();
-    const mix = makeMix();
-    const { fills, totalCarbs, endX } = sequentialFills([], 'izo', route, [], mix);
-    expect(fills).toEqual([]);
-    expect(totalCarbs).toBe(0);
-    expect(endX).toBe(0);
-  });
-});
-
-describe('plannedStreamRate', () => {
-  test('a single stream gets the full route target', () => {
-    const route = makeRoute({ distance: 100, speed: 25 }); // cph 75
-    expect(plannedStreamRate(route, absCap(makeMix()), 1)).toBe(cph(route));
-  });
-
-  test('gel + izo running in parallel from the start split the target instead of doubling it', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    expect(plannedStreamRate(route, absCap(makeMix()), 2)).toBe(cph(route) / 2);
-  });
-
-  test('the gut absorption ceiling caps the planned rate when it is below the route target', () => {
-    const route = makeRoute({ distance: 100, speed: 25, intensity: 'high' }); // cph 90
-    // a 1:1 malto:fructose blend has a lower ceiling than the default 2:1
-    const cap = absCap(makeMix({ ratio: 0.2, gelRatio: 0.2 }));
-    expect(cap).toBeLessThan(cph(route));
-    expect(plannedStreamRate(route, cap, 1)).toBe(cap);
-  });
-});
-
-describe('planIzoRefills', () => {
-  test("balance already <= 0 is the caller's job to avoid calling this — with balance 0, does nothing", () => {
-    const route = makeRoute();
-    const mix = makeMix();
-    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 0, []);
-    expect(result.fills).toEqual([]);
-    expect(result.newShops).toEqual([]);
-    expect(result.finalBalance).toBe(0);
-    expect(result.stopXs).toEqual([]);
-  });
-
-  test('positive balance with no existing shop creates one and refills izo, no special naming', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    const mix = makeMix({ conc: 8.4 }); // 650ml bidon = 54.6g per fill
-    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 30, []);
-    expect(result.newShops).toHaveLength(1);
-    // Spread across the route (start bottle counts as leg 0, so a single refill lands at D/2),
-    // not scheduled at km 40 the instant the start bottle runs dry — back-to-back refills
-    // crammed the whole carb budget into the first hours.
-    expect(result.newShops[0].at).toBe(50);
-    expect(result.fills).toHaveLength(1);
-    expect(result.fills[0]).toMatchObject({ gid: 'g1', content: 'izo' });
-    expect(result.fills[0].from).toBeCloseTo(50, 0);
-    expect(result.finalBalance).toBe(0); // 54.6g of capacity easily covers a 30g gap
-  });
-
-  test('snaps to an existing shop stop at/after the planned refill point instead of creating one', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    const existingShops: ShopStop[] = [{ id: 1, at: 55, name: 'Sklep' }];
-    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 30, existingShops);
-    expect(result.newShops).toEqual([]);
-    expect(result.stopXs).toEqual([55]);
-    expect(result.fills[0].from).toBeCloseTo(55, 0);
-  });
-
-  test('reuses an existing shop sitting just short of the planned position, no duplicate marker', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    const existingShops: ShopStop[] = [{ id: 1, at: 47, name: 'Sklep' }]; // planned position is 50
-    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 30, existingShops);
-    expect(result.newShops).toEqual([]);
-    expect(result.stopXs).toEqual([47]);
-  });
-
-  test('ignores an existing shop further away than the snap window rather than dragging the leg to it', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    const existingShops: ShopStop[] = [{ id: 1, at: 95, name: 'Sklep' }];
-    const result = planIzoRefills(route, [bidon], mix, [bidon], 40, 30, existingShops);
-    expect(result.newShops).toEqual([{ at: 50 }]);
-  });
-
-  test('no izo capacity left (empty vessel list) leaves the gap uncovered rather than looping forever', () => {
-    const route = makeRoute({ distance: 100, speed: 25 });
-    const mix = makeMix();
-    const result = planIzoRefills(route, [], mix, [], 40, 30, []);
-    expect(result.fills).toEqual([]);
-    expect(result.finalBalance).toBe(30);
-  });
-
-  // Removed with the scenario work (see autoplanScenarios.test.ts): the refill-leg cap
-  // (MAX_REFILL_LEGS) and the 40km minimum spacing were both policy inventions, and the rider's
-  // real hand-built plans reject them — stop count follows purely from how often the carried
-  // load physically runs out (izo-3 wants a stop roughly every 14km).
-
-  test('never places a refill leg essentially at the start line', () => {
-    const route = makeRoute({ distance: 300, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    // izoStartEndX of 0 (e.g. nothing carried at the start) must not produce a "stop at km 0/1"
-    const { stopXs, newShops } = planIzoRefills(route, [bidon], mix, [bidon], 0, 900, []);
-    stopXs.forEach((x) => expect(x).toBeGreaterThanOrEqual(minStopX(300)));
-    newShops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(300)));
-  });
-
-  test('consecutive refill fills for the same vessel never overlap', () => {
-    const route = makeRoute({ distance: 300, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    const { fills } = planIzoRefills(route, [bidon], mix, [bidon], 30, 900, []);
-    const sorted = fills.slice().sort((a, b) => a.from - b.from);
-    for (let i = 1; i < sorted.length; i++) {
-      expect(sorted[i].from).toBeGreaterThanOrEqual(sorted[i - 1].to);
-    }
-  });
-});
-
 describe('findClimbStarts', () => {
   test('no GPX track configured on the route: caller is responsible for not calling this — with a flat synthetic-mode elevation profile passed as a real track, a genuine flat track finds nothing', () => {
     const flatTrack: GpxTrack = { id: 1, ele: new Array(11).fill(100) };
@@ -378,35 +219,6 @@ describe('placeItemsEvenly', () => {
   test('empty item list returns no foods', () => {
     const route = makeRoute();
     expect(placeItemsEvenly([], 0, 100, route)).toEqual([]);
-  });
-});
-
-describe('fluidCapacityStopX', () => {
-  test('returns null when carried water capacity already covers the leg to the first planned stop', () => {
-    const route = makeRoute({ distance: 100, speed: 25, temp: 15, intensity: 'low', weight: 75 });
-    // sweat() at temp<=15, low intensity, weight 75 -> base=380, iB=0 -> 380 ml/h
-    // a 100km / 25kph = 4h ride: 40km leg = 1.6h -> ~608ml needed, one 750ml vessel covers it
-    const result = fluidCapacityStopX(route, [waterBottle], 40);
-    expect(result).toBeNull();
-  });
-
-  test('returns an earlier stop x when carried water capacity runs out before the first planned stop', () => {
-    const route = makeRoute({ distance: 100, speed: 25, temp: 35, intensity: 'high', weight: 90 });
-    const smallBottle: Vessel = {
-      gid: 'g9',
-      name: 'Small',
-      vol: 400,
-      allowed: ['water'],
-      gelParts: 1,
-    };
-    const result = fluidCapacityStopX(route, [smallBottle], 80);
-    expect(result).not.toBeNull();
-    expect(result as number).toBeLessThan(80);
-  });
-
-  test('no water-capable vessels at all returns null (nothing to size against)', () => {
-    const route = makeRoute();
-    expect(fluidCapacityStopX(route, [], 40)).toBeNull();
   });
 });
 

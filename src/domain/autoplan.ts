@@ -1,13 +1,15 @@
 import {
-  absCap,
+  COVERAGE_TARGET_PCT,
   carbsFill,
   cph,
   dist,
   distanceAtTime,
+  planSummary,
   prof,
   sweat,
   timeAtDistance,
   totalHours,
+  volOf,
 } from './fuel';
 import type {
   Fill,
@@ -23,45 +25,60 @@ import type {
 export const CONCENTRATED_MIX_THRESHOLD_G_PER_100ML = 15;
 
 /**
- * Hard ceiling on how many izo refill legs autoplan will schedule. Autoplan is a *starting
- * suggestion*, not an optimizer: a dozen "stop and re-mix a bottle" markers on a long ride is
- * unusable advice even when the carb balance technically calls for it. Once the cap (or the
- * spacing rule below) is hit, the remaining balance is left as a visible shortfall — the design
- * explicitly sanctions that ("Running out of distance while still short is an accepted
- * best-effort outcome").
+ * Mirrors `fuel.ts`'s `HYDRATION_BUFFER_ML_PER_KG` (private there). A rider doesn't start dehydrated,
+ * so a ride that never loses more than this much fluid per kg of body mass needs no water *plan* at
+ * all — which is also exactly when `planSummary` reports 100% hydration. The two must stay in sync:
+ * planning stops for a ride the summary already calls fully hydrated would be pure noise.
  */
-export const MAX_REFILL_LEGS = 3;
+const HYDRATION_BUFFER_ML_PER_KG = 15;
 
 /**
- * Minimum distance between the START of two consecutive refill legs. Also the reason refills are
- * *spread* over the remaining route instead of being scheduled the instant a bottle runs dry —
- * back-to-back refills crammed all the carbs into the first couple of hours and left the second
- * half of the route with nothing planned.
+ * Carbs are a separate, still time-based gate: under an hour there is nothing to fuel, whatever the
+ * weather does to the water side. Deliberately independent of the hydration gate above — a short,
+ * brutally hot ride legitimately gets water planning and no food at all.
  */
-export const MIN_REFILL_SPACING_KM = 40;
+const CARB_MIN_HOURS = 1;
+
+/** How far an existing `ShopStop` may sit from a planned stop and still be used instead of a new one. */
+export const SHOP_SNAP_KM = 3;
+
+/** Shortest leg worth its own fill — below this a stop is bookkeeping, not a refill. */
+const MIN_LEG_KM = 1;
+
+/** Safety bound on the refill search, so a pathological capacity/need ratio can't spin. */
+const MAX_REFILLS = 40;
 
 /**
- * How far ahead of a planned refill position an existing `ShopStop` may sit and still be reused
- * instead of creating a new one. Without a bound, a single far-away shop would drag a refill leg
- * across half the route and leave a huge unfuelled gap behind it.
+ * How far before the finish the last product must be eaten. Carbs poured in at the line never drain
+ * out of `gut` before the ride's absorption accounting stops, so they score as unabsorbed — the
+ * exact buffer isn't formalized, this is the floor the rider's real builds support.
  */
-export const REFILL_SNAP_WINDOW_KM = 40;
+const FINISH_GAP_FRACTION = 0.03;
 
-/** How far *behind* a planned refill position an existing stop still counts as that leg's stop. */
-export const REFILL_SNAP_BACK_KM = 5;
+/** Fallback span for a `cont` product whose library entry doesn't declare one. */
+const DEFAULT_CONT_SPAN_KM = 18;
 
-/** Shortest water leg worth emitting a fill for. */
-const MIN_WATER_LEG_KM = 1;
-
-/** Safety bound on the fluid-capacity leg walk, so a pathological capacity/sweat ratio can't spin. */
-const MAX_FLUID_LEGS = 24;
+/**
+ * How far into the stretch it fuels a point product is eaten. Not the middle: absorption lags
+ * intake by tens of minutes (`gut` drains into `absorbed` at `absCap`), so a gel eaten a quarter of
+ * the way in has the gut already working when the stretch's need arrives, which is what
+ * `coverage()`'s `min(rate, needRate)` integral rewards — measured against the real curve, a quarter
+ * scores several points above the midpoint on every product scenario. Not zero either: "eat this on
+ * the start line" is not advice a rider can act on.
+ */
+const POINT_ITEM_SLOT_FRACTION = 0.25;
 
 const MIN_STOP_X_KM = 10;
 
+/** The coverage/hydration percentage the app itself paints green, as a 0-1 fraction. */
+const GREEN = COVERAGE_TARGET_PCT / 100;
+
 /**
- * Nothing autoplan creates should sit essentially at the start line — "stop for a refill at km 1"
- * is never useful advice. Scaled down on very short routes so the rule can't swallow the whole
- * ride.
+ * The sanity floor for a first stop: "stop for a refill at km 1" is never useful advice. It is no
+ * longer applied as a clamp — stops now fall where a load genuinely runs out, and that spacing puts
+ * the first one a full leg into the route on its own — so this is the property the plan is checked
+ * against rather than a correction the plan has done to it. Scaled down on very short routes so the
+ * rule can't swallow the whole ride.
  */
 export function minStopX(D: number): number {
   return Math.min(MIN_STOP_X_KM, D * 0.2);
@@ -120,169 +137,6 @@ export function bucketVessels(
   return { gelVessels, izoVessels, waterOnly, reservedWaterVessel };
 }
 
-/**
- * How long one bottle of izo physically lasts before it's empty: you drink it at roughly your
- * sweat rate, not at whatever pace the carb target implies. Without this, a 650ml bidon whose
- * carbs happen to be worth 2.4h of fuelling claimed to cover a 2.4h ride on 650ml of fluid, which
- * both left the vessel with no room for a water fill and planned ~30% hydration.
- *
- * Deliberately conservative: it charges the full sweat rate to the single vessel being drunk,
- * which is exact for the sequential one-bottle-at-a-time model izo uses (and for the app's real
- * default gear), and merely pessimistic — shorter izo legs, more refills — for a rider carrying an
- * extra dedicated water bottle alongside. Gel is not fluid (it's excluded from `planSummary`'s
- * fluid maths and eaten in portions), so gel fills are not clamped.
- */
-export function fluidHours(vessel: Vessel, route: RouteInput): number {
-  const sweatRate = sweat(route);
-  return sweatRate > 0 ? vessel.vol / sweatRate : Infinity;
-}
-
-/**
- * `rate` is the g/h this stream is planned to deliver. It defaults to the route's full `cph()`
- * target, but `autoplan` passes a *share* of it when several streams (gel + izo) run in parallel
- * from the start line — two parallel streams each sized at the full target deliver 2× the target
- * rate, which front-loads the whole plan into the first couple of hours and blows past the gut's
- * absorption ceiling. See `plannedStreamRate`.
- */
-export function sequentialFills(
-  vessels: Vessel[],
-  content: 'izo' | 'gel',
-  route: RouteInput,
-  gear: Vessel[],
-  mix: MixSettings,
-  rate: number = cph(route),
-): { fills: DraftFill[]; totalCarbs: number; endX: number } {
-  const D = dist(route);
-  const fills: DraftFill[] = [];
-  let totalCarbs = 0;
-  let startHours = 0;
-  let endX = 0;
-
-  vessels.forEach((v) => {
-    const carbs = carbsFill({ fid: 0, gid: v.gid, content, from: 0, to: 0 }, gear, mix);
-    const carbHours = rate > 0 ? carbs / rate : 0;
-    const hours = content === 'izo' ? Math.min(carbHours, fluidHours(v, route)) : carbHours;
-    const fromX = distanceAtTime(route, startHours);
-    const toX = Math.min(D, distanceAtTime(route, startHours + hours));
-    fills.push({ gid: v.gid, content, from: fromX, to: toX });
-    totalCarbs += carbs;
-    startHours += hours;
-    endX = toX;
-  });
-
-  return { fills, totalCarbs, endX };
-}
-
-/**
- * Schedules izo refill legs to close `balance`, **spread across the remaining route** rather than
- * scheduled back-to-back the instant a bottle empties.
- *
- * Three rules keep the output rider-usable rather than mathematically complete:
- * - at most `MAX_REFILL_LEGS` legs,
- * - at least `MIN_REFILL_SPACING_KM` between consecutive leg starts,
- * - nothing before `minStopX(D)`.
- *
- * Whatever balance those rules leave uncovered is returned as `finalBalance` and shows up as a
- * plain shortfall in the app's normal coverage figures — autoplan does not fabricate refills the
- * rider would never actually make.
- */
-export function planIzoRefills(
-  route: RouteInput,
-  gear: Vessel[],
-  mix: MixSettings,
-  izoVessels: Vessel[],
-  izoStartEndX: number,
-  balance: number,
-  existingShops: ShopStop[],
-  rate: number = cph(route),
-): { fills: DraftFill[]; newShops: DraftShop[]; finalBalance: number; stopXs: number[] } {
-  const D = dist(route);
-  const fills: DraftFill[] = [];
-  const newShops: DraftShop[] = [];
-  const stopXs: number[] = [];
-  const nothing = { fills, newShops, finalBalance: Math.max(0, balance), stopXs };
-
-  if (balance <= 0 || izoVessels.length === 0 || rate <= 0) return nothing;
-
-  const perLegCarbs = izoVessels.reduce(
-    (a, v) => a + carbsFill({ fid: 0, gid: v.gid, content: 'izo', from: 0, to: 0 }, gear, mix),
-    0,
-  );
-  if (perLegCarbs <= 0) return nothing;
-
-  const startX = Math.min(D, Math.max(izoStartEndX, minStopX(D)));
-  const span = D - startX;
-  if (span <= 0) return nothing;
-
-  // Refill legs are spread evenly over the whole route rather than scheduled the moment the
-  // previous bottle runs dry: the start-phase bottle is leg 0 at x=0, so `legs` refills sit at
-  // D/(legs+1), 2D/(legs+1), … That is the concrete "spread the carbs across the route instead of
-  // front-loading them" rule. Consecutive legs are then D/(legs+1) apart, so honouring
-  // MIN_REFILL_SPACING_KM means legs <= D / MIN_REFILL_SPACING_KM - 1 (at least one is always
-  // allowed — the first has nothing to be spaced from).
-  const spacingLimit = Math.max(1, Math.floor(D / MIN_REFILL_SPACING_KM) - 1);
-  // Rounded, not ceiled: a refill leg means a real stop and a whole bottle re-mixed, so a deficit
-  // worth less than half a bottle is not worth sending the rider into a shop for — that shortfall
-  // shows up in the normal coverage figure like any other.
-  const legs = Math.min(MAX_REFILL_LEGS, Math.round(balance / perLegCarbs), spacingLimit);
-  if (legs <= 0) return nothing;
-  const step = D / (legs + 1);
-
-  let remaining = balance;
-  // Tracked in hours (not km) so consecutive fills for the same vessel can never overlap: both
-  // ends come from the same monotone distanceAtTime() mapping, with no rounding in between.
-  let cursorHours = timeAtDistance(route, izoStartEndX);
-  let prevStopX = -Infinity;
-
-  for (let i = 0; i < legs && remaining > 0; i++) {
-    const targetX = Math.max(startX, step * (i + 1), prevStopX + MIN_REFILL_SPACING_KM);
-    // A shop a few km short of the planned position is still that leg's shop — reusing it beats
-    // dropping a second marker right next to one the rider already has.
-    const earliest = Math.max(startX, targetX - REFILL_SNAP_BACK_KM);
-    const reusable = existingShops
-      .filter(
-        (s) =>
-          s.at >= earliest &&
-          s.at - targetX <= REFILL_SNAP_WINDOW_KM &&
-          s.at - prevStopX >= MIN_REFILL_SPACING_KM &&
-          s.at < D,
-      )
-      .sort((a, b) => a.at - b.at)[0];
-
-    // Math.ceil, never Math.round: rounding down would place the new stop (and the fill starting
-    // there) before the end of the previous fill on the same vessel — an overlap nothing else in
-    // this app produces.
-    const stopX = reusable ? reusable.at : Math.ceil(targetX);
-    if (stopX >= D) break;
-    if (!reusable) newShops.push({ at: stopX });
-    stopXs.push(stopX);
-    prevStopX = stopX;
-
-    let legCarbs = 0;
-    let legHours = Math.max(timeAtDistance(route, stopX), cursorHours);
-    izoVessels.forEach((v) => {
-      const maxCarbs = carbsFill({ fid: 0, gid: v.gid, content: 'izo', from: 0, to: 0 }, gear, mix);
-      if (maxCarbs <= 0 || remaining - legCarbs <= 0) return;
-      // A refill fills the bottle, so the leg carries the vessel's full carb load — sizing the
-      // segment by the leftover deficit instead produced 3km-long fills that silently delivered a
-      // whole 650ml bottle's worth of carbs in one gulp.
-      const hours = Math.min(maxCarbs / rate, fluidHours(v, route));
-      const fromX = distanceAtTime(route, legHours);
-      const toX = Math.min(D, distanceAtTime(route, legHours + hours));
-      if (toX <= fromX) return;
-      fills.push({ gid: v.gid, content: 'izo', from: fromX, to: toX });
-      legCarbs += maxCarbs;
-      legHours += hours;
-    });
-
-    if (legCarbs <= 0) break; // no vessel had spare capacity — stop rather than loop forever
-    remaining -= legCarbs;
-    cursorHours = legHours;
-  }
-
-  return { fills, newShops, finalBalance: Math.max(0, remaining), stopXs };
-}
-
 const CLIMB_GRAD_THRESHOLD_PCT = 4;
 const CLIMB_MIN_LENGTH_KM = 1;
 
@@ -326,6 +180,20 @@ export function selectItemsForAmount(
   return items;
 }
 
+/**
+ * Lays the selected products out over `[startX, D)` so that they deliver carbs at a steady rate.
+ *
+ * Each item gets a slice of the window proportional to **its own carb content**, not an equal slice
+ * of distance: three gels and two packs of chews spread by count would dump 66g in the first few km
+ * and then coast, which `coverage()` scores as mostly wasted (it credits `min(rate, needRate)`, so
+ * everything poured in above the target rate is thrown away). A point item is eaten a
+ * `POINT_ITEM_SLOT_FRACTION` of the way into its slice; a `cont` item starts at the top of its slice
+ * and runs for its declared span, shortened to the slice when the slice is the tighter of the two —
+ * which is also what keeps two packs of chews from ever overlapping.
+ *
+ * The window stops short of the finish line: carbs eaten in the last few percent of the route never
+ * finish draining out of `gut`, so they score as unabsorbed rather than helping.
+ */
 export function placeItemsEvenly(
   items: FoodLibEntry[],
   startX: number,
@@ -335,77 +203,42 @@ export function placeItemsEvenly(
   const n = items.length;
   if (n === 0) return [];
 
-  const span = Math.max(1, D - startX);
-  const slotWidth = span / n;
-  const climbXs = route.useGpx && route.gpxTrack ? findClimbStarts(route, startX, D) : [];
+  const endX = Math.max(startX + MIN_LEG_KM, D * (1 - FINISH_GAP_FRACTION));
+  const window = endX - startX;
+  const totalCarbs = items.reduce((a, e) => a + e.carbs, 0);
+  const climbXs = route.useGpx && route.gpxTrack ? findClimbStarts(route, startX, endX) : [];
   let climbIdx = 0;
+  let cursor = startX;
+  let prevTo = -Infinity;
 
-  return items.map((entry, i) => {
-    let x = startX + slotWidth * (i + 0.5);
-    while (climbIdx < climbXs.length && climbXs[climbIdx] < x - slotWidth / 2) climbIdx++;
-    if (climbIdx < climbXs.length && climbXs[climbIdx] < x + slotWidth / 2) {
+  return items.map((entry) => {
+    const share = totalCarbs > 0 ? (window * entry.carbs) / totalCarbs : window / n;
+    const slotFrom = cursor;
+    const slotTo = cursor + share;
+    cursor = slotTo;
+
+    if (entry.cont) {
+      const length = Math.min(entry.span || DEFAULT_CONT_SPAN_KM, share);
+      const from = Math.min(endX, slotFrom);
+      const to = Math.min(endX, from + length);
+      prevTo = to;
+      return { key: entry.key, carbs: entry.carbs, ml: entry.ml, cont: true, from, to };
+    }
+
+    let x = slotFrom + share * POINT_ITEM_SLOT_FRACTION;
+    while (climbIdx < climbXs.length && climbXs[climbIdx] < slotFrom) climbIdx++;
+    if (climbIdx < climbXs.length && climbXs[climbIdx] < slotTo) {
       x = climbXs[climbIdx];
       climbIdx++;
     }
-    const from = Math.round(Math.max(startX, Math.min(D, x)));
-    const to = entry.cont ? Math.min(D, from + (entry.span || 18)) : from;
-    return { key: entry.key, carbs: entry.carbs, ml: entry.ml, cont: !!entry.cont, from, to };
+    x = Math.min(endX, Math.max(startX, x));
+    // Whole kilometres read better on a plan, but slices thinner than a kilometre would round two
+    // products onto the same spot — the exact position wins over the tidy one whenever it would.
+    const rounded = Math.round(x);
+    const from = rounded > prevTo && rounded <= endX ? rounded : x;
+    prevTo = from;
+    return { key: entry.key, carbs: entry.carbs, ml: entry.ml, cont: false, from, to: from };
   });
-}
-
-export function fluidCapacityStopX(
-  route: RouteInput,
-  waterVessels: Vessel[],
-  firstPlannedStopX: number,
-): number | null {
-  const totalCapacityMl = waterVessels.reduce((a, v) => a + v.vol, 0);
-  const sweatRate = sweat(route);
-  if (sweatRate <= 0 || totalCapacityMl <= 0) return null;
-  const maxHours = totalCapacityMl / sweatRate;
-  const maxX = distanceAtTime(route, maxHours);
-  return maxX < firstPlannedStopX ? Math.round(maxX) : null;
-}
-
-/**
- * How long the water-capable vessels' combined volume lasts at the route's sweat rate — i.e. how
- * far one "round" of full bottles gets the rider. The design's step-5 fluid pass sizes water legs
- * by this: a single `water 0→D` fill would otherwise claim one 650ml bidon covers a whole day's
- * sweat, which is how the plan ended up with ~30% hydration.
- */
-export function fluidLegHours(route: RouteInput, waterVessels: Vessel[]): number {
-  const capacity = waterVessels.reduce((a, v) => a + v.vol, 0);
-  const sweatRate = sweat(route);
-  if (capacity <= 0 || sweatRate <= 0) return Infinity;
-  return capacity / sweatRate;
-}
-
-/**
- * Splits one long water fill into as many bottle-sized legs as the stretch actually needs.
- *
- * Rounds rather than ceils on purpose: a trailing sliver of a leg is absorbed into the previous
- * one instead of becoming its own fill, because `planSummary` counts every fill as a **full**
- * vessel volume, so stub fills inflate the reported hydration without representing a real bottle.
- */
-export function splitWaterFillByCapacity(
-  fill: DraftFill,
-  route: RouteInput,
-  legHours: number,
-): DraftFill[] {
-  const h0 = timeAtDistance(route, fill.from);
-  const h1 = timeAtDistance(route, fill.to);
-  const span = h1 - h0;
-  if (!(legHours > 0) || !Number.isFinite(legHours) || span <= 0) return [fill];
-
-  const n = Math.max(1, Math.min(MAX_FLUID_LEGS, Math.round(span / legHours)));
-  if (n === 1) return [fill];
-
-  const out: DraftFill[] = [];
-  for (let i = 0; i < n; i++) {
-    const from = i === 0 ? fill.from : distanceAtTime(route, h0 + (span * i) / n);
-    const to = i === n - 1 ? fill.to : distanceAtTime(route, h0 + (span * (i + 1)) / n);
-    if (to - from >= MIN_WATER_LEG_KM) out.push({ ...fill, from, to });
-  }
-  return out.length ? out : [fill];
 }
 
 /** The sub-ranges of [from, to) not already taken by one of `occupied`. */
@@ -429,9 +262,9 @@ function freeRanges(from: number, to: number, occupied: [number, number][]): [nu
  * already carrying izo/gel over**.
  *
  * The per-vessel `occupied` map is the whole point: a bidon flagged `['water','izo']` carries izo
- * for its start phase and any refill leg, and plain water for everything else. Before this existed
- * only vessels whose `allowed` excluded `'izo'` could ever get a water fill, so the app's real
- * default gear (one izo-capable bidon + one gel flask) produced plans with literally zero water.
+ * for its carb legs and plain water for everything else. Before this existed only vessels whose
+ * `allowed` excluded `'izo'` could ever get a water fill, so the app's real default gear (one
+ * izo-capable bidon + one gel flask) produced plans with literally zero water.
  */
 export function waterFillsForVessels(
   vessels: Vessel[],
@@ -443,10 +276,10 @@ export function waterFillsForVessels(
   for (let i = 0; i < sorted.length - 1; i++) {
     const from = sorted[i];
     const to = sorted[i + 1];
-    if (to - from < MIN_WATER_LEG_KM) continue;
+    if (to - from < MIN_LEG_KM) continue;
     vessels.forEach((v) => {
       freeRanges(from, to, occupiedByGid[v.gid] || []).forEach(([a, b]) => {
-        if (b - a < MIN_WATER_LEG_KM) return;
+        if (b - a < MIN_LEG_KM) return;
         fills.push({ gid: v.gid, content: 'water', from: a, to: b });
       });
     });
@@ -464,9 +297,8 @@ export function assignWaterLegs(waterVessels: Vessel[], stopXs: number[], D: num
  * The gel content itself stays strictly one-shot (never a second `'gel'` fill) — but an empty
  * 250ml flask riding along for the back half of the route is wasted carrying capacity, so it gets
  * topped up with water. The hard constraint is that this must never cost a stop: fills are placed
- * only at stops the plan already has (izo refill stops, the rider's own shop stops), so the flask
- * buys extra carried water for free. A flask whose gel outlasts every stop simply stays empty —
- * no stop is invented for it.
+ * only at stops the plan already has, so the flask buys extra carried water for free. A flask whose
+ * gel outlasts every stop simply stays empty — no stop is invented for it.
  *
  * A leg whose stop falls while the gel is still in the flask starts at the gel's end instead of
  * the stop, so the flask isn't left dry between "gel finished" and "next stop"; the *refill event*
@@ -486,138 +318,277 @@ export function gelVesselWaterFills(
     stops.forEach((s, i) => {
       const from = Math.max(s, gelEnd);
       const to = i + 1 < stops.length ? stops[i + 1] : D;
-      if (to - from < MIN_WATER_LEG_KM) return;
+      if (to - from < MIN_LEG_KM) return;
       fills.push({ gid: v.gid, content: 'water', from, to });
     });
   });
   return fills;
 }
 
-function capacityCarbs(
-  vessels: Vessel[],
-  content: 'izo' | 'gel',
-  gear: Vessel[],
-  mix: MixSettings,
-): number {
-  return vessels.reduce(
-    (a, v) => a + carbsFill({ fid: 0, gid: v.gid, content, from: 0, to: 0 }, gear, mix),
-    0,
-  );
+/**
+ * The distance one full load of a vessel's content is *meant* to last: the point at which it runs
+ * out if it's consumed at the rate the ride actually asks for — the carb target for izo/gel, the
+ * sweat rate for water. Everything else in this file is built on it, because it's the honest
+ * definition of "the bottle is empty, this is where you stop".
+ */
+function loadHours(carbs: number, ml: number, content: Fill['content'], route: RouteInput): number {
+  if (content === 'water') {
+    const sweatRate = sweat(route);
+    return sweatRate > 0 ? ml / sweatRate : Infinity;
+  }
+  const rate = cph(route);
+  return rate > 0 ? carbs / rate : Infinity;
 }
 
 /**
- * The g/h a single start-phase stream is planned to deliver.
+ * The carb stream: the gel flask(s) first, then `izoCount` bottles of izo, laid end to end from the
+ * start line with each fill sized to deliver at exactly the route's `cph()` target.
  *
- * The route target is `cph(route)` g/h **in total**, and the gut can't take more than
- * `absCap(mix, ...)` g/h no matter what the target says. Gel and izo both start at x=0 and run in
- * parallel (that's the design's intent), so sizing each of them at the *full* target meant the
- * plan asked for 2× the target rate — ~157 g/h on a 100km/default-gear ride against a 90 g/h
- * ceiling — burning the whole carb budget in the first two hours and leaving the back half of the
- * route empty. Splitting the budget across the concurrent streams keeps the combined planned rate
- * at the target and stretches each stream over the distance it's actually meant to cover.
+ * Sequential, never parallel: two streams running from km 0 each sized at the full target deliver
+ * 2× the target rate, and `coverage()` throws away everything above `needRate`. Gel leads because
+ * it's a single one-shot fill the rider prepares at home, and getting it out of the way early is
+ * what frees the flask to carry water for the rest of the route.
+ *
+ * The last fill runs to the finish line only when stretching it that far still delivers at ≥ the
+ * app's own green threshold; past that the stretch is just dilution and the honest answer is a dry
+ * tail. That's the difference between a bottle that comfortably covers a short ride (izo-4 — one
+ * fill, start to finish) and one that doesn't (izo-6 — three fills that stop short of the line).
  */
-export function plannedStreamRate(route: RouteInput, cap: number, streams: number): number {
-  const total = Math.min(cph(route), cap);
-  return streams > 1 ? total / streams : total;
+function carbStreamFills(
+  route: RouteInput,
+  gear: Vessel[],
+  mix: MixSettings,
+  gelVessels: Vessel[],
+  izoVessels: Vessel[],
+  izoCount: number,
+  shops: ShopStop[],
+): { fills: DraftFill[]; endX: number } {
+  const D = dist(route);
+  const totHours = totalHours(route);
+  const fills: DraftFill[] = [];
+  const queue: { vessel: Vessel; content: 'gel' | 'izo' }[] = [
+    ...gelVessels.map((vessel) => ({ vessel, content: 'gel' as const })),
+    ...Array.from({ length: izoCount }, (_, i) => ({
+      vessel: izoVessels[i % Math.max(1, izoVessels.length)],
+      content: 'izo' as const,
+    })),
+  ];
+
+  let cursor = 0;
+  let lastLoadHours = 0;
+  for (const { vessel, content } of queue) {
+    if (!vessel) break;
+    const carbs = carbsFill({ fid: 0, gid: vessel.gid, content, from: 0, to: 0 }, gear, mix);
+    if (carbs <= 0) continue;
+    const hours = loadHours(carbs, vessel.vol, content, route);
+    if (!Number.isFinite(hours) || hours <= 0) continue;
+    const fromX = distanceAtTime(route, cursor);
+    if (D - fromX < MIN_LEG_KM) break;
+    const toX = snapToShop(Math.min(D, distanceAtTime(route, cursor + hours)), shops, D);
+    if (toX - fromX < MIN_LEG_KM) break;
+    fills.push({ gid: vessel.gid, content, from: fromX, to: toX });
+    cursor = timeAtDistance(route, toX);
+    lastLoadHours = hours;
+  }
+
+  const last = fills[fills.length - 1];
+  if (last && last.to < D) {
+    const stretched = totHours - timeAtDistance(route, last.from);
+    if (stretched * GREEN <= lastLoadHours) last.to = D;
+  }
+
+  return { fills, endX: last ? last.to : 0 };
+}
+
+/**
+ * Where the water stops fall: one every time the *combined* carried water capacity would run out at
+ * the sweat rate. Combined, not per bottle — the rider's rule is that splitting one 1000ml bidon
+ * into two 500ml bottles must not change where or how often they stop, only total volume matters.
+ */
+function waterStopXs(route: RouteInput, capacityMl: number, count: number): number[] {
+  const D = dist(route);
+  const legHours = loadHours(0, capacityMl, 'water', route);
+  if (!Number.isFinite(legHours) || legHours <= 0) return [];
+  const out: number[] = [];
+  for (let i = 1; i <= count; i++) {
+    const x = distanceAtTime(route, legHours * i);
+    if (D - x < MIN_LEG_KM || x < MIN_LEG_KM) break;
+    out.push(x);
+  }
+  return out;
+}
+
+/** How many water legs are worth planning at all — past this the bottle outlasts the leg. */
+function maxWaterStops(route: RouteInput, capacityMl: number): number {
+  const legHours = loadHours(0, capacityMl, 'water', route);
+  if (!Number.isFinite(legHours) || legHours <= 0) return 0;
+  return Math.min(MAX_REFILLS, Math.max(0, Math.ceil(totalHours(route) / legHours) - 1));
+}
+
+/** The nearest existing shop, when one sits close enough to be this stop rather than a new one. */
+function snapToShop(x: number, shops: ShopStop[], D: number): number {
+  let best: number | null = null;
+  for (const s of shops) {
+    if (s.at <= 0 || s.at >= D) continue;
+    if (Math.abs(s.at - x) > SHOP_SNAP_KM) continue;
+    if (best === null || Math.abs(s.at - x) < Math.abs(best - x)) best = s.at;
+  }
+  return best === null ? x : best;
+}
+
+/**
+ * `planSummary`'s `fluidPlanned` for a draft, without paying for the 160-sample absorption
+ * simulation the rest of that summary runs — hydration is a plain ratio of carried volume to sweat
+ * loss, so the water search can afford to ask after every candidate top-up. Must stay in step with
+ * `planSummary`: every non-gel fill counts its vessel's **full** volume, plus whatever the products
+ * bring along.
+ */
+function fluidPlannedOf(fills: DraftFill[], gear: Vessel[], foods: DraftFood[]): number {
+  const fromFills = fills
+    .filter((f) => f.content !== 'gel')
+    .reduce((a, f) => a + volOf({ ...f, fid: 0 }, gear), 0);
+  return fromFills + foods.reduce((a, f) => a + (f.ml || 0), 0);
+}
+
+/** Coverage the app would report for a carb plan, without building the water side it ignores. */
+function coverageOf(state: PlanState, fills: DraftFill[], foods: DraftFood[]): number {
+  const applied: PlanState = {
+    ...state,
+    fills: fills.map((f, i) => ({ ...f, fid: i + 1 })),
+    foods: foods.map((f, i) => ({ ...f, id: i + 1, name: f.key })),
+  };
+  return planSummary(applied).coverage;
 }
 
 export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): AutoplanResult {
   const { route, mix, gear, foodLib, shops } = state;
   const D = dist(route);
+  const hrs = totalHours(route);
+  const sweatLoss = sweat(route) * hrs;
 
-  if (totalHours(route) < 1) {
-    return { fills: shortRideFills(state), foods: [], newShops: [] };
-  }
+  const carbsOn = hrs >= CARB_MIN_HOURS;
+  const waterOn = sweatLoss >= route.weight * HYDRATION_BUFFER_ML_PER_KG;
 
   const { gelVessels, izoVessels } = bucketVessels(gear, mix);
 
-  const cap = absCap(
-    mix,
-    capacityCarbs(izoVessels, 'izo', gear, mix),
-    capacityCarbs(gelVessels, 'gel', gear, mix),
+  // --- carbs: the smallest number of izo bottles that gets the plan green ------------------
+  const target = hrs * cph(route);
+  const perFill = izoVessels.length
+    ? carbsFill({ fid: 0, gid: izoVessels[0].gid, content: 'izo', from: 0, to: 0 }, gear, mix)
+    : 0;
+  // A rider carrying izo-capable bottles leaves home with them mixed, exactly like the gel flask is
+  // filled once at home. So one load per izo bottle is the floor — a generous food selection buys
+  // back refill *stops*, not the bottles the rider is already carrying anyway.
+  const floor = perFill > 0 ? izoVessels.length : 0;
+  const gelCarbs = gelVessels.reduce(
+    (a, v) => a + carbsFill({ fid: 0, gid: v.gid, content: 'gel', from: 0, to: 0 }, gear, mix),
+    0,
   );
-  const streams = (gelVessels.length ? 1 : 0) + (izoVessels.length ? 1 : 0);
-  const streamRate = plannedStreamRate(route, cap, streams);
+  // What the selection has to cover is measured against the load the rider leaves home with, never
+  // against however many refills the search below happens to be trying. Products cost no stop, so
+  // letting an extra refill leg eat into the food budget would trade a free gram for a paid one —
+  // and it made the search unstable, since each extra leg then removed food and undid its own gain.
+  const items = carbsOn
+    ? selectItemsForAmount(selection, foodLib, Math.max(0, GREEN * target - gelCarbs - perFill))
+    : [];
+  const carbPlanFor = (izoCount: number) => {
+    const stream = carbStreamFills(route, gear, mix, gelVessels, izoVessels, izoCount, shops);
+    return { ...stream, foods: placeItemsEvenly(items, stream.endX, D, route) };
+  };
 
-  const gel = sequentialFills(gelVessels, 'gel', route, gear, mix, streamRate);
-  const izoStart = sequentialFills(izoVessels, 'izo', route, gear, mix, streamRate);
-  const startCarbs = gel.totalCarbs + izoStart.totalCarbs;
+  let carbs = { fills: [] as DraftFill[], endX: 0, foods: [] as DraftFood[] };
+  if (carbsOn) {
+    const ceiling = perFill > 0 ? MAX_REFILLS : 0;
+    const carried = gelCarbs + items.reduce((a, e) => a + e.carbs, 0);
 
-  const target = totalHours(route) * cph(route);
-  const selectedFoodCarbs = selection.reduce((a, s) => {
-    const entry = foodLib.find((f) => f.key === s.key);
-    return a + (entry ? entry.carbs * s.count : 0);
-  }, 0);
-  const balance = target - startCarbs - selectedFoodCarbs;
-
-  const refill =
-    balance > 0 && izoVessels.length > 0
-      ? planIzoRefills(route, gear, mix, izoVessels, izoStart.endX, balance, shops, streamRate)
-      : {
-          fills: [] as DraftFill[],
-          newShops: [] as DraftShop[],
-          finalBalance: 0,
-          stopXs: [] as number[],
-        };
-
-  const refillAmount = balance > 0 && izoVessels.length > 0 ? balance - refill.finalBalance : 0;
-  const totalBottleCarbs = startCarbs + refillAmount;
-  const foodTarget = Math.max(0, target - totalBottleCarbs);
-  const items = selectItemsForAmount(selection, foodLib, foodTarget);
-  const foods = placeItemsEvenly(items, izoStart.endX, D, route);
-
-  // Every water-capable vessel except the gel flask(s) — gel vessels are one-shot by design and
-  // are never revisited, not even for water. `waterOnly`/`reservedWaterVessel` alone would exclude
-  // the izo-capable bidon, which is exactly the bug that left the app's default gear with no water
-  // fills at all; izo-capable vessels carry water over whatever they aren't carrying izo over.
-  const gelGids = new Set(gelVessels.map((v) => v.gid));
-  const waterVessels = gear.filter((v) => !gelGids.has(v.gid) && isAllowed(v, 'water'));
-
-  let stopXs = refill.stopXs;
-  let extraShops: DraftShop[] = [];
-  // Only worth a marker of its own when the plan has no stops at all: with refill stops already
-  // on the route the rider is stopping anyway, and the water fills below show where to top up.
-  // Water comes from any tap or fountain, so a water leg boundary is not itself a shop.
-  const firstStopX = stopXs.length ? Math.min(...stopXs) : D;
-  const fluidStopX = stopXs.length ? null : fluidCapacityStopX(route, waterVessels, firstStopX);
-  if (fluidStopX !== null && fluidStopX >= minStopX(D)) {
-    const nearExisting = shops.find((s) => Math.abs(s.at - fluidStopX) < 3);
-    if (nearExisting) {
-      stopXs = [...stopXs, nearExisting.at];
-    } else {
-      stopXs = [...stopXs, fluidStopX];
-      extraShops = [{ at: fluidStopX }];
+    // The raw sums say how many bottles it takes to *pour in* 85% of the target, but `coverage()`
+    // integrates absorption rather than dividing totals and comes out about one bottle more
+    // generous — the rider's own hand-built izo plans land exactly one refill below what the ratio
+    // demands. So the search starts a bottle below the ratio and walks: up while the plan isn't
+    // green, back down while it still is. What it converges on is the *fewest* refills that clear
+    // the threshold the app itself paints green, which is what the rider asked for — not the most
+    // coverage. Starting on the generous side keeps that to two `coverage()` evaluations in the
+    // common case, and each one is a full 160-sample absorption simulation.
+    const fromRatio = perFill > 0 ? Math.ceil((GREEN * target - carried) / perFill) - 1 : 0;
+    let count = Math.max(floor, Math.min(ceiling, fromRatio));
+    carbs = carbPlanFor(count);
+    let green = count === 0 || coverageOf(state, carbs.fills, carbs.foods) >= COVERAGE_TARGET_PCT;
+    let grew = false;
+    while (!green && count < ceiling) {
+      const richer = carbPlanFor(count + 1);
+      if (richer.endX <= carbs.endX) break; // no room left on the route
+      count += 1;
+      carbs = richer;
+      grew = true;
+      green = coverageOf(state, carbs.fills, carbs.foods) >= COVERAGE_TARGET_PCT;
+    }
+    // Only worth walking down if we never walked up: the count below is the one the up-walk just
+    // rejected, and re-running a 160-sample simulation to learn that again is pure cost.
+    while (!grew && green && count > floor) {
+      const leaner = carbPlanFor(count - 1);
+      if (coverageOf(state, leaner.fills, leaner.foods) < COVERAGE_TARGET_PCT) break;
+      count -= 1;
+      carbs = leaner;
     }
   }
 
-  const carbFills = [...gel.fills, ...izoStart.fills, ...refill.fills];
   const occupiedByGid: Record<string, [number, number][]> = {};
-  carbFills.forEach((f) => {
+  carbs.fills.forEach((f) => {
     (occupiedByGid[f.gid] ||= []).push([f.from, f.to]);
   });
 
-  // Water goes wherever a vessel isn't already carrying izo/gel, then each stretch is cut into
-  // bottle-sized legs. Those cuts deliberately do NOT spawn shop markers: topping up water needs a
-  // tap or a fountain, not a shop, and marker spam is exactly what the refill cap above avoids.
-  const legHours = fluidLegHours(route, waterVessels);
-  const waterFills = waterFillsForVessels(waterVessels, [0, D], occupiedByGid).flatMap((f) =>
-    splitWaterFillByCapacity(f, route, legHours),
-  );
+  // --- water: the smallest number of top-ups that gets hydration green ---------------------
+  // Only a vessel that actually ended up carrying gel is held back for the piggyback path below —
+  // a gel flask on a ride too short to fuel (or with no gel mix worth carrying) is just another
+  // water bottle, and leaving it empty would throw away carrying capacity for nothing.
+  const gelFilledGids = new Set(carbs.fills.filter((f) => f.content === 'gel').map((f) => f.gid));
+  const waterVessels = gear.filter((v) => !gelFilledGids.has(v.gid) && isAllowed(v, 'water'));
+  const capacity = waterVessels.reduce((a, v) => a + v.vol, 0);
+  const waterFor = (stopCount: number) =>
+    waterFillsForVessels(
+      waterVessels,
+      [0, ...waterStopXs(route, capacity, stopCount).map((x) => snapToShop(x, shops, D)), D],
+      occupiedByGid,
+    );
+
+  let waterFills = waterFor(0);
+  if (waterOn && capacity > 0 && sweatLoss > 0) {
+    const limit = maxWaterStops(route, capacity);
+    for (let n = 0; n <= limit; n++) {
+      waterFills = waterFor(n);
+      const planned = fluidPlannedOf([...carbs.fills, ...waterFills], gear, carbs.foods);
+      if (planned >= GREEN * sweatLoss) break;
+    }
+  }
+
+  // Stops are exactly the refill events the plan asks for: every fill that doesn't start at the
+  // start line begins at one, and no stop exists that isn't a refill. Water is not a free tap.
+  const stopXs = [
+    ...new Set(
+      [...carbs.fills, ...waterFills].map((f) => f.from).filter((x) => x > 0 && x < D - 1e-9),
+    ),
+  ].sort((a, b) => a - b);
 
   const gelEndByGid: Record<string, number> = {};
-  gel.fills.forEach((f) => {
-    gelEndByGid[f.gid] = Math.max(gelEndByGid[f.gid] || 0, f.to);
-  });
+  carbs.fills
+    .filter((f) => f.content === 'gel')
+    .forEach((f) => {
+      gelEndByGid[f.gid] = Math.max(gelEndByGid[f.gid] || 0, f.to);
+    });
   const gelWaterFills = gelVesselWaterFills(
-    gelVessels,
+    gelVessels.filter((v) => gelFilledGids.has(v.gid)),
     gelEndByGid,
     [...stopXs, ...shops.map((s) => s.at)],
     D,
   );
 
+  const newShops: DraftShop[] = stopXs
+    .filter((x) => !shops.some((s) => Math.abs(s.at - x) < 1e-9))
+    .map((x) => ({ at: x }));
+
   return {
-    fills: [...carbFills, ...waterFills, ...gelWaterFills],
-    foods,
-    newShops: [...refill.newShops, ...extraShops],
+    fills: [...carbs.fills, ...waterFills, ...gelWaterFills],
+    foods: carbs.foods,
+    newShops,
   };
 }
