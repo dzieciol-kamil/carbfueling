@@ -96,6 +96,10 @@ export interface FoodLibEntry {
   ml?: number;
   cont?: boolean;
   span?: number;
+  /** True for things nobody carries with them — a cola, an ice cream. Eating one *is* a stop, so
+   *  the planner may only place it at a shop stop (creating one if the item is worth it), and that
+   *  stop doubles as a refill opportunity for every bottle on board. */
+  needsStop?: boolean;
 }
 
 export interface PlanState {
