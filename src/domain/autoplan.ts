@@ -5,6 +5,7 @@ import {
   dist,
   distanceAtTime,
   planSummary,
+  timeAtDistance,
   prof,
   samples,
   sweat,
@@ -294,11 +295,10 @@ interface Timeline {
   gid: string;
   vol: number;
   /**
-   * Water fills before the carb block and after it. A bottle that can hold both carries water while
-   * something else is doing the fuelling, takes its izo when its turn comes, and goes back to water
-   * once the sugar is gone — which is the whole reason a rider bothers with a bottle that does both.
+   * Water fills after the carb block. Nothing before it: a bottle waiting its turn rides along full
+   * of what the rider packed it with and is opened when it is needed, which is why a vessel's first
+   * fill does not have to start at the line.
    */
-  leadFills: number;
   tailFills: number;
   /** The leg the carb block starts on: after the gel, and after any izo bottle ahead of it. */
   carbStartLeg: number;
@@ -306,15 +306,22 @@ interface Timeline {
   carbFills: number;
   /** Legs one load is drunk over — one, unless the grid is finer than a load actually lasts. */
   legsPerLoad: number;
+  /**
+   * Legs the whole carb block covers. The streams share the ride in proportion to the grams they
+   * carry, so a bottle that holds two thirds of the plan's carbs is drunk over two thirds of the
+   * route — stretched thinner than its natural rate when that is all there is, which costs a little
+   * coverage early and buys the bottle's water for the tail.
+   */
+  carbBlockLegs: number;
   carbContent: 'izo' | 'gel' | null;
   /** Legs the one-shot gel fill spans — gel vessels only, and never more than one such fill. */
   gelLegs: number;
   /**
-   * Where the gel runs out if nothing snaps it to the grid. A flask that carries only its gel has
-   * no later boundary to line up with a stop, so it keeps the honest end: the point where the gel
-   * has delivered its carbs at the rate the ride asks for.
+   * How long the gel lasts at the rate the ride asks for. A flask whose gel is its last fill has no
+   * boundary after it to line up with a stop, so it ends honestly — this many hours after it starts,
+   * wherever that is — instead of being stretched to the finish line.
    */
-  gelEndX: number;
+  gelHours: number;
   /** An izo-only bottle can never be topped up with water, however thirsty the plan is. */
   canWater: boolean;
   carbsPerFill: number;
@@ -339,21 +346,15 @@ interface Block {
 function layoutOf(t: Timeline, G: number): { lead: number; carbLegs: number; tail: number } {
   if (!t.carbContent) return { lead: 0, carbLegs: 0, tail: G };
   const lead = Math.min(t.carbStartLeg, G - 1);
-  const carbLegs =
-    t.carbContent === 'gel'
-      ? Math.min(G - lead, Math.max(1, t.gelLegs))
-      : t.canWater
-        ? Math.min(G - lead, Math.max(1, t.carbFills * t.legsPerLoad))
-        : G - lead;
+  // A bottle that cannot hold water has nothing else to do, so its loads cover everything left to
+  // it; every other stream takes the share of the route its grams are worth.
+  const carbLegs = t.canWater ? Math.min(G - lead, Math.max(1, t.carbBlockLegs)) : G - lead;
   return { lead, carbLegs, tail: G - lead - carbLegs };
 }
 
 function blocksOf(t: Timeline, G: number): Block[] {
   const out: Block[] = [];
   const { lead, carbLegs, tail } = layoutOf(t, G);
-  if (lead > 0) {
-    out.push({ content: 'water', fromLeg: 0, toLeg: lead, fills: clamp(t.leadFills, 1, lead) });
-  }
   if (carbLegs > 0 && t.carbContent) {
     out.push({
       content: t.carbContent,
@@ -387,7 +388,7 @@ function legBounds(t: Timeline, G: number): number[] {
   return out;
 }
 
-function timelineFills(t: Timeline, G: number, xs: number[]): DraftFill[] {
+function timelineFills(t: Timeline, G: number, xs: number[], route: RouteInput): DraftFill[] {
   const D = xs[G];
   // A bottle whose last drop is carbs empties a little before the line: sugar swallowed in the
   // final minutes is still in the gut at the finish, so it counts as carried, not eaten. Water has
@@ -403,7 +404,9 @@ function timelineFills(t: Timeline, G: number, xs: number[]): DraftFill[] {
     for (let i = 0; i < b.fills; i++) {
       const from = xs[b.fromLeg + Math.round((i * span) / b.fills)];
       let to = xs[b.fromLeg + Math.round(((i + 1) * span) / b.fills)];
-      if (unsnapped && i === b.fills - 1) to = t.gelEndX;
+      if (unsnapped && i === b.fills - 1) {
+        to = Math.min(to, distanceAtTime(route, timeAtDistance(route, from) + t.gelHours));
+      }
       // Only for a bottle that has nothing else to switch to and more than one load to space out.
       // A bottle that can carry water keeps drinking to the line — there is no reason to stop —
       // and a single load stretched across the whole ride is already delivering below the rate the
@@ -646,7 +649,7 @@ interface Candidate {
   /** The lowest leg's fluid rate as a percentage of the sweat rate — the rider's pointwise floor. */
   worstLegPct: number;
   refills: number;
-  /** How far this plan falls short: [fluid floor pct, fluid ml, carb g, carb rate, shop stops]. */
+  /** How far it falls short: [fluid floor pct, fluid ml, usable carb g, carb rate, shop stops]. */
   shortfall: number[];
   /**
    * How unevenly the fills fall, in hours of difference between a vessel's longest and shortest
@@ -661,14 +664,23 @@ interface Candidate {
  * that all fall short: a plan that fully covers the ride has a zero shortfall and needs no
  * tolerance to win.
  */
-const SHORTFALL_TOLERANCE = [0.5, 25, 3, 5, 0];
+const SHORTFALL_TOLERANCE = [0.5, 25, 3, 1, 0];
 
-/** Falls as little short as possible; among equals, the plan that costs and wastes the least. */
+/**
+ * Falls as little short as possible of what the ride needs; among equals, the plan that costs the
+ * rider least — and only then the one that delivers most evenly.
+ *
+ * Stops rank above the sagging line on the rider's own ruling: shown the ladder on a 200km ride (7
+ * stops with the line dipping to 39%, 8 stops dipping to 77%, 9 stops with no dip at all) he took
+ * the middle one, and the thing that separates it is not the dip but that its bottles finally hold
+ * the whole sweat loss. The greedy stops buying water there; this only sorts what it built.
+ */
 function compareCandidates(a: Candidate, b: Candidate): number {
   return (
     compareShortfall(a.shortfall, b.shortfall) ||
     a.stops.length - b.stops.length ||
     a.refills - b.refills ||
+    b.worstLegPct - a.worstLegPct ||
     a.raggedness - b.raggedness
   );
 }
@@ -737,17 +749,6 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
       )
     : [];
   const izoUsed = carbsOn ? izoVessels.filter(() => perFill > 0) : [];
-  // Asking a bottle to deliver at the target rate is only a fair demand when some grid the route
-  // can actually hold would let it: on a ride whose stops are further apart than a small bottle
-  // lasts, the honest answer is a slower stream, not a stop every few kilometres.
-  const rateRuleOn = izoUsed.some(
-    (v) =>
-      isAllowed(v, 'water') &&
-      cph(route) > 0 &&
-      hrs / legCap <=
-        carbsFill({ fid: 0, gid: v.gid, content: 'izo', from: 0, to: 0 }, gear, mix) /
-          (GREEN * cph(route)),
-  );
   const gelGids = new Set(gelUsed.map((v) => v.gid));
   const izoGids = new Set(izoUsed.map((v) => v.gid));
 
@@ -756,7 +757,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
    * target asks for placed one stream after another, then water top-ups until the fluid line clears
    * the floor everywhere — cheapest first, where "cheap" means the stops it does not add.
    */
-  function build(G: number, extraLoads: number): Candidate {
+  function build(G: number, extraLoads: number, stretch: boolean): Candidate {
     const legHours = hrs / G;
     const xs = gridXs(route, G, shops);
     const timelines: Timeline[] = [];
@@ -764,14 +765,14 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     const line = (v: Vessel, content: 'izo' | 'gel' | null): Timeline => ({
       gid: v.gid,
       vol: v.vol,
-      leadFills: 0,
       tailFills: content ? 0 : 1,
       carbStartLeg: 0,
       carbFills: content ? 1 : 0,
       legsPerLoad: 1,
+      carbBlockLegs: 1,
       carbContent: content,
       gelLegs: 0,
-      gelEndX: 0,
+      gelHours: 0,
       canWater: isAllowed(v, 'water'),
       carbsPerFill: content
         ? carbsFill({ fid: 0, gid: v.gid, content, from: 0, to: 0 }, gear, mix)
@@ -785,7 +786,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         // to be a real leg, short enough to leave the flask free to carry water afterwards.
         const gelHours = cph(route) > 0 ? t.carbsPerFill / cph(route) : hrs;
         t.gelLegs = Math.max(1, Math.min(G, Math.round(gelHours / legHours)));
-        t.gelEndX = Math.min(D, distanceAtTime(route, gelHours));
+        t.gelHours = gelHours;
         timelines.push(t);
       } else if (izoGids.has(v.gid)) {
         const t = line(v, 'izo');
@@ -799,32 +800,67 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
       }
     }
 
-    const carbsOf = () =>
-      timelines.reduce(
-        (a, t) =>
-          a +
-          blocksOf(t, G)
-            .filter((b) => b.content === t.carbContent)
-            .reduce((n, b) => n + b.fills, 0) *
-            t.carbsPerFill,
-        0,
-      );
-
-    // The gel is drunk first and the izo bottles after it, one after another rather than all at
-    // once: two streams running from the start line each sized for the whole target deliver twice
-    // what the ride can absorb, and `coverage()` throws away everything above the need. A bottle
-    // that can also hold water carries water until its turn comes.
-    const sequenceCarbs = () => {
-      let cursor = Math.max(
-        0,
-        ...timelines.filter((t) => t.carbContent === 'gel').map((t) => Math.min(G, t.gelLegs)),
-      );
+    /**
+     * Carbs the ride can actually use, not the grams on board.
+     *
+     * Anything arriving faster than `cph()` is thrown away by the same integral the app's coverage
+     * bar runs, so two streams overlapping deliver far less than their sum — which is exactly the
+     * mistake a coarse grid invites, when a bottle's loads need more legs than the route has left
+     * and the gel ends up pouring on top of them. Counting the usable part instead makes the search
+     * reject that grid on its own, without a rule about overlaps.
+     */
+    const usefulCarbs = () => {
+      const rate = new Array<number>(G).fill(0);
       for (const t of timelines) {
+        for (const b of blocksOf(t, G)) {
+          if (b.content === 'water') continue;
+          const span = b.toLeg - b.fromLeg;
+          if (span <= 0) continue;
+          const perLeg = (b.fills * t.carbsPerFill) / (span * legHours);
+          for (let leg = b.fromLeg; leg < b.toLeg; leg++) rate[leg] += perLeg;
+        }
+      }
+      const cap = cph(route);
+      return rate.reduce((a, r) => a + Math.min(r, cap) * legHours, 0);
+    };
+
+    const sequenceCarbs = () => {
+      const streams = timelines.filter((t) => t.carbContent && t.canWater);
+      // What each stream would take at the rate the ride asks for, in legs.
+      const natural = (t: Timeline) =>
+        t.carbContent === 'gel'
+          ? t.gelHours / legHours
+          : (t.carbFills * t.carbsPerFill) / Math.max(1e-9, cph(route)) / legHours;
+      const total = streams.reduce((a, t) => a + natural(t), 0);
+      // Two ways to lay a short carb stream out, and which one is better is not decidable here: run
+      // the loads at the rate the ride asks for and leave the rest of the route to water, or stretch
+      // them thinner so they cover it all. The first keeps the bottle free to carry water — the only
+      // thing holding the fluid line up when it is the plan's one bottle; the second feeds the whole
+      // ride at a lower rate, which `coverage()` prefers whenever some other bottle can do the
+      // carrying. So `autoplan` builds both and scores them.
+      const scale = stretch && total > 0 && total < G ? G / total : 1;
+      // The izo bottles go first and the gel last: the gel is the one load that cannot be refilled,
+      // so the ride is better off drinking what *can* be replaced while shops are still being passed,
+      // and the flask that carried it is then free to take water for whatever is left.
+      let cursor = 0;
+      for (const t of streams) {
         if (t.carbContent !== 'izo') continue;
-        if (!t.canWater) continue; // nothing else to carry: it is izo from the start line
         t.carbStartLeg = Math.min(cursor, Math.max(0, G - 1));
-        t.leadFills = Math.max(t.leadFills, t.carbStartLeg > 0 ? 1 : 0);
-        cursor = Math.min(G, t.carbStartLeg + t.carbFills * t.legsPerLoad);
+        const perLoad = natural(t) / Math.max(1, t.carbFills);
+        t.legsPerLoad = clamp(Math.round(perLoad * scale), 1, Math.max(1, Math.ceil(perLoad)));
+        t.carbBlockLegs = t.carbFills * t.legsPerLoad;
+        cursor = Math.min(G, t.carbStartLeg + t.carbBlockLegs);
+      }
+      for (const t of streams) {
+        if (t.carbContent !== 'gel') continue;
+        t.carbBlockLegs = Math.max(1, Math.round(natural(t) * scale));
+        t.carbStartLeg = Math.min(cursor, Math.max(0, G - t.carbBlockLegs));
+        t.gelLegs = t.carbBlockLegs;
+      }
+      // A bottle with no water setting starts on its carbs at the line and stretches them over
+      // everything it is asked to cover.
+      for (const t of timelines) {
+        if (t.carbContent && !t.canWater) t.carbStartLeg = 0;
       }
     };
 
@@ -837,15 +873,15 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     const izoLines = timelines.filter((t) => t.carbContent === 'izo');
     sequenceCarbs();
     for (let guard = 0; guard < G * Math.max(1, izoLines.length); guard++) {
-      if (carbsOf() >= needCarbs) break;
+      if (usefulCarbs() >= needCarbs) break;
       const pick = izoLines
         .filter((t) => t.carbFills < G)
         .sort((a, b) => a.carbFills - b.carbFills || b.carbsPerFill - a.carbsPerFill)[0];
       if (!pick) break;
-      const before = carbsOf();
+      const before = usefulCarbs();
       pick.carbFills += 1;
       sequenceCarbs();
-      if (carbsOf() <= before) {
+      if (usefulCarbs() <= before) {
         pick.carbFills -= 1;
         sequenceCarbs();
         break; // no room left on the route for another load
@@ -872,16 +908,8 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
             t.vol,
         0,
       ) + itemMl;
-    const waterOf = () =>
-      timelines.reduce(
-        (a, t) =>
-          a +
-          blocksOf(t, G)
-            .filter((b) => b.content === 'water')
-            .reduce((n, b) => n + b.fills, 0) *
-            t.vol,
-        0,
-      );
+    /** What the bottles carry, ignoring what the rider will buy and drink along the way. */
+    const bottleFluid = () => fluidOf() - itemMl;
     const worstOf = () => {
       if (sweatRate <= 0) return 100;
       const rates = legFluidRates(timelines, G, legHours);
@@ -891,20 +919,12 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     // the loads the carbs called for, and mixing another one just to have something to drink is
     // not a plan the rider asked for.
     // The two water stretches of every water-capable vessel are the only things a top-up can buy.
-    type Knob = { t: Timeline; which: 'lead' | 'tail' };
-    const knobs: Knob[] = [];
-    for (const t of timelines) {
-      if (!t.canWater) continue;
-      knobs.push({ t, which: 'lead' }, { t, which: 'tail' });
-    }
-    const capacityOf = (k: Knob) => {
-      const l = layoutOf(k.t, G);
-      return k.which === 'lead' ? l.lead : l.tail;
-    };
-    const countOf = (k: Knob) => (k.which === 'lead' ? k.t.leadFills : k.t.tailFills);
+    type Knob = { t: Timeline };
+    const knobs: Knob[] = timelines.filter((t) => t.canWater).map((t) => ({ t }));
+    const capacityOf = (k: Knob) => layoutOf(k.t, G).tail;
+    const countOf = (k: Knob) => k.t.tailFills;
     const setCount = (k: Knob, n: number) => {
-      if (k.which === 'lead') k.t.leadFills = n;
-      else k.t.tailFills = n;
+      k.t.tailFills = n;
     };
 
     if (waterOn) {
@@ -912,12 +932,12 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         const fluid = fluidOf();
         const worst = worstOf();
         const floorHolds = worst >= COVERAGE_TARGET_PCT;
-        if (floorHolds && fluid >= needFluid + itemMl) break;
-        // A plan already carrying more *water* than the whole ride will sweat out cannot be rescued
-        // with another bottle: if the line still sags, the legs are too long, and that is a job for
-        // a finer grid rather than for water the rider would carry to the finish unopened. Only the
-        // water counts — the izo on board is there because the carbs asked for it, not the thirst.
-        if (!floorHolds && waterOf() + itemMl >= sweatLoss) break;
+        // Two ways to be done, and the rider will take whichever comes first: the line never dips,
+        // or the bottles already hold every millilitre the ride is going to sweat out. Past that
+        // second one another stop buys nothing — the water would ride to the finish unopened — so a
+        // shallow dip where one load hands over to the next is the honest price of not stopping.
+        const sumHolds = fluid >= needFluid + itemMl;
+        if (floorHolds && sumHolds) break;
         // A top-up at a stop the plan already makes is free; one that lands between them costs the
         // rider a pull-over, which is the thing to be stingy with, so each move is scored by the
         // stops it actually adds.
@@ -976,19 +996,26 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
               a.n - countOf(a.k) - (b.n - countOf(b.k)),
         )[0];
         if (!pick) break;
+        // The other way to be done: the bottles already hold every millilitre the ride will sweat
+        // out, so the only thing left to buy is a flatter line — worth taking while it is free, not
+        // worth a stop. A shallow dip where one load hands over to the next is the honest price.
+        const everyLegFed = Math.min(...legFluidRates(timelines, G, legHours)) > 0;
+        if (sumHolds && everyLegFed && bottleFluid() >= sweatLoss && pick.addedStops > 0) break;
         setCount(pick.k, pick.n);
       }
 
-      // The flask the gel came out of is carrying capacity once the gel is gone, so it rides along
-      // full of water — but only topped up where the plan already stops, and only while the ride
-      // still has the thirst for it. Never a stop of its own, never water carried to the finish.
-      for (const k of knobs.filter((x) => x.t.carbContent === 'gel' && x.which === 'tail')) {
+      // Every bottle gets topped up at a stop the plan is already making — that is what standing at
+      // a shop is for, and it costs the rider nothing but the seconds to fill. Only there, though:
+      // never a stop of its own, and never more water than the ride is going to sweat out. The flask
+      // the gel came out of is the clearest case, since an empty flask is pure dead weight, so it
+      // gets its first bottle's worth even on a ride that is already carrying enough.
+      for (const k of knobs) {
         for (let guard = 0; guard < G; guard++) {
           // The first bottle's worth is free: an empty flask is dead weight, and the stop is one
           // the plan is making anyway. Past that, only while the ride can still drink it.
-          const first = countOf(k) === 0;
+          const emptyFlask = k.t.carbContent === 'gel' && countOf(k) === 0;
           if (countOf(k) >= capacityOf(k)) break;
-          if (!first && fluidOf() + k.t.vol > sweatLoss) break;
+          if (!emptyFlask && fluidOf() + k.t.vol > sweatLoss) break;
           const stopsNow = stopLegs(timelines, G).size;
           setCount(k, countOf(k) + 1);
           if (stopLegs(timelines, G).size > stopsNow) {
@@ -1000,31 +1027,39 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     }
 
     /**
-     * How far short of the target rate a bottle's izo is being drunk.
+     * How far below the rate the ride asks for a bottle's carbs are being drunk.
      *
-     * A load is meant to last exactly as long as its carbs do — `carbs / cph`. On a grid coarser
-     * than that, a bottle carrying izo trickles: it fuels at two thirds of the rate the ride is
-     * asking for while sitting on water it could have been carrying instead. So a bottle that *has*
-     * water to fall back on is not allowed to trickle; one that doesn't (an izo-only bottle) is,
-     * because stretching its loads is the only thing holding the fluid line up.
+     * A load is meant to last `carbs / cph`. On a grid coarser than that a bottle carrying izo
+     * trickles: it fuels at two thirds of the rate the ride wants while sitting on water it could
+     * have been carrying instead. A bottle that *has* water to fall back on is not allowed to
+     * trickle; one that doesn't is, because stretching its loads is the only thing holding the
+     * fluid line up when that bottle is all the plan has.
      */
     function carbRateDeficit(): number {
-      if (!rateRuleOn) return 0;
       let worst = 0;
       for (const t of timelines) {
         if (t.carbContent !== 'izo' || !t.canWater) continue;
-        if (layoutOf(t, G).carbLegs <= 0) continue;
-        const rate = t.carbsPerFill / (t.legsPerLoad * legHours);
+        const l = layoutOf(t, G);
+        if (l.carbLegs <= 0) continue;
+        const rate = t.carbsPerFill / ((l.carbLegs / t.carbFills) * legHours);
         worst = Math.max(worst, GREEN * cph(route) - rate);
       }
       return worst;
     }
 
-    const fills = timelines.flatMap((t) => timelineFills(t, G, xs));
-    const stops = [...new Set(fills.map((f) => f.from).filter((x) => x > 0 && x < D - 1e-9))].sort(
-      (a, b) => a - b,
-    );
-    const carbs = carbsOf();
+    const fills = timelines.flatMap((t) => timelineFills(t, G, xs, route));
+    // Opening a bottle the rider set off with is not a stop — only refilling one is. So a vessel's
+    // *first* fill never asks for a shop, wherever along the route it happens to start.
+    const refills: number[] = [];
+    for (const t of timelines) {
+      fills
+        .filter((f) => f.gid === t.gid)
+        .sort((a, b) => a.from - b.from)
+        .slice(1)
+        .forEach((f) => refills.push(f.from));
+    }
+    const stops = [...new Set(refills.filter((x) => x > 0 && x < D - 1e-9))].sort((a, b) => a - b);
+    const carbs = usefulCarbs();
     const fluid = fluidOf();
     const worstLegPct = worstOf();
     return {
@@ -1072,9 +1107,11 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
   function search(extraLoads: number): Candidate {
     const tried: Candidate[] = [];
     for (let G = minLegs; G <= legCap; G++) {
-      const cand = build(G, extraLoads);
-      tried.push(cand);
-      if (cand.shortfall.every((s) => s <= 1e-9)) return cand;
+      for (const stretch of [false, true]) {
+        const cand = build(G, extraLoads, stretch);
+        tried.push(cand);
+        if (cand.shortfall.every((x) => x <= 1e-9)) return cand;
+      }
     }
     const best = tried.reduce((a, b) => (compareCandidates(b, a) < 0 ? b : a));
     return best;
