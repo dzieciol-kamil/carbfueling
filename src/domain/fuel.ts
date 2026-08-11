@@ -158,7 +158,40 @@ const SYNTHETIC_ANCHORS: [number, number][] = [
   [1, 140],
 ];
 
+/**
+ * Last profile built per route object, so `eff`/`timeAtDistance`/`distanceAtTime` stop rebuilding
+ * 161 points on every single call — `samples()` alone asks for one three times per fill per sample,
+ * which on a long plan is a few hundred milliseconds of pure repetition.
+ *
+ * Purely a cache: same inputs, same numbers. The signature guards the one case a `WeakMap` keyed on
+ * the object cannot see — a route mutated in place rather than replaced, which the store never does
+ * but a caller could.
+ */
+const profCache = new WeakMap<RouteInput, { sig: string; profile: Profile }>();
+
+function profSig(route: RouteInput): string {
+  return [
+    route.mode,
+    route.distance,
+    route.speed,
+    route.hours,
+    route.minutes,
+    route.useGpx ? 1 : 0,
+    route.gpxTrack ? route.gpxTrack.id : 'none',
+    route.gpxTrack ? route.gpxTrack.ele.length : 0,
+  ].join('|');
+}
+
 export function prof(route: RouteInput): Profile {
+  const sig = profSig(route);
+  const cached = profCache.get(route);
+  if (cached && cached.sig === sig) return cached.profile;
+  const built = buildProf(route);
+  profCache.set(route, { sig, profile: built });
+  return built;
+}
+
+function buildProf(route: RouteInput): Profile {
   const T = route.gpxTrack;
   const D = dist(route);
   const N = PROFILE_SAMPLES;

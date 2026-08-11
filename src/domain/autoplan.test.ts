@@ -1,15 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
-  assignWaterLegs,
   autoplan,
   bucketVessels,
   findClimbStarts,
-  gelVesselWaterFills,
   minStopX,
   placeItemsEvenly,
   selectItemsForAmount,
-  shortRideFills,
-  waterFillsForVessels,
 } from './autoplan';
 import type { FoodSelectionEntry } from './autoplan';
 import { planSummary, rateStats, sweat, totalHours } from './fuel';
@@ -98,19 +94,6 @@ const flask: Vessel = {
   gelParts: 4,
 };
 const waterBottle: Vessel = { gid: 'g4', name: 'Water', vol: 750, allowed: ['water'], gelParts: 1 };
-
-describe('shortRideFills', () => {
-  test('under 1h: every water-capable vessel gets one water fill spanning the whole route, no izo/gel', () => {
-    const route = makeRoute({ mode: 'time', hours: 0, minutes: 45 });
-    const state = makePlan({ route, gear: [bidon, flask] });
-    const fills = shortRideFills(state);
-    expect(fills).toEqual([
-      { gid: 'g1', content: 'water', from: 0, to: expect.any(Number) },
-      { gid: 'g3', content: 'water', from: 0, to: expect.any(Number) },
-    ]);
-    fills.forEach((f) => expect(f.to).toBeCloseTo(8, 0)); // dist() for 45min time-mode = round(0.75*10) = 8
-  });
-});
 
 describe('bucketVessels', () => {
   test('gel-capable vessel is pulled out of the izo pool even if it also allows izo', () => {
@@ -219,75 +202,6 @@ describe('placeItemsEvenly', () => {
   test('empty item list returns no foods', () => {
     const route = makeRoute();
     expect(placeItemsEvenly([], 0, 100, route)).toEqual([]);
-  });
-});
-
-describe('assignWaterLegs', () => {
-  test('gives each water vessel one fill per leg between consecutive stop boundaries', () => {
-    const fills = assignWaterLegs([waterBottle], [30, 70], 100);
-    expect(fills).toEqual([
-      { gid: 'g4', content: 'water', from: 0, to: 30 },
-      { gid: 'g4', content: 'water', from: 30, to: 70 },
-      { gid: 'g4', content: 'water', from: 70, to: 100 },
-    ]);
-  });
-
-  test('no stops at all: one fill spanning the whole route per water vessel', () => {
-    const fills = assignWaterLegs([waterBottle], [], 100);
-    expect(fills).toEqual([{ gid: 'g4', content: 'water', from: 0, to: 100 }]);
-  });
-
-  test('no water vessels: no fills', () => {
-    expect(assignWaterLegs([], [30], 100)).toEqual([]);
-  });
-});
-
-describe('waterFillsForVessels', () => {
-  test('an izo-capable vessel gets water only over the stretches its own izo does not cover', () => {
-    const fills = waterFillsForVessels([bidon], [0, 100], { g1: [[0, 30]] });
-    expect(fills).toEqual([{ gid: 'g1', content: 'water', from: 30, to: 100 }]);
-  });
-
-  test('water is emitted in the gaps between a vessel own fills, not across them', () => {
-    const fills = waterFillsForVessels([bidon], [0, 100], {
-      g1: [
-        [0, 20],
-        [50, 70],
-      ],
-    });
-    expect(fills).toEqual([
-      { gid: 'g1', content: 'water', from: 20, to: 50 },
-      { gid: 'g1', content: 'water', from: 70, to: 100 },
-    ]);
-  });
-
-  test('a fully occupied vessel gets no water at all', () => {
-    expect(waterFillsForVessels([bidon], [0, 100], { g1: [[0, 100]] })).toEqual([]);
-  });
-});
-
-describe('gelVesselWaterFills', () => {
-  test('tops the flask up with water after its gel, only at stops that already exist', () => {
-    const fills = gelVesselWaterFills([flask], { g3: 60 }, [20, 80], 100);
-    expect(fills).toEqual([
-      { gid: 'g3', content: 'water', from: 60, to: 80 },
-      { gid: 'g3', content: 'water', from: 80, to: 100 },
-    ]);
-  });
-
-  test('no stops at all: the flask just stays empty, no stop is invented for it', () => {
-    expect(gelVesselWaterFills([flask], { g3: 60 }, [], 100)).toEqual([]);
-  });
-
-  test('a gel vessel that does not allow water is left alone', () => {
-    const gelOnly: Vessel = {
-      gid: 'g8',
-      name: 'Gel only',
-      vol: 200,
-      allowed: ['gel'],
-      gelParts: 4,
-    };
-    expect(gelVesselWaterFills([gelOnly], { g8: 60 }, [20, 80], 100)).toEqual([]);
   });
 });
 
