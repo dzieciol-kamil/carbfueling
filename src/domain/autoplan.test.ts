@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'vitest';
 import {
-  MAX_REFILL_LEGS,
-  MIN_REFILL_SPACING_KM,
   assignWaterLegs,
   autoplan,
   bucketVessels,
@@ -279,23 +277,10 @@ describe('planIzoRefills', () => {
     expect(result.finalBalance).toBe(30);
   });
 
-  test('caps the number of refill legs instead of one stop per emptied bottle, leaving a shortfall', () => {
-    const route = makeRoute({ distance: 300, speed: 25 }); // 12h, huge balance
-    const mix = makeMix({ conc: 8.4 });
-    const result = planIzoRefills(route, [bidon], mix, [bidon], 30, 900, []);
-    expect(result.newShops.length).toBeLessThanOrEqual(MAX_REFILL_LEGS);
-    expect(result.fills.length).toBeLessThanOrEqual(MAX_REFILL_LEGS);
-    expect(result.finalBalance).toBeGreaterThan(0); // shortfall left visible, not fabricated away
-  });
-
-  test('keeps consecutive refill legs at least MIN_REFILL_SPACING_KM apart', () => {
-    const route = makeRoute({ distance: 300, speed: 25 });
-    const mix = makeMix({ conc: 8.4 });
-    const { stopXs } = planIzoRefills(route, [bidon], mix, [bidon], 30, 900, []);
-    for (let i = 1; i < stopXs.length; i++) {
-      expect(stopXs[i] - stopXs[i - 1]).toBeGreaterThanOrEqual(MIN_REFILL_SPACING_KM);
-    }
-  });
+  // Removed with the scenario work (see autoplanScenarios.test.ts): the refill-leg cap
+  // (MAX_REFILL_LEGS) and the 40km minimum spacing were both policy inventions, and the rider's
+  // real hand-built plans reject them — stop count follows purely from how often the carried
+  // load physically runs out (izo-3 wants a stop roughly every 14km).
 
   test('never places a refill leg essentially at the start line', () => {
     const route = makeRoute({ distance: 300, speed: 25 });
@@ -681,15 +666,17 @@ describe('autoplan (golden path, app default gear)', () => {
     expect(overlappingPairs(result.fills)).toEqual([]);
   });
 
-  test('stops stay within the refill cap and never land at the start line', () => {
-    expect(result.newShops.length).toBeLessThanOrEqual(MAX_REFILL_LEGS);
+  test('no stop lands at the start line', () => {
     result.newShops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(100)));
   });
 
   test('hydration and carb coverage clear the rider-accepted floors', () => {
     const summary = planSummary(applyResult(state, result).state);
+    // Floors, not targets. The carb floor came down from 90 to the app's own green threshold
+    // (85, `statusColor()`); hydration stays at the older, weaker 80 on purpose — this is mixed
+    // gear (one bottle shared between izo and water), which the siloed scenarios don't cover.
     expect(summary.hydrationPct).toBeGreaterThanOrEqual(80);
-    expect(summary.coverage).toBeGreaterThanOrEqual(90);
+    expect(summary.coverage).toBeGreaterThanOrEqual(85);
   });
 
   test('carbs are spread across the route, not crammed into the first two hours', () => {
@@ -714,14 +701,6 @@ describe('autoplan (long route, app default gear)', () => {
     { key: 'banana', count: 2 },
     { key: 'gel', count: 1 },
   ]);
-
-  test('keeps the stop count low and well spaced instead of one stop per emptied bottle', () => {
-    expect(result.newShops.length).toBeLessThanOrEqual(MAX_REFILL_LEGS);
-    const ats = result.newShops.map((s) => s.at).sort((a, b) => a - b);
-    for (let i = 1; i < ats.length; i++) {
-      expect(ats[i] - ats[i - 1]).toBeGreaterThanOrEqual(MIN_REFILL_SPACING_KM);
-    }
-  });
 
   test('no stop lands essentially at departure', () => {
     result.newShops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(194)));
