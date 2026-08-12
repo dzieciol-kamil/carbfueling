@@ -6,6 +6,7 @@ import {
   findClimbStarts,
   gridXs,
   minStopX,
+  pinStopItems,
   placeItemsEvenly,
   selectItemsForAmount,
 } from './autoplan';
@@ -126,6 +127,85 @@ describe('bucketVessels', () => {
     expect(reservedWaterVessel).toBeNull();
     expect(izoVessels.map((v) => v.gid)).toEqual(['g1', 'g2']);
   });
+
+  /**
+   * The reservation exists to put plain water alongside a syrupy mix, so it can only fall on a
+   * bottle that may hold water. Reserving one that may not takes it out of the izo pool without
+   * putting it anywhere else — the biggest bottle on the bike then rides the whole day empty.
+   */
+  test('a bottle that cannot hold water is never the one reserved for water', () => {
+    const izoOnly: Vessel = {
+      gid: 'g5',
+      name: 'Izo only',
+      vol: 750,
+      allowed: ['izo'],
+      gelParts: 1,
+    };
+    const { izoVessels, reservedWaterVessel } = bucketVessels(
+      [izoOnly, bidon2],
+      makeMix({ conc: 20 }),
+    );
+    expect(reservedWaterVessel?.gid).toBe('g2');
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g5']);
+  });
+
+  test('nothing is reserved when no izo-capable vessel may hold water', () => {
+    const izoOnly: Vessel = {
+      gid: 'g5',
+      name: 'Izo only',
+      vol: 750,
+      allowed: ['izo'],
+      gelParts: 1,
+    };
+    const izoOnly2: Vessel = {
+      gid: 'g6',
+      name: 'Izo only 2',
+      vol: 500,
+      allowed: ['izo'],
+      gelParts: 1,
+    };
+    const { izoVessels, reservedWaterVessel } = bucketVessels(
+      [izoOnly, izoOnly2],
+      makeMix({ conc: 20 }),
+    );
+    expect(reservedWaterVessel).toBeNull();
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g5', 'g6']);
+  });
+});
+
+/**
+ * Every bottle the rider straps on has to carry something.
+ *
+ * A concentrated mix wants a plain-water bottle next to it, but the bottle picked for that job has
+ * to be one that may actually hold water. Picked wrongly, the vessel falls out of the izo pool and
+ * is refused by the water side too, and the plan quietly rides a full-size bottle around empty
+ * while paying for extra refills of the small one it did use.
+ */
+describe('autoplan (a concentrated mix with an izo-only bottle)', () => {
+  const izoOnly: Vessel = { gid: 'g5', name: 'Izo only', vol: 750, allowed: ['izo'], gelParts: 1 };
+  const both: Vessel = {
+    gid: 'g6',
+    name: 'Bidon',
+    vol: 500,
+    allowed: ['water', 'izo'],
+    gelParts: 1,
+  };
+  const result = autoplan(
+    makePlan({
+      route: makeRoute({ distance: 120, speed: 25 }),
+      mix: makeMix({ conc: 20 }),
+      gear: [izoOnly, both],
+    }),
+    [],
+  );
+
+  test('the big izo-only bottle carries something', () => {
+    expect(result.fills.some((f) => f.gid === 'g5')).toBe(true);
+  });
+
+  test('what it carries is izo, since that is all it may hold', () => {
+    expect(result.fills.filter((f) => f.gid === 'g5').every((f) => f.content === 'izo')).toBe(true);
+  });
 });
 
 describe('findClimbStarts', () => {
@@ -207,6 +287,28 @@ describe('placeItemsEvenly', () => {
   });
 });
 
+describe('pinStopItems', () => {
+  const cola: FoodLibEntry = {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    carbs: 35,
+    ml: 330,
+    needsStop: true,
+  };
+
+  test('several products bought at one stop are laid out one after another', () => {
+    const pinned = pinStopItems([cola, cola, cola, cola], [30], 100);
+    expect(pinned).toHaveLength(4);
+    expect(new Set(pinned.map((p) => p.from)).size).toBe(4);
+  });
+
+  test('a product goes to each stop when there are stops to go round', () => {
+    const pinned = pinStopItems([cola, cola, cola], [20, 45, 70], 100);
+    expect(pinned.map((p) => p.from)).toEqual([20, 45, 70]);
+  });
+});
+
 /**
  * A `needsStop` product is one nobody carries — a cola, an ice cream. The rider picked it, so it has
  * to end up in the plan, and the only place it can be eaten is a stop. On a ride whose bottles never
@@ -255,6 +357,61 @@ describe('autoplan (products that have to be bought)', () => {
     result.newStops.forEach((s) => {
       const refills = boundaries.some((b) => Math.abs(b - s.at) <= STOP_SNAP_KM);
       expect(refills, `stop at ${s.at.toFixed(1)}km refills nothing`).toBe(true);
+    });
+  });
+});
+
+/**
+ * The same product, on a ride the water side never plans for.
+ *
+ * Under the hydration buffer a rider starts with there is no water plan at all — no refill, and so
+ * nothing for the stop-product loop to hang a stop on. The cola still costs its carbs against what
+ * the bottles have to cover, so dropping it silently builds the izo side thinner to feed food that
+ * was never placed. A stop is a marker on the route; the plan can afford to make one for a product
+ * the rider explicitly picked, whether or not a bottle happens to need filling there.
+ */
+describe('autoplan (products that have to be bought, below the hydration gate)', () => {
+  const cola: FoodLibEntry = {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    carbs: 35,
+    ml: 330,
+    needsStop: true,
+  };
+  // 37.5km at 25kph, 20°C, 75kg: 1.5h of sweat is 1050ml against the 1125ml buffer the rider starts
+  // with, so the water side plans nothing at all. The bottle carries no carbs either, which leaves
+  // the whole 57g target (85% of 67.5g) to the two colas.
+  const waterOnlyBottle: Vessel = {
+    gid: 'g1',
+    name: 'Bidon',
+    vol: 650,
+    allowed: ['water'],
+    gelParts: 1,
+  };
+  const state = makePlan({
+    route: makeRoute({ distance: 37.5, speed: 25, temp: 20, weight: 75 }),
+    gear: [waterOnlyBottle],
+    foodLib: [cola],
+  });
+  const result = autoplan(state, [{ key: 'cola', count: 2 }]);
+
+  test('the colas the rider picked are in the plan', () => {
+    expect(result.foods.map((f) => f.key)).toEqual(['cola', 'cola']);
+  });
+
+  test('each one has a stop to be bought at', () => {
+    expect(result.newStops.length).toBeGreaterThan(0);
+    result.foods.forEach((f) => {
+      const atStop = result.newStops.some((s) => Math.abs(s.at - f.from) <= STOP_SNAP_KM);
+      expect(atStop, `${f.key} at ${f.from.toFixed(1)}km is not at a stop`).toBe(true);
+    });
+  });
+
+  test('no stop lands on the start line or inside the finish', () => {
+    result.newStops.forEach((s) => {
+      expect(s.at).toBeGreaterThan(0);
+      expect(s.at).toBeLessThan(37.5);
     });
   });
 });

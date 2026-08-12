@@ -138,6 +138,12 @@ export function bucketVessels(
   gelVessels: Vessel[];
   izoVessels: Vessel[];
   waterOnly: Vessel[];
+  /**
+   * The bottle held back to ride alongside a concentrated mix with plain water in it. Nothing reads
+   * this: the reservation *is* the removal from `izoVessels`, after which `build` finds the vessel
+   * carrying no carbs and lays it out as a water bottle like any other. It is returned because a
+   * bottle silently missing from a pool is the kind of thing that needs a name to be checkable.
+   */
   reservedWaterVessel: Vessel | null;
 } {
   const gelVessels = gear.filter((v) => isAllowed(v, 'gel'));
@@ -147,10 +153,16 @@ export function bucketVessels(
   const izoCandidates = nonGel.filter((v) => isAllowed(v, 'izo'));
   const waterOnly = nonGel.filter((v) => !isAllowed(v, 'izo'));
 
+  // A syrup-strength mix is drunk with water on the side, so the biggest bottle is held back to
+  // carry it — but only a bottle the rider allows water in can do that job. Reserving one that can
+  // hold nothing but izo takes it out of the izo pool and hands it to a water side that then
+  // refuses it, and the largest bottle on the bike rides the whole day empty. Where no izo bottle
+  // may hold water, there is nothing to reserve and every one of them stays on izo.
+  const waterCapable = izoCandidates.filter((v) => isAllowed(v, 'water'));
   let reservedWaterVessel: Vessel | null = null;
   let izoVessels = izoCandidates;
-  if (mix.conc > CONCENTRATED_MIX_THRESHOLD_G_PER_100ML && izoCandidates.length > 0) {
-    reservedWaterVessel = izoCandidates.reduce((a, b) => (b.vol > a.vol ? b : a));
+  if (mix.conc > CONCENTRATED_MIX_THRESHOLD_G_PER_100ML && waterCapable.length > 0) {
+    reservedWaterVessel = waterCapable.reduce((a, b) => (b.vol > a.vol ? b : a));
     izoVessels = izoCandidates.filter((v) => v.gid !== reservedWaterVessel!.gid);
   }
 
@@ -482,6 +494,61 @@ function stopLegs(timelines: Timeline[], G: number): Set<number> {
   return legs;
 }
 
+/**
+ * Whether a point on the route is somewhere a bought product could actually be eaten: out on the
+ * route, and clear of the finish gap. One rule, because three things hang off it — where the
+ * markers below may go, where `pinStopItems` will put the products, and whether their carbs are
+ * counted at all — and a plan that counts a product it cannot place is worse than one that places
+ * it badly.
+ */
+function isBuyableX(x: number, D: number): boolean {
+  return x > 0 && x <= D * (1 - FINISH_GAP_FRACTION);
+}
+
+/** Grid boundaries a bought product could be eaten at — the interior ones that pass the rule. */
+function buyableXs(xs: number[], G: number, D: number): number[] {
+  return xs.slice(1, G).filter((x) => isBuyableX(x, D));
+}
+
+/**
+ * The stops the plan makes, topped up with plain markers wherever a bought product still has
+ * nowhere to be bought.
+ *
+ * A stop is a point on the route, not a fill: the plan can put one anywhere the rider will be able
+ * to buy something, whether or not a bottle happens to run dry there. Usually it doesn't have to —
+ * the water side manufactures a refill for every stop-product it is asked for — but that whole
+ * mechanism lives behind the hydration gate, so a ride short enough to plan no water at all had
+ * nowhere to buy the cola the rider explicitly picked, and dropped it while still spending its
+ * carbs. The same hole opens with the gate on whenever every refill lands inside the finish gap,
+ * where nothing may be eaten. Markers go on grid boundaries so they line up with everything else.
+ */
+function stopsForProducts(
+  stops: number[],
+  xs: number[],
+  G: number,
+  D: number,
+  want: number,
+): number[] {
+  const out = [...stops];
+  const short = () => want - out.filter((x) => isBuyableX(x, D)).length;
+  if (short() <= 0) return out;
+  // Spread over the grid rather than taken off its front: boundaries are equal slices of time, so
+  // the j-th of n markers belongs at the j/(n+1) point of the ride — where a rider told to buy n
+  // things along the way would stop. Every other boundary follows as a fallback, for when the
+  // spread ones are already taken or fall inside the finish gap.
+  const order: number[] = [];
+  for (let j = 1; j <= want; j++) order.push(clamp(Math.round((j * G) / (want + 1)), 1, G - 1));
+  for (let i = 1; i < G; i++) order.push(i);
+  for (const i of order) {
+    if (short() <= 0) break;
+    const x = xs[i];
+    if (!isBuyableX(x, D)) continue;
+    if (out.some((s) => Math.abs(s - x) < MIN_LEG_KM)) continue;
+    out.push(x);
+  }
+  return out.sort((a, b) => a - b);
+}
+
 /** Legs are equal slices of *time*: on a hilly route that makes them unequal in km, as it should. */
 export function gridXs(route: RouteInput, G: number, stops: Stop[]): number[] {
   const D = dist(route);
@@ -513,19 +580,23 @@ export function gridXs(route: RouteInput, G: number, stops: Stop[]): number[] {
  * how much of the route it is, which is what keeps a stop-product from splitting the ride into "all
  * the gels before it, nothing after".
  */
-function pinStopItems(items: FoodLibEntry[], stops: number[], D: number): DraftFood[] {
-  const endX = D * (1 - FINISH_GAP_FRACTION);
+export function pinStopItems(items: FoodLibEntry[], stops: number[], D: number): DraftFood[] {
   const gap = Math.max(0.5, D * 0.005);
-  const usable = stops.filter((x) => x > 0 && x <= endX).sort((a, b) => a - b);
+  const usable = stops.filter((x) => isBuyableX(x, D)).sort((a, b) => a - b);
   const stopItems = items.filter((e) => e.needsStop);
   const pinned: DraftFood[] = [];
+  // How many products this stop has already been given. Counted per stop rather than by measuring
+  // distances: the second product sits exactly `gap` away, which any distance test either misses or
+  // has to be widened for, and then the third lands on top of the second.
+  const takenAt = new Map<number, number>();
   stopItems.forEach((entry, j) => {
     if (usable.length === 0) return;
     const idx = Math.min(
       usable.length - 1,
       Math.floor(((j + 0.5) * usable.length) / stopItems.length),
     );
-    const taken = pinned.filter((p) => Math.abs(p.from - usable[idx]) < gap).length;
+    const taken = takenAt.get(idx) || 0;
+    takenAt.set(idx, taken + 1);
     const at = usable[idx] + taken * gap;
     pinned.push({
       key: entry.key,
@@ -758,7 +829,10 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
    * stretched across a hot 70km.
    */
   const carriedMl = items.filter((e) => !e.needsStop).reduce((a, e) => a + (e.ml || 0), 0);
-  const stopItemCount = items.filter((e) => e.needsStop).length;
+  const stopItems = items.filter((e) => e.needsStop);
+  const stopItemCount = stopItems.length;
+  const stopItemCarbs = stopItems.reduce((a, e) => a + e.carbs, 0);
+  const stopItemMl = stopItems.reduce((a, e) => a + (e.ml || 0), 0);
 
   // Two stops closer than the merge window are the same stop, so the window is also the shortest
   // leg worth cutting the route into — which is what bounds how fine the grid may get.
@@ -766,7 +840,6 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
   // Every stop-product needs a stop to be bought at, and buying two at the same stop while riding
   // past four others is the arrangement nobody wants.
   const minLegs = Math.max(1, Math.min(legCap, stopItemCount + 1));
-  const needFluid = waterOn ? Math.max(0, GREEN * sweatLoss - itemMl) : 0;
 
   const gelUsed = carbsOn
     ? gelVessels.filter(
@@ -789,6 +862,21 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     const effs = xs.map((x) => eff(route, x));
     const effTotal = effs[G] || 1;
     const timelines: Timeline[] = [];
+
+    /**
+     * Whether this grid can host a product that has to be bought at all.
+     *
+     * A stop can be manufactured at any interior boundary clear of the finish gap (see
+     * `stopsForProducts`), so one such boundary is enough for the whole selection and none at all
+     * means the route has nowhere to buy anything. In that case the stop-products come back out of
+     * the budget rather than being counted and then quietly lost: sizing the bottles for food that
+     * never gets placed is how a plan ends up thinner than the ride it is for. `shortfall[4]` still
+     * reports the stops that could not be made, so the loss is visible to the search.
+     */
+    const canBuy = buyableXs(xs, G, D).length > 0;
+    const boughtCarbs = canBuy ? stopItemCarbs : 0;
+    const drunkMl = itemMl - (canBuy ? 0 : stopItemMl);
+    const needFluid = waterOn ? Math.max(0, GREEN * sweatLoss - drunkMl) : 0;
 
     const line = (v: Vessel, content: 'izo' | 'gel' | null): Timeline => ({
       gid: v.gid,
@@ -897,7 +985,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     // is filled once at home, so one load per izo bottle is the floor. Past that, loads go to the
     // bottle carrying the fewest — a plan that empties one bottle five times while the other rides
     // along full pays for stops it could have shared.
-    const needCarbs = Math.max(0, GREEN * target - itemCarbs);
+    const needCarbs = Math.max(0, GREEN * target - (itemCarbs - stopItemCarbs + boughtCarbs));
     const izoLines = timelines.filter((t) => t.carbContent === 'izo');
     sequenceCarbs();
     for (let guard = 0; guard < G * Math.max(1, izoLines.length); guard++) {
@@ -935,9 +1023,9 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
             .reduce((n, b) => n + b.fills, 0) *
             t.vol,
         0,
-      ) + itemMl;
+      ) + drunkMl;
     /** What the bottles carry, ignoring what the rider will buy and drink along the way. */
-    const bottleFluid = () => fluidOf() - itemMl;
+    const bottleFluid = () => fluidOf() - drunkMl;
     const worstOf = () => {
       if (sweatLoss <= 0) return 100;
       const rates = legFluidRates(timelines, G, effs);
@@ -966,7 +1054,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         // or the bottles already hold every millilitre the ride is going to sweat out. Past that
         // second one another stop buys nothing — the water would ride to the finish unopened — so a
         // shallow dip where one load hands over to the next is the honest price of not stopping.
-        const sumHolds = fluid >= needFluid + itemMl;
+        const sumHolds = fluid >= needFluid + drunkMl;
         if (floorHolds && sumHolds) break;
         // A top-up at a stop the plan already makes is free; one that lands between them costs the
         // rider a pull-over, which is the thing to be stingy with, so each move is scored by the
@@ -1010,7 +1098,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
           : (usable.map(raiseFloor).filter(Boolean) as ReturnType<typeof measure>[]);
         // Once the line holds, what is left is a plain volume shortfall — and the cheapest bottle
         // to top up is the one already stopping there.
-        if (moves.length === 0 && fluid < needFluid + itemMl) {
+        if (moves.length === 0 && fluid < needFluid + drunkMl) {
           moves = usable.map(addVolume).filter(Boolean) as ReturnType<typeof measure>[];
         }
         // While the line is sagging, the move that lifts it highest wins, even if it costs a stop:
@@ -1113,7 +1201,14 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         .slice(1)
         .forEach((f) => refills.push(f.from));
     }
-    const stops = [...new Set(refills.filter((x) => x > 0 && x < D - 1e-9))].sort((a, b) => a - b);
+    const refillStops = [...new Set(refills.filter((x) => x > 0 && x < D - 1e-9))].sort(
+      (a, b) => a - b,
+    );
+    // The water side has already made a refill for every product that has to be bought — where it
+    // ran at all, and where those refills landed somewhere a product may be eaten. Whatever it left
+    // undone is made up here with a marker, so the rider is never told to buy something with
+    // nowhere to buy it.
+    const stops = stopsForProducts(refillStops, xs, G, D, Math.min(stopItemCount, G - 1));
     const carbs = usefulCarbs();
     const fluid = fluidOf();
     const worstLegPct = worstOf();
@@ -1143,7 +1238,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
       }, 0),
       shortfall: [
         waterOn ? Math.max(0, COVERAGE_TARGET_PCT - worstLegPct) : 0,
-        waterOn ? Math.max(0, needFluid + itemMl - fluid) : 0,
+        waterOn ? Math.max(0, needFluid + drunkMl - fluid) : 0,
         Math.max(0, needCarbs - carbs),
         carbRateDeficit(),
         Math.max(0, Math.min(stopItemCount, legCap - 1) - stops.length),
