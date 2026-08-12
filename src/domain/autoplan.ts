@@ -471,14 +471,21 @@ function stopLegs(timelines: Timeline[], G: number): Set<number> {
 }
 
 /** Legs are equal slices of *time*: on a hilly route that makes them unequal in km, as it should. */
-function gridXs(route: RouteInput, G: number, shops: ShopStop[]): number[] {
+export function gridXs(route: RouteInput, G: number, shops: ShopStop[]): number[] {
   const D = dist(route);
   const hrs = totalHours(route);
+  const raws = [0];
+  for (let i = 1; i < G; i++) raws.push(distanceAtTime(route, (hrs * i) / G));
+  raws.push(D);
   const xs = [0];
   for (let i = 1; i < G; i++) {
-    const raw = distanceAtTime(route, (hrs * i) / G);
-    const snapped = snapToShop(raw, shops, D);
-    xs.push(snapped > xs[i - 1] + MIN_LEG_KM ? snapped : raw);
+    const snapped = snapToShop(raws[i], shops, D);
+    // A shop only takes the boundary if it still leaves a leg on either side of it. On a climb the
+    // legs are shorter in km than the 3km a snap may move a point, so without the second half of
+    // this test a shop past the next boundary would pull this one in front of it and the grid — and
+    // with it the fills and their stops — would run backwards.
+    const fits = snapped > xs[i - 1] + MIN_LEG_KM && snapped < raws[i + 1] - MIN_LEG_KM;
+    xs.push(fits ? snapped : raws[i]);
   }
   xs.push(D);
   return xs;

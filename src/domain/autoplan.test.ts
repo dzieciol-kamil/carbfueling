@@ -4,6 +4,7 @@ import {
   autoplan,
   bucketVessels,
   findClimbStarts,
+  gridXs,
   minStopX,
   placeItemsEvenly,
   selectItemsForAmount,
@@ -255,6 +256,46 @@ describe('autoplan (products that have to be bought)', () => {
       const refills = boundaries.some((b) => Math.abs(b - s.at) <= SHOP_SNAP_KM);
       expect(refills, `stop at ${s.at.toFixed(1)}km refills nothing`).toBe(true);
     });
+  });
+});
+
+/**
+ * Snapping a grid point onto the rider's own shop must not turn the grid around.
+ *
+ * Legs are equal slices of time, so on a climb they are a kilometre long or less — shorter than the
+ * 3km a shop may pull a boundary forward. Pull one boundary past the next and the "leg" between them
+ * runs backwards: a fill that ends before it starts, and stops in the wrong order on the chart.
+ */
+describe('autoplan (grid vs. the rider’s shops)', () => {
+  // A wall at km20: 500m of ascent per kilometre, so three grid legs fit inside three kilometres.
+  const wall: number[] = [];
+  for (let i = 0; i <= 60; i++) {
+    if (i < 20) wall.push(100);
+    else if (i < 23) wall.push(100 + (i - 20) * 500);
+    else wall.push(1600 - (i - 23) * 20);
+  }
+  const steep = makeRoute({
+    distance: 60,
+    speed: 22,
+    temp: 30,
+    useGpx: true,
+    gpxTrack: { id: 3, ele: wall },
+  });
+
+  test('a shop past the next boundary is not snapped to', () => {
+    // Natural grid: 0, 11.63, 20.54, 22.48, 32.95, 46.47, 60 — the shop sits beyond the 22.48 leg.
+    const xs = gridXs(steep, 6, [{ id: 1, at: 23.4, name: 'Sklep' }]);
+    xs.forEach((x, i) => {
+      if (i > 0)
+        expect(x, `grid runs backwards: ${xs.map((v) => v.toFixed(2)).join(' ')}`).toBeGreaterThan(
+          xs[i - 1],
+        );
+    });
+  });
+
+  test('a shop that fits between two boundaries still moves the stop onto it', () => {
+    const xs = gridXs(steep, 6, [{ id: 1, at: 12.5, name: 'Sklep' }]);
+    expect(xs).toContain(12.5);
   });
 });
 
