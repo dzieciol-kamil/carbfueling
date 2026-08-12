@@ -306,6 +306,7 @@ export interface StringTable {
   autoplanDialogConfirm: string;
   autoplanDialogCancel: string;
   autoplanShortRideNote: string;
+  autoplanNeedsDuration: string;
   autoplanAppliedNote: string;
   autoplanAppliedDismiss: string;
 }
@@ -680,6 +681,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogCountLabel: 'Ile sztuk',
     autoplanDialogConfirm: 'Zaproponuj plan',
     autoplanDialogCancel: 'Anuluj',
+    autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
     autoplanShortRideNote:
       'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
     autoplanAppliedNote: 'To propozycja bazowa — dostosuj do własnych doświadczeń i preferencji.',
@@ -1051,6 +1053,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogCountLabel: 'Count',
     autoplanDialogConfirm: 'Suggest plan',
     autoplanDialogCancel: 'Cancel',
+    autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
     autoplanShortRideNote:
       "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",
     autoplanAppliedNote:

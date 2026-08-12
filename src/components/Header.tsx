@@ -99,6 +99,8 @@ export function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <AutoplanFlow variant="desktop" />
+
         <div style={{ position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={handleExport} style={planBtnStyle()}>
@@ -144,8 +146,6 @@ export function Header() {
             </div>
           )}
         </div>
-
-        <AutoplanFlow variant="desktop" />
 
         <div style={{ position: 'relative' }}>
           <button

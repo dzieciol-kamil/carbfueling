@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { totalHours } from '../../domain/fuel';
+import type { RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -36,6 +37,9 @@ const mobileButtonStyle: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
+/** Nothing to plan yet: the button stays put and says why instead of disappearing on the rider. */
+const disabledStyle: CSSProperties = { opacity: 0.45, cursor: 'default' };
+
 function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
   return {
     position: 'fixed',
@@ -59,6 +63,20 @@ function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
   };
 }
 
+/**
+ * Whether there is a ride here to plan at all.
+ *
+ * `totalHours` answers 0 for a route nobody has finished describing — a distance without a speed,
+ * a clock with nothing on it — and the app starts every session that way. That zero is "unknown",
+ * not "under an hour", and the two want opposite answers: one waits for the rider, the other plans
+ * water and calls it a day.
+ */
+export function autoplanGate(route: RouteInput): 'noDuration' | 'shortRide' | 'ready' {
+  const hours = totalHours(route);
+  if (hours <= 0) return 'noDuration';
+  return hours < 1 ? 'shortRide' : 'ready';
+}
+
 export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const lang = useAppStore((s) => s.ui.lang);
   const route = useAppStore((s) => s.route);
@@ -74,9 +92,10 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   // common case of a rider re-running autoplan a few times while dialing in food choices.
   const [removePreviousAutoStops, setRemovePreviousAutoStops] = useState(true);
   const hasPreviousAutoStops = shops.some((sh) => sh.autoCreated);
+  const gate = autoplanGate(route);
 
   function proceedAfterConfirm() {
-    if (totalHours(route) < 1) {
+    if (gate === 'shortRide') {
       applyAutoplan([], hasPreviousAutoStops && removePreviousAutoStops);
       setPhase('appliedNote');
       return;
@@ -99,7 +118,18 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
       <button
         type="button"
         onClick={handleTrigger}
-        style={variant === 'desktop' ? desktopButtonStyle : mobileButtonStyle}
+        disabled={gate === 'noDuration'}
+        title={gate === 'noDuration' ? strings.autoplanNeedsDuration : undefined}
+        style={
+          gate === 'noDuration'
+            ? {
+                ...(variant === 'desktop' ? desktopButtonStyle : mobileButtonStyle),
+                ...disabledStyle,
+              }
+            : variant === 'desktop'
+              ? desktopButtonStyle
+              : mobileButtonStyle
+        }
       >
         {strings.autoplanButton}
       </button>
@@ -150,7 +180,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
       {phase === 'appliedNote' && (
         <div style={noteStyle(variant)}>
           <span>
-            {totalHours(route) < 1 ? strings.autoplanShortRideNote : strings.autoplanAppliedNote}
+            {gate === 'shortRide' ? strings.autoplanShortRideNote : strings.autoplanAppliedNote}
           </span>
           <button
             onClick={() => setPhase('idle')}
