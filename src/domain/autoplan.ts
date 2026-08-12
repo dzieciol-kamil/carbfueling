@@ -4,6 +4,7 @@ import {
   cph,
   dist,
   distanceAtTime,
+  eff,
   planSummary,
   timeAtDistance,
   prof,
@@ -427,15 +428,19 @@ function timelineFills(t: Timeline, G: number, xs: number[], route: RouteInput):
 }
 
 /**
- * The fluid delivery rate (ml/h) on every leg. This is the rider's floor made checkable without
- * paying for a 160-sample simulation: rates are piecewise constant on the grid, so the lowest leg
- * *is* the lowest point of the chart's line. Gel carries no water, so a flask's gel legs count for
- * nothing here — which is exactly why a plan whose gel outlasts the first stop has to make the
- * water up elsewhere.
+ * How much fluid each leg gets, per unit of **effort** — the same axis `fuel.ts` pours it out on.
+ *
+ * This is the rider's floor made checkable without paying for a 160-sample simulation: the ratio is
+ * constant inside a fill, so the lowest leg *is* the lowest point of the chart's line. It has to be
+ * effort and not the clock, because an hour of climbing costs more sweat than an hour of descending
+ * and empties the bottle faster too — measuring equal-*time* legs against a flat sweat rate puts the
+ * error exactly where it hurts, on the climb, where the rider is thirstiest.
+ *
+ * Gel carries no water, so a flask's gel legs count for nothing here — which is why a plan whose gel
+ * outlasts the first stop has to make the water up elsewhere.
  */
-function legFluidRates(timelines: Timeline[], G: number, legHours: number): number[] {
+function legFluidRates(timelines: Timeline[], G: number, effs: number[]): number[] {
   const rates = new Array<number>(G).fill(0);
-  if (legHours <= 0) return rates;
   for (const t of timelines) {
     for (const b of blocksOf(t, G)) {
       if (b.content === 'gel') continue;
@@ -444,7 +449,9 @@ function legFluidRates(timelines: Timeline[], G: number, legHours: number): numb
         const from = b.fromLeg + Math.round((i * span) / b.fills);
         const to = b.fromLeg + Math.round(((i + 1) * span) / b.fills);
         if (to <= from) continue;
-        const rate = t.vol / ((to - from) * legHours);
+        const effSpan = effs[to] - effs[from];
+        if (effSpan <= 0) continue;
+        const rate = t.vol / effSpan;
         for (let leg = from; leg < to; leg++) rates[leg] += rate;
       }
     }
@@ -723,7 +730,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
   const itemCarbs = items.reduce((a, e) => a + e.carbs, 0);
   const itemMl = items.reduce((a, e) => a + (e.ml || 0), 0);
   /**
-   * What the food itself pours in per hour, counted against the line the bottles have to hold.
+   * What the food itself pours in, counted against the line the bottles have to hold.
    *
    * Only what the rider *carries* counts: a bottle of cola in the jersey gets drunk somewhere along
    * the ride, so it genuinely thins out the bottles' job. A cola that has to be bought at a shop
@@ -731,8 +738,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
    * is still on the bottles alone, and pretending otherwise is how a plan ends up with one bottle
    * stretched across a hot 70km.
    */
-  const carriedRate =
-    hrs > 0 ? items.filter((e) => !e.needsStop).reduce((a, e) => a + (e.ml || 0), 0) / hrs : 0;
+  const carriedMl = items.filter((e) => !e.needsStop).reduce((a, e) => a + (e.ml || 0), 0);
   const shopItemCount = items.filter((e) => e.needsStop).length;
 
   // Two stops closer than the merge window are the same stop, so the window is also the shortest
@@ -760,6 +766,9 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
   function build(G: number, extraLoads: number, stretch: boolean): Candidate {
     const legHours = hrs / G;
     const xs = gridXs(route, G, shops);
+    // The effort each grid point sits at, which is the axis the fluid line lives on.
+    const effs = xs.map((x) => eff(route, x));
+    const effTotal = effs[G] || 1;
     const timelines: Timeline[] = [];
 
     const line = (v: Vessel, content: 'izo' | 'gel' | null): Timeline => ({
@@ -911,9 +920,11 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     /** What the bottles carry, ignoring what the rider will buy and drink along the way. */
     const bottleFluid = () => fluidOf() - itemMl;
     const worstOf = () => {
-      if (sweatRate <= 0) return 100;
-      const rates = legFluidRates(timelines, G, legHours);
-      return ((Math.min(...rates) + carriedRate) / sweatRate) * 100;
+      if (sweatLoss <= 0) return 100;
+      const rates = legFluidRates(timelines, G, effs);
+      const needPerEffort = sweatLoss / effTotal;
+      const carriedPerEffort = carriedMl / effTotal;
+      return ((Math.min(...rates) + carriedPerEffort) / needPerEffort) * 100;
     };
     // Only a vessel that may hold water can answer a thirst: an izo-only bottle carries exactly
     // the loads the carbs called for, and mixing another one just to have something to drink is
@@ -999,7 +1010,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         // The other way to be done: the bottles already hold every millilitre the ride will sweat
         // out, so the only thing left to buy is a flatter line — worth taking while it is free, not
         // worth a stop. A shallow dip where one load hands over to the next is the honest price.
-        const everyLegFed = Math.min(...legFluidRates(timelines, G, legHours)) > 0;
+        const everyLegFed = Math.min(...legFluidRates(timelines, G, effs)) > 0;
         if (sumHolds && everyLegFed && bottleFluid() >= sweatLoss && pick.addedStops > 0) break;
         setCount(pick.k, pick.n);
       }

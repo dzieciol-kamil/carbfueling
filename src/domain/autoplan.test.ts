@@ -9,7 +9,7 @@ import {
   selectItemsForAmount,
 } from './autoplan';
 import type { FoodSelectionEntry } from './autoplan';
-import { planSummary, rateStats, sweat, totalHours } from './fuel';
+import { planSummary, rateStats, samples, sweat, totalHours } from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -255,6 +255,54 @@ describe('autoplan (products that have to be bought)', () => {
       const refills = boundaries.some((b) => Math.abs(b - s.at) <= SHOP_SNAP_KM);
       expect(refills, `stop at ${s.at.toFixed(1)}km refills nothing`).toBe(true);
     });
+  });
+});
+
+/**
+ * The fluid floor has to be measured the way the chart draws it.
+ *
+ * `fuel.ts` spreads both what a bottle delivers and what the rider loses by **effort**, not by the
+ * clock: an hour of climbing costs more sweat than an hour of descending, and a bottle drunk across
+ * it empties faster too. A planner that lays its legs out by time and then checks them against a
+ * flat sweat rate is measuring in the wrong units, and the error lands exactly where it hurts — the
+ * climb, where the ratio is worst and the rider is thirstiest.
+ */
+describe('autoplan (hilly routes)', () => {
+  /** The lowest point of the delivery line as a share of the target, straight off `samples()`. */
+  function worstFluidPct(state: PlanState): { pct: number; at: number } {
+    const S = samples(state);
+    const D = state.route.distance;
+    const dt = totalHours(state.route) / (S.length - 1);
+    let worst = { pct: Infinity, at: 0 };
+    for (let i = 1; i < S.length; i++) {
+      if (S[i].x > D * 0.98) break;
+      const need = (S[i].fluidNeed - S[i - 1].fluidNeed) / dt;
+      if (need < 1) continue;
+      const pct = ((S[i].ml - S[i - 1].ml) / dt / need) * 100;
+      if (pct < worst.pct) worst = { pct, at: S[i].x };
+    }
+    return worst;
+  }
+
+  // A long climb in the first third, then down: 3.5km of ascent per sample step at the steepest.
+  const ele: number[] = [];
+  for (let i = 0; i <= 90; i++) ele.push(i < 30 ? 100 + i * 45 : 1450 - (i - 30) * 22);
+  const track: GpxTrack = { id: 7, ele };
+  const hilly = makeRoute({ distance: 90, speed: 25, temp: 30, useGpx: true, gpxTrack: track });
+  const bottle: Vessel = { gid: 'g1', name: 'Bidon', vol: 750, allowed: ['water'], gelParts: 1 };
+
+  test('the line holds its floor on the climb, not just on paper', () => {
+    const state = makePlan({ route: hilly, gear: [bottle] });
+    const result = autoplan(state, []);
+    const applied: PlanState = {
+      ...state,
+      fills: result.fills.map((f, i) => ({ ...f, fid: i + 1 })),
+      shops: result.newShops.map((s, i) => ({ ...s, id: i + 1, name: 'Sklep' })),
+    };
+    const { pct, at } = worstFluidPct(applied);
+    expect(pct, `line drops to ${Math.round(pct)}% at km ${Math.round(at)}`).toBeGreaterThanOrEqual(
+      85,
+    );
   });
 });
 
