@@ -1,5 +1,6 @@
 import {
   COVERAGE_TARGET_PCT,
+  absCap,
   carbsFill,
   cph,
   dist,
@@ -370,9 +371,7 @@ interface Block {
 function layoutOf(t: Timeline, G: number): { lead: number; carbLegs: number; tail: number } {
   if (!t.carbContent) return { lead: 0, carbLegs: 0, tail: G };
   const lead = Math.min(t.carbStartLeg, G - 1);
-  // A bottle that cannot hold water has nothing else to do, so its loads cover everything left to
-  // it; every other stream takes the share of the route its grams are worth.
-  const carbLegs = t.canWater ? Math.min(G - lead, Math.max(1, t.carbBlockLegs)) : G - lead;
+  const carbLegs = Math.min(G - lead, Math.max(1, t.carbBlockLegs));
   return { lead, carbLegs, tail: G - lead - carbLegs };
 }
 
@@ -870,7 +869,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
      * `stopsForProducts`), so one such boundary is enough for the whole selection and none at all
      * means the route has nowhere to buy anything. In that case the stop-products come back out of
      * the budget rather than being counted and then quietly lost: sizing the bottles for food that
-     * never gets placed is how a plan ends up thinner than the ride it is for. `shortfall[4]` still
+     * never gets placed is how a plan ends up thinner than the ride it is for. `shortfall[5]` still
      * reports the stops that could not be made, so the loss is visible to the search.
      */
     const canBuy = buyableXs(xs, G, D).length > 0;
@@ -941,12 +940,12 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     };
 
     const sequenceCarbs = () => {
-      const streams = timelines.filter((t) => t.carbContent && t.canWater);
-      // What each stream would take at the rate the ride asks for, in legs.
+      const streams = timelines.filter((t) => t.carbContent);
+      // What each stream would take at the rate the ride asks for, in legs. Read off the grams it
+      // carries, never off `gelHours` — that field is an *output* of this function now, and feeding
+      // it back in would let a stretched flask stretch itself again on every pass of the search.
       const natural = (t: Timeline) =>
-        t.carbContent === 'gel'
-          ? t.gelHours / legHours
-          : (t.carbFills * t.carbsPerFill) / Math.max(1e-9, cph(route)) / legHours;
+        (t.carbFills * t.carbsPerFill) / Math.max(1e-9, cph(route)) / legHours;
       const total = streams.reduce((a, t) => a + natural(t), 0);
       // Two ways to lay a short carb stream out, and which one is better is not decidable here: run
       // the loads at the rate the ride asks for and leave the rest of the route to water, or stretch
@@ -972,11 +971,13 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         t.carbBlockLegs = Math.max(1, Math.round(natural(t) * scale));
         t.carbStartLeg = Math.min(cursor, Math.max(0, G - t.carbBlockLegs));
         t.gelLegs = t.carbBlockLegs;
-      }
-      // A bottle with no water setting starts on its carbs at the line and stretches them over
-      // everything it is asked to cover.
-      for (const t of timelines) {
-        if (t.carbContent && !t.canWater) t.carbStartLeg = 0;
+        // A flask that may also hold water drinks its gel at the rate the ride asks for and is then
+        // free to take water at the next stop it passes — the sooner it empties, the more use it is.
+        // A gel-only flask has nothing to move on to, so it pours for as long as it is given: the
+        // same grams spread thinner, which is the only way two flasks stop landing on top of each
+        // other at the start line.
+        if (!t.canWater) t.gelHours = t.carbBlockLegs * legHours;
+        cursor = Math.min(G, t.carbStartLeg + t.carbBlockLegs);
       }
     };
 
@@ -1178,15 +1179,73 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
      * trickle; one that doesn't is, because stretching its loads is the only thing holding the
      * fluid line up when that bottle is all the plan has.
      */
-    function carbRateDeficit(): number {
-      let worst = 0;
+    /**
+     * What every leg is actually being handed, in grams per hour, counting every carb stream at
+     * once.
+     *
+     * A bottle's own rate says nothing about whether the rider is fed: two bottles pouring at half
+     * rate over the same stretch feed him exactly as well as one at full rate, and one bottle
+     * pouring at full rate for the first half feeds him not at all in the second.
+     */
+    function legCarbRates(): number[] {
+      const rates = new Array<number>(G).fill(0);
       for (const t of timelines) {
-        if (t.carbContent !== 'izo' || !t.canWater) continue;
-        const l = layoutOf(t, G);
-        if (l.carbLegs <= 0) continue;
-        const rate = t.carbsPerFill / ((l.carbLegs / t.carbFills) * legHours);
-        worst = Math.max(worst, GREEN * cph(route) - rate);
+        for (const b of blocksOf(t, G)) {
+          if (b.content === 'water' || !b.content) continue;
+          const span = b.toLeg - b.fromLeg;
+          for (let i = 0; i < b.fills; i++) {
+            const from = b.fromLeg + Math.round((i * span) / b.fills);
+            const to = b.fromLeg + Math.round(((i + 1) * span) / b.fills);
+            if (to <= from) continue;
+            const rate = t.carbsPerFill / ((to - from) * legHours);
+            for (let leg = from; leg < to; leg++) rates[leg] += rate;
+          }
+        }
       }
+      return rates;
+    }
+
+    /**
+     * The hole the bottles leave in the worst-fed leg of the ride.
+     *
+     * Measured against the leg's *own* share of the requirement, not the ride's average: `fuel.ts`
+     * pours the need out along effort, so a climb asks for more than the clock says and the descent
+     * home asks for less. A plan paced against the average over-feeds the descent to make its sum
+     * come out right, which is how the rider ends up carrying sugar he cannot use down a hill.
+     *
+     * The last leg is left out. Carbs swallowed in the closing minutes are still in the gut at the
+     * line (`CARB_STREAM_FINISH_GAP` is the same idea), so demanding they be fed would buy a load
+     * nobody digests.
+     */
+    function carbRateDeficit(): number {
+      if (needCarbs <= 0 || G <= 1) return 0;
+      // A ride with nothing that can carry carbs is short of them everywhere, and no arrangement of
+      // water bottles will change that. Scoring the hole would let it out-shout the terms that can
+      // still be improved — which is how a water-only century ends up buying stops that feed nobody.
+      if (!timelines.some((t) => t.carbContent)) return 0;
+      const rates = legCarbRates();
+      let worst = 0;
+      for (let i = 0; i < G - 1; i++) {
+        const share = (effs[i + 1] - effs[i]) / effTotal;
+        const want = (needCarbs * share) / legHours;
+        worst = Math.max(worst, want - rates[i]);
+      }
+      return worst;
+    }
+
+    /**
+     * How far past the gut's ceiling the fastest leg pours, in grams per hour.
+     *
+     * The rider's rule, and the one thing the sum-of-grams objective cannot see: what arrives faster
+     * than the gut takes it does not vanish, it queues, and a queue that never drains is the ride
+     * spent with a brick in the stomach. `usefulCarbs()` already declines to *count* the surplus,
+     * which stops the plan being credited for it — this makes the plan pay for it instead.
+     */
+    function carbRateOvershoot(): number {
+      const rates = legCarbRates();
+      let worst = 0;
+      const gutCap = absCap(mix);
+      for (let i = 0; i < G; i++) worst = Math.max(worst, rates[i] - gutCap);
       return worst;
     }
 
@@ -1240,6 +1299,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         waterOn ? Math.max(0, COVERAGE_TARGET_PCT - worstLegPct) : 0,
         waterOn ? Math.max(0, needFluid + drunkMl - fluid) : 0,
         Math.max(0, needCarbs - carbs),
+        carbRateOvershoot(),
         carbRateDeficit(),
         Math.max(0, Math.min(stopItemCount, legCap - 1) - stops.length),
       ],
