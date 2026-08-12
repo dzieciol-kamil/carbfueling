@@ -1,10 +1,17 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { moveListItem } from '../../domain/dragMath';
 
+/**
+ * The order is asked for, not held.
+ *
+ * A drag fires many moves, and each reads the card positions out of a DOM React has already
+ * re-rendered. Closing over the order as it stood at pointerdown makes every move after the first
+ * edit a list that no longer exists, so the card snaps back where it started. The updater form
+ * keeps the two halves — where the card is now, and what the list is now — on the same clock.
+ */
 export function createFoodReorderHandler(
   foodKey: string,
-  order: string[],
-  onReorder: (next: string[]) => void,
+  onReorder: (update: (prev: string[]) => string[]) => void,
   onDragKeyChange: (key: string | null) => void,
 ) {
   return (ev: ReactPointerEvent) => {
@@ -25,7 +32,7 @@ export function createFoodReorderHandler(
           break;
         }
       }
-      if (toIndex !== fromIndex) onReorder(moveListItem(order, fromIndex, toIndex));
+      if (toIndex !== fromIndex) onReorder((prev) => moveListItem(prev, fromIndex, toIndex));
     };
     const up = () => {
       window.removeEventListener('pointermove', move);

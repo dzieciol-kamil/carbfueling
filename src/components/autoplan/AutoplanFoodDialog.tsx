@@ -76,7 +76,7 @@ export function AutoplanFoodDialog({
               }}
             >
               <span
-                onPointerDown={createFoodReorderHandler(entry.key, order, setOrder, setDragKey)}
+                onPointerDown={createFoodReorderHandler(entry.key, setOrder, setDragKey)}
                 style={{
                   cursor: 'grab',
                   color: 'var(--muted-3)',
