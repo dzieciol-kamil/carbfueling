@@ -59,7 +59,7 @@ interface Then {
   minCarbs: number | null;
   /** Floor on the app's hydration progress bar, or null when there is no water on board. */
   minHydration: number | null;
-  /** Ceiling on stop stops. Fewer is better as long as the floors above still hold. */
+  /** Ceiling on stops. Fewer is better as long as the floors above still hold. */
   maxStops: number;
   /** Ceiling on vessel top-ups — one stop can refill more than one bottle. */
   maxRefills: number;

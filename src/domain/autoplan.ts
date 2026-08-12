@@ -675,7 +675,7 @@ interface Candidate {
   /** The lowest leg's fluid rate as a percentage of the sweat rate — the rider's pointwise floor. */
   worstLegPct: number;
   refills: number;
-  /** How far it falls short: [fluid floor pct, fluid ml, usable carb g, carb rate, stop stops]. */
+  /** How far it falls short: [fluid floor pct, fluid ml, usable carb g, carb rate, missing stops]. */
   shortfall: number[];
   /**
    * How unevenly the fills fall, in hours of difference between a vessel's longest and shortest

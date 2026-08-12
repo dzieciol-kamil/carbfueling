@@ -56,7 +56,7 @@ interface Then {
   minHydration: number | null;
   /** Ceiling on carb coverage — only for scenarios whose point is a deliberate shortfall. */
   maxCarbs?: number;
-  /** Ceiling on stop stops. Fewer is better as long as the floors above still hold. */
+  /** Ceiling on stops. Fewer is better as long as the floors above still hold. */
   maxStops: number;
   /** Ceiling on vessel top-ups — one stop can refill more than one bottle. */
   maxRefills: number;
@@ -166,7 +166,7 @@ function loadsNeeded(need: number, load: number): number {
 
 /**
  * Checks the scenario's stated `then`, plus the structural rules that hold everywhere: refills
- * are stop stops, fills tile the route per vessel, and no two products are ever open at once.
+ * are real stops, fills tile the route per vessel, and no two products are ever open at once.
  */
 function expectThen(r: Run, then: Then): void {
   const { D, result } = r;

@@ -576,6 +576,37 @@ describe('migrate: shops -> stops (v3 -> v4)', () => {
   });
 });
 
+/**
+ * The stops a rider never named still carry the old default as their name.
+ *
+ * "Sklep"/"Shop" was what the app wrote into every auto-created marker, so it sits in stored data
+ * as a label the rider never chose. A stop he *did* name — "Żabka", "źródełko za mostem" — is his
+ * words and is left exactly as it is.
+ */
+describe('migrate: the old default stop name (v5 -> v6)', () => {
+  test('an unnamed stop picks up the new default, in the stored language', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = { stops: [{ id: 4, at: 101, name: 'Sklep' }], ui: { lang: 'pl' } };
+    const migrated = migrate(legacy, 5) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops[0].name).toBe('Postój');
+    expect(migrated.stops[0].at).toBe(101);
+  });
+
+  test('the English default moves too', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = { stops: [{ id: 1, at: 20, name: 'Shop' }], ui: { lang: 'en' } };
+    const migrated = migrate(legacy, 5) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops[0].name).toBe('Stop');
+  });
+
+  test('a name the rider typed himself is his', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = { stops: [{ id: 1, at: 20, name: 'Żabka za mostem' }], ui: { lang: 'pl' } };
+    const migrated = migrate(legacy, 5) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops[0].name).toBe('Żabka za mostem');
+  });
+});
+
 describe('migrate: ratioPreset inference (v2 -> v3)', () => {
   test('infers honey from a legacy ratio of 0.8', () => {
     const migrate = useAppStore.persist.getOptions().migrate!;

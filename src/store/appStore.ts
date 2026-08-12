@@ -113,7 +113,7 @@ interface AppState {
   foodLib: FoodLibEntry[];
   // Fill ids the rider has picked to prepare together as one batch (see
   // RecipesSection / MobileMixSheet) — any fill of any vessel, not just each
-  // vessel's start fill. Unrelated to stop stops.
+  // vessel's start fill. Unrelated to the route's stops.
   combinedFillIds: number[];
   ui: UiState;
   nextGid: number;
@@ -658,7 +658,7 @@ export const useAppStore = create<AppState>()(
       // Wholesale-replaces fills/foods with a freshly computed plan (see domain/autoplan.ts)
       // rather than merging, mirroring loadTourDemoData's replace-not-append precedent — an
       // autoplan run is meant to stand in for the current plan, not pile onto it. Stops are
-      // the exception: existing stop stops are preserved and only autoplan's newly-required
+      // the exception: existing stops are preserved and only autoplan's newly-required
       // stops are appended, since planIzoRefills already reuses existing stops where possible.
       // When removePreviousAutoStops is true, stops this function itself created on a prior
       // run (tagged autoCreated) are dropped first — a rider-placed stop never has that tag,
@@ -706,7 +706,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'carbfueling',
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -723,6 +723,9 @@ export const useAppStore = create<AppState>()(
       // It costs two version numbers because a dev build stamped 4 before the rename was written:
       // migrate only runs when the stored version differs, so anything stamped 4 needed a 5 to
       // come back for it.
+      // v5 -> v6: the same rename applied to the data. Every marker the app created carried
+      // "Sklep"/"Shop" as its name — a label the rider never chose — so those follow the copy to
+      // "Postoj"/"Stop". A name he typed himself is his and is left untouched.
       migrate: (persistedState, version) => {
         const s = persistedState as
           | (Partial<AppState> & {
@@ -757,6 +760,15 @@ export const useAppStore = create<AppState>()(
           if (typeof s.nextShopId === 'number') s.nextStopId = s.nextShopId;
           delete s.shops;
           delete s.nextShopId;
+        }
+        if (version < 6 && Array.isArray(s.stops)) {
+          // The label the app itself wrote into every marker it created, in either language. A
+          // name the rider typed is his and is left alone — only the old default moves.
+          const lang: Lang = s.ui?.lang === 'en' ? 'en' : 'pl';
+          const wasDefault = new Set(['Sklep', 'Shop']);
+          s.stops = s.stops.map((st) =>
+            wasDefault.has(st.name) ? { ...st, name: t(lang).stopDefaultName } : st,
+          );
         }
         return s;
       },
