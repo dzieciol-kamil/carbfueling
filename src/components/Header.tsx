@@ -45,7 +45,7 @@ export function Header() {
   const handleImportPick = () => fileInputRef.current?.click();
 
   // Always confirm before import: it silently overwrites the entire plan —
-  // route, gear, mix, fills, foods and shops, not just narrow "settings" —
+  // route, gear, mix, fills, foods and stops, not just narrow "settings" —
   // a rare, deliberate action, so there's no real UX cost to asking every
   // time rather than trying to detect "is there anything worth losing".
   const handleFileChosen = (file: File | null) => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { autoplanGate, needsReplaceConfirm } from './AutoplanFlow';
-import type { Fill, FoodItem, RouteInput, ShopStop } from '../../domain/types';
+import type { Fill, FoodItem, RouteInput, Stop } from '../../domain/types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
@@ -59,33 +59,33 @@ describe('autoplanGate', () => {
  * What a second run is about to destroy decides whether it asks first.
  *
  * The stops autoplan created last time are as much its output as the fills are — and they are the
- * part the rider is likeliest to have kept, because a stop is a real shop he found on the map. A
+ * part the rider is likeliest to have kept, because a stop is a real stop he found on the map. A
  * run that reads only fills and foods will happily wipe them without a word the moment the rider
  * has cleared the plan by hand.
  */
 const fill: Fill = { fid: 1, gid: 'g1', content: 'water', from: 0, to: 50 };
 const food: FoodItem = { id: 1, key: 'gel', name: 'Żel', carbs: 22, from: 30, to: 30 };
-const autoStop: ShopStop = { id: 1, at: 40, name: 'Sklep', autoCreated: true };
-const ownStop: ShopStop = { id: 2, at: 60, name: 'Żabka' };
+const autoStop: Stop = { id: 1, at: 40, name: 'Sklep', autoCreated: true };
+const ownStop: Stop = { id: 2, at: 60, name: 'Żabka' };
 
 describe('needsReplaceConfirm', () => {
   test('a fresh plan goes straight through', () => {
-    expect(needsReplaceConfirm({ fills: [], foods: [], shops: [] })).toBe(false);
+    expect(needsReplaceConfirm({ fills: [], foods: [], stops: [] })).toBe(false);
   });
 
   test('fills alone are enough to ask', () => {
-    expect(needsReplaceConfirm({ fills: [fill], foods: [], shops: [] })).toBe(true);
+    expect(needsReplaceConfirm({ fills: [fill], foods: [], stops: [] })).toBe(true);
   });
 
   test('stops autoplan made last time count, even with the plan emptied by hand', () => {
-    expect(needsReplaceConfirm({ fills: [], foods: [], shops: [autoStop] })).toBe(true);
+    expect(needsReplaceConfirm({ fills: [], foods: [], stops: [autoStop] })).toBe(true);
   });
 
   test("the rider's own stops are never touched, so they are no reason to ask", () => {
-    expect(needsReplaceConfirm({ fills: [], foods: [], shops: [ownStop] })).toBe(false);
+    expect(needsReplaceConfirm({ fills: [], foods: [], stops: [ownStop] })).toBe(false);
   });
 
   test('food alone is enough to ask', () => {
-    expect(needsReplaceConfirm({ fills: [], foods: [food], shops: [] })).toBe(true);
+    expect(needsReplaceConfirm({ fills: [], foods: [food], stops: [] })).toBe(true);
   });
 });

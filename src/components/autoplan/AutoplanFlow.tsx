@@ -81,19 +81,19 @@ export function autoplanGate(route: RouteInput): 'noDuration' | 'shortRide' | 'r
  * Whether a second run has something of the rider's to destroy.
  *
  * The stops from the last run count too — they are the part he is likeliest to have kept, being
- * real shops on his map, and the cleanup checkbox under the confirm is pre-ticked. Read only the
+ * real stops on his map, and the cleanup checkbox under the confirm is pre-ticked. Read only the
  * fills and foods and a rider who cleared those by hand gets no dialog, no checkbox, and loses his
  * stops without being asked. His own stops raise no question: nothing ever removes those.
  */
 export function needsReplaceConfirm(plan: {
   fills: unknown[];
   foods: unknown[];
-  shops: { autoCreated?: boolean }[];
+  stops: { autoCreated?: boolean }[];
 }): boolean {
   return (
     plan.fills.length > 0 ||
     plan.foods.length > 0 ||
-    plan.shops.some((sh) => sh.autoCreated === true)
+    plan.stops.some((sh) => sh.autoCreated === true)
   );
 }
 
@@ -103,16 +103,16 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
-  const shops = useAppStore((s) => s.shops);
+  const stops = useAppStore((s) => s.stops);
   const applyAutoplan = useAppStore((s) => s.applyAutoplan);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
-  // A stop is knowledge, not output: the rider may have checked that this is the only shop for the
+  // A stop is knowledge, not output: the rider may have checked that this is the only stop for the
   // next 40km, and that survives a replanned bottle schedule. So the plan is replaced and the stops
   // are kept unless he says otherwise — and a kept stop is not clutter, since the next run snaps
-  // its own boundaries onto shops it can already see.
+  // its own boundaries onto stops it can already see.
   const [keepPreviousAutoStops, setKeepPreviousAutoStops] = useState(true);
-  const hasPreviousAutoStops = shops.some((sh) => sh.autoCreated);
+  const hasPreviousAutoStops = stops.some((sh) => sh.autoCreated);
   const gate = autoplanGate(route);
 
   function proceedAfterConfirm() {
@@ -125,7 +125,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   }
 
   function handleTrigger() {
-    if (needsReplaceConfirm({ fills, foods, shops })) {
+    if (needsReplaceConfirm({ fills, foods, stops })) {
       setKeepPreviousAutoStops(true);
       setPhase('confirmReplace');
       return;

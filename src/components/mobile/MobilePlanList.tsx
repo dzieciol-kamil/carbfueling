@@ -12,7 +12,7 @@ const MIN_GAP_KM = 6;
 function selKeyFor(item: PlanCardItem): string {
   return item.kind === 'fill'
     ? 'f' + item.fid
-    : item.kind === 'shop'
+    : item.kind === 'stop'
       ? 's' + item.id
       : 'x' + item.id;
 }
@@ -34,7 +34,7 @@ export function MobilePlanList() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
-  const shops = useAppStore((s) => s.shops);
+  const stops = useAppStore((s) => s.stops);
   const selKey = useAppStore((s) => s.ui.selKey);
   const tourDemoFid = useAppStore((s) => s.ui.tourDemoFid);
   const selectedElRef = useRef<HTMLDivElement | null>(null);
@@ -42,11 +42,11 @@ export function MobilePlanList() {
   const prevSelKeyRef = useRef<string | null>(null);
   const addFillInGap = useAppStore((s) => s.addFillInGap);
   const addFoodFromLibrary = useAppStore((s) => s.addFoodFromLibrary);
-  const openShopSheet = useAppStore((s) => s.openShopSheet);
+  const openStopSheet = useAppStore((s) => s.openStopSheet);
   const openMixSheet = useAppStore((s) => s.openMixSheet);
   const strings = t(lang);
 
-  const summary = planSummary({ route, mix, gear, fills, foods, foodLib, shops });
+  const summary = planSummary({ route, mix, gear, fills, foods, foodLib, stops });
   const distanceKm = dist(route);
 
   const carbPct =
@@ -60,13 +60,13 @@ export function MobilePlanList() {
   const items: PlanCardItem[] = [
     ...fills.map((f): PlanCardItem => ({ kind: 'fill', fid: f.fid })),
     ...foods.map((f): PlanCardItem => ({ kind: 'food', id: f.id })),
-    ...shops.map((s): PlanCardItem => ({ kind: 'shop', id: s.id })),
+    ...stops.map((s): PlanCardItem => ({ kind: 'stop', id: s.id })),
   ].sort((a, b) => {
     const fromOf = (item: PlanCardItem) =>
       item.kind === 'fill'
         ? (fills.find((f) => f.fid === item.fid)?.from ?? 0)
-        : item.kind === 'shop'
-          ? (shops.find((s) => s.id === item.id)?.at ?? 0)
+        : item.kind === 'stop'
+          ? (stops.find((s) => s.id === item.id)?.at ?? 0)
           : (foods.find((f) => f.id === item.id)?.from ?? 0);
     return fromOf(a) - fromOf(b);
   });
@@ -320,8 +320,8 @@ export function MobilePlanList() {
 
       <button
         type="button"
-        data-tour="add-shop"
-        onClick={() => openShopSheet(null)}
+        data-tour="add-stop"
+        onClick={() => openStopSheet(null)}
         style={{
           border: '1px dashed #C9CEC7',
           borderRadius: 11,

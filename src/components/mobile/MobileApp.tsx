@@ -11,7 +11,7 @@ import { MobileMixSheet } from './MobileMixSheet';
 import { MobilePlanList } from './MobilePlanList';
 import { MobileProfile } from './MobileProfile';
 import { MobileRouteSheet } from './MobileRouteSheet';
-import { MobileShopSheet } from './MobileShopSheet';
+import { MobileStopSheet } from './MobileStopSheet';
 
 const TABS: { tab: MobileTab; icon: ReactNode }[] = [
   { tab: 'plan', icon: <path d="M2 16 L7 9 L11 12 L16 4.5 L20 8" /> },
@@ -225,7 +225,7 @@ export function MobileApp() {
 
       <MobileMixSheet />
       <MobileRouteSheet />
-      <MobileShopSheet />
+      <MobileStopSheet />
     </div>
   );
 }

@@ -78,7 +78,7 @@ function makePlan(overrides: Partial<PlanState> = {}): PlanState {
     fills: [],
     foods: [],
     foodLib: [],
-    shops: [],
+    stops: [],
     ...overrides,
   };
 }

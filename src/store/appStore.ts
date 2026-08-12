@@ -5,10 +5,10 @@ import {
   bestGapSpan,
   clampFillToDistance,
   clampFoodToDistance,
-  clampShopToDistance,
+  clampStopToDistance,
   gaps,
   moveListItem,
-  nextShopAt,
+  nextStopAt,
 } from '../domain/dragMath';
 import { startFillOf } from '../domain/combinedRefill';
 import { dist, presetTagFor } from '../domain/fuel';
@@ -27,7 +27,7 @@ import type {
   RouteInput,
   Vessel,
   Fill,
-  ShopStop,
+  Stop,
   XUnit,
 } from '../domain/types';
 
@@ -49,15 +49,15 @@ function defaultAutoView(): 'desktop' | 'mobile' {
 }
 
 // A route edit (shorter distance, fewer hours, switching mode, a shorter GPX
-// track...) can pull the plan's distance domain in under fills/foods/shops
+// track...) can pull the plan's distance domain in under fills/foods/stops
 // placed further out — clamp them back onto the route instead of letting
 // them render off the end of the chart.
-function reconcileToRoute(route: RouteInput, fills: Fill[], foods: FoodItem[], shops: ShopStop[]) {
+function reconcileToRoute(route: RouteInput, fills: Fill[], foods: FoodItem[], stops: Stop[]) {
   const distanceKm = dist(route);
   return {
     fills: fills.map((f) => clampFillToDistance(f, distanceKm)),
     foods: foods.map((f) => clampFoodToDistance(f, distanceKm)),
-    shops: shops.map((sh) => clampShopToDistance(sh, distanceKm)),
+    stops: stops.map((sh) => clampStopToDistance(sh, distanceKm)),
   };
 }
 
@@ -99,7 +99,7 @@ interface UiState {
   gpxPeek: boolean;
   mixSheet: boolean;
   routeSheet: boolean;
-  shopSheet: { editId: number | null } | null;
+  stopSheet: { editId: number | null } | null;
   chartHelp: boolean;
 }
 
@@ -109,18 +109,18 @@ interface AppState {
   gear: Vessel[];
   fills: Fill[];
   foods: FoodItem[];
-  shops: ShopStop[];
+  stops: Stop[];
   foodLib: FoodLibEntry[];
   // Fill ids the rider has picked to prepare together as one batch (see
   // RecipesSection / MobileMixSheet) — any fill of any vessel, not just each
-  // vessel's start fill. Unrelated to shop stops.
+  // vessel's start fill. Unrelated to stop stops.
   combinedFillIds: number[];
   ui: UiState;
   nextGid: number;
   nextFid: number;
   nextFoodId: number;
   nextFoodKey: number;
-  nextShopId: number;
+  nextStopId: number;
 
   setMode: (mode: Mode) => void;
   setDistance: (n: number) => void;
@@ -156,8 +156,8 @@ interface AppState {
   closeChartHelp: () => void;
   openRouteSheet: () => void;
   closeRouteSheet: () => void;
-  openShopSheet: (editId: number | null) => void;
-  closeShopSheet: () => void;
+  openStopSheet: (editId: number | null) => void;
+  closeStopSheet: () => void;
   startTour: () => void;
   closeTour: () => void;
   setTourStep: (n: number) => void;
@@ -176,9 +176,9 @@ interface AppState {
   removeFood: (id: number) => void;
   addFoodFromLibrary: (key: string) => void;
 
-  addShop: () => void;
-  updateShop: (id: number, patch: Partial<ShopStop>) => void;
-  removeShop: (id: number) => void;
+  addStop: () => void;
+  updateStop: (id: number, patch: Partial<Stop>) => void;
+  removeStop: (id: number) => void;
 
   toggleCombinedFill: (fid: number) => void;
   clearCombinedFills: () => void;
@@ -250,7 +250,7 @@ const defaultFills: Fill[] = [];
 
 const defaultFoods: FoodItem[] = [];
 
-const defaultShops: ShopStop[] = [];
+const defaultStops: Stop[] = [];
 
 const defaultCombinedFillIds: number[] = [];
 
@@ -269,7 +269,7 @@ export const useAppStore = create<AppState>()(
       gear: defaultGear,
       fills: defaultFills,
       foods: defaultFoods,
-      shops: defaultShops,
+      stops: defaultStops,
       foodLib: defaultFoodLib,
       combinedFillIds: defaultCombinedFillIds,
       ui: {
@@ -291,23 +291,23 @@ export const useAppStore = create<AppState>()(
         gpxPeek: false,
         mixSheet: false,
         routeSheet: false,
-        shopSheet: null,
+        stopSheet: null,
         chartHelp: false,
       },
       nextGid: 3,
       nextFid: 1,
       nextFoodId: 101,
       nextFoodKey: 1,
-      nextShopId: 1,
+      nextStopId: 1,
 
       setMode: (mode) =>
         set((s) => {
           const route = { ...s.route, mode };
-          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
+          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.stops) };
         }),
       // Distance/hours/minutes are edited through free-typing number fields, which
       // commit a value on every keystroke (for live chart feedback) — reconciling
-      // fills/foods/shops right here would clamp them against transient in-progress
+      // fills/foods/stops right here would clamp them against transient in-progress
       // digits (e.g. typing "50" over "90" passes through "5"), destructively
       // collapsing them before the final value ever lands. Reconcile once the field
       // is actually committed instead — see reconcilePlan, wired to onCommit.
@@ -319,7 +319,7 @@ export const useAppStore = create<AppState>()(
       reconcilePlan: () =>
         set((s) => {
           const route = normalizeHoursMinutes(s.route);
-          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
+          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.stops) };
         }),
       setWeight: (n) => set((s) => ({ route: { ...s.route, weight: clamp(n, 20, 300) } })),
       setPreMealCarbs: (n) =>
@@ -341,7 +341,7 @@ export const useAppStore = create<AppState>()(
               useGpx: true,
               distance: distanceKm,
             };
-            return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
+            return { route, ...reconcileToRoute(route, s.fills, s.foods, s.stops) };
           });
         } catch {
           set((s) => ({ route: { ...s.route, gpxError: 'gpxBad' } }));
@@ -349,7 +349,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Snapshot of everything a settings backup should cover: gear/products/
-      // profile plus the current plan (route, fills, foods, shops) and the
+      // profile plus the current plan (route, fills, foods, stops) and the
       // durable UI prefs (lang, view mode, chart units/mode). Deliberately
       // excludes transient UI (open panels/sheets, hover/drag/selection, tour
       // progress) — see SettingsExportData in domain/settingsExport.ts.
@@ -361,24 +361,24 @@ export const useAppStore = create<AppState>()(
           gear: s.gear,
           fills: s.fills,
           foods: s.foods,
-          shops: s.shops,
+          stops: s.stops,
           foodLib: s.foodLib,
           ui: { lang: s.ui.lang, viewMode: s.ui.viewMode, xUnit: s.ui.xUnit, yMode: s.ui.yMode },
           nextGid: s.nextGid,
           nextFid: s.nextFid,
           nextFoodId: s.nextFoodId,
           nextFoodKey: s.nextFoodKey,
-          nextShopId: s.nextShopId,
+          nextStopId: s.nextStopId,
         };
       },
       // Wholesale-replaces settings/plan with an imported backup. Reconciles
-      // fills/foods/shops against the imported route's distance the same way
+      // fills/foods/stops against the imported route's distance the same way
       // any other route edit does, in case the file predates a since-changed
       // clamping rule. Closes any open panel/sheet and clears selection/hover/
       // drag state, since those may reference ids that no longer exist.
       importSettings: (data) =>
         set((s) => {
-          const reconciled = reconcileToRoute(data.route, data.fills, data.foods, data.shops);
+          const reconciled = reconcileToRoute(data.route, data.fills, data.foods, data.stops);
           return {
             route: data.route,
             mix: data.mix,
@@ -389,7 +389,7 @@ export const useAppStore = create<AppState>()(
             nextFid: data.nextFid,
             nextFoodId: data.nextFoodId,
             nextFoodKey: data.nextFoodKey,
-            nextShopId: data.nextShopId,
+            nextStopId: data.nextStopId,
             ui: {
               ...s.ui,
               lang: data.ui.lang,
@@ -402,7 +402,7 @@ export const useAppStore = create<AppState>()(
               dragKey: null,
               mixSheet: false,
               routeSheet: false,
-              shopSheet: null,
+              stopSheet: null,
               chartHelp: false,
               tourStep: null,
             },
@@ -426,8 +426,8 @@ export const useAppStore = create<AppState>()(
       closeChartHelp: () => set((s) => ({ ui: { ...s.ui, chartHelp: false } })),
       openRouteSheet: () => set((s) => ({ ui: { ...s.ui, routeSheet: true } })),
       closeRouteSheet: () => set((s) => ({ ui: { ...s.ui, routeSheet: false } })),
-      openShopSheet: (editId) => set((s) => ({ ui: { ...s.ui, shopSheet: { editId } } })),
-      closeShopSheet: () => set((s) => ({ ui: { ...s.ui, shopSheet: null } })),
+      openStopSheet: (editId) => set((s) => ({ ui: { ...s.ui, stopSheet: { editId } } })),
+      closeStopSheet: () => set((s) => ({ ui: { ...s.ui, stopSheet: null } })),
       startTour: () =>
         set((s) => ({
           ui: { ...s.ui, tab: 'plan', tourStep: 0, tourSeen: true, tourDemoFid: null },
@@ -437,15 +437,15 @@ export const useAppStore = create<AppState>()(
       loadTourDemoData: () =>
         set((s) => {
           if (s.ui.tourDemoFid !== null) return {};
-          // Clears fills/foods/shops rather than appending to them: the replay
+          // Clears fills/foods/stops rather than appending to them: the replay
           // confirmation promises demo data "in place of" the current plan, so
           // repeated replays must not accumulate fills instead of replacing them.
           const route: RouteInput = { ...s.route, mode: 'route', distance: 90, speed: 28 };
           const distanceKm = dist(route);
           const vessel = s.gear[0];
-          if (!vessel) return { route, fills: [], foods: [], shops: [] };
+          if (!vessel) return { route, fills: [], foods: [], stops: [] };
           const span = bestGapSpan(gaps([], distanceKm), distanceKm);
-          if (!span) return { route, fills: [], foods: [], shops: [] };
+          if (!span) return { route, fills: [], foods: [], stops: [] };
           const allowed: Fill['content'][] = vessel.allowed?.length ? vessel.allowed : ['izo'];
           const content: Fill['content'] = allowed.includes('izo') ? 'izo' : allowed[0];
           const fid = s.nextFid;
@@ -453,7 +453,7 @@ export const useAppStore = create<AppState>()(
             route,
             fills: [{ fid, gid: vessel.gid, content, from: span.from, to: span.to }],
             foods: [],
-            shops: [],
+            stops: [],
             nextFid: fid + 1,
             ui: { ...s.ui, tourDemoFid: fid },
           };
@@ -527,20 +527,20 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
-      addShop: () =>
+      addStop: () =>
         set((s) => {
           const distanceKm = dist(s.route);
-          const at = nextShopAt(s.shops, distanceKm);
+          const at = nextStopAt(s.stops, distanceKm);
           return {
-            shops: [...s.shops, { id: s.nextShopId, at, name: t(s.ui.lang).shopDefaultName }],
-            nextShopId: s.nextShopId + 1,
+            stops: [...s.stops, { id: s.nextStopId, at, name: t(s.ui.lang).stopDefaultName }],
+            nextStopId: s.nextStopId + 1,
           };
         }),
-      updateShop: (id, patch) =>
-        set((s) => ({ shops: s.shops.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
-      removeShop: (id) =>
+      updateStop: (id, patch) =>
+        set((s) => ({ stops: s.stops.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      removeStop: (id) =>
         set((s) => ({
-          shops: s.shops.filter((x) => x.id !== id),
+          stops: s.stops.filter((x) => x.id !== id),
           ui: { ...s.ui, hoverKey: null, dragKey: null },
         })),
 
@@ -657,22 +657,22 @@ export const useAppStore = create<AppState>()(
 
       // Wholesale-replaces fills/foods with a freshly computed plan (see domain/autoplan.ts)
       // rather than merging, mirroring loadTourDemoData's replace-not-append precedent — an
-      // autoplan run is meant to stand in for the current plan, not pile onto it. Shops are
-      // the exception: existing shop stops are preserved and only autoplan's newly-required
-      // stops are appended, since planIzoRefills already reuses existing shops where possible.
-      // When removePreviousAutoStops is true, shops this function itself created on a prior
+      // autoplan run is meant to stand in for the current plan, not pile onto it. Stops are
+      // the exception: existing stop stops are preserved and only autoplan's newly-required
+      // stops are appended, since planIzoRefills already reuses existing stops where possible.
+      // When removePreviousAutoStops is true, stops this function itself created on a prior
       // run (tagged autoCreated) are dropped first — a rider-placed stop never has that tag,
       // so it's never touched by this cleanup. The drop happens *before* calling autoplan()
-      // (not just before appending its output): autoplan reads state.shops to decide whether
+      // (not just before appending its output): autoplan reads state.stops to decide whether
       // an existing stop already covers a required refill point, so if a soon-to-be-removed
       // auto stop were left in during that computation, autoplan would wrongly skip recreating
       // a stop it still needs there.
       applyAutoplan: (selection, removePreviousAutoStops) =>
         set((s) => {
-          const survivingShops = removePreviousAutoStops
-            ? s.shops.filter((sh) => !sh.autoCreated)
-            : s.shops;
-          const baseState = removePreviousAutoStops ? { ...s, shops: survivingShops } : s;
+          const survivingStops = removePreviousAutoStops
+            ? s.stops.filter((sh) => !sh.autoCreated)
+            : s.stops;
+          const baseState = removePreviousAutoStops ? { ...s, stops: survivingStops } : s;
           const result = autoplan(baseState, selection);
 
           let fid = s.nextFid;
@@ -685,28 +685,28 @@ export const useAppStore = create<AppState>()(
             return { ...f, id: foodId++, name };
           });
 
-          let shopId = s.nextShopId;
-          const defaultShopName = t(s.ui.lang).shopDefaultName;
-          const newShops: ShopStop[] = result.newShops.map((sh) => ({
+          let stopId = s.nextStopId;
+          const defaultStopName = t(s.ui.lang).stopDefaultName;
+          const newStops: Stop[] = result.newStops.map((sh) => ({
             ...sh,
-            id: shopId++,
-            name: defaultShopName,
+            id: stopId++,
+            name: defaultStopName,
             autoCreated: true,
           }));
 
           return {
             fills,
             foods,
-            shops: [...survivingShops, ...newShops],
+            stops: [...survivingStops, ...newStops],
             nextFid: fid,
             nextFoodId: foodId,
-            nextShopId: shopId,
+            nextStopId: stopId,
           };
         }),
     }),
     {
       name: 'carbfueling',
-      version: 3,
+      version: 5,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -716,9 +716,21 @@ export const useAppStore = create<AppState>()(
       // once from the persisted numeric ratio/gelRatio (same mapping as presetTagFor) so a
       // rider who already had Miód/Cukier selected doesn't silently lose that label after the
       // upgrade — going forward, the tag is only ever set by an explicit preset-button click.
+      // v3 -> v5: `shops`/`nextShopId` became `stops`/`nextStopId`. A marker is wherever the rider
+      // plans to restock — a shop is one of the things it can be, not the name of the thing — but
+      // every rider already has the old key in his browser holding places he checked on a map, so
+      // the data moves across under the new name rather than being dropped with the old one.
+      // It costs two version numbers because a dev build stamped 4 before the rename was written:
+      // migrate only runs when the stored version differs, so anything stamped 4 needed a 5 to
+      // come back for it.
       migrate: (persistedState, version) => {
         const s = persistedState as
-          (Partial<AppState> & { combineStartGids?: string[] }) | undefined;
+          | (Partial<AppState> & {
+              combineStartGids?: string[];
+              shops?: Stop[];
+              nextShopId?: number;
+            })
+          | undefined;
         if (!s) return s;
         if (version < 2) {
           const oldGids = Array.isArray(s.combineStartGids) ? s.combineStartGids : [];
@@ -736,6 +748,15 @@ export const useAppStore = create<AppState>()(
           if (mix.gelRatioPreset == null && typeof mix.gelRatio === 'number') {
             mix.gelRatioPreset = presetTagFor(mix.gelRatio);
           }
+        }
+        // Keyed on the old field being there rather than on the version number: a rider whose
+        // stored version was already stamped 4 by a build that renamed the field but not the data
+        // would otherwise keep his stops in a key nothing reads.
+        if (s.shops !== undefined) {
+          s.stops = Array.isArray(s.shops) ? s.shops : [];
+          if (typeof s.nextShopId === 'number') s.nextStopId = s.nextShopId;
+          delete s.shops;
+          delete s.nextShopId;
         }
         return s;
       },
@@ -762,7 +783,7 @@ export function shouldConfirmViewModeChange(next: ViewMode, current: ViewMode): 
   return next !== 'auto' && next !== current;
 }
 
-export function hasPlanData(state: Pick<AppState, 'route' | 'fills' | 'foods' | 'shops'>): boolean {
+export function hasPlanData(state: Pick<AppState, 'route' | 'fills' | 'foods' | 'stops'>): boolean {
   const r = state.route;
   return (
     r.distance > 0 ||
@@ -772,6 +793,6 @@ export function hasPlanData(state: Pick<AppState, 'route' | 'fills' | 'foods' | 
     r.gpxTrack !== null ||
     state.fills.length > 0 ||
     state.foods.length > 0 ||
-    state.shops.length > 0
+    state.stops.length > 0
   );
 }

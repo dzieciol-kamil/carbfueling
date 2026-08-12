@@ -33,12 +33,12 @@ const inputStyle: CSSProperties = {
   background: '#fff',
 };
 
-export function MobileShopSheet() {
-  const shopSheet = useAppStore((s) => s.ui.shopSheet);
-  const closeShopSheet = useAppStore((s) => s.closeShopSheet);
+export function MobileStopSheet() {
+  const stopSheet = useAppStore((s) => s.ui.stopSheet);
+  const closeStopSheet = useAppStore((s) => s.closeStopSheet);
   const route = useAppStore((s) => s.route);
-  const addShop = useAppStore((s) => s.addShop);
-  const updateShop = useAppStore((s) => s.updateShop);
+  const addStop = useAppStore((s) => s.addStop);
+  const updateStop = useAppStore((s) => s.updateStop);
   const lang = useAppStore((s) => s.ui.lang);
   const strings = t(lang);
 
@@ -48,28 +48,28 @@ export function MobileShopSheet() {
   const [name, setName] = useState('');
 
   useEffect(() => {
-    if (!shopSheet) return;
+    if (!stopSheet) return;
     setKm('');
-    setName(strings.shopDefaultName);
+    setName(strings.stopDefaultName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shopSheet]);
+  }, [stopSheet]);
 
-  if (!shopSheet) return null;
+  if (!stopSheet) return null;
 
   const kmValue = parseFloat(km);
   const valid = km !== '' && !Number.isNaN(kmValue) && kmValue >= 0 && kmValue <= distanceKm;
 
   function submit() {
     if (!valid) return;
-    const newId = useAppStore.getState().nextShopId;
-    addShop();
-    updateShop(newId, { at: kmValue, name });
-    closeShopSheet();
+    const newId = useAppStore.getState().nextStopId;
+    addStop();
+    updateStop(newId, { at: kmValue, name });
+    closeStopSheet();
   }
 
   return (
     <>
-      <div style={backdropStyle} onClick={closeShopSheet} />
+      <div style={backdropStyle} onClick={closeStopSheet} />
       <div style={sheetStyle}>
         <div
           style={{
@@ -96,11 +96,11 @@ export function MobileShopSheet() {
               letterSpacing: '0.08em',
             }}
           >
-            {strings.shopSheetTitle}
+            {strings.stopSheetTitle}
           </span>
           <button
             type="button"
-            onClick={closeShopSheet}
+            onClick={closeStopSheet}
             style={{
               width: 34,
               height: 34,
@@ -116,7 +116,7 @@ export function MobileShopSheet() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.shopSheetKm}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.stopSheetKm}</span>
             <input
               type="number"
               inputMode="decimal"
@@ -132,7 +132,7 @@ export function MobileShopSheet() {
             />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.shopSheetName}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.stopSheetName}</span>
             <input
               type="text"
               value={name}
@@ -158,7 +158,7 @@ export function MobileShopSheet() {
               cursor: valid ? 'pointer' : 'not-allowed',
             }}
           >
-            {strings.shopSheetAdd}
+            {strings.stopSheetAdd}
           </button>
         </div>
       </div>

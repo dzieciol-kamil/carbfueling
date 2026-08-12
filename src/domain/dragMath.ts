@@ -1,5 +1,5 @@
 import { partArray, partsOf } from './fuel';
-import type { Fill, FoodItem, ShopStop, Vessel } from './types';
+import type { Fill, FoodItem, Stop, Vessel } from './types';
 
 export interface Bounds {
   lo: number;
@@ -136,8 +136,8 @@ export function resizeFoodRight(
   return Math.min(distanceKm, Math.max(food.from + 1, Math.round(originalTo + deltaKm)));
 }
 
-export function moveShop(shop: ShopStop, distanceKm: number, deltaKm: number): number {
-  return Math.max(0, Math.min(distanceKm, Math.round(shop.at + deltaKm)));
+export function moveStop(stop: Stop, distanceKm: number, deltaKm: number): number {
+  return Math.max(0, Math.min(distanceKm, Math.round(stop.at + deltaKm)));
 }
 
 export function clampFillToDistance(fill: Fill, distanceKm: number): Fill {
@@ -156,13 +156,13 @@ export function clampFoodToDistance(food: FoodItem, distanceKm: number): FoodIte
   return { ...food, from, to };
 }
 
-export function clampShopToDistance(shop: ShopStop, distanceKm: number): ShopStop {
-  if (shop.at <= distanceKm) return shop;
-  return { ...shop, at: distanceKm };
+export function clampStopToDistance(stop: Stop, distanceKm: number): Stop {
+  if (stop.at <= distanceKm) return stop;
+  return { ...stop, at: distanceKm };
 }
 
-export function nextShopAt(shops: ShopStop[], distanceKm: number): number {
-  const lastAt = shops.length ? Math.max(...shops.map((s) => s.at)) : 0;
+export function nextStopAt(stops: Stop[], distanceKm: number): number {
+  const lastAt = stops.length ? Math.max(...stops.map((s) => s.at)) : 0;
   return Math.round((lastAt + distanceKm) / 2);
 }
 

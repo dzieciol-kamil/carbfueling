@@ -62,7 +62,7 @@ export interface StringTable {
   dragHint: string;
   addFuel: string;
   removeItem?: string;
-  addShopStop: string;
+  addStop: string;
   addFillTo: string;
   coverage: string;
   summary: string;
@@ -187,9 +187,9 @@ export interface StringTable {
   tourAddFillTitle: string;
   tourAddFillBody: string;
   tourAddFillBodyMobile: string;
-  tourAddShopTitle: string;
-  tourAddShopBody: string;
-  tourAddShopBodyMobile: string;
+  tourAddStopTitle: string;
+  tourAddStopBody: string;
+  tourAddStopBodyMobile: string;
   tourClosingTitle: string;
   tourClosingBody: string;
   tourClosingBodyMobile: string;
@@ -255,11 +255,11 @@ export interface StringTable {
   routeSheetGpxNote: string;
   routeSheetLoadFile: string;
   routeSheetDone: string;
-  shopSheetTitle: string;
-  shopSheetKm: string;
-  shopSheetName: string;
-  shopSheetAdd: string;
-  shopDefaultName: string;
+  stopSheetTitle: string;
+  stopSheetKm: string;
+  stopSheetName: string;
+  stopSheetAdd: string;
+  stopDefaultName: string;
   combineFillCheckbox: string;
   combineSectionTitle: string;
   combineSectionHint: string;
@@ -383,7 +383,7 @@ export const STR: Record<Lang, StringTable> = {
       'Paski nie nachodzą na siebie — w ciasnej luce przeciągany pasek się skraca. Kreski porcji żelu przesuwasz osobno.',
     addFuel: 'Dodaj jedzenie:',
     removeItem: 'Usuń',
-    addShopStop: 'Dodaj postój',
+    addStop: 'Dodaj postój',
     addFillTo: 'Dodaj dolewkę do ',
     coverage: 'Pokrycie zapotrzebowania',
     summary: 'Podsumowanie',
@@ -539,10 +539,10 @@ export const STR: Record<Lang, StringTable> = {
       'Ten przycisk „+” wstawia kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów pod wykresem dodają kolejne pozycje jednym kliknięciem.',
     tourAddFillBodyMobile:
       'Ten przycisk dodaje kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów niżej dodają kolejne pozycje jednym stuknięciem.',
-    tourAddShopTitle: 'Postoje na trasie',
-    tourAddShopBody:
+    tourAddStopTitle: 'Postoje na trasie',
+    tourAddStopBody:
       'Ten „+” dodaje na wykresie znacznik postoju — sklep, źródełko, kran u kumpla — możesz przeciągnąć go w dowolne miejsce trasy, żeby zaznaczyć, na którym kilometrze planujesz uzupełnić jedzenie lub napój.',
-    tourAddShopBodyMobile:
+    tourAddStopBodyMobile:
       'Ten przycisk otwiera formularz postoju — wpisujesz kilometr i nazwę (np. sklep, źródełko), żeby zaznaczyć, gdzie planujesz uzupełnić jedzenie lub napój.',
     tourClosingTitle: 'To wszystko na start',
     tourClosingBody:
@@ -623,11 +623,11 @@ export const STR: Record<Lang, StringTable> = {
       'Włączony profil zmienia zapotrzebowanie na podjazdach. Ikona oka nad wykresem pokazuje sam profil.',
     routeSheetLoadFile: 'Wczytaj plik',
     routeSheetDone: 'Gotowe',
-    shopSheetTitle: 'POSTÓJ',
-    shopSheetKm: 'Kilometr',
-    shopSheetName: 'Nazwa',
-    shopSheetAdd: 'Dodaj',
-    shopDefaultName: 'Postój',
+    stopSheetTitle: 'POSTÓJ',
+    stopSheetKm: 'Kilometr',
+    stopSheetName: 'Nazwa',
+    stopSheetAdd: 'Dodaj',
+    stopDefaultName: 'Postój',
     combineFillCheckbox: 'Przygotuj razem',
     combineSectionTitle: 'Wspólna porcja',
     combineSectionHint:
@@ -759,7 +759,7 @@ export const STR: Record<Lang, StringTable> = {
       'Bars never overlap — a dragged bar shortens to fit a tight gap. Gel portion marks drag on their own.',
     addFuel: 'Add food:',
     removeItem: 'Remove',
-    addShopStop: 'Add stop',
+    addStop: 'Add stop',
     addFillTo: 'Add a fill to ',
     coverage: 'Requirement covered',
     summary: 'Summary',
@@ -915,10 +915,10 @@ export const STR: Record<Lang, StringTable> = {
       'This "+" button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same idea applies to food: the product buttons under the chart add another item with one click.',
     tourAddFillBodyMobile:
       'This button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same applies to food: the product buttons further down add another item with one tap.',
-    tourAddShopTitle: 'Stops along the route',
-    tourAddShopBody:
+    tourAddStopTitle: 'Stops along the route',
+    tourAddStopBody:
       'This "+" adds a stop marker on the chart — a shop, a spring, a friend with a hose — drag it anywhere on the route to mark which kilometer you plan to restock food or drink at.',
-    tourAddShopBodyMobile:
+    tourAddStopBodyMobile:
       'This button opens a small form for a stop — enter the kilometer and a name (e.g. a shop, a spring) to mark where you plan to restock food or drink.',
     tourClosingTitle: "That's the essentials",
     tourClosingBody:
@@ -998,11 +998,11 @@ export const STR: Record<Lang, StringTable> = {
       'An enabled profile changes the requirement on climbs. The eye icon above the chart shows the profile itself.',
     routeSheetLoadFile: 'Load file',
     routeSheetDone: 'Done',
-    shopSheetTitle: 'STOP',
-    shopSheetKm: 'Kilometer',
-    shopSheetName: 'Name',
-    shopSheetAdd: 'Add',
-    shopDefaultName: 'Stop',
+    stopSheetTitle: 'STOP',
+    stopSheetKm: 'Kilometer',
+    stopSheetName: 'Name',
+    stopSheetAdd: 'Add',
+    stopDefaultName: 'Stop',
     combineFillCheckbox: 'Prepare together',
     combineSectionTitle: 'Combined batch',
     combineSectionHint:

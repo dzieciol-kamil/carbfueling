@@ -18,7 +18,7 @@
  * never "must reach N%".
  */
 import { describe, expect, test } from 'vitest';
-import { autoplan, SHOP_SNAP_KM } from './autoplan';
+import { autoplan, STOP_SNAP_KM } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
 import { dist, planSummary, samples, totalHours } from './fuel';
 import type {
@@ -28,7 +28,7 @@ import type {
   MixSettings,
   PlanState,
   RouteInput,
-  ShopStop,
+  Stop,
   Vessel,
 } from './types';
 
@@ -59,7 +59,7 @@ interface Then {
   minCarbs: number | null;
   /** Floor on the app's hydration progress bar, or null when there is no water on board. */
   minHydration: number | null;
-  /** Ceiling on shop stops. Fewer is better as long as the floors above still hold. */
+  /** Ceiling on stop stops. Fewer is better as long as the floors above still hold. */
   maxStops: number;
   /** Ceiling on vessel top-ups — one stop can refill more than one bottle. */
   maxRefills: number;
@@ -115,7 +115,7 @@ function vessel(gid: string, name: string, vol: number, allowed: Vessel['allowed
 }
 
 function makePlan(route: RouteInput, gear: Vessel[], mix: MixSettings = makeMix()): PlanState {
-  return { route, mix, gear, fills: [], foods: [], foodLib: FOOD_LIB, shops: [] };
+  return { route, mix, gear, fills: [], foods: [], foodLib: FOOD_LIB, stops: [] };
 }
 
 interface Run {
@@ -137,16 +137,16 @@ function run(state: PlanState, selection: FoodSelectionEntry[] = []): Run {
     id: foodId++,
     name: state.foodLib.find((e) => e.key === f.key)?.pl ?? f.key,
   }));
-  let shopId = 1;
-  const shops: ShopStop[] = [
-    ...state.shops,
-    ...result.newShops.map((sh) => ({ ...sh, id: shopId++, name: 'Sklep', autoCreated: true })),
+  let stopId = 1;
+  const stops: Stop[] = [
+    ...state.stops,
+    ...result.newStops.map((sh) => ({ ...sh, id: stopId++, name: 'Sklep', autoCreated: true })),
   ];
-  return { state, result, planned: { ...state, fills, foods, shops }, D: dist(state.route) };
+  return { state, result, planned: { ...state, fills, foods, stops }, D: dist(state.route) };
 }
 
 function stopXs(r: Run): number[] {
-  return r.result.newShops.map((s) => s.at).sort((a, b) => a - b);
+  return r.result.newStops.map((s) => s.at).sort((a, b) => a - b);
 }
 
 /** Top-ups, not fills: the first fill of each vessel is what the rider leaves home with. */
@@ -260,20 +260,20 @@ function expectThen(r: Run, then: Then): void {
   if (then.productCounts) expect(countBy(productOrder(r))).toEqual(then.productCounts);
 
   // --- inherited structural rules ---------------------------------------------------------
-  // Every refill is a real shop stop, and every shop stop is a refill or a `needsStop` product.
+  // Every refill is a real stop stop, and every stop stop is a refill or a `needsStop` product.
   const boundaries = new Set(result.fills.map((f) => Math.round(f.from * 100) / 100));
   boundaries.delete(0);
   const stops = stopXs(r);
   const stopProducts = result.foods.filter((f) => FOOD_LIB.find((e) => e.key === f.key)?.needsStop);
   for (const x of stops) {
-    const isRefill = [...boundaries].some((b) => Math.abs(b - x) <= SHOP_SNAP_KM);
-    const isProductStop = stopProducts.some((f) => Math.abs(f.from - x) <= SHOP_SNAP_KM);
+    const isRefill = [...boundaries].some((b) => Math.abs(b - x) <= STOP_SNAP_KM);
+    const isProductStop = stopProducts.some((f) => Math.abs(f.from - x) <= STOP_SNAP_KM);
     expect(isRefill || isProductStop, `stop @${x} serves nothing`).toBe(true);
   }
   for (const b of boundaries) {
     expect(
-      stops.some((x) => Math.abs(x - b) <= SHOP_SNAP_KM),
-      `refill @${b} has no shop`,
+      stops.some((x) => Math.abs(x - b) <= STOP_SNAP_KM),
+      `refill @${b} has no stop`,
     ).toBe(true);
   }
 
@@ -314,7 +314,7 @@ function expectThen(r: Run, then: Then): void {
   expectNotWorseThanEvenSpread(r);
 }
 
-/** R1: water, izo and shop-products share one stop — no second pull-over 2km down the road. */
+/** R1: water, izo and stop-products share one stop — no second pull-over 2km down the road. */
 function expectStopsMerged(r: Run): void {
   const stops = stopXs(r);
   const w = mergeWindow(r.D);
@@ -332,7 +332,7 @@ function expectStopProducts(r: Run): void {
   for (const f of r.result.foods) {
     if (!FOOD_LIB.find((e) => e.key === f.key)?.needsStop) continue;
     expect(
-      stops.some((x) => Math.abs(x - f.from) <= SHOP_SNAP_KM),
+      stops.some((x) => Math.abs(x - f.from) <= STOP_SNAP_KM),
       `${f.key} @${f.from} is not at a stop`,
     ).toBe(true);
   }

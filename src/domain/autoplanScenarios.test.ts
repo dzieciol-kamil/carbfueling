@@ -26,7 +26,7 @@ import type {
   MixSettings,
   PlanState,
   RouteInput,
-  ShopStop,
+  Stop,
   Vessel,
 } from './types';
 
@@ -56,7 +56,7 @@ interface Then {
   minHydration: number | null;
   /** Ceiling on carb coverage — only for scenarios whose point is a deliberate shortfall. */
   maxCarbs?: number;
-  /** Ceiling on shop stops. Fewer is better as long as the floors above still hold. */
+  /** Ceiling on stop stops. Fewer is better as long as the floors above still hold. */
   maxStops: number;
   /** Ceiling on vessel top-ups — one stop can refill more than one bottle. */
   maxRefills: number;
@@ -111,7 +111,7 @@ function izo(vol: number, gid = 'g1'): Vessel {
 }
 
 function makePlan(route: RouteInput, gear: Vessel[], mix: MixSettings = makeMix()): PlanState {
-  return { route, mix, gear, fills: [], foods: [], foodLib: FOOD_LIB, shops: [] };
+  return { route, mix, gear, fills: [], foods: [], foodLib: FOOD_LIB, stops: [] };
 }
 
 interface Run {
@@ -133,16 +133,16 @@ function run(state: PlanState, selection: FoodSelectionEntry[] = []): Run {
     id: foodId++,
     name: state.foodLib.find((e) => e.key === f.key)?.pl ?? f.key,
   }));
-  let shopId = 1;
-  const shops: ShopStop[] = [
-    ...state.shops,
-    ...result.newShops.map((sh) => ({ ...sh, id: shopId++, name: 'Sklep', autoCreated: true })),
+  let stopId = 1;
+  const stops: Stop[] = [
+    ...state.stops,
+    ...result.newStops.map((sh) => ({ ...sh, id: stopId++, name: 'Sklep', autoCreated: true })),
   ];
-  return { state, result, planned: { ...state, fills, foods, shops }, D: dist(state.route) };
+  return { state, result, planned: { ...state, fills, foods, stops }, D: dist(state.route) };
 }
 
 function stopXs(r: Run): number[] {
-  return r.result.newShops.map((s) => s.at).sort((a, b) => a - b);
+  return r.result.newStops.map((s) => s.at).sort((a, b) => a - b);
 }
 
 /** Top-ups, not fills: the first fill of each vessel is what the rider leaves home with. */
@@ -166,7 +166,7 @@ function loadsNeeded(need: number, load: number): number {
 
 /**
  * Checks the scenario's stated `then`, plus the structural rules that hold everywhere: refills
- * are shop stops, fills tile the route per vessel, and no two products are ever open at once.
+ * are stop stops, fills tile the route per vessel, and no two products are ever open at once.
  */
 function expectThen(r: Run, then: Then): void {
   const { D, result } = r;
@@ -183,7 +183,7 @@ function expectThen(r: Run, then: Then): void {
   expect(productOrder(r)).toEqual(then.products);
 
   // --- structural rules ------------------------------------------------------------------
-  // Every refill is a real shop stop, and every shop stop is a refill — no free tap water.
+  // Every refill is a real stop stop, and every stop stop is a refill — no free tap water.
   const boundaries = [...new Set(result.fills.map((f) => f.from).filter((x) => x > 0))].sort(
     (a, b) => a - b,
   );

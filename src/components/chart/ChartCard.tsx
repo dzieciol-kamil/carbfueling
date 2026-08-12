@@ -5,7 +5,7 @@ import { useAppStore, type YMode } from '../../store/appStore';
 import type { XUnit } from '../../domain/types';
 import { FoodLibraryChips } from '../FoodLibraryChips';
 import { LanesSection } from '../lanes/LanesSection';
-import { ShopMarkers } from './ShopMarkers';
+import { StopMarkers } from './StopMarkers';
 import { TimelineSection } from '../timeline/TimelineSection';
 import { Chart } from './Chart';
 import { elevationTicks } from './ElevationLayer';
@@ -52,17 +52,17 @@ export function ChartCard() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
-  const shops = useAppStore((s) => s.shops);
+  const stops = useAppStore((s) => s.stops);
   const lang = useAppStore((s) => s.ui.lang);
   const yMode = useAppStore((s) => s.ui.yMode);
   const xUnit = useAppStore((s) => s.ui.xUnit);
   const setYMode = useAppStore((s) => s.setYMode);
   const setXUnit = useAppStore((s) => s.setXUnit);
-  const addShop = useAppStore((s) => s.addShop);
+  const addStop = useAppStore((s) => s.addStop);
   const openChartHelp = useAppStore((s) => s.openChartHelp);
   const strings = t(lang);
 
-  const planState = { route, mix, gear, fills, foods, foodLib, shops };
+  const planState = { route, mix, gear, fills, foods, foodLib, stops };
   const summary = planSummary(planState);
 
   const showEaten = yMode === 'sum' && summary.totalCarbs - summary.absorbedTotal > 5;
@@ -243,7 +243,7 @@ export function ChartCard() {
         </div>
         <div data-tour="chart" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <Chart height={CHART_HEIGHT} showAxis />
-          <ShopMarkers
+          <StopMarkers
             distanceKm={dist(route)}
             height={CHART_HEIGHT}
             bottomPadding={CHART_PB}
@@ -253,9 +253,9 @@ export function ChartCard() {
         </div>
         <div style={{ width: 40, flex: '0 0 40px', position: 'relative', height: CHART_HEIGHT }}>
           <button
-            data-tour="add-shop"
-            onClick={addShop}
-            title={strings.addShopStop}
+            data-tour="add-stop"
+            onClick={addStop}
+            title={strings.addStop}
             style={{
               position: 'absolute',
               top: 3,

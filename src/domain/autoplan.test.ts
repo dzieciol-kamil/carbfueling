@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  SHOP_SNAP_KM,
+  STOP_SNAP_KM,
   autoplan,
   bucketVessels,
   findClimbStarts,
@@ -19,7 +19,7 @@ import type {
   MixSettings,
   PlanState,
   RouteInput,
-  ShopStop,
+  Stop,
   Vessel,
 } from './types';
 
@@ -69,7 +69,7 @@ function makePlan(overrides: Partial<PlanState> = {}): PlanState {
     fills: [],
     foods: [],
     foodLib: [],
-    shops: [],
+    stops: [],
     ...overrides,
   };
 }
@@ -209,7 +209,7 @@ describe('placeItemsEvenly', () => {
 
 /**
  * A `needsStop` product is one nobody carries — a cola, an ice cream. The rider picked it, so it has
- * to end up in the plan, and the only place it can be eaten is a shop. On a ride whose bottles never
+ * to end up in the plan, and the only place it can be eaten is a stop. On a ride whose bottles never
  * run dry there is no refill to hang it on, which used to make it vanish silently: its carbs and its
  * fluid were already spent from the budget, and then the plan came back with no food in it at all.
  */
@@ -236,24 +236,24 @@ describe('autoplan (products that have to be bought)', () => {
   });
 
   test('each one is eaten at a stop, which the plan creates for it', () => {
-    expect(result.newShops.length).toBeGreaterThan(0);
+    expect(result.newStops.length).toBeGreaterThan(0);
     result.foods.forEach((f) => {
-      const atStop = result.newShops.some((s) => Math.abs(s.at - f.from) <= SHOP_SNAP_KM);
+      const atStop = result.newStops.some((s) => Math.abs(s.at - f.from) <= STOP_SNAP_KM);
       expect(atStop, `${f.key} at ${f.from.toFixed(1)}km is not at a stop`).toBe(true);
     });
   });
 
-  test('they are spread over three shops, not bought three at a time at one', () => {
-    const shopFor = (x: number) =>
-      result.newShops.findIndex((s) => Math.abs(s.at - x) <= SHOP_SNAP_KM);
-    const used = new Set(result.foods.map((f) => shopFor(f.from)));
+  test('they are spread over three stops, not bought three at a time at one', () => {
+    const stopFor = (x: number) =>
+      result.newStops.findIndex((s) => Math.abs(s.at - x) <= STOP_SNAP_KM);
+    const used = new Set(result.foods.map((f) => stopFor(f.from)));
     expect(used.size).toBe(3);
   });
 
   test('a stop it created is a real refill, not a bookmark', () => {
     const boundaries = result.fills.map((f) => f.from);
-    result.newShops.forEach((s) => {
-      const refills = boundaries.some((b) => Math.abs(b - s.at) <= SHOP_SNAP_KM);
+    result.newStops.forEach((s) => {
+      const refills = boundaries.some((b) => Math.abs(b - s.at) <= STOP_SNAP_KM);
       expect(refills, `stop at ${s.at.toFixed(1)}km refills nothing`).toBe(true);
     });
   });
@@ -298,13 +298,13 @@ describe('autoplan (the end of a carb stream)', () => {
 });
 
 /**
- * Snapping a grid point onto the rider's own shop must not turn the grid around.
+ * Snapping a grid point onto the rider's own stop must not turn the grid around.
  *
  * Legs are equal slices of time, so on a climb they are a kilometre long or less — shorter than the
- * 3km a shop may pull a boundary forward. Pull one boundary past the next and the "leg" between them
+ * 3km a stop may pull a boundary forward. Pull one boundary past the next and the "leg" between them
  * runs backwards: a fill that ends before it starts, and stops in the wrong order on the chart.
  */
-describe('autoplan (grid vs. the rider’s shops)', () => {
+describe('autoplan (grid vs. the rider’s stops)', () => {
   // A wall at km20: 500m of ascent per kilometre, so three grid legs fit inside three kilometres.
   const wall: number[] = [];
   for (let i = 0; i <= 60; i++) {
@@ -320,8 +320,8 @@ describe('autoplan (grid vs. the rider’s shops)', () => {
     gpxTrack: { id: 3, ele: wall },
   });
 
-  test('a shop past the next boundary is not snapped to', () => {
-    // Natural grid: 0, 11.63, 20.54, 22.48, 32.95, 46.47, 60 — the shop sits beyond the 22.48 leg.
+  test('a stop past the next boundary is not snapped to', () => {
+    // Natural grid: 0, 11.63, 20.54, 22.48, 32.95, 46.47, 60 — the stop sits beyond the 22.48 leg.
     const xs = gridXs(steep, 6, [{ id: 1, at: 23.4, name: 'Sklep' }]);
     xs.forEach((x, i) => {
       if (i > 0)
@@ -331,7 +331,7 @@ describe('autoplan (grid vs. the rider’s shops)', () => {
     });
   });
 
-  test('a shop that fits between two boundaries still moves the stop onto it', () => {
+  test('a stop that fits between two boundaries still moves the stop onto it', () => {
     const xs = gridXs(steep, 6, [{ id: 1, at: 12.5, name: 'Sklep' }]);
     expect(xs).toContain(12.5);
   });
@@ -376,7 +376,7 @@ describe('autoplan (hilly routes)', () => {
     const applied: PlanState = {
       ...state,
       fills: result.fills.map((f, i) => ({ ...f, fid: i + 1 })),
-      shops: result.newShops.map((s, i) => ({ ...s, id: i + 1, name: 'Sklep' })),
+      stops: result.newStops.map((s, i) => ({ ...s, id: i + 1, name: 'Sklep' })),
     };
     const { pct, at } = worstFluidPct(applied);
     expect(pct, `line drops to ${Math.round(pct)}% at km ${Math.round(at)}`).toBeGreaterThanOrEqual(
@@ -386,13 +386,13 @@ describe('autoplan (hilly routes)', () => {
 });
 
 describe('autoplan (integration)', () => {
-  test('short ride (<1h): water-only fills, no food, no shops, selection ignored', () => {
+  test('short ride (<1h): water-only fills, no food, no stops, selection ignored', () => {
     const route = makeRoute({ mode: 'time', hours: 0, minutes: 40 });
     const state = makePlan({ route, gear: [bidon], foodLib: [bananaEntry] });
     const result = autoplan(state, [{ key: 'banana', count: 5 }]);
     expect(result.fills.every((f) => f.content === 'water')).toBe(true);
     expect(result.foods).toEqual([]);
-    expect(result.newShops).toEqual([]);
+    expect(result.newStops).toEqual([]);
   });
 
   test('start izo + full selection already covers target: refill legs get water, fewer items placed than selected', () => {
@@ -423,7 +423,7 @@ describe('autoplan (integration)', () => {
     const result = autoplan(state, [{ key: 'banana', count: 1 }]);
     const izoFills = result.fills.filter((f) => f.content === 'izo');
     expect(izoFills.length).toBeGreaterThan(1); // start fill + at least one refill
-    expect(result.newShops.length).toBeGreaterThan(0);
+    expect(result.newStops.length).toBeGreaterThan(0);
   });
 
   test('gear with a gel-capable vessel: gel fill is one-shot, never appears more than once for that vessel', () => {
@@ -504,14 +504,14 @@ const realFoodLib: FoodLibEntry[] = [
 function applyResult(
   state: PlanState,
   result: ReturnType<typeof autoplan>,
-): { state: PlanState; shopCount: number } {
+): { state: PlanState; stopCount: number } {
   const fills: Fill[] = result.fills.map((f, i) => ({ ...f, fid: i + 1 }));
   const foods: FoodItem[] = result.foods.map((f, i) => ({ ...f, id: i + 1, name: f.key }));
-  const shops: ShopStop[] = [
-    ...state.shops,
-    ...result.newShops.map((s, i) => ({ ...s, id: 1000 + i, name: 'Sklep' })),
+  const stops: Stop[] = [
+    ...state.stops,
+    ...result.newStops.map((s, i) => ({ ...s, id: 1000 + i, name: 'Sklep' })),
   ];
-  return { state: { ...state, fills, foods, shops }, shopCount: shops.length };
+  return { state: { ...state, fills, foods, stops }, stopCount: stops.length };
 }
 
 function overlappingPairs(fills: { gid: string; from: number; to: number }[]): string[] {
@@ -573,7 +573,7 @@ describe('autoplan (golden path, app default gear)', () => {
   });
 
   test('no stop lands at the start line', () => {
-    result.newShops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(100)));
+    result.newStops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(100)));
   });
 
   test('hydration and carb coverage clear the rider-accepted floors', () => {
@@ -609,7 +609,7 @@ describe('autoplan (long route, app default gear)', () => {
   ]);
 
   test('no stop lands essentially at departure', () => {
-    result.newShops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(194)));
+    result.newStops.forEach((s) => expect(s.at).toBeGreaterThanOrEqual(minStopX(194)));
   });
 
   test('water fills exist and cover a meaningful share of the route', () => {
@@ -624,7 +624,7 @@ describe('autoplan (long route, app default gear)', () => {
   test('the flask piggybacks water on stops that already exist, after its gel is gone', () => {
     const flaskWater = result.fills.filter((f) => f.gid === 'g2' && f.content === 'water');
     expect(flaskWater.length).toBeGreaterThan(0);
-    const stops = result.newShops.map((s) => s.at);
+    const stops = result.newStops.map((s) => s.at);
     const gelEnd = result.fills.find((f) => f.gid === 'g2' && f.content === 'gel')!.to;
     flaskWater.forEach((f) => {
       expect(f.from).toBeGreaterThanOrEqual(gelEnd - 1e-9);

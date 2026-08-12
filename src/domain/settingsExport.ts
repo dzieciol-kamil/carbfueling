@@ -6,7 +6,7 @@ import type {
   FoodLibEntry,
   MixSettings,
   RouteInput,
-  ShopStop,
+  Stop,
   Vessel,
 } from './types';
 
@@ -16,7 +16,9 @@ import type {
 // download link and a file input.
 
 export const SETTINGS_EXPORT_APP_ID = 'carb-fueling-settings';
-export const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
+// v1 -> v2: `shops`/`nextShopId` became `stops`/`nextStopId`. A file the rider saved before that is
+// still a backup of his plan, so v1 files are read and renamed on the way in.
+export const SETTINGS_EXPORT_SCHEMA_VERSION = 2;
 
 // Durable UI preferences worth carrying across devices. Deliberately excludes
 // transient UI state (open panels/sheets, hover/drag/selection, tour progress,
@@ -44,14 +46,14 @@ export interface SettingsExportData {
   gear: Vessel[];
   fills: Fill[];
   foods: FoodItem[];
-  shops: ShopStop[];
+  stops: Stop[];
   foodLib: FoodLibEntry[];
   ui: SettingsExportUi;
   nextGid: number;
   nextFid: number;
   nextFoodId: number;
   nextFoodKey: number;
-  nextShopId: number;
+  nextStopId: number;
 }
 
 export interface SettingsExportFile {
@@ -173,7 +175,7 @@ function isValidFood(v: unknown): v is FoodItem {
   );
 }
 
-function isValidShop(v: unknown): v is ShopStop {
+function isValidStop(v: unknown): v is Stop {
   if (!isRecord(v)) return false;
   return isFiniteNumber(v.id) && isFiniteNumber(v.at) && typeof v.name === 'string';
 }
@@ -209,8 +211,8 @@ function isValidSettingsExportData(v: unknown): v is SettingsExportData {
     v.fills.every(isValidFill) &&
     Array.isArray(v.foods) &&
     v.foods.every(isValidFood) &&
-    Array.isArray(v.shops) &&
-    v.shops.every(isValidShop) &&
+    Array.isArray(v.stops) &&
+    v.stops.every(isValidStop) &&
     Array.isArray(v.foodLib) &&
     v.foodLib.every(isValidFoodLibEntry) &&
     isValidUi(v.ui) &&
@@ -218,8 +220,16 @@ function isValidSettingsExportData(v: unknown): v is SettingsExportData {
     isFiniteNumber(v.nextFid) &&
     isFiniteNumber(v.nextFoodId) &&
     isFiniteNumber(v.nextFoodKey) &&
-    isFiniteNumber(v.nextShopId)
+    isFiniteNumber(v.nextStopId)
   );
+}
+
+/** A v1 file calls the route's markers `shops`; everything downstream of here calls them `stops`. */
+function renameLegacyStops(data: unknown): unknown {
+  if (!isRecord(data) || data.stops !== undefined) return data;
+  const { shops, nextShopId, ...rest } = data;
+  if (shops === undefined) return data;
+  return { ...rest, stops: shops, nextStopId: nextShopId };
 }
 
 export function parseSettingsImport(raw: string): ParseSettingsResult {
@@ -237,6 +247,7 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
   ) {
     return { ok: false, reason: 'unsupported-version' };
   }
-  if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
-  return { ok: true, data: parsed.data };
+  const data = renameLegacyStops(parsed.data);
+  if (!isValidSettingsExportData(data)) return { ok: false, reason: 'wrong-shape' };
+  return { ok: true, data };
 }
