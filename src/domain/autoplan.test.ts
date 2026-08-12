@@ -335,6 +335,38 @@ describe('autoplan (grid vs. the rider’s stops)', () => {
     const xs = gridXs(steep, 6, [{ id: 1, at: 12.5, name: 'Sklep' }]);
     expect(xs).toContain(12.5);
   });
+
+  /**
+   * Keeping the stops from a previous run must not mean planning around a frozen list.
+   *
+   * A rider who keeps them expects the plan to *use* what is already on the route and to speak up
+   * where it needs somewhere new — not to silently make do with too few refills, and not to line
+   * up a second pull-over two kilometres past one he already has.
+   */
+  const long = makeRoute({ distance: 200, speed: 25, temp: 25 });
+  const oneBottle: Vessel = { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water'], gelParts: 1 };
+
+  test('stops already on the route are used instead of new ones beside them', () => {
+    const fresh = autoplan(makePlan({ route: long, gear: [oneBottle] }), []);
+    expect(fresh.newStops.length).toBeGreaterThan(1);
+    const kept: Stop[] = fresh.newStops.map((s, i) => ({ id: i + 1, at: s.at, name: 'Postój' }));
+
+    const again = autoplan(makePlan({ route: long, gear: [oneBottle], stops: kept }), []);
+    expect(again.newStops).toEqual([]);
+  });
+
+  test('a new stop is added where the ride needs one and nothing is nearby', () => {
+    // One stop kept from a shorter ride, then the route doubles: the rest still has to be planned.
+    const kept: Stop[] = [{ id: 1, at: 40, name: 'Żabka' }];
+    const result = autoplan(makePlan({ route: long, gear: [oneBottle], stops: kept }), []);
+    expect(result.newStops.length).toBeGreaterThan(0);
+    for (const s of result.newStops) {
+      expect(
+        Math.abs(s.at - 40),
+        'a new stop was planned right next to the kept one',
+      ).toBeGreaterThan(STOP_SNAP_KM);
+    }
+  });
 });
 
 /**
