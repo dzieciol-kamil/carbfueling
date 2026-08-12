@@ -233,6 +233,25 @@ describe('applyAutoplan', () => {
     expect(after.ui.dragKey).toBeNull();
   });
 
+  /**
+   * On a phone the button lives in the shared header, so it fires from Gear, Mix, Food or Me just
+   * as readily as from the plan. The rider then gets a toast telling him a plan was made, on a
+   * screen showing none of it.
+   */
+  test('brings the rider to the plan it just made', () => {
+    useAppStore.setState({
+      route: route({ distance: 120, speed: 25 }),
+      fills: [],
+      foods: [],
+      stops: [],
+      ui: { ...useAppStore.getState().ui, tab: 'gear' },
+    });
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    expect(useAppStore.getState().ui.tab).toBe('plan');
+  });
+
   test('resolves food names from foodLib in the current UI language and advances nextFoodId', () => {
     useAppStore.setState({
       route: route({ distance: 100, speed: 25 }),

@@ -709,7 +709,9 @@ export const useAppStore = create<AppState>()(
             // selected. Left behind they resolve to nothing — the Recipes block for the batch
             // would simply stop rendering — so they go with the plan they belonged to.
             combinedFillIds: [],
-            ui: { ...s.ui, selKey: null, hoverKey: null, dragKey: null },
+            // `tab` is the phone's: the button sits in the shared header, so a run started from
+            // Gear or Mix would otherwise announce a finished plan on a screen showing none of it.
+            ui: { ...s.ui, tab: 'plan', selKey: null, hoverKey: null, dragKey: null },
             nextFid: fid,
             nextFoodId: foodId,
             nextStopId: stopId,
