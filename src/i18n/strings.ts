@@ -383,7 +383,7 @@ export const STR: Record<Lang, StringTable> = {
       'Paski nie nachodzą na siebie — w ciasnej luce przeciągany pasek się skraca. Kreski porcji żelu przesuwasz osobno.',
     addFuel: 'Dodaj jedzenie:',
     removeItem: 'Usuń',
-    addShopStop: 'Dodaj sklep',
+    addShopStop: 'Dodaj postój',
     addFillTo: 'Dodaj dolewkę do ',
     coverage: 'Pokrycie zapotrzebowania',
     summary: 'Podsumowanie',
@@ -539,11 +539,11 @@ export const STR: Record<Lang, StringTable> = {
       'Ten przycisk „+” wstawia kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów pod wykresem dodają kolejne pozycje jednym kliknięciem.',
     tourAddFillBodyMobile:
       'Ten przycisk dodaje kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów niżej dodają kolejne pozycje jednym stuknięciem.',
-    tourAddShopTitle: 'Punkty zaopatrzenia',
+    tourAddShopTitle: 'Postoje na trasie',
     tourAddShopBody:
-      'Ten „+” dodaje na wykresie znacznik punktu zaopatrzenia (np. sklepu) — możesz przeciągnąć go w dowolne miejsce trasy, żeby zaznaczyć, na którym kilometrze planujesz dokupić jedzenie lub napój.',
+      'Ten „+” dodaje na wykresie znacznik postoju — sklep, źródełko, kran u kumpla — możesz przeciągnąć go w dowolne miejsce trasy, żeby zaznaczyć, na którym kilometrze planujesz uzupełnić jedzenie lub napój.',
     tourAddShopBodyMobile:
-      'Ten przycisk otwiera formularz punktu zaopatrzenia — wpisujesz kilometr i nazwę (np. sklep), żeby zaznaczyć, gdzie planujesz dokupić jedzenie lub napój.',
+      'Ten przycisk otwiera formularz postoju — wpisujesz kilometr i nazwę (np. sklep, źródełko), żeby zaznaczyć, gdzie planujesz uzupełnić jedzenie lub napój.',
     tourClosingTitle: 'To wszystko na start',
     tourClosingBody:
       'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Ustawienia (waga, ustawienia dostępnych produktów) oraz Mieszanka i bidony (pozwala ustalić proporcje i dostępne bidony) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
@@ -623,11 +623,11 @@ export const STR: Record<Lang, StringTable> = {
       'Włączony profil zmienia zapotrzebowanie na podjazdach. Ikona oka nad wykresem pokazuje sam profil.',
     routeSheetLoadFile: 'Wczytaj plik',
     routeSheetDone: 'Gotowe',
-    shopSheetTitle: 'PUNKT ORIENTACYJNY',
+    shopSheetTitle: 'POSTÓJ',
     shopSheetKm: 'Kilometr',
     shopSheetName: 'Nazwa',
     shopSheetAdd: 'Dodaj',
-    shopDefaultName: 'Sklep',
+    shopDefaultName: 'Postój',
     combineFillCheckbox: 'Przygotuj razem',
     combineSectionTitle: 'Wspólna porcja',
     combineSectionHint:
@@ -655,12 +655,12 @@ export const STR: Record<Lang, StringTable> = {
     inPlanSuffix: '× w planie',
     planDataSection: 'Dane planu',
     planDataHint:
-      'Zapisz cały plan (trasę, sprzęt, mieszankę, produkty, sklepy) do pliku albo wczytaj wcześniejszą kopię na innym urządzeniu.',
+      'Zapisz cały plan (trasę, sprzęt, mieszankę, produkty, postoje) do pliku albo wczytaj wcześniejszą kopię na innym urządzeniu.',
     exportPlanButton: 'Pobierz plan',
     importPlanButton: 'Załaduj plan',
     importPlanConfirmTitle: 'Zastąpić bieżący plan?',
     importPlanConfirmBody:
-      'Import nadpisze Twoją aktualną trasę, sprzęt, mieszankę, produkty i sklepy danymi z pliku. Tej zmiany nie da się cofnąć.',
+      'Import nadpisze Twoją aktualną trasę, sprzęt, mieszankę, produkty i postoje danymi z pliku. Tej zmiany nie da się cofnąć.',
     importPlanConfirmCancel: 'Anuluj',
     importPlanConfirmConfirm: 'Importuj',
     importPlanError:
@@ -675,9 +675,9 @@ export const STR: Record<Lang, StringTable> = {
       'To nadpisze obecne napełnienia i produkty na trasie nową propozycją.',
     autoplanConfirmReplaceCancel: 'Anuluj',
     autoplanConfirmReplaceConfirm: 'Zastąp',
-    autoplanKeepPrevStopsLabel: 'Zostaw punkty sklepów z poprzedniej propozycji',
+    autoplanKeepPrevStopsLabel: 'Zostaw postoje z poprzedniej propozycji',
     autoplanKeepPrevStopsHint:
-      'Punkty, które dodałeś sam, zostają zawsze — nowy plan będzie się do nich dopasowywał.',
+      'Postoje, które dodałeś sam, zostają zawsze — nowy plan będzie się do nich dopasowywał.',
     autoplanDialogTitle: 'Co masz ze sobą?',
     autoplanDialogHint:
       'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
@@ -759,7 +759,7 @@ export const STR: Record<Lang, StringTable> = {
       'Bars never overlap — a dragged bar shortens to fit a tight gap. Gel portion marks drag on their own.',
     addFuel: 'Add food:',
     removeItem: 'Remove',
-    addShopStop: 'Add shop stop',
+    addShopStop: 'Add stop',
     addFillTo: 'Add a fill to ',
     coverage: 'Requirement covered',
     summary: 'Summary',
@@ -915,11 +915,11 @@ export const STR: Record<Lang, StringTable> = {
       'This "+" button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same idea applies to food: the product buttons under the chart add another item with one click.',
     tourAddFillBodyMobile:
       'This button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same applies to food: the product buttons further down add another item with one tap.',
-    tourAddShopTitle: 'Resupply points',
+    tourAddShopTitle: 'Stops along the route',
     tourAddShopBody:
-      'This "+" adds a resupply marker on the chart (e.g. a shop) — drag it anywhere on the route to mark which kilometer you plan to buy more food or drink at.',
+      'This "+" adds a stop marker on the chart — a shop, a spring, a friend with a hose — drag it anywhere on the route to mark which kilometer you plan to restock food or drink at.',
     tourAddShopBodyMobile:
-      'This button opens a small form for a resupply point — enter the kilometer and a name (e.g. a shop) to mark where you plan to buy more food or drink.',
+      'This button opens a small form for a stop — enter the kilometer and a name (e.g. a shop, a spring) to mark where you plan to restock food or drink.',
     tourClosingTitle: "That's the essentials",
     tourClosingBody:
       "Recipes for topping up the bottles and fills you've added are under the chart. Settings (weight, available-product settings) and Mix & bottles (set ratios and available bottles) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
@@ -998,11 +998,11 @@ export const STR: Record<Lang, StringTable> = {
       'An enabled profile changes the requirement on climbs. The eye icon above the chart shows the profile itself.',
     routeSheetLoadFile: 'Load file',
     routeSheetDone: 'Done',
-    shopSheetTitle: 'LANDMARK',
+    shopSheetTitle: 'STOP',
     shopSheetKm: 'Kilometer',
     shopSheetName: 'Name',
     shopSheetAdd: 'Add',
-    shopDefaultName: 'Shop',
+    shopDefaultName: 'Stop',
     combineFillCheckbox: 'Prepare together',
     combineSectionTitle: 'Combined batch',
     combineSectionHint:
@@ -1030,12 +1030,12 @@ export const STR: Record<Lang, StringTable> = {
     inPlanSuffix: '× in plan',
     planDataSection: 'Plan data',
     planDataHint:
-      'Save your whole plan (route, gear, mix, products, shops) to a file, or load a backup on another device.',
+      'Save your whole plan (route, gear, mix, products, stops) to a file, or load a backup on another device.',
     exportPlanButton: 'Download plan',
     importPlanButton: 'Load plan',
     importPlanConfirmTitle: 'Replace your current plan?',
     importPlanConfirmBody:
-      "Importing will overwrite your current route, gear, mix, products and shops with the file's data. This can't be undone.",
+      "Importing will overwrite your current route, gear, mix, products and stops with the file's data. This can't be undone.",
     importPlanConfirmCancel: 'Cancel',
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
@@ -1049,7 +1049,7 @@ export const STR: Record<Lang, StringTable> = {
       'This will overwrite your current fills and food with a new suggestion.',
     autoplanConfirmReplaceCancel: 'Cancel',
     autoplanConfirmReplaceConfirm: 'Replace',
-    autoplanKeepPrevStopsLabel: 'Keep the shop stops from the last suggestion',
+    autoplanKeepPrevStopsLabel: 'Keep the stops from the last suggestion',
     autoplanKeepPrevStopsHint:
       'Stops you added yourself always stay — the new plan will work around them.',
     autoplanDialogTitle: 'What are you carrying?',
