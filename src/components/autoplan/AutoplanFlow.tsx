@@ -77,6 +77,26 @@ export function autoplanGate(route: RouteInput): 'noDuration' | 'shortRide' | 'r
   return hours < 1 ? 'shortRide' : 'ready';
 }
 
+/**
+ * Whether a second run has something of the rider's to destroy.
+ *
+ * The stops from the last run count too — they are the part he is likeliest to have kept, being
+ * real shops on his map, and the cleanup checkbox under the confirm is pre-ticked. Read only the
+ * fills and foods and a rider who cleared those by hand gets no dialog, no checkbox, and loses his
+ * stops without being asked. His own stops raise no question: nothing ever removes those.
+ */
+export function needsReplaceConfirm(plan: {
+  fills: unknown[];
+  foods: unknown[];
+  shops: { autoCreated?: boolean }[];
+}): boolean {
+  return (
+    plan.fills.length > 0 ||
+    plan.foods.length > 0 ||
+    plan.shops.some((sh) => sh.autoCreated === true)
+  );
+}
+
 export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const lang = useAppStore((s) => s.ui.lang);
   const route = useAppStore((s) => s.route);
@@ -104,8 +124,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   }
 
   function handleTrigger() {
-    const hasExisting = fills.length > 0 || foods.length > 0;
-    if (hasExisting) {
+    if (needsReplaceConfirm({ fills, foods, shops })) {
       setRemovePreviousAutoStops(true);
       setPhase('confirmReplace');
       return;
