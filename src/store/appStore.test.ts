@@ -689,6 +689,73 @@ describe('migrate: the old default stop name (v5 -> v6)', () => {
   });
 });
 
+/**
+ * Cola was always something you stop for; the flag saying so came later.
+ *
+ * Until `needsStop` existed the planner treated the shipped Cola like a bar in a jersey pocket and
+ * put it wherever the carbs were due. Riders who already have it stored keep that entry forever, so
+ * the flag has to reach them too — but only where the entry is still exactly what the app shipped.
+ * A Cola the rider retuned is his product, and a stop he never asked for is not a fix.
+ */
+describe('the shipped food library', () => {
+  test('marks Cola as something you stop for', () => {
+    const cola = useAppStore.getState().foodLib.find((f) => f.key === 'cola');
+    expect(cola?.needsStop).toBe(true);
+  });
+
+  test('leaves the pocketable products carried', () => {
+    const lib = useAppStore.getState().foodLib;
+    for (const key of ['gel', 'chew', 'banana']) {
+      expect(lib.find((f) => f.key === key)?.needsStop).toBeUndefined();
+    }
+  });
+});
+
+describe('migrate: cola needs a stop (v6 -> v7)', () => {
+  const stockCola = { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 };
+
+  function migrateFoodLib(foodLib: unknown[], version = 6) {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const migrated = migrate({ foodLib }, version) as ReturnType<typeof useAppStore.getState>;
+    return migrated.foodLib;
+  }
+
+  test('the untouched shipped Cola picks up the flag', () => {
+    expect(migrateFoodLib([stockCola])[0].needsStop).toBe(true);
+  });
+
+  test('leaves every other product alone', () => {
+    const gel = { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 };
+    const lib = migrateFoodLib([gel, stockCola]);
+    expect(lib[0]).toEqual(gel);
+    expect(lib[1].needsStop).toBe(true);
+  });
+
+  test('a Cola the rider renamed is his own product', () => {
+    const lib = migrateFoodLib([{ ...stockCola, pl: 'Cola zero', en: 'Cola zero' }]);
+    expect(lib[0].needsStop).toBeUndefined();
+  });
+
+  test('a Cola whose carbs or fluid he retuned is his own too', () => {
+    expect(migrateFoodLib([{ ...stockCola, carbs: 39 }])[0].needsStop).toBeUndefined();
+    expect(migrateFoodLib([{ ...stockCola, ml: 500 }])[0].needsStop).toBeUndefined();
+    expect(migrateFoodLib([{ ...stockCola, cont: true, span: 18 }])[0].needsStop).toBeUndefined();
+  });
+
+  test('a flag he already set himself is not overwritten', () => {
+    expect(migrateFoodLib([{ ...stockCola, needsStop: false }])[0].needsStop).toBe(false);
+  });
+
+  test('a rider already on the new version is left alone', () => {
+    expect(migrateFoodLib([stockCola], 7)[0].needsStop).toBeUndefined();
+  });
+
+  test('does nothing when there is no persisted library at all', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    expect(migrate({}, 6)).toEqual({});
+  });
+});
+
 describe('migrate: ratioPreset inference (v2 -> v3)', () => {
   test('infers honey from a legacy ratio of 0.8', () => {
     const migrate = useAppStore.persist.getOptions().migrate!;

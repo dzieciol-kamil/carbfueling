@@ -158,7 +158,7 @@ export function SettingsPanel() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1.3fr) 74px 82px 76px 22px',
+            gridTemplateColumns: 'minmax(0,1.3fr) 74px 82px 76px 76px 22px',
             alignItems: 'end',
             gap: 7,
             padding: '0 13px 6px',
@@ -173,6 +173,7 @@ export function SettingsPanel() {
           <span style={{ textAlign: 'center' }}>{strings.fMl}</span>
           <span />
           <span />
+          <span />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -185,7 +186,7 @@ export function SettingsPanel() {
                 padding: '10px 12px',
                 background: '#FBFCFA',
                 display: 'grid',
-                gridTemplateColumns: 'minmax(0,1.3fr) 74px 82px 76px 22px',
+                gridTemplateColumns: 'minmax(0,1.3fr) 74px 82px 76px 76px 22px',
                 alignItems: 'center',
                 gap: 7,
               }}
@@ -241,6 +242,12 @@ export function SettingsPanel() {
                 style={contStyle(!!entry.cont)}
               >
                 {strings.fCont}
+              </button>
+              <button
+                onClick={() => updateFoodLibEntry(entry.key, { needsStop: !entry.needsStop })}
+                style={contStyle(!!entry.needsStop)}
+              >
+                {strings.fNeedsStop}
               </button>
               <button
                 onClick={() => removeFoodLibEntry(entry.key)}

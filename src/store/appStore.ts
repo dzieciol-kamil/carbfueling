@@ -257,7 +257,9 @@ const defaultCombinedFillIds: number[] = [];
 const defaultFoodLib: FoodLibEntry[] = [
   { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
   { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 },
+  // Nobody hauls a bottle of cola around for 200 km — drinking one *is* a stop, so it ships
+  // flagged and the planner never plans it as something the rider carries.
+  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
   { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
 ];
 
@@ -720,7 +722,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'carbfueling',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -740,6 +742,11 @@ export const useAppStore = create<AppState>()(
       // v5 -> v6: the same rename applied to the data. Every marker the app created carried
       // "Sklep"/"Shop" as its name — a label the rider never chose — so those follow the copy to
       // "Postoj"/"Stop". A name he typed himself is his and is left untouched.
+      // v6 -> v7: `needsStop` marks a product you can only have where you stop for it, and the
+      // shipped Cola was always one of those — it just had no way to say so until now. A rider who
+      // still has it exactly as the app wrote it gets the flag; the moment he retuned its name,
+      // carbs, fluid or timing it became his own product, and flipping a switch he never touched
+      // would move it to a stop he never asked for.
       migrate: (persistedState, version) => {
         const s = persistedState as
           | (Partial<AppState> & {
@@ -782,6 +789,21 @@ export const useAppStore = create<AppState>()(
           const wasDefault = new Set(['Sklep', 'Shop']);
           s.stops = s.stops.map((st) =>
             wasDefault.has(st.name) ? { ...st, name: t(lang).stopDefaultName } : st,
+          );
+        }
+        if (version < 7 && Array.isArray(s.foodLib)) {
+          // The shipped Cola, spelled out as it left the app — same in both languages, so no
+          // per-language check is needed. Anything else under the `cola` key is the rider's edit.
+          s.foodLib = s.foodLib.map((e) =>
+            e.key === 'cola' &&
+            e.pl === 'Cola' &&
+            e.en === 'Cola' &&
+            e.carbs === 35 &&
+            e.ml === 330 &&
+            !e.cont &&
+            e.needsStop === undefined
+              ? { ...e, needsStop: true }
+              : e,
           );
         }
         return s;

@@ -159,6 +159,7 @@ export interface StringTable {
   fCarbs: string;
   fMl: string;
   fCont: string;
+  fNeedsStop: string;
   foodSectionHint: string;
   mixHint: string;
   notes: { title: string; body: string }[];
@@ -233,6 +234,7 @@ export interface StringTable {
   absCapNoteMobile: string;
   gelPartsStepper: string;
   foodStepwise: string;
+  foodNeedsStop: string;
   foodAddProduct: string;
   meWeight: string;
   meApp: string;
@@ -481,6 +483,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'cukry (g)',
     fMl: 'płyn (ml)',
     fCont: 'stopniowo',
+    fNeedsStop: 'na postoju',
     foodSectionHint:
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
     mixHint: 'Wartości na 100 ml — stąd liczą się gramy dla każdego napełnienia.',
@@ -600,6 +603,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'Przy tej proporcji limit to {cap} g/h — kropkowana linia na wykresie.',
     gelPartsStepper: 'Liczba porcji żelu',
     foodStepwise: 'stopniowo',
+    foodNeedsStop: 'na postoju',
     foodAddProduct: '+ Dodaj produkt',
     meWeight: 'Waga',
     meApp: 'Aplikacja',
@@ -857,6 +861,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'carbs (g)',
     fMl: 'fluid (ml)',
     fCont: 'over time',
+    fNeedsStop: 'at a stop',
     foodSectionHint:
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
     mixHint: 'Values per 100 ml — per-fill grams are derived from this.',
@@ -975,6 +980,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'At this ratio the limit is {cap} g/h — the dotted line on the chart.',
     gelPartsStepper: 'Gel portions per fill',
     foodStepwise: 'over time',
+    foodNeedsStop: 'at a stop',
     foodAddProduct: '+ Add product',
     meWeight: 'Weight',
     meApp: 'App',

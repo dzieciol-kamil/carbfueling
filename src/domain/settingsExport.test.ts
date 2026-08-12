@@ -69,6 +69,18 @@ describe('settingsExport', () => {
     if (result.ok) expect(result.data).toEqual(data);
   });
 
+  // A product marked "only at a stop" plans a completely different ride than the same product
+  // carried in a pocket, so the flag has to survive a backup — not silently fall off on the way in.
+  test('keeps a stop-only product marked as one', () => {
+    const data = makeData({
+      foodLib: [{ key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true }],
+    });
+    const json = serializeSettingsExport(buildSettingsExport(data));
+    const result = parseSettingsImport(json);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.foodLib[0].needsStop).toBe(true);
+  });
+
   test('filename includes an ISO date', () => {
     expect(settingsExportFileName(new Date('2026-08-06T12:00:00Z'))).toBe(
       'carb-fueling-settings-2026-08-06.json',
