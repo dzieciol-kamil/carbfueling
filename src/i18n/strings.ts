@@ -299,7 +299,8 @@ export interface StringTable {
   autoplanConfirmReplaceBody: string;
   autoplanConfirmReplaceCancel: string;
   autoplanConfirmReplaceConfirm: string;
-  autoplanRemovePrevStopsLabel: string;
+  autoplanKeepPrevStopsLabel: string;
+  autoplanKeepPrevStopsHint: string;
   autoplanDialogTitle: string;
   autoplanDialogHint: string;
   autoplanDialogCountLabel: string;
@@ -671,10 +672,12 @@ export const STR: Record<Lang, StringTable> = {
     autoplanButton: 'Zaproponuj plan',
     autoplanConfirmReplaceTitle: 'Zastąpić obecny plan?',
     autoplanConfirmReplaceBody:
-      'To nadpisze obecne napełnienia i produkty na trasie nową propozycją. Punkty sklepów zostają.',
+      'To nadpisze obecne napełnienia i produkty na trasie nową propozycją.',
     autoplanConfirmReplaceCancel: 'Anuluj',
     autoplanConfirmReplaceConfirm: 'Zastąp',
-    autoplanRemovePrevStopsLabel: 'Usuń też wcześniej zaproponowane stopy sklepowe',
+    autoplanKeepPrevStopsLabel: 'Zostaw punkty sklepów z poprzedniej propozycji',
+    autoplanKeepPrevStopsHint:
+      'Punkty, które dodałeś sam, zostają zawsze — nowy plan będzie się do nich dopasowywał.',
     autoplanDialogTitle: 'Co masz ze sobą?',
     autoplanDialogHint:
       'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
@@ -1043,10 +1046,12 @@ export const STR: Record<Lang, StringTable> = {
     autoplanButton: 'Suggest a plan',
     autoplanConfirmReplaceTitle: 'Replace the current plan?',
     autoplanConfirmReplaceBody:
-      'This will overwrite your current fills and food with a new suggestion. Shop stops stay.',
+      'This will overwrite your current fills and food with a new suggestion.',
     autoplanConfirmReplaceCancel: 'Cancel',
     autoplanConfirmReplaceConfirm: 'Replace',
-    autoplanRemovePrevStopsLabel: 'Also remove previously suggested shop stops',
+    autoplanKeepPrevStopsLabel: 'Keep the shop stops from the last suggestion',
+    autoplanKeepPrevStopsHint:
+      'Stops you added yourself always stay — the new plan will work around them.',
     autoplanDialogTitle: 'What are you carrying?',
     autoplanDialogHint:
       "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",

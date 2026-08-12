@@ -107,16 +107,17 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const applyAutoplan = useAppStore((s) => s.applyAutoplan);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
-  // Pre-checked: this toggle only ever removes shops autoplan itself created on a prior
-  // run (never a rider-placed one), so defaulting to "clean up after yourself" suits the
-  // common case of a rider re-running autoplan a few times while dialing in food choices.
-  const [removePreviousAutoStops, setRemovePreviousAutoStops] = useState(true);
+  // A stop is knowledge, not output: the rider may have checked that this is the only shop for the
+  // next 40km, and that survives a replanned bottle schedule. So the plan is replaced and the stops
+  // are kept unless he says otherwise — and a kept stop is not clutter, since the next run snaps
+  // its own boundaries onto shops it can already see.
+  const [keepPreviousAutoStops, setKeepPreviousAutoStops] = useState(true);
   const hasPreviousAutoStops = shops.some((sh) => sh.autoCreated);
   const gate = autoplanGate(route);
 
   function proceedAfterConfirm() {
     if (gate === 'shortRide') {
-      applyAutoplan([], hasPreviousAutoStops && removePreviousAutoStops);
+      applyAutoplan([], hasPreviousAutoStops && !keepPreviousAutoStops);
       setPhase('appliedNote');
       return;
     }
@@ -125,7 +126,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
 
   function handleTrigger() {
     if (needsReplaceConfirm({ fills, foods, shops })) {
-      setRemovePreviousAutoStops(true);
+      setKeepPreviousAutoStops(true);
       setPhase('confirmReplace');
       return;
     }
@@ -163,23 +164,28 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
           onConfirm={proceedAfterConfirm}
         >
           {hasPreviousAutoStops && (
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                fontSize: 12.5,
-                color: 'var(--ink-soft)',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={removePreviousAutoStops}
-                onChange={(e) => setRemovePreviousAutoStops(e.target.checked)}
-              />
-              {strings.autoplanRemovePrevStopsLabel}
-            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12.5,
+                  color: 'var(--ink-soft)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={keepPreviousAutoStops}
+                  onChange={(e) => setKeepPreviousAutoStops(e.target.checked)}
+                />
+                {strings.autoplanKeepPrevStopsLabel}
+              </label>
+              <span style={{ fontSize: 11.5, color: 'var(--muted-2)', paddingLeft: 24 }}>
+                {strings.autoplanKeepPrevStopsHint}
+              </span>
+            </div>
           )}
         </ConfirmDialog>
       )}
@@ -190,7 +196,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
           lang={lang}
           onCancel={() => setPhase('idle')}
           onConfirm={(selection) => {
-            applyAutoplan(selection, hasPreviousAutoStops && removePreviousAutoStops);
+            applyAutoplan(selection, hasPreviousAutoStops && !keepPreviousAutoStops);
             setPhase('appliedNote');
           }}
         />
