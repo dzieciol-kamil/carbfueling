@@ -536,8 +536,14 @@ export const useAppStore = create<AppState>()(
             nextStopId: s.nextStopId + 1,
           };
         }),
+      // Editing a suggested stop adopts it. Autoplan guesses a kilometre; the moment the rider
+      // drags it onto the place he knows is there, or gives it a name, the guess has become his
+      // own note about the route — and the cleanup that clears "previously suggested stops",
+      // pre-ticked in the replace dialog, must not take it.
       updateStop: (id, patch) =>
-        set((s) => ({ stops: s.stops.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+        set((s) => ({
+          stops: s.stops.map((x) => (x.id === id ? { ...x, ...patch, autoCreated: false } : x)),
+        })),
       removeStop: (id) =>
         set((s) => ({
           stops: s.stops.filter((x) => x.id !== id),

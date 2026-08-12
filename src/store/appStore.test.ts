@@ -322,6 +322,40 @@ describe('applyAutoplan', () => {
       // (fresh ids) rather than leaving the rider with none.
       expect(after.stops.some((sh) => sh.autoCreated)).toBe(true);
     });
+
+    /**
+     * A suggestion the rider edits stops being a suggestion.
+     *
+     * Autoplan guesses a kilometre; the rider drags it onto the shop he knows is there and types
+     * its name. From then on it is his, and the cleanup that clears "previously suggested stops"
+     * — pre-ticked in the dialog — has no business deleting it.
+     */
+    test('a stop the rider renames or moves stops counting as autoplan’s', () => {
+      useAppStore.setState({
+        stops: [
+          { id: 1, at: 40, name: 'Postój', autoCreated: true },
+          { id: 2, at: 80, name: 'Postój', autoCreated: true },
+        ],
+      });
+
+      useAppStore.getState().updateStop(1, { name: 'Żabka za mostem' });
+      useAppStore.getState().updateStop(2, { at: 83 });
+
+      const after = useAppStore.getState();
+      expect(after.stops.find((sh) => sh.id === 1)?.autoCreated).toBeFalsy();
+      expect(after.stops.find((sh) => sh.id === 2)?.autoCreated).toBeFalsy();
+    });
+
+    test('an adopted stop survives the cleanup that wipes the rest', () => {
+      setupWithAutoStopsAndOneManualStop();
+      const adopted = useAppStore.getState().stops.find((sh) => sh.autoCreated)!;
+      useAppStore.getState().updateStop(adopted.id, { name: 'Źródełko' });
+
+      useAppStore.getState().applyAutoplan([], true);
+
+      const after = useAppStore.getState();
+      expect(after.stops.some((sh) => sh.id === adopted.id && sh.name === 'Źródełko')).toBe(true);
+    });
   });
 });
 
