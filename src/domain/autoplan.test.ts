@@ -260,6 +260,44 @@ describe('autoplan (products that have to be bought)', () => {
 });
 
 /**
+ * How far short of the line a carb stream ends.
+ *
+ * The rider's own builds end it a little early — sugar swallowed in the last minutes is still in
+ * the gut at the finish — but the gap he left was small next to the leg it came out of (5km off a
+ * 33km leg on his 100km build). Measured as a share of the *route* instead, the same gap eats a
+ * short leg alive: a small bottle on an ultra would have to pour its whole ration in a couple of
+ * kilometres, which is exactly the unabsorbable dump the gap exists to avoid.
+ */
+describe('autoplan (the end of a carb stream)', () => {
+  test('the finish gap cannot swallow the leg it is trimmed from', () => {
+    const route = makeRoute({ distance: 400 });
+    const flask: Vessel = { gid: 'g1', name: 'Bidon', vol: 250, allowed: ['izo'], gelParts: 1 };
+    const izoFills = autoplan(makePlan({ route, gear: [flask] }), [])
+      .fills.filter((f) => f.content === 'izo')
+      .sort((a, b) => a.from - b.from);
+    expect(izoFills.length).toBeGreaterThan(2);
+    const lens = izoFills.map((f) => f.to - f.from);
+    const last = lens[lens.length - 1];
+    const median = [...lens].sort((a, b) => a - b)[Math.floor(lens.length / 2)];
+    expect(
+      last / median,
+      `last load poured over ${last.toFixed(1)}km against ${median.toFixed(1)}km for the rest`,
+    ).toBeGreaterThan(0.7);
+  });
+
+  test('a load the ride is short of still drinks all the way in', () => {
+    // 63g across a 1.6h ride: 39g/h against the 45g/h it could absorb — every gram counts.
+    const route = makeRoute({ distance: 40, speed: 25 });
+    const bottle: Vessel = { gid: 'g1', name: 'Bidon', vol: 750, allowed: ['izo'], gelParts: 1 };
+    const izoFills = autoplan(makePlan({ route, gear: [bottle] }), []).fills.filter(
+      (f) => f.content === 'izo',
+    );
+    expect(izoFills).toHaveLength(1);
+    expect(izoFills[0].to).toBe(40);
+  });
+});
+
+/**
  * Snapping a grid point onto the rider's own shop must not turn the grid around.
  *
  * Legs are equal slices of time, so on a climb they are a kilometre long or less — shorter than the

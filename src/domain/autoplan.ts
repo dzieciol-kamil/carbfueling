@@ -72,6 +72,17 @@ const FINISH_GAP_FRACTION = 0.03;
  */
 const CARB_STREAM_FINISH_GAP = 0.02;
 
+/**
+ * How much of the last load's own stretch that gap may take.
+ *
+ * The gap is a share of the route, but what it costs is a share of the *leg* — and those two come
+ * apart on an ultra with a small bottle, where 2% of 400km is most of a 10km leg. Trimming that far
+ * doesn't move carbs earlier, it dumps a whole load into a couple of kilometres at the finish,
+ * which is the very thing the gap is there to prevent. The rider's own 100km build gave up 5km of a
+ * 33km leg, so a quarter leaves his shape untouched and only binds where the leg is short.
+ */
+const MAX_FINISH_TRIM_OF_LEG = 0.25;
+
 /** Fallback span for a `cont` product whose library entry doesn't declare one. */
 const DEFAULT_CONT_SPAN_KM = 18;
 
@@ -395,6 +406,7 @@ function timelineFills(t: Timeline, G: number, xs: number[], route: RouteInput):
   // final minutes is still in the gut at the finish, so it counts as carried, not eaten. Water has
   // no such deadline and runs all the way in.
   const carbEnd = D * (1 - CARB_STREAM_FINISH_GAP);
+  const legHours = totalHours(route) / G;
   const blocks = blocksOf(t, G);
   const out: DraftFill[] = [];
   blocks.forEach((b, bi) => {
@@ -419,7 +431,7 @@ function timelineFills(t: Timeline, G: number, xs: number[], route: RouteInput):
         b.content !== 'water' &&
         dryTailWorthIt
       ) {
-        to = Math.min(to, carbEnd);
+        to = Math.max(to - (to - from) * MAX_FINISH_TRIM_OF_LEG, Math.min(to, carbEnd));
       }
       if (to > from) out.push({ gid: t.gid, content: b.content, from, to });
     }
