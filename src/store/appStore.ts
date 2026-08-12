@@ -698,6 +698,12 @@ export const useAppStore = create<AppState>()(
             fills,
             foods,
             stops: [...survivingStops, ...newStops],
+            // Everything that named a fill by id named one of the fills just replaced: the
+            // rider's "prepare these together" batch, and whatever was hovered, dragged or
+            // selected. Left behind they resolve to nothing — the Recipes block for the batch
+            // would simply stop rendering — so they go with the plan they belonged to.
+            combinedFillIds: [],
+            ui: { ...s.ui, selKey: null, hoverKey: null, dragKey: null },
             nextFid: fid,
             nextFoodId: foodId,
             nextStopId: stopId,

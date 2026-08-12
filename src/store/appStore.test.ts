@@ -204,6 +204,35 @@ describe('applyAutoplan', () => {
     }
   });
 
+  /**
+   * Every fill in the plan is replaced, so anything pointing at a fill by id is pointing at
+   * nothing. `combinedFillIds` is the rider's "I'll prepare these two together" batch in Recipes:
+   * left behind, it resolves to zero fills and the block disappears from the page without a word,
+   * while the dead ids sit in localStorage forever. The transient hover/drag/selection keys are
+   * the same story — they name a fill that no longer exists.
+   */
+  test('drops the pointers into the plan it just replaced', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [
+        { fid: 901, gid: 'g1', content: 'izo', from: 0, to: 50 },
+        { fid: 902, gid: 'g2', content: 'water', from: 0, to: 50 },
+      ],
+      foods: [],
+      stops: [],
+      combinedFillIds: [901, 902],
+      ui: { ...useAppStore.getState().ui, selKey: 'f901', hoverKey: 'f902', dragKey: 'f901' },
+    });
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    const after = useAppStore.getState();
+    expect(after.combinedFillIds).toEqual([]);
+    expect(after.ui.selKey).toBeNull();
+    expect(after.ui.hoverKey).toBeNull();
+    expect(after.ui.dragKey).toBeNull();
+  });
+
   test('resolves food names from foodLib in the current UI language and advances nextFoodId', () => {
     useAppStore.setState({
       route: route({ distance: 100, speed: 25 }),
