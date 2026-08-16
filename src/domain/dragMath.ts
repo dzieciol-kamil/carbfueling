@@ -17,15 +17,75 @@ export function fillBounds(fill: Fill, siblings: Fill[], distanceKm: number): Bo
   return { lo, hi };
 }
 
+export interface FillMove {
+  from: number;
+  to: number;
+  /** The neighbour that traded places with the dragged fill, at its new position. */
+  swap?: { fid: number; from: number; to: number };
+}
+
+/**
+ * The neighbour a fill would trade places with: the closest sibling on the side it is
+ * being dragged towards, or null when nothing is in the way.
+ */
+function neighbourInDirection(fill: Fill, siblings: Fill[], dir: 1 | -1): Fill | null {
+  let best: Fill | null = null;
+  siblings.forEach((o) => {
+    if (o.fid === fill.fid) return;
+    if (dir > 0) {
+      if (o.from < fill.to) return;
+      if (!best || o.from < best.from) best = o;
+    } else {
+      if (o.to > fill.from) return;
+      if (!best || o.to > best.to) best = o;
+    }
+  });
+  return best;
+}
+
+/**
+ * Trade places with `other`: both keep their width and the pair keeps its outer span,
+ * so only the two starts change and any gap between them survives untouched.
+ */
+function swapWith(fill: Fill, other: Fill, dir: 1 | -1): FillMove {
+  const width = fill.to - fill.from;
+  const otherWidth = other.to - other.from;
+  if (dir > 0) {
+    return {
+      from: other.to - width,
+      to: other.to,
+      swap: { fid: other.fid, from: fill.from, to: fill.from + otherWidth },
+    };
+  }
+  return {
+    from: other.from,
+    to: other.from + width,
+    swap: { fid: other.fid, from: fill.to - otherWidth, to: fill.to },
+  };
+}
+
 export function moveFill(
   fill: Fill,
   siblings: Fill[],
   distanceKm: number,
   deltaKm: number,
-): { from: number; to: number } {
+): FillMove {
   const width = fill.to - fill.from;
   const want = Math.max(0, Math.min(distanceKm - width, Math.round(fill.from + deltaKm)));
   const min = Math.max(2, Math.round(distanceKm * 0.01));
+
+  // Dragged far enough past the neighbour's midpoint? Then the two swap places instead
+  // of the dragged fill piling up against it.
+  const dir = want > fill.from ? 1 : want < fill.from ? -1 : 0;
+  if (dir !== 0) {
+    const other = neighbourInDirection(fill, siblings, dir);
+    if (other) {
+      const mid = (other.from + other.to) / 2;
+      const leadingEdge = dir > 0 ? want + width : want;
+      if (dir > 0 ? leadingEdge >= mid : leadingEdge <= mid) return swapWith(fill, other, dir);
+    }
+  }
+
   let lo = 0;
   let hi = distanceKm;
   siblings.forEach((o) => {
