@@ -135,6 +135,19 @@ describe('gaps', () => {
     const fills: Fill[] = [fill({ fid: 1, from: 0, to: 100 })];
     expect(gaps(fills, 100)).toEqual([]);
   });
+
+  test('reads lane positions, not array order', () => {
+    const fills: Fill[] = [
+      fill({ fid: 1, from: 0, to: 25 }),
+      fill({ fid: 2, from: 60, to: 85 }),
+      fill({ fid: 3, from: 30, to: 55 }),
+    ];
+    expect(gaps(fills, 90)).toEqual([
+      [25, 30],
+      [55, 60],
+      [85, 90],
+    ]);
+  });
 });
 
 describe('bestGapSpan', () => {

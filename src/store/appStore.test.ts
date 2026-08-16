@@ -258,6 +258,76 @@ describe('shouldConfirmViewModeChange', () => {
   });
 });
 
+describe('addFillInGap', () => {
+  function overlaps(fills: Fill[]): boolean {
+    const sorted = fills.slice().sort((a, b) => a.from - b.from);
+    return sorted.some((f, i) => i > 0 && f.from < sorted[i - 1].to);
+  }
+
+  test('shrinks the new fill to a gap narrower than the default width', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [{ fid: 1, gid, content: 'izo', from: 0, to: 78 }],
+      nextFid: 2,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    expect(useAppStore.getState().fills.find((f) => f.fid === 2)).toMatchObject({
+      from: 78,
+      to: 90,
+    });
+  });
+
+  test('keeps finding real gaps after the widest gap put a new fill left of the old ones', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    // The widest gap can sit left of an existing fill, so the appended fill lands ahead
+    // of it on the lane: array order stops matching lane order without any drag at all.
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [
+        { fid: 1, gid, content: 'izo', from: 60, to: 85 },
+        { fid: 2, gid, content: 'izo', from: 0, to: 25 },
+      ],
+      nextFid: 3,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    expect(useAppStore.getState().fills.find((f) => f.fid === 3)).toMatchObject({
+      from: 25,
+      to: 50,
+    });
+    expect(overlaps(useAppStore.getState().fills)).toBe(false);
+  });
+
+  test('does not stack a fill on an existing one when the array is out of lane order', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    // Only the two 5 km slivers are free; array order gives no hint of that.
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [
+        { fid: 1, gid, content: 'izo', from: 0, to: 25 },
+        { fid: 2, gid, content: 'izo', from: 60, to: 85 },
+        { fid: 3, gid, content: 'izo', from: 30, to: 55 },
+      ],
+      nextFid: 4,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    const fills = useAppStore.getState().fills;
+    expect(fills).toHaveLength(4);
+    expect(overlaps(fills)).toBe(false);
+  });
+
+  test('adds nothing when the lane has no gap left', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [{ fid: 1, gid, content: 'izo', from: 0, to: 90 }],
+      nextFid: 2,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    expect(useAppStore.getState().fills).toHaveLength(1);
+  });
+});
+
 describe('combinedFillIds', () => {
   test('toggleCombinedFill adds then removes a fill id', () => {
     useAppStore.getState().toggleCombinedFill(1);
