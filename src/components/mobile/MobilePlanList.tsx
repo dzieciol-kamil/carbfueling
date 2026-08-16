@@ -7,8 +7,6 @@ import { sourceColor } from '../chart/theme';
 import { InfoPopover } from '../ui/InfoPopover';
 import { MobilePlanCard, type PlanCardItem } from './MobilePlanCard';
 
-const MIN_GAP_KM = 6;
-
 function selKeyFor(item: PlanCardItem): string {
   return item.kind === 'fill'
     ? 'f' + item.fid
@@ -255,10 +253,11 @@ export function MobilePlanList() {
       </div>
 
       {gear.map((vessel) => {
-        const hasGap = gaps(
-          fills.filter((f) => f.gid === vessel.gid),
-          distanceKm,
-        ).some(([lo, hi]) => hi - lo >= MIN_GAP_KM);
+        const hasGap =
+          gaps(
+            fills.filter((f) => f.gid === vessel.gid),
+            distanceKm,
+          ).length > 0;
         return (
           <button
             key={vessel.gid}

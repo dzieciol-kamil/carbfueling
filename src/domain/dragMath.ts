@@ -74,14 +74,27 @@ export function rescalePositions(
   return pos.map((v) => newFrom + ((v - oldFrom) * (newTo - newFrom)) / span);
 }
 
+/** Free stretches narrower than this are slivers, not somewhere a fill can go. */
+export const MIN_GAP_KM = 4;
+
+/**
+ * The free stretches on a vessel's lane, walking it left to right. Sorts first because
+ * fills keep their slot in the `fills` array no matter where they sit on the lane: a
+ * fill added into the widest gap lands left of older ones, so stored order stops
+ * matching lane order. Walking it unsorted would step backwards and report a "gap"
+ * straddling an existing fill.
+ */
 export function gaps(fillsOfVessel: Fill[], distanceKm: number): [number, number][] {
   const out: [number, number][] = [];
   let cur = 0;
-  fillsOfVessel.forEach((f) => {
-    if (f.from - cur > 4) out.push([cur, f.from]);
-    cur = Math.max(cur, f.to);
-  });
-  if (distanceKm - cur > 4) out.push([cur, distanceKm]);
+  fillsOfVessel
+    .slice()
+    .sort((a, b) => a.from - b.from)
+    .forEach((f) => {
+      if (f.from - cur > MIN_GAP_KM) out.push([cur, f.from]);
+      cur = Math.max(cur, f.to);
+    });
+  if (distanceKm - cur > MIN_GAP_KM) out.push([cur, distanceKm]);
   return out;
 }
 

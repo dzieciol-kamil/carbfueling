@@ -112,7 +112,7 @@ export function LanesSection() {
                 data-tour={vessel.gid === demoVesselGid ? 'demo-add-fill' : undefined}
                 onClick={() => addFillInGap(vessel.gid)}
                 disabled={!can}
-                title={strings.addFillTo + vessel.name}
+                title={can ? strings.addFillTo + vessel.name : vessel.name + ' · ' + strings.noGap}
                 style={addButtonStyle(can)}
               >
                 +
