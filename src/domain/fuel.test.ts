@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  COVERAGE_SHORT_PCT,
   COVERAGE_TARGET_PCT,
   absCap,
   carbsFill,
@@ -875,12 +876,10 @@ describe('rateStats coverage', () => {
     // keep counting — this guards against "fixing" the phantom by zeroing pre-ride carbs entirely.
     const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
     expect(planSummary(plan).absorbedTotal).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h
-    // Most of it counts, but not all: the leftover clears the gut at the 90 g/h absorption cap
-    // while the ride only demands 75 g/h, and the ~15 g/h arriving faster than it is burned is
-    // surplus, not coverage. Anything at or above 35 here would mean the surplus got banked.
-    const { coveredCarbs } = rateStats(plan);
-    expect(coveredCarbs).toBeGreaterThan(25);
-    expect(coveredCarbs).toBeLessThan(35);
+    // All of it counts here: the leftover clears the gut at the 90 g/h cap against a 75 g/h
+    // requirement, and the ~6 g of surplus that runs ahead of the need is well inside the carry
+    // window, so it is spent a few minutes later rather than discarded.
+    expect(rateStats(plan).coveredCarbs).toBeCloseTo(35, 6);
   });
 
   test('exactly the required carbs, spread evenly across the ride: ~100%', () => {
@@ -889,14 +888,44 @@ describe('rateStats coverage', () => {
     expect(rateStats(plan).coverage).toBeLessThanOrEqual(100);
   });
 
-  test('every gram absorbed but front-loaded into the first half scores well under 100%', () => {
+  test('every gram absorbed but front-loaded scores below the same carbs spread evenly', () => {
     // The case that forces the metric to be time-aware: a plain absorbed/target sum ratio calls
-    // this a perfect plan (all 300 g do get absorbed), but the rider spends the entire back half
-    // of the ride with nothing coming in. Carbs cannot be banked.
-    const plan = withFood(TARGET, 0, 50);
-    const summary = planSummary(plan);
-    expect(Math.round((summary.absorbedTotal / summary.target) * 100)).toBe(100);
-    expect(summary.coverage).toBeLessThan(90);
+    // this a perfect plan (all 300 g do get absorbed), but the rider runs the back of the ride on
+    // an empty stomach. Asserted as a *gap against the evenly-spread plan* rather than a fixed
+    // number, so it keeps testing the property (front-loading is worse) rather than the current
+    // value of COVERAGE_CARRY_MINUTES.
+    const front = planSummary(withFood(TARGET, 0, 50));
+    const even = planSummary(withFood(TARGET, 0, 100));
+    expect(Math.round((front.absorbedTotal / front.target) * 100)).toBe(100);
+    expect(even.coverage).toBe(100);
+    expect(front.coverage).toBeLessThan(even.coverage - 5);
+  });
+
+  test('carbs arriving long after the need has passed stay uncredited', () => {
+    // The carry window must not become a back door to the plain sum ratio: 15 minutes of buffer
+    // cannot rescue a plan that only starts feeding at 85 km of 100.
+    expect(rateStats(withFood(TARGET, 85, 100)).coverage).toBeLessThan(25);
+  });
+
+  test('a hilly route still grades the plan, not the elevation profile', () => {
+    // Regression, and the reason coverage carries a bounded surplus at all. `need` is distributed
+    // by effort per distance while the absorption model assumes uniform time per distance step, so
+    // on a climb step Δneed alone can exceed what the gut passes in the ~90 s a step represents.
+    // Settling up per step with no carry burned that difference permanently and made coverage a
+    // constant of the terrain: on this profile 300 g, 600 g and 1200 g every one scored 80%, so
+    // no amount of food could turn the badge green. Coverage must respond to the plan.
+    const ele: number[] = [];
+    for (let i = 0; i <= 400; i++) ele.push(200 + 300 * Math.sin((i / 400) * 4 * 2 * Math.PI));
+    const hilly = makeRoute({ ...route, useGpx: true, gpxTrack: { id: 1, ele } });
+
+    const lean = planSummary(withFood(TARGET / 2, 0, 100, hilly)).coverage;
+    const right = planSummary(withFood(TARGET, 0, 100, hilly)).coverage;
+    const rich = planSummary(withFood(TARGET * 2, 0, 100, hilly)).coverage;
+
+    expect(right).toBeGreaterThan(lean);
+    expect(rich).toBeGreaterThan(right);
+    // ...and an adequate plan on rolling terrain must be able to read as adequate at all.
+    expect(right).toBeGreaterThanOrEqual(90);
   });
 
   test('overshooting the requirement is capped at 100%, never above', () => {
@@ -930,12 +959,16 @@ describe('coverageStatus', () => {
 
   test('between the short threshold and the target: partial', () => {
     expect(coverageStatus(COVERAGE_TARGET_PCT - 1)).toBe('partial');
-    expect(coverageStatus(60)).toBe('partial');
+    expect(coverageStatus(COVERAGE_SHORT_PCT)).toBe('partial');
   });
 
   test('below the short threshold: short', () => {
-    expect(coverageStatus(59)).toBe('short');
+    expect(coverageStatus(COVERAGE_SHORT_PCT - 1)).toBe('short');
     expect(coverageStatus(0)).toBe('short');
+  });
+
+  test('the two thresholds stay ordered', () => {
+    expect(COVERAGE_SHORT_PCT).toBeLessThan(COVERAGE_TARGET_PCT);
   });
 });
 
