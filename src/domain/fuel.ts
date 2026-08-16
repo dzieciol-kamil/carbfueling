@@ -32,6 +32,23 @@ const HYDRATION_BUFFER_ML_PER_KG = 15;
  * duplicated magic literal.
  */
 export const COVERAGE_TARGET_PCT = 85;
+
+/** Below this, a plan isn't "a bit short" any more — it's a different plan. Second tier of the
+ *  shared status scale so the amber/red split is one number too, not a per-component literal. */
+export const COVERAGE_SHORT_PCT = 60;
+
+export type CoverageStatus = 'good' | 'partial' | 'short';
+
+/**
+ * The single verdict both the desktop cards and the mobile plan list render. Colours differ per
+ * layout (different palettes, different backgrounds); the *thresholds behind them* must not, or
+ * the same plan reads as fine on one screen and short on the other.
+ */
+export function coverageStatus(pct: number): CoverageStatus {
+  if (pct >= COVERAGE_TARGET_PCT) return 'good';
+  if (pct < COVERAGE_SHORT_PCT) return 'short';
+  return 'partial';
+}
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
@@ -83,7 +100,11 @@ export interface Sample {
 }
 
 export interface RateStats {
+  /** Share of the ride's carb requirement actually met *as the ride goes*, 0-100. See rateStats(). */
   coverage: number;
+  /** Grams behind `coverage` — the numerator, so the UI can print "X / target g" without
+   *  reaching for a different quantity than the percentage was computed from. */
+  coveredCarbs: number;
   dryStretch: { len: number; x: number };
   samples: Sample[];
 }
@@ -621,18 +642,40 @@ export function samples(state: PlanState): Sample[] {
   return out;
 }
 
+/**
+ * Coverage: of everything the ride demanded, how much did the rider actually have on board *at
+ * the time it was demanded*. Step by step this credits `min(absorbed in this step, required in
+ * this step)` — so carbs arriving while the need is already met earn nothing, which is the whole
+ * point: glycogen can't be banked ahead and a surplus in hour one does not feed hour four.
+ *
+ * Two things this deliberately does NOT do, both of which it used to:
+ *
+ * 1. It no longer integrates the EMA-smoothed `rate`/`needRate` pair. Those two exist to draw
+ *    readable *curves*; as the basis for a *total* they were wrong twice over. The need EMA lags
+ *    ~30 min, so its integral fell ~37 g short of a 241 g requirement and quietly shrank the
+ *    denominator by ~18%. And the intake EMA is seeded with the pre-ride meal digesting before
+ *    the start line (see samples()), which leaked into the numerator — an empty plan with an
+ *    80 g pre-ride meal reported 35% covered while carrying literally nothing.
+ * 2. It no longer divides by anything but the honest full requirement, so the result is bounded
+ *    at 100 and can be read as a plain percentage of `target`.
+ *
+ * `dryStretch` still reads the smoothed rates on purpose — "am I running on empty right now" is a
+ * question about the curve at a point, not about a total, and there the lag is the desired
+ * behaviour.
+ */
 export function rateStats(state: PlanState): RateStats {
   const S = samples(state);
   const hrs = totalHours(state.route);
   const dt = hrs / (S.length - 1);
-  let fed = 0;
-  let needSum = 0;
+  const target = hrs * cph(state.route);
+  let covered = 0;
   let dry = { len: 0, x: 0 };
   let run = 0;
 
-  S.forEach((p) => {
-    fed += Math.min(p.rate, p.needRate) * dt;
-    needSum += p.needRate * dt;
+  S.forEach((p, i) => {
+    if (i > 0) {
+      covered += Math.min(p.absorbed - S[i - 1].absorbed, p.need - S[i - 1].need);
+    }
     if (p.rate < p.needRate * 0.4) {
       run += dt;
       if (run > dry.len) dry = { len: run, x: p.x };
@@ -642,7 +685,10 @@ export function rateStats(state: PlanState): RateStats {
   });
 
   return {
-    coverage: needSum > 0 ? Math.round((fed / needSum) * 100) : 0,
+    // A ride that demands nothing is covered by definition — the same call hydrationPct makes for
+    // zero sweat loss, rather than painting a red 0% on a plan with nothing to cover.
+    coverage: target > 0 ? Math.round((covered / target) * 100) : 100,
+    coveredCarbs: covered,
     dryStretch: dry,
     samples: S,
   };
@@ -696,6 +742,9 @@ export interface PlanSummary {
   sweatLoss: number;
   hydrationPct: number;
   coverage: number;
+  /** Grams counted toward `coverage` — pair this with `target` when showing the ratio in grams.
+   *  Not the same as `absorbedTotal`, which ignores whether a gram arrived when it was needed. */
+  coveredCarbs: number;
   absorbedTotal: number;
 }
 
@@ -728,7 +777,7 @@ export function planSummary(state: PlanState): PlanSummary {
       ? Math.round((fluidPlanned / sweatLoss) * 100)
       : 100;
 
-  const { coverage, samples: S } = rateStats(state);
+  const { coverage, coveredCarbs, samples: S } = rateStats(state);
 
   return {
     target,
@@ -740,6 +789,7 @@ export function planSummary(state: PlanState): PlanSummary {
     sweatLoss,
     hydrationPct,
     coverage,
+    coveredCarbs,
     absorbedTotal: S[S.length - 1].absorbed,
   };
 }

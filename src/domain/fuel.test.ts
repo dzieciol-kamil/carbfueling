@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
+  COVERAGE_TARGET_PCT,
   absCap,
   carbsFill,
   citricAmount,
   citricGramsFromAmount,
+  coverageStatus,
   cph,
   dist,
   distanceAtTime,
@@ -836,6 +838,104 @@ describe('rateStats', () => {
     expect(coverage).toBe(0);
     expect(dryStretch.len).toBeCloseTo(0.5, 6);
     expect(dryStretch.x).toBe(5); // dist() for 0.5h in time mode
+  });
+});
+
+describe('rateStats coverage', () => {
+  // 4h at 75 g/h (mid, >2.5h) = 300 g required, absorption cap 90 g/h — comfortably above the
+  // 75 g/h need rate, so the gut is never the binding constraint in these scenarios and any
+  // shortfall the metric reports is genuinely about *when* the carbs land.
+  const route = makeRoute({ mode: 'route', distance: 100, speed: 25, intensity: 'mid' });
+  const TARGET = 300;
+
+  function withFood(carbs: number, from: number, to: number, r: RouteInput = route): PlanState {
+    return makePlan({
+      route: r,
+      foods: [{ id: 1, key: 'bar', name: 'Bar', carbs, cont: true, from, to }],
+    });
+  }
+
+  test('an empty plan is 0%, not a phantom few percent from a fully digested pre-ride meal', () => {
+    // Regression: coverage used to integrate the EMA-smoothed `rate`, and that EMA is seeded by
+    // simulating the pre-ride meal's digestion *before the start line*. Those grams leaked into
+    // the ride-window integral, so a plan with literally nothing to eat or drink on the bike
+    // reported 8% covered. Nothing on board must read as nothing covered.
+    //
+    // 50 g eaten 45 min out is fully digested by the start (cap 90 g/h clears 67 g in that time),
+    // so preRideGut() carries nothing over and absorbedTotal is a true zero.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) });
+    expect(planSummary(plan).absorbedTotal).toBe(0);
+    expect(rateStats(plan).coverage).toBe(0);
+  });
+
+  test('a pre-ride meal still being digested at the start line does count toward coverage', () => {
+    // The other side of the line above, and the reason the fix targets the EMA seed rather than
+    // pre-ride carbs as such: 80 g eaten only 30 min out leaves 35 g genuinely undigested in the
+    // gut when the rider clips in. Those grams are real fuel arriving during the ride and must
+    // keep counting — this guards against "fixing" the phantom by zeroing pre-ride carbs entirely.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
+    expect(planSummary(plan).absorbedTotal).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h
+    // Most of it counts, but not all: the leftover clears the gut at the 90 g/h absorption cap
+    // while the ride only demands 75 g/h, and the ~15 g/h arriving faster than it is burned is
+    // surplus, not coverage. Anything at or above 35 here would mean the surplus got banked.
+    const { coveredCarbs } = rateStats(plan);
+    expect(coveredCarbs).toBeGreaterThan(25);
+    expect(coveredCarbs).toBeLessThan(35);
+  });
+
+  test('exactly the required carbs, spread evenly across the ride: ~100%', () => {
+    const plan = withFood(TARGET, 0, 100);
+    expect(rateStats(plan).coverage).toBeGreaterThanOrEqual(99);
+    expect(rateStats(plan).coverage).toBeLessThanOrEqual(100);
+  });
+
+  test('every gram absorbed but front-loaded into the first half scores well under 100%', () => {
+    // The case that forces the metric to be time-aware: a plain absorbed/target sum ratio calls
+    // this a perfect plan (all 300 g do get absorbed), but the rider spends the entire back half
+    // of the ride with nothing coming in. Carbs cannot be banked.
+    const plan = withFood(TARGET, 0, 50);
+    const summary = planSummary(plan);
+    expect(Math.round((summary.absorbedTotal / summary.target) * 100)).toBe(100);
+    expect(summary.coverage).toBeLessThan(90);
+  });
+
+  test('overshooting the requirement is capped at 100%, never above', () => {
+    // Eating double never means "200% fuelled" — surplus carbs past the hourly need are not
+    // coverage, they are just surplus. The mobile card used to render 120% here.
+    expect(rateStats(withFood(TARGET * 2, 0, 100)).coverage).toBe(100);
+  });
+
+  test('coveredCarbs is the gram figure the percentage is computed from', () => {
+    // The UI prints "X / Y g" underneath the percentage; if X were absorbedTotal while the
+    // percentage came from coverage, the card would contradict itself in place.
+    const { coverage, coveredCarbs } = rateStats(withFood(180, 0, 100));
+    expect(coveredCarbs).toBeGreaterThan(0);
+    expect(coveredCarbs).toBeLessThanOrEqual(TARGET);
+    expect(coverage).toBe(Math.round((coveredCarbs / TARGET) * 100));
+  });
+
+  test('a zero-duration ride requires nothing, so it reads as fully covered', () => {
+    // Same reasoning as hydrationPct's zero-sweat case: dividing by a zero requirement must not
+    // paint a red 0% on a plan that has nothing to cover.
+    const plan = makePlan({ route: makeRoute({ mode: 'time', hours: 0, minutes: 0 }) });
+    expect(rateStats(plan).coverage).toBe(100);
+  });
+});
+
+describe('coverageStatus', () => {
+  test('at or above the shared target threshold: good', () => {
+    expect(coverageStatus(COVERAGE_TARGET_PCT)).toBe('good');
+    expect(coverageStatus(100)).toBe('good');
+  });
+
+  test('between the short threshold and the target: partial', () => {
+    expect(coverageStatus(COVERAGE_TARGET_PCT - 1)).toBe('partial');
+    expect(coverageStatus(60)).toBe('partial');
+  });
+
+  test('below the short threshold: short', () => {
+    expect(coverageStatus(59)).toBe('short');
+    expect(coverageStatus(0)).toBe('short');
   });
 });
 

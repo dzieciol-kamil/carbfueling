@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { COVERAGE_TARGET_PCT, planSummary, recoveryCarbs } from '../domain/fuel';
+import { coverageStatus, planSummary, recoveryCarbs } from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
@@ -8,9 +8,12 @@ function fmt(n: number): string {
   return n.toFixed(0);
 }
 
+/** Thresholds live in the domain (`coverageStatus`) so this and the mobile plan list can't drift
+ *  apart; only the palette is this layout's own. */
 function statusColor(pct: number, goodColor: string): string {
-  if (pct >= COVERAGE_TARGET_PCT) return goodColor;
-  if (pct < 60) return '#B4552F';
+  const status = coverageStatus(pct);
+  if (status === 'good') return goodColor;
+  if (status === 'short') return '#B4552F';
   return '#D2703F';
 }
 
