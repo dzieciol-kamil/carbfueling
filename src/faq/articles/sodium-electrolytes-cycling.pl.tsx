@@ -53,8 +53,10 @@ export default function SodiumElectrolytesCyclingPl() {
         Jeśli znasz stężenie sodu we własnym pocie — z badania laboratoryjnego albo z oszacowania na
         podstawie opisanych wyżej oznak "słonego pocenia" — możesz przełożyć to wprost na panel Mix
         w Carb Fueling. Pole "sól" oznacza tam gramy zwykłej soli kuchennej (NaCl) na 100 ml, a nie
-        czysty sód: w przybliżeniu każde 0,1 g soli na 100 ml napoju dostarcza ok. 390 mg sodu na
-        litr. Jeśli więc celujesz np. w 700 mg sodu na litr, to około 0,18 g soli na 100 ml.
+        czysty sód — używamy soli, bo to właśnie ją realnie dosypujesz do bidonu; czysty sód jako
+        pierwiastek to silnie reaktywny metal, którego nie kupisz w sklepie ani nie dodasz do
+        napoju. W przybliżeniu każde 0,1 g soli na 100 ml napoju dostarcza ok. 390 mg sodu na litr.
+        Jeśli więc celujesz np. w 700 mg sodu na litr, to około 0,18 g soli na 100 ml.
       </p>
       <p>
         <a href="/" style={articleLinkStyle}>

@@ -49,9 +49,11 @@ export default function SodiumElectrolytesCyclingEn() {
       <p style={articleTextStyle}>
         If you know your own sweat sodium concentration — from a lab test, or estimated from the
         salty-sweater signs above — you can translate that into Carb Fueling's Mix panel. The "salt"
-        field there is grams of ordinary table salt (NaCl) per 100ml, not pure sodium: roughly, each
-        0.1g of salt per 100ml of drink delivers about 390mg of sodium per liter. So if you're
-        aiming for, say, 700mg of sodium per liter, that's about 0.18g of salt per 100ml.
+        field there is grams of ordinary table salt (NaCl) per 100ml, not pure sodium — we use salt
+        because that's what you'd actually add to a bottle; pure sodium is a highly reactive metal
+        you can't buy or add to a drink. Roughly, each 0.1g of salt per 100ml of drink delivers
+        about 390mg of sodium per liter. So if you're aiming for, say, 700mg of sodium per liter,
+        that's about 0.18g of salt per 100ml.
       </p>
       <p>
         <a href="/" style={articleLinkStyle}>

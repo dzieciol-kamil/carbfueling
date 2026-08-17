@@ -73,12 +73,13 @@ export function MobileMix() {
   };
 
   // Same field-label swap as MixPanel.tsx's citricFieldLabel: the powder source keeps the short
-  // "kwasek" label, whole-fruit/juice sources show their own name since the stepper is no longer
-  // showing grams of powder but a practical amount of that ingredient. The parenthetical unit must
-  // be the same per-100-ml basis desktop shows (`citricSubLabel` there) — this is one value in the
-  // store, so a shorter unit here would silently rescale it for the reader.
+  // "kwasek" label, whole-fruit/juice sources show their own name (lowercased, unlike the
+  // Title-Case source-picker buttons above) since the stepper is no longer showing grams of powder
+  // but a practical amount of that ingredient. The parenthetical unit must be the same per-100-ml
+  // basis desktop shows (`citricSubLabel` there) — this is one value in the store, so a shorter
+  // unit here would silently rescale it for the reader.
   const citricFieldLabel = (src: CitricSource, unit: CitricAmount['unit']) => {
-    const name = src === 'citric' ? strings.citricLabel : citricSourceCaption(src);
+    const name = src === 'citric' ? strings.citricLabel : citricSourceCaption(src).toLowerCase();
     if (unit === 'ml') return name + ' (' + strings.per100Ml + ')';
     if (unit === 'fruit') return name + ' (' + strings.per100Fruit + ')';
     return name + ' (' + strings.per100 + ')';
