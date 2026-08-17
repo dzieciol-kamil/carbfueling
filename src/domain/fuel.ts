@@ -443,9 +443,8 @@ const FRACTION_TEXT: Record<number, string> = { 0.25: '1/4', 0.5: '1/2', 0.75: '
  *
  * This used to render fractional amounts with unicode fraction glyphs (¼ ½ ¾), but those glyphs
  * render nearly invisible/thin in several fonts used by the app, so they're spelled out as plain
- * ASCII text instead. Kept deliberately compact (no percentage) so it still fits the narrow
- * mobile stepper slot (`MobileMix.tsx`) — see `fmtFruitFractionPct` for the recipe-card display
- * that adds a percentage alongside this numeral.
+ * ASCII text instead. Kept deliberately compact (no percentage) — see `fmtFruitFractionPct` for
+ * the recipe-card display that adds a percentage alongside this numeral.
  */
 export function fmtFruitFraction(n: number): string {
   if (n <= 0) return '0';
