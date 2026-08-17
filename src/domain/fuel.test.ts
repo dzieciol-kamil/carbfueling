@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import {
+  COVERAGE_SHORT_PCT,
+  COVERAGE_TARGET_PCT,
   absCap,
   carbsFill,
   citricAmount,
   citricGramsFromAmount,
+  coverageStatus,
   cph,
   dist,
   distanceAtTime,
@@ -836,6 +839,173 @@ describe('rateStats', () => {
     expect(coverage).toBe(0);
     expect(dryStretch.len).toBeCloseTo(0.5, 6);
     expect(dryStretch.x).toBe(5); // dist() for 0.5h in time mode
+  });
+});
+
+describe('rateStats coverage', () => {
+  // 4h at 75 g/h (mid, >2.5h) = 300 g required, absorption cap 90 g/h — comfortably above the
+  // 75 g/h need rate, so the gut is never the binding constraint in these scenarios and any
+  // shortfall the metric reports is genuinely about *when* the carbs land.
+  const route = makeRoute({ mode: 'route', distance: 100, speed: 25, intensity: 'mid' });
+  const TARGET = 300;
+
+  function withFood(carbs: number, from: number, to: number, r: RouteInput = route): PlanState {
+    return makePlan({
+      route: r,
+      foods: [{ id: 1, key: 'bar', name: 'Bar', carbs, cont: true, from, to }],
+    });
+  }
+
+  test('an empty plan is 0%, not a phantom few percent from a fully digested pre-ride meal', () => {
+    // Regression: coverage used to integrate the EMA-smoothed `rate`, and that EMA is seeded by
+    // simulating the pre-ride meal's digestion *before the start line*. Those grams leaked into
+    // the ride-window integral, so a plan with literally nothing to eat or drink on the bike
+    // reported 8% covered. Nothing on board must read as nothing covered.
+    //
+    // 50 g eaten 45 min out is fully digested by the start (cap 90 g/h clears 67 g in that time),
+    // so preRideGut() carries nothing over and absorbedTotal is a true zero.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) });
+    expect(planSummary(plan).absorbedTotal).toBe(0);
+    expect(rateStats(plan).coverage).toBe(0);
+  });
+
+  test('a pre-ride meal still being digested at the start line does count toward coverage', () => {
+    // The other side of the line above, and the reason the fix targets the EMA seed rather than
+    // pre-ride carbs as such: 80 g eaten only 30 min out leaves 35 g genuinely undigested in the
+    // gut when the rider clips in. Those grams are real fuel arriving during the ride and must
+    // keep counting — this guards against "fixing" the phantom by zeroing pre-ride carbs entirely.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
+    expect(planSummary(plan).absorbedTotal).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h
+    // All of it counts here: the leftover clears the gut at the 90 g/h cap against a 75 g/h
+    // requirement, and the ~6 g of surplus that runs ahead of the need is well inside the carry
+    // window, so it is spent a few minutes later rather than discarded.
+    expect(rateStats(plan).coveredCarbs).toBeCloseTo(35, 6);
+  });
+
+  test('exactly the required carbs, spread evenly across the ride: ~100%', () => {
+    const plan = withFood(TARGET, 0, 100);
+    expect(rateStats(plan).coverage).toBeGreaterThanOrEqual(99);
+    expect(rateStats(plan).coverage).toBeLessThanOrEqual(100);
+  });
+
+  test('every gram absorbed but front-loaded scores below the same carbs spread evenly', () => {
+    // The case that forces the metric to be time-aware: a plain absorbed/target sum ratio calls
+    // this a perfect plan (all 300 g do get absorbed), but the rider runs the back of the ride on
+    // an empty stomach. Asserted as a *gap against the evenly-spread plan* rather than a fixed
+    // number, so it keeps testing the property (front-loading is worse) rather than the current
+    // value of COVERAGE_CARRY_MINUTES.
+    const front = planSummary(withFood(TARGET, 0, 50));
+    const even = planSummary(withFood(TARGET, 0, 100));
+    expect(Math.round((front.absorbedTotal / front.target) * 100)).toBe(100);
+    expect(even.coverage).toBe(100);
+    expect(front.coverage).toBeLessThan(even.coverage - 5);
+  });
+
+  test('carbs arriving long after the need has passed stay uncredited', () => {
+    // The carry window must not become a back door to the plain sum ratio: 15 minutes of buffer
+    // cannot rescue a plan that only starts feeding at 85 km of 100.
+    expect(rateStats(withFood(TARGET, 85, 100)).coverage).toBeLessThan(25);
+  });
+
+  test('a hilly route still grades the plan, not the elevation profile', () => {
+    // Regression, and the reason coverage carries a bounded surplus at all. `need` is distributed
+    // by effort per distance while the absorption model assumes uniform time per distance step, so
+    // on a climb step Δneed alone can exceed what the gut passes in the ~90 s a step represents.
+    // Settling up per step with no carry burned that difference permanently and made coverage a
+    // constant of the terrain: on this profile 300 g, 600 g and 1200 g every one scored 80%, so
+    // no amount of food could turn the badge green. Coverage must respond to the plan.
+    const ele: number[] = [];
+    for (let i = 0; i <= 400; i++) ele.push(200 + 300 * Math.sin((i / 400) * 4 * 2 * Math.PI));
+    const hilly = makeRoute({ ...route, useGpx: true, gpxTrack: { id: 1, ele } });
+
+    const lean = planSummary(withFood(TARGET / 2, 0, 100, hilly)).coverage;
+    const right = planSummary(withFood(TARGET, 0, 100, hilly)).coverage;
+    const rich = planSummary(withFood(TARGET * 2, 0, 100, hilly)).coverage;
+
+    expect(right).toBeGreaterThan(lean);
+    expect(rich).toBeGreaterThan(right);
+    // ...and an adequate plan on rolling terrain must be able to read as adequate at all.
+    expect(right).toBeGreaterThanOrEqual(90);
+  });
+
+  test('overshooting the requirement is capped at 100%, never above', () => {
+    // Eating double never means "200% fuelled" — surplus carbs past the hourly need are not
+    // coverage, they are just surplus. The mobile card used to render 120% here.
+    expect(rateStats(withFood(TARGET * 2, 0, 100)).coverage).toBe(100);
+  });
+
+  test('the carried surplus can never push coverage out of bounds on any terrain', () => {
+    // `surplus` is never reset and never decays, so the bound has to come from the arithmetic
+    // rather than from luck: credited is min(available, Δneed), so covered can never outrun the
+    // summed need, and Δabsorbed ≥ 0 keeps the carry non-negative. Swept rather than reasoned
+    // about, because this is the invariant the whole badge rests on.
+    const profiles: [string, number[] | null][] = [
+      ['flat', null],
+      [
+        'rollers',
+        Array.from({ length: 401 }, (_, i) => 200 + 300 * Math.sin((i / 400) * 8 * Math.PI)),
+      ],
+      ['alpine', Array.from({ length: 401 }, (_, i) => 200 + 1600 * Math.sin((i / 400) * Math.PI))],
+      ['one long climb', Array.from({ length: 401 }, (_, i) => 200 + (i / 400) * 2000)],
+    ];
+    for (const [label, ele] of profiles) {
+      const r = ele
+        ? makeRoute({ ...route, useGpx: true, gpxTrack: { id: 1, ele } })
+        : makeRoute(route);
+      for (const grams of [0, 1, TARGET / 3, TARGET, TARGET * 5]) {
+        for (const [from, to] of [
+          [0, 100],
+          [0, 20],
+          [80, 100],
+          [40, 60],
+        ]) {
+          const s = planSummary(withFood(grams, from, to, r));
+          const where = `${label} ${grams}g ${from}-${to}km`;
+          expect(s.coverage, where).toBeGreaterThanOrEqual(0);
+          expect(s.coverage, where).toBeLessThanOrEqual(100);
+          expect(Number.isFinite(s.coveredCarbs), where).toBe(true);
+          expect(s.coveredCarbs, where).toBeGreaterThanOrEqual(0);
+          expect(s.coveredCarbs, where).toBeLessThanOrEqual(s.target + 1e-9);
+        }
+      }
+    }
+  });
+
+  test('coveredCarbs is the gram figure the percentage is computed from', () => {
+    // The UI prints "X / Y g" underneath the percentage; if X were absorbedTotal while the
+    // percentage came from coverage, the card would contradict itself in place.
+    const { coverage, coveredCarbs } = rateStats(withFood(180, 0, 100));
+    expect(coveredCarbs).toBeGreaterThan(0);
+    expect(coveredCarbs).toBeLessThanOrEqual(TARGET);
+    expect(coverage).toBe(Math.round((coveredCarbs / TARGET) * 100));
+  });
+
+  test('a zero-duration ride requires nothing, so it reads as fully covered', () => {
+    // Same reasoning as hydrationPct's zero-sweat case: dividing by a zero requirement must not
+    // paint a red 0% on a plan that has nothing to cover.
+    const plan = makePlan({ route: makeRoute({ mode: 'time', hours: 0, minutes: 0 }) });
+    expect(rateStats(plan).coverage).toBe(100);
+  });
+});
+
+describe('coverageStatus', () => {
+  test('at or above the shared target threshold: good', () => {
+    expect(coverageStatus(COVERAGE_TARGET_PCT)).toBe('good');
+    expect(coverageStatus(100)).toBe('good');
+  });
+
+  test('between the short threshold and the target: partial', () => {
+    expect(coverageStatus(COVERAGE_TARGET_PCT - 1)).toBe('partial');
+    expect(coverageStatus(COVERAGE_SHORT_PCT)).toBe('partial');
+  });
+
+  test('below the short threshold: short', () => {
+    expect(coverageStatus(COVERAGE_SHORT_PCT - 1)).toBe('short');
+    expect(coverageStatus(0)).toBe('short');
+  });
+
+  test('the two thresholds stay ordered', () => {
+    expect(COVERAGE_SHORT_PCT).toBeLessThan(COVERAGE_TARGET_PCT);
   });
 });
 

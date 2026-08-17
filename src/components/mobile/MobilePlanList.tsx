@@ -1,6 +1,12 @@
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { gaps } from '../../domain/dragMath';
-import { dist, planSummary, recoveryCarbs } from '../../domain/fuel';
+import {
+  coverageStatus,
+  dist,
+  planSummary,
+  recoveryCarbs,
+  type CoverageStatus,
+} from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { sourceColor } from '../chart/theme';
@@ -15,12 +21,20 @@ function selKeyFor(item: PlanCardItem): string {
       : 'x' + item.id;
 }
 
-function coverageCardStyle(inNorm: boolean): CSSProperties {
+/** Mobile's own tints for the three shared coverage tiers — the thresholds that pick between them
+ *  come from the domain's `coverageStatus`, the same call the desktop cards make. */
+const COVERAGE_TINT: Record<CoverageStatus, { bg: string; fg: string }> = {
+  good: { bg: '#E7F2E1', fg: '#3D7A26' },
+  partial: { bg: '#FBEAE1', fg: '#A3512A' },
+  short: { bg: '#F8DED5', fg: '#8F3D1F' },
+};
+
+function coverageCardStyle(status: CoverageStatus): CSSProperties {
   return {
     flex: 1,
     borderRadius: 13,
     padding: '11px 12px',
-    background: inNorm ? '#E7F2E1' : '#FBEAE1',
+    background: COVERAGE_TINT[status].bg,
   };
 }
 
@@ -47,11 +61,15 @@ export function MobilePlanList() {
   const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
   const distanceKm = dist(route);
 
-  const carbPct =
-    summary.target > 0 ? Math.round((summary.absorbedTotal / summary.target) * 100) : 100;
-  const carbInNorm = carbPct >= 90 && carbPct <= 115;
+  // Both figures come straight from planSummary — this screen used to divide absorbedTotal by
+  // target itself and band it at 90-115%, which is why the same plan read 23% here and 31% on
+  // the desktop cards. One engine, one threshold scale, two palettes.
+  const carbPct = summary.coverage;
+  const carbStatus = coverageStatus(carbPct);
+  const carbTint = COVERAGE_TINT[carbStatus];
   const hydPct = summary.hydrationPct;
-  const hydInNorm = hydPct >= 70;
+  const hydStatus = coverageStatus(hydPct);
+  const hydTint = COVERAGE_TINT[hydStatus];
   const recovery = recoveryCarbs(route.weight);
   const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;
 
@@ -113,13 +131,13 @@ export function MobilePlanList() {
   return (
     <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', gap: 9 }}>
-        <div style={coverageCardStyle(carbInNorm)}>
+        <div style={coverageCardStyle(carbStatus)}>
           <div
             style={{
               fontSize: 10,
               fontWeight: 600,
               textTransform: 'uppercase',
-              color: carbInNorm ? '#3D7A26' : '#A3512A',
+              color: carbTint.fg,
             }}
           >
             {strings.carbCardTitle}
@@ -129,7 +147,7 @@ export function MobilePlanList() {
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 22,
               fontWeight: 700,
-              color: carbInNorm ? '#3D7A26' : '#A3512A',
+              color: carbTint.fg,
             }}
           >
             {carbPct}%
@@ -147,7 +165,7 @@ export function MobilePlanList() {
               style={{
                 width: Math.min(100, carbPct) + '%',
                 height: '100%',
-                background: carbInNorm ? '#3D7A26' : '#A3512A',
+                background: carbTint.fg,
               }}
             />
           </div>
@@ -155,17 +173,19 @@ export function MobilePlanList() {
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: carbInNorm ? '#3D7A26' : '#A3512A',
+              color: carbTint.fg,
             }}
           >
-            {Math.round(summary.absorbedTotal)} / {Math.round(summary.target)} g
+            {/* coveredCarbs, not absorbedTotal: this line has to be the fraction the percentage
+                above was computed from, or the card contradicts itself in place. */}
+            {Math.round(summary.coveredCarbs)} / {Math.round(summary.target)} g
           </div>
           <InfoPopover
             hint={strings.recoveryHint}
             triggerStyle={{
               display: 'block',
               fontSize: 9,
-              color: carbInNorm ? '#3D7A26' : '#A3512A',
+              color: carbTint.fg,
               marginTop: 2,
             }}
             popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
@@ -173,13 +193,13 @@ export function MobilePlanList() {
             ({strings.recoveryLabel}: ~{recovery.min}–{recovery.max} g ⓘ)
           </InfoPopover>
         </div>
-        <div style={coverageCardStyle(hydInNorm)}>
+        <div style={coverageCardStyle(hydStatus)}>
           <div
             style={{
               fontSize: 10,
               fontWeight: 600,
               textTransform: 'uppercase',
-              color: hydInNorm ? '#3D7A26' : '#A3512A',
+              color: hydTint.fg,
             }}
           >
             {strings.hydration}
@@ -189,7 +209,7 @@ export function MobilePlanList() {
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 22,
               fontWeight: 700,
-              color: hydInNorm ? '#3D7A26' : '#A3512A',
+              color: hydTint.fg,
             }}
           >
             {hydPct}%
@@ -207,7 +227,7 @@ export function MobilePlanList() {
               style={{
                 width: Math.min(100, hydPct) + '%',
                 height: '100%',
-                background: hydInNorm ? '#3D7A26' : '#A3512A',
+                background: hydTint.fg,
               }}
             />
           </div>
@@ -215,7 +235,7 @@ export function MobilePlanList() {
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: hydInNorm ? '#3D7A26' : '#A3512A',
+              color: hydTint.fg,
             }}
           >
             {summary.fluidPlanned} / {summary.sweatLoss} ml
