@@ -137,7 +137,7 @@ export interface Sample {
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
    *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
    *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
-   *  `COVERAGE_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
+   *  `HYDRATION_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
   fluidNeed: number;
   /** Instantaneous per-step derivative of `fluidNeed` — see `fluidRate`, same reasoning. */
   fluidNeedRate: number;
@@ -524,9 +524,9 @@ export function samples(state: PlanState): Sample[] {
   // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
   // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
-  // `COVERAGE_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
+  // `HYDRATION_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
   // honest physiological target; that constant is a separate, more lenient tolerance the *badge*
-  // applies on top (via `coverageStatus`) to decide "is this still good enough," not something
+  // applies on top (via `hydrationStatus`) to decide "is this still good enough," not something
   // baked into what the line itself asks for. An earlier version used the buffer here and made
   // the chart say "you're above the line" while the badge still read 79% and amber for the same
   // plan — confirmed on a real reproduction; using the true 100% total instead means falling
