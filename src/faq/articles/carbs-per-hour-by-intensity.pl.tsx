@@ -11,9 +11,14 @@ export default function CarbsPerHourByIntensityPl() {
         samopoczucia.
       </p>
       <p style={articleTextStyle}>
-        Przy wyjazdach krótszych niż godzina węglowodany właściwie nie mają znaczenia. Zapasy
-        glikogenu — cukru zmagazynowanego w mięśniach i wątrobie — w zupełności wystarczają na taki
-        wysiłek same w sobie. Ważniejsze jest wtedy nawodnienie niż dostarczanie węglowodanów.
+        Przy spokojnym wyjeździe krótszym niż godzina węglowodany właściwie nie mają znaczenia.
+        Zapasy glikogenu — cukru zmagazynowanego w mięśniach i wątrobie — w zupełności wystarczają
+        na taki wysiłek same w sobie, więc ważniejsze jest wtedy nawodnienie niż dostarczanie
+        węglowodanów. Jeśli jednak jedziesz ostro, a nie spokojnie — interwały, krótki wyścig,
+        szybki wspólny przejazd — Carb Fueling i tak zasugeruje 30–60 g/h zależnie od intensywności,
+        czyli ten sam punkt startowy co przy wyjeździe nieco dłuższym niż godzina: nawet krótki,
+        intensywny wysiłek może skorzystać na uzupełnieniu poziomu cukru we krwi, nie tylko na
+        oszczędzaniu glikogenu mięśniowego.
       </p>
       <p style={articleTextStyle}>
         Gdy wyjazd wydłuża się do 1–2,5 godziny, węglowodany zaczynają mieć realny sens. Przydatny
@@ -46,7 +51,9 @@ export default function CarbsPerHourByIntensityPl() {
         Masa ciała i stopień wytrenowania też przesuwają dokładną liczbę — więksi rowerzyści albo
         osoby z wytrenowanym jelitem często są w stanie przyjąć i wykorzystać więcej węglowodanów na
         godzinę, niż sugerują te widełki. Traktuj 30–90 g/h jako punkt startowy do dopracowania na
-        treningach, a nie cel jednakowy dla każdego.
+        treningach, a nie cel jednakowy dla każdego. Cel wyliczany przez Carb Fueling zależy tylko
+        od czasu jazdy i intensywności, nie od Twojej wagi — jeśli jesteś większym rowerzystą, celuj
+        bliżej górnej granicy podanego zakresu.
       </p>
       <p style={articleTextStyle}>
         Zamiast opierać się na sztywnej regule, Carb Fueling liczy to dla Twojej konkretnej trasy —
