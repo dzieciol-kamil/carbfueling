@@ -51,6 +51,20 @@ function trackStyle(tone: string): CSSProperties {
   };
 }
 
+const emptyTrackHintStyle: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  paddingLeft: 8,
+  fontSize: 10,
+  color: 'var(--muted-3)',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  pointerEvents: 'none',
+};
+
 function addButtonStyle(can: boolean): CSSProperties {
   return {
     width: 24,
@@ -103,6 +117,9 @@ export function LanesSection() {
               </span>
             </div>
             <div style={trackStyle('#F4F5F2')}>
+              {vesselFills.length === 0 && (
+                <span style={emptyTrackHintStyle}>{strings.emptyLaneHint}</span>
+              )}
               {vesselFills.map((f) => (
                 <FillBar key={f.fid} fill={f} vessel={vessel} distanceKm={distanceKm} />
               ))}
