@@ -934,6 +934,43 @@ describe('rateStats coverage', () => {
     expect(rateStats(withFood(TARGET * 2, 0, 100)).coverage).toBe(100);
   });
 
+  test('the carried surplus can never push coverage out of bounds on any terrain', () => {
+    // `surplus` is never reset and never decays, so the bound has to come from the arithmetic
+    // rather than from luck: credited is min(available, Δneed), so covered can never outrun the
+    // summed need, and Δabsorbed ≥ 0 keeps the carry non-negative. Swept rather than reasoned
+    // about, because this is the invariant the whole badge rests on.
+    const profiles: [string, number[] | null][] = [
+      ['flat', null],
+      [
+        'rollers',
+        Array.from({ length: 401 }, (_, i) => 200 + 300 * Math.sin((i / 400) * 8 * Math.PI)),
+      ],
+      ['alpine', Array.from({ length: 401 }, (_, i) => 200 + 1600 * Math.sin((i / 400) * Math.PI))],
+      ['one long climb', Array.from({ length: 401 }, (_, i) => 200 + (i / 400) * 2000)],
+    ];
+    for (const [label, ele] of profiles) {
+      const r = ele
+        ? makeRoute({ ...route, useGpx: true, gpxTrack: { id: 1, ele } })
+        : makeRoute(route);
+      for (const grams of [0, 1, TARGET / 3, TARGET, TARGET * 5]) {
+        for (const [from, to] of [
+          [0, 100],
+          [0, 20],
+          [80, 100],
+          [40, 60],
+        ]) {
+          const s = planSummary(withFood(grams, from, to, r));
+          const where = `${label} ${grams}g ${from}-${to}km`;
+          expect(s.coverage, where).toBeGreaterThanOrEqual(0);
+          expect(s.coverage, where).toBeLessThanOrEqual(100);
+          expect(Number.isFinite(s.coveredCarbs), where).toBe(true);
+          expect(s.coveredCarbs, where).toBeGreaterThanOrEqual(0);
+          expect(s.coveredCarbs, where).toBeLessThanOrEqual(s.target + 1e-9);
+        }
+      }
+    }
+  });
+
   test('coveredCarbs is the gram figure the percentage is computed from', () => {
     // The UI prints "X / Y g" underneath the percentage; if X were absorbedTotal while the
     // percentage came from coverage, the card would contradict itself in place.
