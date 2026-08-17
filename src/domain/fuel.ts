@@ -229,11 +229,18 @@ export function prof(route: RouteInput): Profile {
 
   for (let i = 0; i <= N; i++) {
     const f = i / N;
-    if (T) {
+    if (T && T.ele.length >= 2) {
       const g = f * (T.ele.length - 1);
       const a = Math.floor(g);
       const b = Math.min(T.ele.length - 1, a + 1);
       pts.push({ x: D * f, ele: T.ele[a] + (T.ele[b] - T.ele[a]) * (g - a), grad: 0, effort: 1 });
+      continue;
+    }
+    // T can briefly have <2 points mid-load (a GPX file resamples asynchronously); a flat
+    // profile here avoids the NaN that this interpolation would otherwise produce, without
+    // flashing the synthetic demo terrain (which implies no track at all) for real GPX data.
+    if (T) {
+      pts.push({ x: D * f, ele: 0, grad: 0, effort: 1 });
       continue;
     }
     let j = 1;

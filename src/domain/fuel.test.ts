@@ -310,6 +310,21 @@ describe('prof / eff', () => {
     // First half (the climb) should account for more than half of the raw cumulative time.
     expect(P.cumTime[80]).toBeGreaterThan(P.cumTime[160] / 2);
   });
+
+  test('a gpxTrack with fewer than 2 elevation points (mid-load, or a malformed import) does not produce NaN', () => {
+    for (const ele of [[], [250]]) {
+      const route = makeRoute({
+        mode: 'route',
+        distance: 100,
+        useGpx: true,
+        gpxTrack: { id: 1, ele },
+      });
+      const P = prof(route);
+      expect(P.pts.every((p) => Number.isFinite(p.ele))).toBe(true);
+      expect(P.pts.every((p) => Number.isFinite(p.grad))).toBe(true);
+      expect(P.cumTime.every((t) => Number.isFinite(t))).toBe(true);
+    }
+  });
 });
 
 describe('timeAtDistance / distanceAtTime', () => {

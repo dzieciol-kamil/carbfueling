@@ -147,6 +147,16 @@ describe('settingsExport', () => {
     expect(result.ok).toBe(false);
   });
 
+  test('rejects a gpx track with fewer than 2 elevation points (prof() would divide by zero into NaN)', () => {
+    for (const ele of [[], [10]]) {
+      const file = buildSettingsExport(
+        makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele } } }),
+      );
+      const result = parseSettingsImport(serializeSettingsExport(file));
+      expect(result.ok).toBe(false);
+    }
+  });
+
   test('rejects an import array beyond the sane length limit', () => {
     const file = buildSettingsExport(makeData());
     const fills = Array.from({ length: 501 }, (_, i) => ({
