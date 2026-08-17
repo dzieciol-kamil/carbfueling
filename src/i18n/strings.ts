@@ -737,7 +737,7 @@ export const STR: Record<Lang, StringTable> = {
     removeItem: 'Remove',
     addShopStop: 'Add shop stop',
     addFillTo: 'Add a fill to ',
-    emptyLaneHint: 'Tap + to add a fill',
+    emptyLaneHint: 'Click + to add a fill',
     coverage: 'Requirement covered',
     summary: 'Summary',
     hydration: 'Hydration',
