@@ -2,6 +2,8 @@ import type { CSSProperties } from 'react';
 import { combinedGroups } from '../../domain/combinedRefill';
 import {
   citricAmount,
+  citricAmountFromDisplay,
+  citricDisplayAmount,
   citricGramsFromAmount,
   presetTagFor,
   type CitricAmount,
@@ -116,20 +118,6 @@ export function roundCitricDisplay(amount: number, unit: CitricAmount['unit']): 
   if (unit === 'ml') return Math.round(amount * 10) / 10;
   if (unit === 'fruit') return Math.round(amount);
   return Math.round(amount * 100) / 100;
-}
-
-// The whole-fruit citric source stores/computes in a 0-1 fraction-of-one-fruit unit (see
-// `citricAmount`/`citricGramsFromAmount` in fuel.ts, which stay in that unit deliberately — the
-// grams<->fraction math doesn't change here). This pair of helpers is a presentation-layer-only
-// rescale so the settings input reads and edits like a percentage (0-100+, e.g. "50" for half a
-// fruit) instead of a raw fraction (e.g. "0.5") — matching the ml-of-juice input's directly
-// usable scale. The 'ml'/'g' units pass through unchanged.
-function citricDisplayAmount(amount: number, unit: CitricAmount['unit']): number {
-  return unit === 'fruit' ? amount * 100 : amount;
-}
-
-function citricAmountFromDisplay(displayValue: number, unit: CitricAmount['unit']): number {
-  return unit === 'fruit' ? displayValue / 100 : displayValue;
 }
 
 // The "Izo" caption on the 2:1 preset flags it as this app's default isotonic ratio — showing

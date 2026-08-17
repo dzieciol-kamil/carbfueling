@@ -416,6 +416,23 @@ export function citricGramsFromAmount(amount: number, source: CitricSource): num
   return amount * mlPerFruit * yieldPerMl;
 }
 
+/**
+ * The whole-fruit citric source stores/computes in a 0-1 fraction-of-one-fruit unit (see
+ * `citricAmount`/`citricGramsFromAmount` above, which stay in that unit deliberately — the
+ * grams<->fraction math doesn't change here). This pair of helpers is a presentation-layer-only
+ * rescale so settings inputs (desktop's `MixPanel.tsx`, mobile's `MobileMix.tsx`) read and edit
+ * a percentage (0-100+, e.g. "50" for half a fruit) instead of a raw fraction (e.g. "0.5") —
+ * matching the ml-of-juice input's directly usable scale. The 'ml'/'g' units pass through
+ * unchanged.
+ */
+export function citricDisplayAmount(amount: number, unit: CitricAmount['unit']): number {
+  return unit === 'fruit' ? amount * 100 : amount;
+}
+
+export function citricAmountFromDisplay(displayValue: number, unit: CitricAmount['unit']): number {
+  return unit === 'fruit' ? displayValue / 100 : displayValue;
+}
+
 const FRACTION_TEXT: Record<number, string> = { 0.25: '1/4', 0.5: '1/2', 0.75: '3/4' };
 
 /**
@@ -426,9 +443,8 @@ const FRACTION_TEXT: Record<number, string> = { 0.25: '1/4', 0.5: '1/2', 0.75: '
  *
  * This used to render fractional amounts with unicode fraction glyphs (¼ ½ ¾), but those glyphs
  * render nearly invisible/thin in several fonts used by the app, so they're spelled out as plain
- * ASCII text instead. Kept deliberately compact (no percentage) so it still fits the narrow
- * mobile stepper slot (`MobileMix.tsx`) — see `fmtFruitFractionPct` for the recipe-card display
- * that adds a percentage alongside this numeral.
+ * ASCII text instead. Kept deliberately compact (no percentage) — see `fmtFruitFractionPct` for
+ * the recipe-card display that adds a percentage alongside this numeral.
  */
 export function fmtFruitFraction(n: number): string {
   if (n <= 0) return '0';
