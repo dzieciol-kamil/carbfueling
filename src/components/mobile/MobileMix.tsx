@@ -73,14 +73,15 @@ export function MobileMix() {
 
   // Same field-label swap as MixPanel.tsx's citricFieldLabel: the powder source keeps the short
   // "kwasek" label, whole-fruit/juice sources show their own name since the stepper is no longer
-  // showing grams of powder but a practical amount of that ingredient. A parenthetical unit is
-  // appended for the grams/ml units (mirroring the "(g/l)" suffix the salt stepper already uses);
-  // the fruit-fraction unit is dimensionless so the fruit name alone is enough.
+  // showing grams of powder but a practical amount of that ingredient. The parenthetical unit must
+  // be the same per-100-ml basis desktop shows (`citricSubLabel` there) — this is one value in the
+  // store, so a shorter unit here would silently rescale it for the reader; the fruit-fraction unit
+  // is dimensionless so the fruit name alone is enough.
   const citricFieldLabel = (src: CitricSource, unit: CitricAmount['unit']) => {
     const name = src === 'citric' ? strings.citricLabel : citricSourceCaption(src);
-    if (unit === 'ml') return name + ' (ml)';
+    if (unit === 'ml') return name + ' (' + strings.per100Ml + ')';
     if (unit === 'fruit') return name;
-    return name + ' (g/l)';
+    return name + ' (' + strings.per100 + ')';
   };
 
   const izoCitric = citricAmount(mix.citric, mix.citricSource);
@@ -224,7 +225,7 @@ export function MobileMix() {
           stackedLabel
         />
         <MobileStepper
-          label={strings.saltLabel + ' (g/l)'}
+          label={strings.saltLabel + ' (' + strings.per100 + ')'}
           value={mix.salt}
           min={0}
           max={4}
@@ -311,7 +312,7 @@ export function MobileMix() {
           stackedLabel
         />
         <MobileStepper
-          label={strings.saltLabel + ' (g/l)'}
+          label={strings.saltLabel + ' (' + strings.per100 + ')'}
           value={mix.gelSalt}
           min={0}
           max={6}
