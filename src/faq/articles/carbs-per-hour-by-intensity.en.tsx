@@ -10,9 +10,13 @@ export default function CarbsPerHourByIntensityEn() {
         strict rule — think of it as a starting point to adjust based on how you feel.
       </p>
       <p style={articleTextStyle}>
-        For rides under about an hour, carbs barely matter. Your body's glycogen stores — the sugar
-        already saved in your muscles and liver — are enough to cover that kind of effort on their
-        own. In this case, water or a hydration drink matters more than carb intake.
+        For an easy ride under about an hour, carbs barely matter. Your body's glycogen stores — the
+        sugar already saved in your muscles and liver — are enough to cover that kind of effort on
+        their own, so water or a hydration drink matters more than carb intake. Go hard rather than
+        easy, though — intervals, a short race, a fast group ride — and Carb Fueling still suggests
+        intake based on your intensity, using the same range as the next bracket below: even a
+        short, hard effort can benefit from topping up blood sugar, not only from sparing muscle
+        glycogen.
       </p>
       <p style={articleTextStyle}>
         Once a ride stretches to 1–2.5 hours, carbs start to earn their place. Roughly 30–60g per
@@ -45,7 +49,9 @@ export default function CarbsPerHourByIntensityEn() {
         Body size and training status shift the exact number too — a larger rider or someone with a
         well-trained gut can often handle and use more carbs per hour than these ranges suggest.
         Treat 30–90g/h as a starting range to dial in through practice, not a target that fits every
-        rider equally.
+        rider equally. Carb Fueling's own target is based only on your ride's duration and
+        intensity, not your weight — if you're a larger rider, lean toward the upper end of whatever
+        range it gives you.
       </p>
       <p style={articleTextStyle}>
         Rather than applying a flat rule of thumb, Carb Fueling runs the numbers for your specific
