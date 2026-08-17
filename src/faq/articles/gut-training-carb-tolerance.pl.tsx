@@ -51,10 +51,10 @@ export default function GutTrainingCarbTolerancePl() {
         Fueling pokazuje Twój sufit wchłaniania na bieżąco, gdy ustawiasz proporcję miksu w bidonie
         i żelu — dopasuj ją do tego, co faktycznie przećwiczyło Twoje jelito, a potem zbuduj
         harmonogram fuelingu, który mieści się w tym limicie, zamiast przesadzać w dniu startu.
-        Jedno zastrzeżenie: niezależnie od ustawionej proporcji, Carb Fueling ogranicza wyliczony
-        sufit do 95 g/h. To świadomy, bezpieczny domyślny próg, a nie twardy fizjologiczny sufit —
-        nieliczne, bardzo dobrze wytrenowane jelita mogą go przekroczyć — ale dla zdecydowanej
-        większości rowerzystów jest to rozsądna granica.
+        Jedno zastrzeżenie: niezależnie od ustawionej proporcji, sufit wchłaniania w Carb Fueling
+        nie przekroczy ok. 92 g/h. To świadomy, bezpieczny domyślny próg, a nie twardy fizjologiczny
+        sufit — nieliczne, bardzo dobrze wytrenowane jelita mogą go przekroczyć — ale dla
+        zdecydowanej większości rowerzystów jest to rozsądna granica.
       </p>
       <p>
         <a href="/" style={articleLinkStyle}>

@@ -45,10 +45,10 @@ export default function GutTrainingCarbToleranceEn() {
         Once you know your current trained ceiling, plan around it instead of guessing. Carb Fueling
         shows your absorption cap live as you dial in your bottle and gel mix ratio, so you can
         match it to what your gut has actually practiced, then build a fueling schedule that stays
-        under it instead of overshooting on race day. One caveat: whatever ratio you dial in, Carb
-        Fueling caps the calculated cap at 95g/h. That's a deliberate safe default, not a hard
-        physiological wall — a small number of very well-trained guts can push past it — but it's a
-        sensible ceiling for the vast majority of riders.
+        under it instead of overshooting on race day. One caveat: no matter how you dial in your
+        bottle and gel mix ratio, Carb Fueling's absorption cap tops out around 92g/h. That's a
+        deliberate safe default, not a hard physiological wall — a small number of very well-trained
+        guts can push past it — but it's a sensible ceiling for the vast majority of riders.
       </p>
       <p>
         <a href="/" style={articleLinkStyle}>

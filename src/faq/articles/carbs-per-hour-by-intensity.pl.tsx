@@ -15,10 +15,10 @@ export default function CarbsPerHourByIntensityPl() {
         Zapasy glikogenu — cukru zmagazynowanego w mięśniach i wątrobie — w zupełności wystarczają
         na taki wysiłek same w sobie, więc ważniejsze jest wtedy nawodnienie niż dostarczanie
         węglowodanów. Jeśli jednak jedziesz ostro, a nie spokojnie — interwały, krótki wyścig,
-        szybki wspólny przejazd — Carb Fueling i tak zasugeruje 30–60 g/h zależnie od intensywności,
-        czyli ten sam punkt startowy co przy wyjeździe nieco dłuższym niż godzina: nawet krótki,
-        intensywny wysiłek może skorzystać na uzupełnieniu poziomu cukru we krwi, nie tylko na
-        oszczędzaniu glikogenu mięśniowego.
+        szybki wspólny przejazd — Carb Fueling i tak zasugeruje podaż zależną od intensywności, w
+        tym samym zakresie co kolejny przedział niżej: nawet krótki, intensywny wysiłek może
+        skorzystać na uzupełnieniu poziomu cukru we krwi, nie tylko na oszczędzaniu glikogenu
+        mięśniowego.
       </p>
       <p style={articleTextStyle}>
         Gdy wyjazd wydłuża się do 1–2,5 godziny, węglowodany zaczynają mieć realny sens. Przydatny

@@ -14,8 +14,8 @@ export default function CarbsPerHourByIntensityEn() {
         sugar already saved in your muscles and liver — are enough to cover that kind of effort on
         their own, so water or a hydration drink matters more than carb intake. Go hard rather than
         easy, though — intervals, a short race, a fast group ride — and Carb Fueling still suggests
-        30–60g/h based on your intensity, the same starting range as a ride just over an hour: even
-        a short, hard effort can benefit from topping up blood sugar, not only from sparing muscle
+        intake based on your intensity, using the same range as the next bracket below: even a
+        short, hard effort can benefit from topping up blood sugar, not only from sparing muscle
         glycogen.
       </p>
       <p style={articleTextStyle}>
