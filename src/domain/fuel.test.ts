@@ -311,19 +311,29 @@ describe('prof / eff', () => {
     expect(P.cumTime[80]).toBeGreaterThan(P.cumTime[160] / 2);
   });
 
-  test('a gpxTrack with fewer than 2 elevation points (mid-load, or a malformed import) does not produce NaN', () => {
-    for (const ele of [[], [250]]) {
-      const route = makeRoute({
-        mode: 'route',
-        distance: 100,
-        useGpx: true,
-        gpxTrack: { id: 1, ele },
-      });
-      const P = prof(route);
-      expect(P.pts.every((p) => Number.isFinite(p.ele))).toBe(true);
-      expect(P.pts.every((p) => Number.isFinite(p.grad))).toBe(true);
-      expect(P.cumTime.every((t) => Number.isFinite(t))).toBe(true);
-    }
+  test('a single-point gpxTrack is a valid flat profile at that elevation, not a NaN case', () => {
+    const route = makeRoute({
+      mode: 'route',
+      distance: 100,
+      useGpx: true,
+      gpxTrack: { id: 1, ele: [250] },
+    });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.ele === 250)).toBe(true);
+    expect(P.pts.every((p) => Number.isFinite(p.grad))).toBe(true);
+  });
+
+  test('an empty gpxTrack (corrupted persisted state) falls back to a flat profile instead of NaN', () => {
+    const route = makeRoute({
+      mode: 'route',
+      distance: 100,
+      useGpx: true,
+      gpxTrack: { id: 1, ele: [] },
+    });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.ele === 0)).toBe(true);
+    expect(P.pts.every((p) => Number.isFinite(p.grad))).toBe(true);
+    expect(P.cumTime.every((t) => Number.isFinite(t))).toBe(true);
   });
 });
 

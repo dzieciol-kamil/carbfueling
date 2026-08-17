@@ -132,7 +132,7 @@ function isValidRoute(v: unknown): v is RouteInput {
   if (v.gpxTrack !== null) {
     if (!isRecord(v.gpxTrack)) return false;
     if (!isFiniteNumber(v.gpxTrack.id) || !Array.isArray(v.gpxTrack.ele)) return false;
-    if (v.gpxTrack.ele.length < 2 || v.gpxTrack.ele.length > MAX_IMPORT_ARRAY_LENGTH) return false;
+    if (!isInRange(v.gpxTrack.ele.length, 1, MAX_IMPORT_ARRAY_LENGTH)) return false;
     if (!v.gpxTrack.ele.every((n) => typeof n === 'number')) return false;
   }
   return true;

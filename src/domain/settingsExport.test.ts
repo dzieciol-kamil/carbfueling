@@ -147,14 +147,20 @@ describe('settingsExport', () => {
     expect(result.ok).toBe(false);
   });
 
-  test('rejects a gpx track with fewer than 2 elevation points (prof() would divide by zero into NaN)', () => {
-    for (const ele of [[], [10]]) {
-      const file = buildSettingsExport(
-        makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele } } }),
-      );
-      const result = parseSettingsImport(serializeSettingsExport(file));
-      expect(result.ok).toBe(false);
-    }
+  test('rejects an empty gpx track elevation array (prof() would index out of bounds into NaN)', () => {
+    const file = buildSettingsExport(
+      makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele: [] } } }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(false);
+  });
+
+  test('accepts a single-point gpx track elevation array (a valid flat profile, not degenerate)', () => {
+    const file = buildSettingsExport(
+      makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele: [10] } } }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
   });
 
   test('rejects an import array beyond the sane length limit', () => {
