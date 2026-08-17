@@ -81,11 +81,15 @@ function citricSourceLabel(source: CitricSource, strings: ReturnType<typeof t>):
 }
 
 // The citric-amount grid field is unit-aware: plain citric-acid powder keeps its own short
-// "Kwasek" label, but the whole-fruit/juice sources swap in the source's own name (e.g. "Cytryna",
-// "Sok z cytryny") since the field is no longer showing grams of powder but a practical amount of
-// that ingredient.
+// "kwasek" label, but the whole-fruit/juice sources swap in the source's own name (e.g. "cytryna",
+// "sok z cytryny") since the field is no longer showing grams of powder but a practical amount of
+// that ingredient. Lowercased here (unlike the source-picker buttons, which stay Title Case) so
+// this label slot matches its sibling columns ("cukry", "kwasek") regardless of which source is
+// selected.
 function citricFieldLabel(source: CitricSource, strings: ReturnType<typeof t>): string {
-  return source === 'citric' ? strings.citricLabel : citricSourceLabel(source, strings);
+  return source === 'citric'
+    ? strings.citricLabel
+    : citricSourceLabel(source, strings).toLowerCase();
 }
 
 function citricSubLabel(unit: CitricAmount['unit'], strings: ReturnType<typeof t>): string {
