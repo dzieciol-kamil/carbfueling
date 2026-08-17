@@ -3,6 +3,7 @@ import { gaps } from '../../domain/dragMath';
 import {
   coverageStatus,
   dist,
+  hydrationStatus,
   planSummary,
   recoveryCarbs,
   type CoverageStatus,
@@ -68,7 +69,9 @@ export function MobilePlanList() {
   const carbStatus = coverageStatus(carbPct);
   const carbTint = COVERAGE_TINT[carbStatus];
   const hydPct = summary.hydrationPct;
-  const hydStatus = coverageStatus(hydPct);
+  // hydrationStatus, not coverageStatus: water is graded on stricter thresholds than carbs, and
+  // this screen used to apply its own uncalibrated `>= 70` on top of that.
+  const hydStatus = hydrationStatus(hydPct);
   const hydTint = COVERAGE_TINT[hydStatus];
   const recovery = recoveryCarbs(route.weight);
   const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;

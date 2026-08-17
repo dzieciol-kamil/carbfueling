@@ -1,5 +1,11 @@
 import type { CSSProperties } from 'react';
-import { coverageStatus, planSummary, recoveryCarbs } from '../domain/fuel';
+import {
+  coverageStatus,
+  hydrationStatus,
+  planSummary,
+  recoveryCarbs,
+  type CoverageStatus,
+} from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
@@ -8,10 +14,10 @@ function fmt(n: number): string {
   return n.toFixed(0);
 }
 
-/** Thresholds live in the domain (`coverageStatus`) so this and the mobile plan list can't drift
- *  apart; only the palette is this layout's own. */
-function statusColor(pct: number, goodColor: string): string {
-  const status = coverageStatus(pct);
+/** Takes an already-decided status rather than a percentage: which thresholds apply differs
+ *  between carbs and water (see `hydrationStatus`), and that decision belongs in the domain, not
+ *  in a colour helper. Only the palette is this layout's own. */
+function statusColor(status: CoverageStatus, goodColor: string): string {
   if (status === 'good') return goodColor;
   if (status === 'short') return '#B4552F';
   return '#D2703F';
@@ -74,8 +80,8 @@ export function SummaryCards() {
   const strings = t(lang);
 
   const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
-  const carbColor = statusColor(summary.coverage, 'var(--carb)');
-  const hydColor = statusColor(summary.hydrationPct, 'var(--water)');
+  const carbColor = statusColor(coverageStatus(summary.coverage), 'var(--carb)');
+  const hydColor = statusColor(hydrationStatus(summary.hydrationPct), 'var(--water)');
   const recovery = recoveryCarbs(route.weight);
 
   return (

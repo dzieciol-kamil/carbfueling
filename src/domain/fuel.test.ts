@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 import {
   COVERAGE_SHORT_PCT,
   COVERAGE_TARGET_PCT,
+  HYDRATION_SHORT_PCT,
+  HYDRATION_TARGET_PCT,
   absCap,
   carbsFill,
   citricAmount,
@@ -18,6 +20,7 @@ import {
   fracFill,
   fracFood,
   honeyGramsFromCarbs,
+  hydrationStatus,
   mixSplit,
   planExtras,
   planSummary,
@@ -1008,19 +1011,47 @@ describe('coverageStatus', () => {
     expect(COVERAGE_SHORT_PCT).toBeLessThan(COVERAGE_TARGET_PCT);
   });
 
-  test('the calibrated values themselves, pinned against real rider-verified plans', () => {
+  test('the calibrated values themselves, anchored on rider-verified plans', () => {
     // Everything above is written in terms of the constants, so it passes for ANY pair of ordered
     // numbers — setting them to 40/10 kept the whole suite green. That made the single most
     // load-bearing product decision in this metric the least defended thing about it. These are
     // the literal percentages the calibration was chosen to produce, taken from saved plans in
     // docs/tests, so moving a threshold has to be a deliberate edit here too.
     expect(coverageStatus(84)).toBe('good'); // izo-6: the rider's own plan, verified as green
-    expect(coverageStatus(80)).toBe('good'); // food7, exactly on the target threshold
-    expect(coverageStatus(79)).toBe('partial'); // one point under is no longer green
+    expect(coverageStatus(80)).toBe('good'); // food7, landing exactly on the target threshold
     expect(coverageStatus(56)).toBe('partial'); // mix-4-autoplan, deliberately not red
+    // Boundary probes rather than real plans — these pin the edges either side of the two tiers.
+    expect(coverageStatus(79)).toBe('partial');
     expect(coverageStatus(54)).toBe('short');
     expect(COVERAGE_TARGET_PCT).toBe(80);
     expect(COVERAGE_SHORT_PCT).toBe(55);
+  });
+});
+
+describe('hydrationStatus', () => {
+  test('water is graded more strictly than carbs, on its own thresholds', () => {
+    // These were briefly shared with carbs, which quietly recalibrated hydration on carb evidence.
+    // Water keeps the stricter pair on purpose — see HYDRATION_TARGET_PCT.
+    expect(HYDRATION_TARGET_PCT).toBeGreaterThan(COVERAGE_TARGET_PCT);
+    expect(HYDRATION_SHORT_PCT).toBeGreaterThan(COVERAGE_SHORT_PCT);
+    expect(HYDRATION_SHORT_PCT).toBeLessThan(HYDRATION_TARGET_PCT);
+  });
+
+  test('a plan covering 59% of sweat loss reads red, not amber', () => {
+    // The concrete case that exposed the shared-threshold problem: food-7 / food7 in docs/tests
+    // sit at 59% hydration. Under the shared 80/55 they went amber; the rider's call is that
+    // missing two fifths of your sweat loss is a red-flag plan, not a nearly-there one.
+    expect(hydrationStatus(59)).toBe('short');
+    expect(coverageStatus(59)).toBe('partial'); // ...whereas 59% of your carbs is not red
+  });
+
+  test('the calibrated water values themselves', () => {
+    expect(hydrationStatus(85)).toBe('good');
+    expect(hydrationStatus(84)).toBe('partial'); // would be green on the carb scale
+    expect(hydrationStatus(60)).toBe('partial');
+    expect(hydrationStatus(70)).toBe('partial'); // mobile used to call this green on its own
+    expect(HYDRATION_TARGET_PCT).toBe(85);
+    expect(HYDRATION_SHORT_PCT).toBe(60);
   });
 });
 
