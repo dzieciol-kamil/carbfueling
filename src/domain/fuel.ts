@@ -25,24 +25,40 @@ const FLUID_ABSORPTION_CAP_ML_H = 750;
 const HYDRATION_BUFFER_ML_PER_KG = 15;
 
 /**
- * The coverage percentage the UI treats as "good enough" — `coverageStatus` turns the
- * requirement/hydration bars green at this threshold, for both carbs and water. This is a
- * tolerance the *badge* applies on top of the honest 100% target (see `fluidNeed` on `Sample`),
- * not a discount baked into what any chart line asks for — one shared number instead of a
- * duplicated magic literal.
+ * Where the *carb* bar turns green. A tolerance the badge applies on top of the honest 100% target
+ * (see `fluidNeed` on `Sample`), not a discount baked into what any chart line asks for.
  *
  * Was 85 while `coverage` over-credited (it divided by an EMA-shrunk denominator; see rateStats).
  * Fixing that arithmetic made the same plan read a few points lower, so the thresholds moved down
- * with it to keep "good enough" meaning what it meant to the rider who calibrated it: across the
- * 30 saved plans in docs/tests, 85/60 reclassified 9 of them downward — including the rider's own
- * hand-built izo-6, verified at the time as green — while 80/55 leaves every single verdict
- * unchanged. The number moved so the judgement wouldn't.
+ * with it to keep "good enough" meaning what it meant to the rider who calibrated it: of the 43
+ * non-empty saved plans in docs/tests, 85/60 reclassified 9 downward — including the rider's own
+ * hand-built izo-6, verified at the time as green — while 80/55 changes exactly one verdict
+ * (mix-5-autoplan at 82%, upward). The number moved so the judgement wouldn't.
  */
 export const COVERAGE_TARGET_PCT = 80;
 
-/** Below this, a plan isn't "a bit short" any more — it's a different plan. Second tier of the
- *  shared status scale so the amber/red split is one number too, not a per-component literal. */
+/** Below this, a carb plan isn't "a bit short" any more — it's a different plan. */
 export const COVERAGE_SHORT_PCT = 55;
+
+/**
+ * Where the *hydration* bar turns green — deliberately not the carb number.
+ *
+ * These two were briefly shared. That was wrong for a reason worth recording: only the carb
+ * arithmetic changed, so moving the shared pair recalibrated hydration on carb evidence, and a
+ * plan at 59% of sweat loss silently went red→amber (`food-7`/`food7` in docs/tests) without
+ * anyone deciding it should. Asked and answered by the rider: dehydration is not the same kind of
+ * failure as running low on carbs — bonking hurts, hyperthermia is dangerous — so water keeps the
+ * stricter 85/60 it always had on desktop and does not inherit the carb recalibration.
+ *
+ * `hydrationPct` is unchanged by any of this: still the plain `fluidPlanned / sweatLoss` ratio,
+ * reported as 100 below the short-ride gate. Note this is also stricter than the `>= 70` the
+ * *mobile* card used to apply on its own — that number was never calibrated against anything and
+ * disagreed with desktop, which is the whole class of bug this work set out to remove.
+ */
+export const HYDRATION_TARGET_PCT = 85;
+
+/** Amber/red split for water. Same reasoning as `HYDRATION_TARGET_PCT`. */
+export const HYDRATION_SHORT_PCT = 60;
 
 /**
  * How much unused absorbed carb `rateStats` lets a rider carry forward, expressed as minutes of
@@ -55,15 +71,27 @@ const COVERAGE_CARRY_MINUTES = 15;
 
 export type CoverageStatus = 'good' | 'partial' | 'short';
 
+function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus {
+  if (pct >= targetPct) return 'good';
+  if (pct < shortPct) return 'short';
+  return 'partial';
+}
+
 /**
- * The single verdict both the desktop cards and the mobile plan list render. Colours differ per
- * layout (different palettes, different backgrounds); the *thresholds behind them* must not, or
- * the same plan reads as fine on one screen and short on the other.
+ * The verdict on the *carb* bar, for both the desktop cards and the mobile plan list. Colours
+ * differ per layout (different palettes, different backgrounds); the *thresholds behind them*
+ * must not, or the same plan reads as fine on one screen and short on the other — which is
+ * exactly the bug this pair of functions exists to prevent. One mechanism, two calibrations:
+ * carbs and water each get their own numbers, but neither layout gets to invent its own.
  */
 export function coverageStatus(pct: number): CoverageStatus {
-  if (pct >= COVERAGE_TARGET_PCT) return 'good';
-  if (pct < COVERAGE_SHORT_PCT) return 'short';
-  return 'partial';
+  return tier(pct, COVERAGE_TARGET_PCT, COVERAGE_SHORT_PCT);
+}
+
+/** The verdict on the *hydration* bar — stricter than carbs on purpose, see
+ *  `HYDRATION_TARGET_PCT`. Same three tiers, so both layouts can share one palette. */
+export function hydrationStatus(pct: number): CoverageStatus {
+  return tier(pct, HYDRATION_TARGET_PCT, HYDRATION_SHORT_PCT);
 }
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
@@ -109,7 +137,7 @@ export interface Sample {
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
    *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
    *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
-   *  `COVERAGE_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
+   *  `HYDRATION_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
   fluidNeed: number;
   /** Instantaneous per-step derivative of `fluidNeed` — see `fluidRate`, same reasoning. */
   fluidNeedRate: number;
@@ -496,13 +524,13 @@ export function samples(state: PlanState): Sample[] {
   // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
   // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
-  // `COVERAGE_TARGET_PCT` (85%) and not sweat loss minus the buffer. The chart's job is to show
-  // the honest physiological target; 85% is a separate, more lenient tolerance the *badge* applies
-  // on top (via `statusColor`) to decide "is this still good enough," not something baked into
-  // what the line itself asks for. An earlier version used the buffer here and made the chart say
-  // "you're above the line" while the badge still said "79%, short" for the same plan — confirmed
-  // on a real reproduction; using the true 100% total instead means falling short of the total
-  // always shows up as the actual line dipping below the target somewhere, honestly.
+  // `HYDRATION_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
+  // honest physiological target; that constant is a separate, more lenient tolerance the *badge*
+  // applies on top (via `hydrationStatus`) to decide "is this still good enough," not something
+  // baked into what the line itself asks for. An earlier version used the buffer here and made
+  // the chart say "you're above the line" while the badge still read 79% and amber for the same
+  // plan — confirmed on a real reproduction; using the true 100% total instead means falling
+  // short of the total always shows up as the actual line dipping below the target, honestly.
   //
   // Below the short-ride gate (sweatLoss < buffer — the same threshold that decides whether
   // autoplan bothers suggesting water stops at all) there's honestly nothing to plan for, so the
@@ -693,6 +721,16 @@ export function samples(state: PlanState): Sample[] {
  * at `COVERAGE_CARRY_MINUTES` of requirement says what the physiology says — the gut and the
  * immediately available glycogen pool absorb short-term unevenness, and nothing beyond that.
  *
+ * The carry *damps* that seam rather than removing it, so the achievable ceiling still depends on
+ * terrain. Measured with 10x the required carbs, so the plan can never be the limiter: flat and
+ * any uniform-gradient climb reach 100, rolling 150-300 m reaches 97-99, a realistic alpine day
+ * 93, two big cols 88. It degrades from there — a single sustained 2500-5000 m climb-and-descent
+ * inside a 4 h ride tops out at 79-75, i.e. green becomes unreachable again. That combination is
+ * physically implausible at the speeds involved, and longer rides recover on their own (the same
+ * 2000 m climb reads 82 over 100 km and 94 over 200 km), so it is logged as a known limit rather
+ * than fixed here. Removing it for real means dropping the flat-pace approximation in samples()
+ * and making `dt` terrain-aware, which changes the chart too.
+ *
  * `dryStretch` still reads the smoothed rates on purpose — "am I running on empty right now" is a
  * question about the curve at a point, not about a total, and there the lag is the desired
  * behaviour.
@@ -726,6 +764,17 @@ export function rateStats(state: PlanState): RateStats {
   return {
     // A ride that demands nothing is covered by definition — the same call hydrationPct makes for
     // zero sweat loss, rather than painting a red 0% on a plan with nothing to cover.
+    //
+    // Note this also covers "no ride entered yet": the store's default route is distance 0 /
+    // speed 0, so a fresh install shows a green 100% here (desktop used to show 0% — mobile
+    // already showed 100%, and unifying had to pick one). Kept deliberately, as the rider's call.
+    //
+    // Worth knowing what does and doesn't soften it, because the two layouts differ: mobile
+    // prints a self-cancelling "0 / 0 g" right under the number, but the desktop card prints
+    // "Requirement 0g" and "Planned 0 g" as two separate figures, alongside a recovery range
+    // computed from body weight — so on desktop the green 100% is the loudest thing on an
+    // otherwise empty plan. That is the weaker of the two cases; if this ever stops feeling
+    // right, desktop is where it will show first.
     coverage: target > 0 ? Math.round((covered / target) * 100) : 100,
     coveredCarbs: covered,
     dryStretch: dry,

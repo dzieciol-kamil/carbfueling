@@ -3,6 +3,7 @@ import { gaps } from '../../domain/dragMath';
 import {
   coverageStatus,
   dist,
+  hydrationStatus,
   planSummary,
   recoveryCarbs,
   type CoverageStatus,
@@ -21,8 +22,11 @@ function selKeyFor(item: PlanCardItem): string {
       : 'x' + item.id;
 }
 
-/** Mobile's own tints for the three shared coverage tiers — the thresholds that pick between them
- *  come from the domain's `coverageStatus`, the same call the desktop cards make. */
+/** Mobile's own tints for the three status tiers. The palette is shared between the carb and
+ *  water cards; the *thresholds* deliberately are not — carbs go through `coverageStatus` and
+ *  water through the stricter `hydrationStatus`, the same two calls the desktop cards make. What
+ *  must never come back is this screen picking its own numbers, which is how it ended up grading
+ *  hydration on an uncalibrated `>= 70` that disagreed with desktop. */
 const COVERAGE_TINT: Record<CoverageStatus, { bg: string; fg: string }> = {
   good: { bg: '#E7F2E1', fg: '#3D7A26' },
   partial: { bg: '#FBEAE1', fg: '#A3512A' },
@@ -68,7 +72,9 @@ export function MobilePlanList() {
   const carbStatus = coverageStatus(carbPct);
   const carbTint = COVERAGE_TINT[carbStatus];
   const hydPct = summary.hydrationPct;
-  const hydStatus = coverageStatus(hydPct);
+  // hydrationStatus, not coverageStatus: water is graded on stricter thresholds than carbs, and
+  // this screen used to apply its own uncalibrated `>= 70` on top of that.
+  const hydStatus = hydrationStatus(hydPct);
   const hydTint = COVERAGE_TINT[hydStatus];
   const recovery = recoveryCarbs(route.weight);
   const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;
