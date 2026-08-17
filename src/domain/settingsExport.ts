@@ -118,10 +118,10 @@ function isValidRoute(v: unknown): v is RouteInput {
     !isInRange(v.distance, 0, 2000) ||
     !isInRange(v.speed, 0, 100) ||
     !isInRange(v.weight, 20, 300) ||
-    !isFiniteNumber(v.hours) ||
+    !isInRange(v.hours, 0, 999) ||
     !isFiniteNumber(v.minutes) ||
-    !isFiniteNumber(v.preMealCarbs) ||
-    !isFiniteNumber(v.preMealMinutes) ||
+    !isInRange(v.preMealCarbs, 0, 500) ||
+    !isInRange(v.preMealMinutes, 0, 1440) ||
     !isFiniteNumber(v.temp)
   ) {
     return false;
@@ -132,6 +132,7 @@ function isValidRoute(v: unknown): v is RouteInput {
   if (v.gpxTrack !== null) {
     if (!isRecord(v.gpxTrack)) return false;
     if (!isFiniteNumber(v.gpxTrack.id) || !Array.isArray(v.gpxTrack.ele)) return false;
+    if (v.gpxTrack.ele.length > MAX_IMPORT_ARRAY_LENGTH) return false;
     if (!v.gpxTrack.ele.every((n) => typeof n === 'number')) return false;
   }
   return true;

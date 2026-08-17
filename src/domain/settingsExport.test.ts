@@ -110,7 +110,7 @@ describe('settingsExport', () => {
     }
   });
 
-  test('rejects a route with out-of-range distance, speed, or weight', () => {
+  test('rejects a route with out-of-range numeric fields', () => {
     const file = buildSettingsExport(makeData());
     const badRoutes = [
       { ...file.data.route, distance: -1 },
@@ -119,6 +119,12 @@ describe('settingsExport', () => {
       { ...file.data.route, speed: 101 },
       { ...file.data.route, weight: 19 },
       { ...file.data.route, weight: 301 },
+      { ...file.data.route, hours: -1 },
+      { ...file.data.route, hours: 1000 },
+      { ...file.data.route, preMealCarbs: -1 },
+      { ...file.data.route, preMealCarbs: 501 },
+      { ...file.data.route, preMealMinutes: -1 },
+      { ...file.data.route, preMealMinutes: 1441 },
     ];
     for (const route of badRoutes) {
       const result = parseSettingsImport(
@@ -126,6 +132,19 @@ describe('settingsExport', () => {
       );
       expect(result.ok).toBe(false);
     }
+  });
+
+  test('rejects a gpx track elevation array beyond the sane length limit', () => {
+    const file = buildSettingsExport(
+      makeData({
+        route: {
+          ...makeData().route,
+          gpxTrack: { id: 1, ele: Array.from({ length: 501 }, () => 10) },
+        },
+      }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(false);
   });
 
   test('rejects an import array beyond the sane length limit', () => {
