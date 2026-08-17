@@ -66,6 +66,7 @@ export interface StringTable {
   removeItem?: string;
   addShopStop: string;
   addFillTo: string;
+  emptyLaneHint: string;
   coverage: string;
   summary: string;
   hydration: string;
@@ -375,6 +376,7 @@ export const STR: Record<Lang, StringTable> = {
     removeItem: 'Usuń',
     addShopStop: 'Dodaj sklep',
     addFillTo: 'Dodaj dolewkę do ',
+    emptyLaneHint: 'Kliknij +, żeby dodać dolewkę',
     coverage: 'Pokrycie zapotrzebowania',
     summary: 'Podsumowanie',
     hydration: 'Nawodnienie',
@@ -735,6 +737,7 @@ export const STR: Record<Lang, StringTable> = {
     removeItem: 'Remove',
     addShopStop: 'Add shop stop',
     addFillTo: 'Add a fill to ',
+    emptyLaneHint: 'Click + to add a fill',
     coverage: 'Requirement covered',
     summary: 'Summary',
     hydration: 'Hydration',
