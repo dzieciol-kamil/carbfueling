@@ -22,7 +22,7 @@ const FLUID_ABSORPTION_CAP_ML_H = 750;
  * this threshold — see project_autoplan_water_refill_rule memory; the two need to be reconciled
  * when autoplan.ts itself is updated to match this design.
  */
-const HYDRATION_BUFFER_ML_PER_KG = 15;
+export const HYDRATION_BUFFER_ML_PER_KG = 15;
 
 /**
  * The coverage percentage the UI treats as "good enough" — `SummaryCards.tsx`'s `statusColor`

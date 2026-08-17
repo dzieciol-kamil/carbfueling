@@ -1,5 +1,6 @@
 import {
   COVERAGE_TARGET_PCT,
+  HYDRATION_BUFFER_ML_PER_KG,
   absCap,
   carbsFill,
   cph,
@@ -25,14 +26,6 @@ import type {
 } from './types';
 
 export const CONCENTRATED_MIX_THRESHOLD_G_PER_100ML = 15;
-
-/**
- * Mirrors `fuel.ts`'s `HYDRATION_BUFFER_ML_PER_KG` (private there). A rider doesn't start dehydrated,
- * so a ride that never loses more than this much fluid per kg of body mass needs no water *plan* at
- * all — which is also exactly when `planSummary` reports 100% hydration. The two must stay in sync:
- * planning stops for a ride the summary already calls fully hydrated would be pure noise.
- */
-const HYDRATION_BUFFER_ML_PER_KG = 15;
 
 /**
  * Carbs are a separate, still time-based gate: under an hour there is nothing to fuel, whatever the
@@ -736,12 +729,9 @@ function coverageOf(state: PlanState, fills: DraftFill[], foods: DraftFood[]): n
 }
 
 interface Candidate {
-  G: number;
-  timelines: Timeline[];
   fills: DraftFill[];
   stops: number[];
   carbs: number;
-  fluid: number;
   /** The lowest leg's fluid rate as a percentage of the sweat rate — the rider's pointwise floor. */
   worstLegPct: number;
   refills: number;
@@ -781,6 +771,12 @@ function compareCandidates(a: Candidate, b: Candidate): number {
   );
 }
 
+/**
+ * Tolerance bands make this non-transitive: a can tie b, b can tie c, yet a beats c outright. Live
+ * with it — `search`'s `reduce` only ever folds candidates pairwise in ascending grid order, so the
+ * winner is deterministic even though "coarsest that falls no further short" isn't strictly true of
+ * every candidate pair. Only matters if `search` ever needs a real sort instead of a fold.
+ */
 function compareShortfall(a: number[], b: number[]): number {
   for (let i = 0; i < a.length; i++) {
     if (a[i] < b[i] - SHORTFALL_TOLERANCE[i]) return -1;
@@ -875,7 +871,10 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     const canBuy = buyableXs(xs, G, D).length > 0;
     const boughtCarbs = canBuy ? stopItemCarbs : 0;
     const drunkMl = itemMl - (canBuy ? 0 : stopItemMl);
-    const needFluid = waterOn ? Math.max(0, GREEN * sweatLoss - drunkMl) : 0;
+    // What the bottles have to hold in total: the green target, or whatever food already pours in
+    // if that alone exceeds it — `max(drunkMl, GREEN * sweatLoss)`, not `need + drunkMl` added back
+    // on top of a floor already clamped against it.
+    const fluidTarget = waterOn ? Math.max(drunkMl, GREEN * sweatLoss) : 0;
 
     const line = (v: Vessel, content: 'izo' | 'gel' | null): Timeline => ({
       gid: v.gid,
@@ -1055,7 +1054,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
         // or the bottles already hold every millilitre the ride is going to sweat out. Past that
         // second one another stop buys nothing — the water would ride to the finish unopened — so a
         // shallow dip where one load hands over to the next is the honest price of not stopping.
-        const sumHolds = fluid >= needFluid + drunkMl;
+        const sumHolds = fluid >= fluidTarget;
         if (floorHolds && sumHolds) break;
         // A top-up at a stop the plan already makes is free; one that lands between them costs the
         // rider a pull-over, which is the thing to be stingy with, so each move is scored by the
@@ -1099,7 +1098,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
           : (usable.map(raiseFloor).filter(Boolean) as ReturnType<typeof measure>[]);
         // Once the line holds, what is left is a plain volume shortfall — and the cheapest bottle
         // to top up is the one already stopping there.
-        if (moves.length === 0 && fluid < needFluid + drunkMl) {
+        if (moves.length === 0 && fluid < fluidTarget) {
           moves = usable.map(addVolume).filter(Boolean) as ReturnType<typeof measure>[];
         }
         // While the line is sagging, the move that lifts it highest wins, even if it costs a stop:
@@ -1272,12 +1271,9 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
     const fluid = fluidOf();
     const worstLegPct = worstOf();
     return {
-      G,
-      timelines,
       fills,
       stops,
       carbs,
-      fluid,
       worstLegPct,
       refills: fills.length - new Set(fills.map((f) => f.gid)).size,
       raggedness: timelines.reduce((worst, t) => {
@@ -1297,7 +1293,7 @@ export function autoplan(state: PlanState, selection: FoodSelectionEntry[]): Aut
       }, 0),
       shortfall: [
         waterOn ? Math.max(0, COVERAGE_TARGET_PCT - worstLegPct) : 0,
-        waterOn ? Math.max(0, needFluid + drunkMl - fluid) : 0,
+        waterOn ? Math.max(0, fluidTarget - fluid) : 0,
         Math.max(0, needCarbs - carbs),
         carbRateOvershoot(),
         carbRateDeficit(),
