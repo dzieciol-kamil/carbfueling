@@ -36,6 +36,12 @@ export default function CarbsPerHourByIntensityEn() {
         intake, even at the same duration.
       </p>
       <p style={articleTextStyle}>
+        A simple way to gauge intensity without a power meter or heart rate strap: can you still
+        talk? Low means you can chat comfortably in full sentences. Medium means you can talk, but
+        only in short sentences. High means you can barely speak at all, focused on your breathing.
+        This is the same scale Carb Fueling's intensity setting uses.
+      </p>
+      <p style={articleTextStyle}>
         Body size and training status shift the exact number too — a larger rider or someone with a
         well-trained gut can often handle and use more carbs per hour than these ranges suggest.
         Treat 30–90g/h as a starting range to dial in through practice, not a target that fits every

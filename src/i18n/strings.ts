@@ -17,6 +17,7 @@ export interface StringTable {
   preMealCarbs: string;
   preMealMinutes: string;
   intensity: string;
+  intensityHint: string;
   low: string;
   medium: string;
   high: string;
@@ -314,6 +315,8 @@ export const STR: Record<Lang, StringTable> = {
     preMealCarbs: 'Węgle przed startem',
     preMealMinutes: 'Czas przed startem',
     intensity: 'Intensywność',
+    intensityHint:
+      'Niska = swobodnie rozmawiasz pełnymi zdaniami. Średnia = rozmawiasz, ale pojedynczymi zdaniami. Wysoka = ledwo mówisz, skupiony na oddechu. Od tego zależy, ile węglowodanów na godzinę zaplanuje Carb Fueling.',
     low: 'Niska',
     medium: 'Średnia',
     high: 'Wysoka',
@@ -672,6 +675,8 @@ export const STR: Record<Lang, StringTable> = {
     preMealCarbs: 'Carbs before start',
     preMealMinutes: 'Time before start',
     intensity: 'Intensity',
+    intensityHint:
+      'Low = you can chat comfortably in full sentences. Medium = you talk, but in short sentences. High = you can barely speak, focused on breathing. This drives how many carbs per hour the app plans for.',
     low: 'Low',
     medium: 'Medium',
     high: 'High',

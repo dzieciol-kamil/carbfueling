@@ -4,6 +4,7 @@ import { prof } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { InfoPopover } from '../ui/InfoPopover';
 import { MobileStepper } from './MobileStepper';
 
 function elevationGain(route: RouteInput): number {
@@ -179,7 +180,13 @@ export function MobileRouteSheet() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>
-              {strings.routeSheetIntensity}
+              {strings.routeSheetIntensity}{' '}
+              <InfoPopover
+                hint={strings.intensityHint}
+                popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+              >
+                ⓘ
+              </InfoPopover>
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
               {intensityOptions.map((opt) => (

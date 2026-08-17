@@ -37,6 +37,12 @@ export default function CarbsPerHourByIntensityPl() {
         znacznie szybciej i przy tym samym czasie jazdy premiuje wyższą podaż węglowodanów.
       </p>
       <p style={articleTextStyle}>
+        Prosty sposób na ocenę intensywności bez pomiaru mocy czy tętna: czy jeszcze rozmawiasz?
+        Niska oznacza, że swobodnie rozmawiasz pełnymi zdaniami. Średnia — że rozmawiasz, ale
+        pojedynczymi zdaniami. Wysoka — że ledwo mówisz, skupiony na oddechu. Tej samej skali używa
+        ustawienie intensywności w Carb Fueling.
+      </p>
+      <p style={articleTextStyle}>
         Masa ciała i stopień wytrenowania też przesuwają dokładną liczbę — więksi rowerzyści albo
         osoby z wytrenowanym jelitem często są w stanie przyjąć i wykorzystać więcej węglowodanów na
         godzinę, niż sugerują te widełki. Traktuj 30–90 g/h jako punkt startowy do dopracowania na
