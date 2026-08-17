@@ -2,8 +2,9 @@ import { combinedGroups } from '../../domain/combinedRefill';
 import {
   absCap,
   citricAmount,
+  citricAmountFromDisplay,
+  citricDisplayAmount,
   citricGramsFromAmount,
-  fmtFruitFraction,
   presetTagFor,
   type CitricAmount,
 } from '../../domain/fuel';
@@ -75,12 +76,11 @@ export function MobileMix() {
   // "kwasek" label, whole-fruit/juice sources show their own name since the stepper is no longer
   // showing grams of powder but a practical amount of that ingredient. The parenthetical unit must
   // be the same per-100-ml basis desktop shows (`citricSubLabel` there) — this is one value in the
-  // store, so a shorter unit here would silently rescale it for the reader; the fruit-fraction unit
-  // is dimensionless so the fruit name alone is enough.
+  // store, so a shorter unit here would silently rescale it for the reader.
   const citricFieldLabel = (src: CitricSource, unit: CitricAmount['unit']) => {
     const name = src === 'citric' ? strings.citricLabel : citricSourceCaption(src);
     if (unit === 'ml') return name + ' (' + strings.per100Ml + ')';
-    if (unit === 'fruit') return name;
+    if (unit === 'fruit') return name + ' (' + strings.per100Fruit + ')';
     return name + ' (' + strings.per100 + ')';
   };
 
@@ -121,9 +121,8 @@ export function MobileMix() {
   );
 
   // Stepper bounds/step/format tuned per displayed unit: fine grams for powder, coarser ml for
-  // juice, quarter-fruit increments (formatted as a compact ASCII fraction, e.g. "3/4") for whole
-  // fruit — deliberately without the percentage `fmtFruitFractionPct` adds for the recipe card,
-  // since this narrow stepper slot doesn't have room for it.
+  // juice, and — matching desktop's `MixPanel.tsx` — a 0-100+ percentage-of-one-fruit scale for
+  // whole fruit, stepped in quarter-fruit (25%) increments with a finer 5% small step.
   const citricStepperProps = (unit: CitricAmount['unit'], gramsMax: number) => {
     if (unit === 'ml') {
       return { min: 0, max: gramsMax * 20, smallStep: 1, bigStep: 5, format: undefined };
@@ -131,10 +130,10 @@ export function MobileMix() {
     if (unit === 'fruit') {
       return {
         min: 0,
-        max: Math.max(2, Math.ceil(gramsMax / 10)),
-        smallStep: 0.25,
-        bigStep: 1,
-        format: fmtFruitFraction,
+        max: Math.max(2, Math.ceil(gramsMax / 10)) * 100,
+        smallStep: 5,
+        bigStep: 25,
+        format: undefined,
       };
     }
     return {
@@ -237,9 +236,13 @@ export function MobileMix() {
         />
         <MobileStepper
           label={citricFieldLabel(mix.citricSource, izoCitric.unit)}
-          value={izoCitric.amount}
+          value={citricDisplayAmount(izoCitric.amount, izoCitric.unit)}
           {...citricStepperProps(izoCitric.unit, 6)}
-          onChange={(v) => setCitric(citricGramsFromAmount(v, mix.citricSource))}
+          onChange={(v) =>
+            setCitric(
+              citricGramsFromAmount(citricAmountFromDisplay(v, izoCitric.unit), mix.citricSource),
+            )
+          }
           stackedLabel
         />
       </div>
@@ -325,9 +328,16 @@ export function MobileMix() {
         />
         <MobileStepper
           label={citricFieldLabel(mix.gelCitricSource, gelCitricAmt.unit)}
-          value={gelCitricAmt.amount}
+          value={citricDisplayAmount(gelCitricAmt.amount, gelCitricAmt.unit)}
           {...citricStepperProps(gelCitricAmt.unit, 8)}
-          onChange={(v) => setGelCitric(citricGramsFromAmount(v, mix.gelCitricSource))}
+          onChange={(v) =>
+            setGelCitric(
+              citricGramsFromAmount(
+                citricAmountFromDisplay(v, gelCitricAmt.unit),
+                mix.gelCitricSource,
+              ),
+            )
+          }
           disabled={gelLocked}
           stackedLabel
         />
