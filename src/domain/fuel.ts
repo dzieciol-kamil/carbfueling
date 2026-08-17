@@ -33,10 +33,20 @@ const HYDRATION_BUFFER_ML_PER_KG = 15;
  *
  * Was 85 while `coverage` over-credited (it divided by an EMA-shrunk denominator; see rateStats).
  * Fixing that arithmetic made the same plan read a few points lower, so the thresholds moved down
- * with it to keep "good enough" meaning what it meant to the rider who calibrated it: across the
- * 30 saved plans in docs/tests, 85/60 reclassified 9 of them downward — including the rider's own
- * hand-built izo-6, verified at the time as green — while 80/55 leaves every single verdict
- * unchanged. The number moved so the judgement wouldn't.
+ * with it to keep "good enough" meaning what it meant to the rider who calibrated it: of the 43
+ * non-empty saved plans in docs/tests, 85/60 reclassified 9 downward — including the rider's own
+ * hand-built izo-6, verified at the time as green — while 80/55 changes exactly one verdict
+ * (mix-5-autoplan at 82%, upward). The number moved so the judgement wouldn't.
+ *
+ * ## Caveat: hydration rode along on carb evidence
+ *
+ * `coverageStatus` grades `hydrationPct` too, and that metric did NOT change — it is still the
+ * plain `fluidPlanned / sweatLoss` ratio it always was. Only the carb arithmetic justified moving
+ * these numbers, so hydration verdicts shifted for free: two saved plans (food-7 / food7, at 59%)
+ * went red→amber, and mobile's hydration green got *stricter*, since that screen used to use its
+ * own `>= 70` and now shares this 80. Both were accepted as the price of having one scale instead
+ * of four, not as a considered hydration calibration. If hydration ever gets its own evidence
+ * base, it deserves its own pair of constants rather than these.
  */
 export const COVERAGE_TARGET_PCT = 80;
 
@@ -496,10 +506,10 @@ export function samples(state: PlanState): Sample[] {
   // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
   // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
-  // `COVERAGE_TARGET_PCT` (85%) and not sweat loss minus the buffer. The chart's job is to show
-  // the honest physiological target; 85% is a separate, more lenient tolerance the *badge* applies
-  // on top (via `statusColor`) to decide "is this still good enough," not something baked into
-  // what the line itself asks for. An earlier version used the buffer here and made the chart say
+  // `COVERAGE_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
+  // honest physiological target; that constant is a separate, more lenient tolerance the *badge*
+  // applies on top (via `coverageStatus`) to decide "is this still good enough," not something
+  // baked into what the line itself asks for. An earlier version used the buffer here and made the chart say
   // "you're above the line" while the badge still said "79%, short" for the same plan — confirmed
   // on a real reproduction; using the true 100% total instead means falling short of the total
   // always shows up as the actual line dipping below the target somewhere, honestly.
@@ -693,6 +703,16 @@ export function samples(state: PlanState): Sample[] {
  * at `COVERAGE_CARRY_MINUTES` of requirement says what the physiology says — the gut and the
  * immediately available glycogen pool absorb short-term unevenness, and nothing beyond that.
  *
+ * The carry *damps* that seam rather than removing it, so the achievable ceiling still depends on
+ * terrain. Measured with 10x the required carbs, so the plan can never be the limiter: flat and
+ * any uniform-gradient climb reach 100, rolling 150-300 m reaches 97-99, a realistic alpine day
+ * 93, two big cols 88. It degrades from there — a single sustained 2500-5000 m climb-and-descent
+ * inside a 4 h ride tops out at 79-75, i.e. green becomes unreachable again. That combination is
+ * physically implausible at the speeds involved, and longer rides recover on their own (the same
+ * 2000 m climb reads 82 over 100 km and 94 over 200 km), so it is logged as a known limit rather
+ * than fixed here. Removing it for real means dropping the flat-pace approximation in samples()
+ * and making `dt` terrain-aware, which changes the chart too.
+ *
  * `dryStretch` still reads the smoothed rates on purpose — "am I running on empty right now" is a
  * question about the curve at a point, not about a total, and there the lag is the desired
  * behaviour.
@@ -726,6 +746,12 @@ export function rateStats(state: PlanState): RateStats {
   return {
     // A ride that demands nothing is covered by definition — the same call hydrationPct makes for
     // zero sweat loss, rather than painting a red 0% on a plan with nothing to cover.
+    //
+    // Note this also covers "no ride entered yet": the store's default route is distance 0 /
+    // speed 0, so a fresh install shows a green 100% here (desktop used to show 0% — mobile
+    // already showed 100%, and unifying had to pick one). Kept deliberately: it is consistent
+    // with hydration and with the sentence above, and the card's own footer says "0 g / 0 g"
+    // right underneath, so nothing claims the rider has done something they haven't.
     coverage: target > 0 ? Math.round((covered / target) * 100) : 100,
     coveredCarbs: covered,
     dryStretch: dry,

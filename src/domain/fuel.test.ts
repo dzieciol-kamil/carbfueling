@@ -724,7 +724,7 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
   // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
   // sweatLoss = 700*4 = 2800ml, well above the buffer (weight*15=1125ml), so totalFluidNeed is
   // the full, undiscounted 2800ml — not reduced by the buffer and not by COVERAGE_TARGET_PCT
-  // (85% is a badge-only tolerance, not part of what the line itself asks for). Distributed by
+  // (that constant is a badge-only tolerance, not part of what the line asks for). Distributed by
   // eff(x)/tot exactly like carbs' `need` — no GPX here, so effort=1 everywhere and eff(x)/tot
   // reduces to x/D (a straight line), matching a flat ml/h target rate.
   const route = makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' });
@@ -733,7 +733,7 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
     const S = samples(makePlan({ route }));
     expect(S[0].fluidNeed).toBe(0);
     expect(S[80].fluidNeed).toBeCloseTo(2800 * 0.5, 3); // midpoint -> half the total
-    expect(S[160].fluidNeed).toBeCloseTo(2800, 3); // the full sweat loss, not an 85%-discounted figure
+    expect(S[160].fluidNeed).toBeCloseTo(2800, 3); // the full sweat loss, not a badge-discounted figure
   });
 
   test('fluidNeed rises immediately from the start (no flat-zero plateau) and monotonically throughout', () => {
@@ -1006,6 +1006,21 @@ describe('coverageStatus', () => {
 
   test('the two thresholds stay ordered', () => {
     expect(COVERAGE_SHORT_PCT).toBeLessThan(COVERAGE_TARGET_PCT);
+  });
+
+  test('the calibrated values themselves, pinned against real rider-verified plans', () => {
+    // Everything above is written in terms of the constants, so it passes for ANY pair of ordered
+    // numbers — setting them to 40/10 kept the whole suite green. That made the single most
+    // load-bearing product decision in this metric the least defended thing about it. These are
+    // the literal percentages the calibration was chosen to produce, taken from saved plans in
+    // docs/tests, so moving a threshold has to be a deliberate edit here too.
+    expect(coverageStatus(84)).toBe('good'); // izo-6: the rider's own plan, verified as green
+    expect(coverageStatus(80)).toBe('good'); // food7, exactly on the target threshold
+    expect(coverageStatus(79)).toBe('partial'); // one point under is no longer green
+    expect(coverageStatus(56)).toBe('partial'); // mix-4-autoplan, deliberately not red
+    expect(coverageStatus(54)).toBe('short');
+    expect(COVERAGE_TARGET_PCT).toBe(80);
+    expect(COVERAGE_SHORT_PCT).toBe(55);
   });
 });
 
