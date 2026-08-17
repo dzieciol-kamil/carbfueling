@@ -183,6 +183,7 @@ export function MobileRouteSheet() {
               {strings.routeSheetIntensity}{' '}
               <InfoPopover
                 hint={strings.intensityHint}
+                ariaLabel={strings.intensityInfoBtnLabel}
                 popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
               >
                 ⓘ
