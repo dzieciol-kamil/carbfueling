@@ -18,6 +18,11 @@ import type {
 export const SETTINGS_EXPORT_APP_ID = 'carb-fueling-settings';
 export const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
 
+// Upper bound on imported list lengths, so a crafted file with e.g. hundreds
+// of thousands of synthetic `fills` entries can't freeze the importing tab
+// rendering all of it (chart, Schedule list, recipe cards).
+const MAX_IMPORT_ARRAY_LENGTH = 500;
+
 // Durable UI preferences worth carrying across devices. Deliberately excludes
 // transient UI state (open panels/sheets, hover/drag/selection, tour progress,
 // scrub position) — none of that is "settings" and importing it would just
@@ -102,15 +107,19 @@ function isNullableString(v: unknown): v is string | null {
   return v === null || typeof v === 'string';
 }
 
+function isInRange(v: unknown, min: number, max: number): boolean {
+  return isFiniteNumber(v) && v >= min && v <= max;
+}
+
 function isValidRoute(v: unknown): v is RouteInput {
   if (!isRecord(v)) return false;
   if (v.mode !== 'route' && v.mode !== 'time') return false;
   if (
-    !isFiniteNumber(v.distance) ||
-    !isFiniteNumber(v.speed) ||
+    !isInRange(v.distance, 0, 2000) ||
+    !isInRange(v.speed, 0, 100) ||
+    !isInRange(v.weight, 20, 300) ||
     !isFiniteNumber(v.hours) ||
     !isFiniteNumber(v.minutes) ||
-    !isFiniteNumber(v.weight) ||
     !isFiniteNumber(v.preMealCarbs) ||
     !isFiniteNumber(v.preMealMinutes) ||
     !isFiniteNumber(v.temp)
@@ -207,14 +216,19 @@ function isValidSettingsExportData(v: unknown): v is SettingsExportData {
     isValidRoute(v.route) &&
     isValidMix(v.mix) &&
     Array.isArray(v.gear) &&
+    v.gear.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.gear.every(isValidVessel) &&
     Array.isArray(v.fills) &&
+    v.fills.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.fills.every(isValidFill) &&
     Array.isArray(v.foods) &&
+    v.foods.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.foods.every(isValidFood) &&
     Array.isArray(v.shops) &&
+    v.shops.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.shops.every(isValidShop) &&
     Array.isArray(v.foodLib) &&
+    v.foodLib.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.foodLib.every(isValidFoodLibEntry) &&
     isValidUi(v.ui) &&
     isFiniteNumber(v.nextGid) &&

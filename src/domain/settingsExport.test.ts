@@ -110,6 +110,37 @@ describe('settingsExport', () => {
     }
   });
 
+  test('rejects a route with out-of-range distance, speed, or weight', () => {
+    const file = buildSettingsExport(makeData());
+    const badRoutes = [
+      { ...file.data.route, distance: -1 },
+      { ...file.data.route, distance: 2001 },
+      { ...file.data.route, speed: -1 },
+      { ...file.data.route, speed: 101 },
+      { ...file.data.route, weight: 19 },
+      { ...file.data.route, weight: 301 },
+    ];
+    for (const route of badRoutes) {
+      const result = parseSettingsImport(
+        JSON.stringify({ ...file, data: { ...file.data, route } }),
+      );
+      expect(result.ok).toBe(false);
+    }
+  });
+
+  test('rejects an import array beyond the sane length limit', () => {
+    const file = buildSettingsExport(makeData());
+    const fills = Array.from({ length: 501 }, (_, i) => ({
+      fid: i,
+      gid: 'g1',
+      content: 'izo' as const,
+      from: 0,
+      to: 1,
+    }));
+    const result = parseSettingsImport(JSON.stringify({ ...file, data: { ...file.data, fills } }));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
   test('accepts an optional gpx track and nullable route strings', () => {
     const data = makeData({
       route: {
