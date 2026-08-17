@@ -117,7 +117,7 @@ export function LanesSection() {
               </span>
             </div>
             <div style={trackStyle('#F4F5F2')}>
-              {vesselFills.length === 0 && (
+              {vesselFills.length === 0 && can && (
                 <span style={emptyTrackHintStyle}>{strings.emptyLaneHint}</span>
               )}
               {vesselFills.map((f) => (
