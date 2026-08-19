@@ -157,7 +157,8 @@ export function MobileProfile() {
                   onClick={() => setLang(code)}
                   style={{
                     flex: 1,
-                    height: 44,
+                    minHeight: 44,
+                    padding: '0 4px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -188,7 +189,8 @@ export function MobileProfile() {
                   onClick={() => handleViewModePick(v)}
                   style={{
                     flex: 1,
-                    height: 44,
+                    minHeight: 44,
+                    padding: '0 4px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
