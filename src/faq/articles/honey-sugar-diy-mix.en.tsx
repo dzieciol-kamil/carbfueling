@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HoneySugarDiyMixEn() {
@@ -10,7 +11,7 @@ export default function HoneySugarDiyMixEn() {
         Yes, in most cases it works about as well. Table sugar (sucrose) and honey both give your
         gut a mix of glucose and fructose, which is exactly what a formulated sports drink is trying
         to do. The mechanism is the same one we explain in{' '}
-        <a href="/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
           why you can't absorb more than ~90g of carbs per hour
         </a>
         : your gut has two separate doors for sugar, and using both at once raises your absorption
@@ -53,7 +54,7 @@ export default function HoneySugarDiyMixEn() {
         math.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Try the sugar and honey presets →
         </a>
       </p>

@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HeatCarbPlanEn() {
@@ -35,7 +36,7 @@ export default function HeatCarbPlanEn() {
         reserves; a well-mixed bottle is already at a gentler concentration. And don't forget sodium
         — sweat rate and sodium loss both climb with heat, so your electrolyte needs go up alongside
         your fluid needs (more on that in{' '}
-        <a href="/faq/sodium-electrolytes-cycling/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
           our sodium and electrolytes article
         </a>
         ).
@@ -55,7 +56,7 @@ export default function HeatCarbPlanEn() {
         directly instead of guessing at it.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Plan your next hot-weather ride →
         </a>
       </p>

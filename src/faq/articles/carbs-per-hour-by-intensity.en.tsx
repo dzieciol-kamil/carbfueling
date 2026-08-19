@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function CarbsPerHourByIntensityEn() {
@@ -28,7 +29,7 @@ export default function CarbsPerHourByIntensityEn() {
         to 60–90g per hour. Getting that high only works well with a glucose-fructose blend, because
         a single carb source — glucose or maltodextrin alone — tends to cap out around 60g per hour
         no matter how much you drink. See{' '}
-        <a href="/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
           why that ceiling exists and how a glucose-fructose mix raises it
         </a>
         .
@@ -58,7 +59,7 @@ export default function CarbsPerHourByIntensityEn() {
         ride — using your route duration and intensity to work out your actual hourly carb need.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Work out your own hourly target →
         </a>
       </p>

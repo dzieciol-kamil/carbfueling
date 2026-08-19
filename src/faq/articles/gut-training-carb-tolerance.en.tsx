@@ -1,3 +1,4 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function GutTrainingCarbToleranceEn() {
@@ -51,7 +52,7 @@ export default function GutTrainingCarbToleranceEn() {
         guts can push past it — but it's a sensible ceiling for the vast majority of riders.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Check your absorption cap →
         </a>
       </p>

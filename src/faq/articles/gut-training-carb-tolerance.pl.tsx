@@ -1,3 +1,4 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function GutTrainingCarbTolerancePl() {
@@ -57,7 +58,7 @@ export default function GutTrainingCarbTolerancePl() {
         zdecydowanej większości rowerzystów jest to rozsądna granica.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Sprawdź swój sufit wchłaniania →
         </a>
       </p>

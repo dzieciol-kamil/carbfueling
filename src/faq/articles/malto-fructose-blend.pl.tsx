@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function MaltoFructoseBlendPl() {
@@ -16,7 +17,7 @@ export default function MaltoFructoseBlendPl() {
         Tym transporterem jest SGLT1, a jego wydajność jest z góry ograniczona — ok. 60 g na
         godzinę, niezależnie od tego, w jakiej postaci glukozę wypijesz. Mechanizm tego ograniczenia
         i to, jak drugi transporter potrafi je podnieść, opisaliśmy dokładniej w{' '}
-        <a href="/pl/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           artykule o mieszance transporterów glukoza/fruktoza
         </a>
         . W skrócie: czysta maltodekstryna, obojętnie jak ją zadozujesz, i tak zatrzyma się na
@@ -48,7 +49,7 @@ export default function MaltoFructoseBlendPl() {
         właśnie ta różnica decyduje, ile faktycznie wchłoniesz w ciągu godziny.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Ułóż miks glukozowo-fruktozowy pod swój cel godzinowy →
         </a>
       </p>

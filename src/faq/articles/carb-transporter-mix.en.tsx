@@ -1,3 +1,4 @@
+import { calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -37,7 +38,7 @@ export default function CarbTransporterMixEn() {
         described above (lab studies have measured up to ~105g/h).
       </p>
       <img
-        src="/faq/carb-transporter-mix/absorption-cap.png"
+        src={assetHref('/faq/carb-transporter-mix/absorption-cap.png')}
         alt="Mix panel showing the glucose:fructose ratio presets and the resulting absorption ceiling in Carb Fueling."
         style={articleImgStyle}
       />
@@ -51,7 +52,7 @@ export default function CarbTransporterMixEn() {
         as you change the mix.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           See your own ceiling →
         </a>
       </p>

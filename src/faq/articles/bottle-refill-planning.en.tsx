@@ -1,3 +1,4 @@
+import { calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -22,7 +23,7 @@ export default function BottleRefillPlanningEn() {
         stop, a water fountain.
       </p>
       <img
-        src="/faq/bottle-refill-planning/shop-stops.png"
+        src={assetHref('/faq/bottle-refill-planning/shop-stops.png')}
         alt="Carb Fueling route timeline with shop-stop pins placed between bottle refills."
         style={articleImgStyle}
       />
@@ -38,7 +39,7 @@ export default function BottleRefillPlanningEn() {
         they can carry.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Add shop stops to your route →
         </a>
       </p>

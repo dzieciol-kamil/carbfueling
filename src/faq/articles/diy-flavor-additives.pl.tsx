@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function DiyFlavorAdditivesPl() {
@@ -41,7 +42,7 @@ export default function DiyFlavorAdditivesPl() {
         dokładnie tak jak w kuchni, gdzie szczypta soli "ożywia" płaskie danie. Jeśli izotonik, czy
         żej smakuje mdło i jednowymiarowo, często wystarczy odrobina dodatkowej soli, niezależnie od
         wymaganej ilosci sodu dla Twojej trasy (zobacz{' '}
-        <a href="/pl/faq/sodium-electrolytes-cycling/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
           ile sodu naprawdę potrzebujesz na rowerze
         </a>
         ).
@@ -55,14 +56,14 @@ export default function DiyFlavorAdditivesPl() {
       <p style={articleTextStyle}>
         Jeśli chodzi o samą słodycz — cukier, miód czy gotową mieszankę meltodekstryna-fruktoza —
         zobacz artykuł{' '}
-        <a href="/pl/faq/honey-sugar-diy-mix/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'honey-sugar-diy-mix')} style={articleLinkStyle}>
           miód albo cukier zamiast gotowego proszku
         </a>
         . Dodatki smakowe opisane powyżej działają niezależnie od tego wyboru — zmieniają smak, nie
         samą matematykę węglowodanową.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Ustaw słodzik i składnik kwaśny swojego miksu →
         </a>
       </p>

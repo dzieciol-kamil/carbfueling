@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HoneySugarDiyMixPl() {
@@ -10,7 +11,7 @@ export default function HoneySugarDiyMixPl() {
         W większości przypadków tak — działa niemal identycznie. Zwykły cukier (sacharoza) i miód
         dostarczają jelitu mieszankę glukozy i fruktozy, czyli dokładnie to, co próbuje osiągnąć
         gotowy napój izotoniczny. To ten sam mechanizm, który opisujemy w artykule{' '}
-        <a href="/pl/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego nie wchłoniesz więcej niż ok. 90 g węglowodanów na godzinę
         </a>
         : jelito ma dwoje osobnych "drzwi" na cukier, a użycie obu naraz podnosi Twój sufit
@@ -53,7 +54,7 @@ export default function HoneySugarDiyMixPl() {
         wchłaniania.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Wypróbuj presety cukru i miodu →
         </a>
       </p>

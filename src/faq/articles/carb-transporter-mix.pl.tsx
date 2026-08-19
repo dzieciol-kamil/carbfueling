@@ -1,3 +1,4 @@
+import { calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -40,7 +41,7 @@ export default function CarbTransporterMixPl() {
         badaniach laboratoryjnych mierzono nawet ok. 105 g/h).
       </p>
       <img
-        src="/faq/carb-transporter-mix/absorption-cap.png"
+        src={assetHref('/faq/carb-transporter-mix/absorption-cap.png')}
         alt="Panel miksu pokazujący presety proporcji glukoza:fruktoza i wynikowy sufit wchłaniania w Carb Fueling."
         style={articleImgStyle}
       />
@@ -54,7 +55,7 @@ export default function CarbTransporterMixPl() {
         na bieżąco przy zmianie miksu.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Sprawdź swój sufit →
         </a>
       </p>

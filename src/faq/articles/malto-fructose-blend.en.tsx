@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function MaltoFructoseBlendEn() {
@@ -16,7 +17,7 @@ export default function MaltoFructoseBlendEn() {
         That transporter is called SGLT1, and it has a fixed speed limit of roughly 60g per hour, no
         matter how the glucose was packaged before you drank it. We cover the mechanism behind that
         limit — and why a second transporter can raise it — in{' '}
-        <a href="/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
           our article on the glucose/fructose transporter mix
         </a>
         . The short version: pure maltodextrin, however you dose it, still caps out around 60g/h.
@@ -46,7 +47,7 @@ export default function MaltoFructoseBlendEn() {
         and that difference decides how much of it you can actually absorb per hour.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Build a glucose-fructose mix that matches your hourly target →
         </a>
       </p>

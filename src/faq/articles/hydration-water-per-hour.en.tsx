@@ -1,3 +1,4 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HydrationWaterPerHourEn() {
@@ -46,7 +47,7 @@ export default function HydrationWaterPerHourEn() {
         to guess or run your own weigh-in test mid-ride.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Plan your fluid and carb targets together →
         </a>
       </p>

@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function BottleVsGelEn() {
@@ -18,7 +19,7 @@ export default function BottleVsGelEn() {
         can't change it mid-ride, and once it's empty, refilling it needs a plan — a shop, a support
         stop, or water you carry to mix a new batch. If you want the logistics side of that worked
         out, we cover it in a separate article on{' '}
-        <a href="/faq/bottle-refill-planning/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'bottle-refill-planning')} style={articleLinkStyle}>
           planning bottle refills
         </a>
         .
@@ -54,7 +55,7 @@ export default function BottleVsGelEn() {
         hourly carb need — hour by hour, not just as a ride total.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Build a plan that mixes bottle, gel, and food →
         </a>
       </p>

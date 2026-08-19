@@ -1,3 +1,4 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HydrationWaterPerHourPl() {
@@ -48,7 +49,7 @@ export default function HydrationWaterPerHourPl() {
         więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zaplanuj płyny i węglowodany razem →
         </a>
       </p>

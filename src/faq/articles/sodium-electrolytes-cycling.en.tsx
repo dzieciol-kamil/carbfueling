@@ -1,3 +1,4 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function SodiumElectrolytesCyclingEn() {
@@ -56,7 +57,7 @@ export default function SodiumElectrolytesCyclingEn() {
         that's about 0.18g of salt per 100ml.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Plan your carbs and fluids together →
         </a>
       </p>

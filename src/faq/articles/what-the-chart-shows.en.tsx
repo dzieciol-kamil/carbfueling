@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -17,7 +18,7 @@ export default function WhatTheChartShowsEn() {
         route, not as one total for the whole ride.
       </p>
       <img
-        src="/faq/what-the-chart-shows/intake-vessels.jpg"
+        src={assetHref('/faq/what-the-chart-shows/intake-vessels.jpg')}
         alt="Bottle and gel entries in Carb Fueling's plan list, each labeled with its content and amount."
         style={articleImgStyle}
       />
@@ -28,7 +29,7 @@ export default function WhatTheChartShowsEn() {
         your gut for a while, waiting, instead of becoming available the instant you swallow them.
       </p>
       <img
-        src="/faq/what-the-chart-shows/gut-strip.jpg"
+        src={assetHref('/faq/what-the-chart-shows/gut-strip.jpg')}
         alt="The gut-content strip at the top of the chart, filling up and draining as carbs digest."
         style={articleImgStyle}
       />
@@ -37,13 +38,13 @@ export default function WhatTheChartShowsEn() {
         your bloodstream each hour. This is the absorption cap, and it shows up on the chart as a
         flat ceiling line. With a good glucose-fructose blend, that ceiling sits at roughly 90g per
         hour for most riders — see{' '}
-        <a href="/faq/carb-transporter-mix/">
+        <a href={faqHref('en', 'carb-transporter-mix')}>
           why this ceiling exists and how mixing sugars raises it
         </a>
         . Eating more than the cap doesn't help — the extra just sits in your stomach longer.
       </p>
       <img
-        src="/faq/what-the-chart-shows/absorption-cap.jpg"
+        src={assetHref('/faq/what-the-chart-shows/absorption-cap.jpg')}
         alt="The flat dashed absorption-limit line sitting above the rising need and absorbed lines."
         style={articleImgStyle}
       />
@@ -57,7 +58,7 @@ export default function WhatTheChartShowsEn() {
         reading this chart.
       </p>
       <img
-        src="/faq/what-the-chart-shows/need-absorbed.jpg"
+        src={assetHref('/faq/what-the-chart-shows/need-absorbed.jpg')}
         alt="Need and absorbed lines together, with the gap between them shaded to show the deficit."
         style={articleImgStyle}
       />
@@ -65,11 +66,11 @@ export default function WhatTheChartShowsEn() {
         When absorbed drops below need for a stretch of the route, that gap gets marked as a
         deficit. This is where bonk risk quietly builds — not in one dramatic moment, but minute by
         minute, hour by hour. See{' '}
-        <a href="/faq/bonk-crisis/">what happens when that gap runs on too long</a>, and how a
-        small, ignored deficit turns into a real crisis on the bike.
+        <a href={faqHref('en', 'bonk-crisis')}>what happens when that gap runs on too long</a>, and
+        how a small, ignored deficit turns into a real crisis on the bike.
       </p>
       <img
-        src="/faq/what-the-chart-shows/deficit.jpg"
+        src={assetHref('/faq/what-the-chart-shows/deficit.jpg')}
         alt="A close-up of the shaded deficit gap between the need and absorbed lines early in the ride."
         style={articleImgStyle}
       />
@@ -80,7 +81,7 @@ export default function WhatTheChartShowsEn() {
         can see whether you're on pace over the whole route, not just at one point on it.
       </p>
       <img
-        src="/faq/what-the-chart-shows/fluid-lines.png"
+        src={assetHref('/faq/what-the-chart-shows/fluid-lines.png')}
         alt="The fluid absorbed and sweat loss lines on the chart's hydration view."
         style={articleImgStyle}
       />
@@ -90,7 +91,7 @@ export default function WhatTheChartShowsEn() {
         something you can watch coming, hours ahead, and fix before it becomes a problem.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Watch your own fueling line →
         </a>
       </p>
