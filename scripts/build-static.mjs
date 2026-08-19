@@ -35,7 +35,7 @@ async function main() {
   });
 
   const { ARTICLES } = await server.ssrLoadModule('/src/faq/registry.ts');
-  const { faqHref, calculatorHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
+  const { faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
   // used *inside* a React component's own JSX (that markup ends up in bodyHtml, which goes
   // through renderPage()'s single prefixInternalUrls pass at write time, same as everything
