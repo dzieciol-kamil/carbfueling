@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/build-faq.mjs",
+    "build": "tsc -b && vite build && node scripts/build-static.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
