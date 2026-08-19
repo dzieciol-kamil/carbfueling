@@ -149,7 +149,6 @@ export interface RateStats {
   /** Grams behind `coverage` — the numerator, so the UI can print "X / target g" without
    *  reaching for a different quantity than the percentage was computed from. */
   coveredCarbs: number;
-  dryStretch: { len: number; x: number };
   samples: Sample[];
 }
 
@@ -758,21 +757,14 @@ export function samples(state: PlanState): Sample[] {
  * 2000 m climb reads 82 over 100 km and 94 over 200 km), so it is logged as a known limit rather
  * than fixed here. Removing it for real means dropping the flat-pace approximation in samples()
  * and making `dt` terrain-aware, which changes the chart too.
- *
- * `dryStretch` still reads the smoothed rates on purpose — "am I running on empty right now" is a
- * question about the curve at a point, not about a total, and there the lag is the desired
- * behaviour.
  */
 export function rateStats(state: PlanState): RateStats {
   const S = samples(state);
   const hrs = totalHours(state.route);
-  const dt = hrs / (S.length - 1);
   const target = hrs * cph(state.route);
   const carryCap = (cph(state.route) * COVERAGE_CARRY_MINUTES) / 60;
   let covered = 0;
   let surplus = 0;
-  let dry = { len: 0, x: 0 };
-  let run = 0;
 
   S.forEach((p, i) => {
     if (i > 0) {
@@ -780,12 +772,6 @@ export function rateStats(state: PlanState): RateStats {
       const credited = Math.min(available, p.need - S[i - 1].need);
       covered += credited;
       surplus = Math.min(carryCap, available - credited);
-    }
-    if (p.rate < p.needRate * 0.4) {
-      run += dt;
-      if (run > dry.len) dry = { len: run, x: p.x };
-    } else {
-      run = 0;
     }
   });
 
@@ -805,7 +791,6 @@ export function rateStats(state: PlanState): RateStats {
     // right, desktop is where it will show first.
     coverage: target > 0 ? Math.round((covered / target) * 100) : 100,
     coveredCarbs: covered,
-    dryStretch: dry,
     samples: S,
   };
 }
