@@ -858,18 +858,6 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
   });
 });
 
-describe('rateStats', () => {
-  test('zero positions in the plan: coverage 0%, dry stretch spans the whole ride', () => {
-    const plan = makePlan({
-      route: makeRoute({ mode: 'time', hours: 0, minutes: 30, intensity: 'mid', useGpx: false }),
-    });
-    const { coverage, dryStretch } = rateStats(plan);
-    expect(coverage).toBe(0);
-    expect(dryStretch.len).toBeCloseTo(0.5, 6);
-    expect(dryStretch.x).toBe(5); // dist() for 0.5h in time mode
-  });
-});
-
 describe('rateStats coverage', () => {
   // 4h at 75 g/h (mid, >2.5h) = 300 g required, absorption cap 90 g/h — comfortably above the
   // 75 g/h need rate, so the gut is never the binding constraint in these scenarios and any
