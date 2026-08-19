@@ -51,23 +51,21 @@ jobs:
           mkdir -p "$RUNNER_TEMP/site"
           cp -r dist/. "$RUNNER_TEMP/site/"
 
-      # This calls `vite build` directly, not `npm run build`, so scripts/build-faq.mjs never
-      # runs here — the /faq pages only get generated for tagged production releases (see the
-      # "Build production" step above). Known, accepted limitation: on /preview, the footer's
-      # FAQ link (src/components/Footer.tsx) will 404 before the first tag after this lands, and
-      # after that first tag it will silently navigate a preview session out to the *production*
-      # FAQ content (since the footer's href isn't base-aware). Not fixed here — if FAQ preview
-      # review becomes valuable, build-faq.mjs needs to become base-aware first (it currently
-      # hardcodes `SITE`, `/faq`, `/pl/faq`, and `href="/"` throughout).
+      # Preview now runs the same two build steps production does, just with a /preview base:
+      # vite build (the two calculator entries) and build-static.mjs (landing + FAQ + redirect
+      # stubs), both made base-aware for exactly this. This fixes the long-standing bug where
+      # /preview/faq 404'd — build-static.mjs never used to run here at all.
       - name: Build preview (master) into /preview
         run: |
           git checkout master
           npm ci
           npm test
           npx vite build --base=/preview/
+          BASE=/preview node scripts/build-static.mjs
+          sed -i 's#<head>#<head>\n    <meta name="robots" content="noindex, nofollow" />#' \
+            "dist/en/calculator/index.html" "dist/pl/calculator/index.html"
           mkdir -p "$RUNNER_TEMP/site/preview"
           cp -r dist/. "$RUNNER_TEMP/site/preview/"
-          sed -i 's#<head>#<head>\n    <meta name="robots" content="noindex, nofollow" />#' "$RUNNER_TEMP/site/preview/index.html"
 
       - uses: actions/upload-pages-artifact@v3
         with:
