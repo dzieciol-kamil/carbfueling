@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { hasPlanData, shouldConfirmViewModeChange, useAppStore } from './appStore';
 import type { Fill, RouteInput } from '../domain/types';
 
@@ -484,6 +484,31 @@ describe('persisted mix merge', () => {
     };
     const merged = merge({ mix: legacyPersistedMix }, currentState) as typeof currentState;
     expect(merged.mix.gelRatio).toBe(currentState.mix.gelRatio);
+  });
+});
+
+describe('persisted ui merge — HTML-seeded language precedence', () => {
+  test('the HTML-seeded lang wins over a persisted ui.lang; other ui fields survive', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const persistedUi = { ...currentState.ui, lang: 'en', viewMode: 'desktop', panel: 'settings' };
+    const merged = merge({ ui: persistedUi }, currentState) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+    expect(merged.ui.viewMode).toBe('desktop');
+    expect(merged.ui.panel).toBe('settings');
+    vi.unstubAllGlobals();
+  });
+
+  test('first-ever visit (no persisted state): non-lang ui fields fall back to current defaults, lang is still HTML-seeded', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(undefined, currentState) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+    expect(merged.ui.viewMode).toBe(currentState.ui.viewMode);
+    expect(merged.ui.panel).toBe(currentState.ui.panel);
+    vi.unstubAllGlobals();
   });
 });
 

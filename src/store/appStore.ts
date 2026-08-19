@@ -689,6 +689,11 @@ export const useAppStore = create<AppState>()(
       },
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AppState> | undefined;
+        // The test suite runs with `environment: 'node'` (no DOM), so `document` is
+        // undefined there — this guard mirrors defaultLang()'s own `typeof navigator`
+        // check above rather than requiring every test file to stub a DOM.
+        const htmlLang =
+          typeof document !== 'undefined' ? (document.documentElement.lang as Lang) : undefined;
         return {
           ...currentState,
           ...persisted,
@@ -696,6 +701,17 @@ export const useAppStore = create<AppState>()(
           // Deep-merge mix so fields added after a user's data was already persisted (e.g.
           // citricSource) fall back to the current default instead of coming back undefined.
           mix: { ...currentState.mix, ...persisted?.mix },
+          // Same deep-merge reasoning for ui, plus: the calculator's two HTML entries
+          // (en/calculator/index.html, pl/calculator/index.html) seed the language via a
+          // static `<html lang>` attribute, read here. That HTML-seeded value always wins
+          // over whatever language was previously persisted — otherwise a returning
+          // visitor's stored preference would silently override a shared /pl/calculator/
+          // link, defeating the point of the URL carrying the language at all.
+          ui: {
+            ...currentState.ui,
+            ...persisted?.ui,
+            ...(htmlLang ? { lang: htmlLang } : {}),
+          },
         };
       },
     },
