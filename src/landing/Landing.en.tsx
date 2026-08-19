@@ -22,42 +22,104 @@ const ctaButton: CSSProperties = {
   fontWeight: 600,
   color: 'var(--ink)',
 };
-const question: CSSProperties = {
-  fontSize: 34,
-  lineHeight: 1.28,
-  fontWeight: 700,
-  letterSpacing: '-0.01em',
-  margin: 0,
-  maxWidth: 480,
-};
-const caption: CSSProperties = {
-  fontSize: 13,
-  fontWeight: 600,
-  color: 'var(--muted-2)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  margin: '0 0 12px',
-};
-const shot: CSSProperties = {
-  display: 'block',
-  borderRadius: 12,
-  border: '1px solid var(--border)',
-  boxShadow: '0 20px 48px rgba(22, 25, 28, 0.14)',
-  width: 'min(60vw, 800px)',
-};
 
+// The page is one scroll container: the document itself. An inner scroller sitting
+// below a sticky header gave the page two scrollbars, pushed every slide's bottom
+// below the fold, and stopped scroll-snap from holding — so the header is fixed and
+// the snapping happens on <html>.
 const landingCss = `
-.landing-scroller { height: 100vh; overflow-y: auto; scroll-snap-type: y mandatory; }
-.landing-slide { min-height: 100vh; scroll-snap-align: start; scroll-snap-stop: always; position: relative; display: flex; }
-.landing-corner { position: absolute; display: flex; flex-direction: column; }
-.landing-corner--tl { top: 96px; left: 64px; }
-.landing-corner--tr { top: 96px; right: 64px; text-align: right; align-items: flex-end; }
-.landing-corner--bl { bottom: 72px; left: 64px; }
-.landing-corner--br { bottom: 72px; right: 64px; text-align: right; align-items: flex-end; }
+:root { --landing-header-h: 61px; }
+html { scroll-snap-type: y mandatory; scroll-padding-top: var(--landing-header-h); }
+body { padding-top: var(--landing-header-h); }
+
+.landing-header {
+  position: fixed; inset: 0 0 auto 0; z-index: 30; height: var(--landing-header-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; background: var(--bg); border-bottom: 1px solid var(--border);
+}
+
+.landing-slide {
+  position: relative; overflow: hidden; scroll-snap-align: start;
+  display: flex; align-items: center; justify-content: center;
+  padding: 48px 0; background: var(--bg);
+  min-height: calc(100vh - var(--landing-header-h));
+  min-height: calc(100svh - var(--landing-header-h));
+}
+
+/* Decorative: the sport photograph reads as texture, not as a picture competing
+   with the type. It stays strongest at the left and right edges, which is the only
+   part of the frame the content cluster never covers. */
+.landing-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  opacity: 0.34; filter: saturate(0.62) contrast(0.96); pointer-events: none;
+}
+/* Feathered wash of the page background, so the centre stays clean under the text
+   while the edges keep the photo at full strength. */
+.landing-wash {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 58% 74% at 50% 50%,
+    rgba(239, 240, 236, 1) 0%, rgba(239, 240, 236, 0.97) 38%,
+    rgba(239, 240, 236, 0.6) 66%, rgba(239, 240, 236, 0) 100%);
+}
+
+.landing-cluster {
+  position: relative; z-index: 2; width: min(960px, 100%);
+  margin: 0 auto; padding: 0 32px;
+}
+.landing-q {
+  margin: 0; max-width: 620px; font-weight: 700; letter-spacing: -0.015em;
+  font-size: clamp(25px, 3vw, 39px); line-height: 1.24;
+}
+/* The negative margin is the whole point: the screenshot rides up over the tail of
+   the question instead of sitting apart from it. */
+.landing-shot {
+  position: relative; z-index: 3; display: flex; flex-direction: column;
+  width: min(660px, 100%); margin: -60px 0 0;
+}
+.landing-shot img {
+  display: block; width: auto; height: auto; max-width: 100%; max-height: 46svh;
+  border-radius: 12px; border: 1px solid var(--border); background: #fff;
+  box-shadow: 0 24px 56px rgba(22, 25, 28, 0.16);
+}
+.landing-cap {
+  margin: 0 0 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted-2);
+}
+
+/* Sides alternate slide to slide. The photo's subject always stands opposite the
+   screenshot, in the band the cluster leaves clear. */
+.landing-slide[data-shot='right'] .landing-q { margin-right: auto; }
+.landing-slide[data-shot='right'] .landing-shot {
+  margin-left: auto; align-items: flex-end; text-align: right;
+}
+.landing-slide[data-shot='left'] .landing-q { margin-left: auto; text-align: right; }
+.landing-slide[data-shot='left'] .landing-shot { margin-right: auto; align-items: flex-start; }
+
 @media (max-width: 760px) {
-  .landing-slide { flex-direction: column; justify-content: center; align-items: center; padding: 96px 24px 56px; gap: 28px; text-align: center; }
-  .landing-corner { position: static; max-width: 100%; align-items: center !important; text-align: center !important; }
-  .landing-corner img { width: min(84vw, 420px) !important; }
+  /* Slides stop being full-height here, so a tall slide degrades to ordinary
+     scrolling instead of trapping its own content inside a mandatory snap point. */
+  html { scroll-snap-type: y proximity; }
+  .landing-slide { min-height: auto; padding: 40px 0; }
+  .landing-cluster { padding: 0 22px; }
+  .landing-q {
+    max-width: none; margin: 0 !important; text-align: left !important;
+    font-size: clamp(23px, 6.4vw, 30px);
+  }
+  .landing-shot {
+    width: 100%; margin: 22px 0 0 !important;
+    align-items: flex-start !important; text-align: left !important;
+  }
+  .landing-shot img { max-height: 52svh; }
+  /* A 16:9 photo cropped to a portrait viewport loses its outer thirds, so bias the
+     crop toward whichever edge the subject stands on. */
+  .landing-slide[data-shot='right'] .landing-bg { object-position: 22% center; }
+  .landing-slide[data-shot='left'] .landing-bg { object-position: 78% center; }
+  .landing-wash {
+    background: radial-gradient(ellipse 120% 70% at 50% 50%,
+      rgba(239, 240, 236, 1) 0%, rgba(239, 240, 236, 0.95) 46%,
+      rgba(239, 240, 236, 0.55) 74%, rgba(239, 240, 236, 0) 100%);
+  }
 }
 `;
 
@@ -65,19 +127,7 @@ export default function LandingEn() {
   return (
     <div>
       <style>{landingCss}</style>
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 32px',
-          background: 'var(--bg)',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
+      <header className="landing-header">
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
           <span style={headerWordmark}>CARB FUELING</span>
           <span style={headerTagline}>carbohydrate &amp; hydration planner</span>
@@ -87,77 +137,83 @@ export default function LandingEn() {
         </a>
       </header>
 
-      <div className="landing-scroller">
-        <section className="landing-slide" style={{ background: 'var(--bg)' }}>
-          <div className="landing-corner landing-corner--tl">
-            <h1 style={question}>
+      <main>
+        <section className="landing-slide" data-shot="right">
+          <img className="landing-bg" src={assetHref('/landing/road.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-cluster">
+            <h1 className="landing-q">
               Do you ride, run, or do some other sport where you need to fuel mid-effort?
             </h1>
-          </div>
-          <div className="landing-corner landing-corner--br">
-            <p style={caption}>This is what a plan for your route looks like</p>
-            <img
-              style={shot}
-              src={assetHref('/landing/hero.jpg')}
-              alt="Carb Fueling app: route, coverage cards, and the fueling plan chart"
-            />
+            <figure className="landing-shot">
+              <figcaption className="landing-cap">
+                This is what a plan for your route looks like
+              </figcaption>
+              <img
+                src={assetHref('/landing/hero.jpg')}
+                alt="Carb Fueling app: route, coverage cards, and the fueling plan chart"
+              />
+            </figure>
           </div>
         </section>
 
-        <section className="landing-slide" style={{ background: 'var(--surface)' }}>
-          <div className="landing-corner landing-corner--tl">
-            <p style={caption}>You probably already have what you need in your kitchen</p>
-            <img
-              style={{
-                ...shot,
-                width: 'auto',
-                height: 'min(62vh, 600px)',
-                maxWidth: 'min(60vw, 560px)',
-              }}
-              src={assetHref('/landing/mix.jpg')}
-              alt="Mix & bottles panel showing isotonic and gel recipe ratios"
-            />
-          </div>
-          <div className="landing-corner landing-corner--br">
-            <h1 style={question}>
+        <section className="landing-slide" data-shot="left">
+          <img className="landing-bg" src={assetHref('/landing/run.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-cluster">
+            <h2 className="landing-q">
               Do gels and isotonic drinks quietly drain your wallet, even though you don't want to
               give them up?
-            </h1>
+            </h2>
+            <figure className="landing-shot">
+              <figcaption className="landing-cap">
+                You probably already have what you need in your kitchen
+              </figcaption>
+              <img
+                src={assetHref('/landing/mix.jpg')}
+                alt="Mix & bottles panel showing isotonic and gel recipe ratios"
+              />
+            </figure>
           </div>
         </section>
 
-        <section className="landing-slide" style={{ background: 'var(--bg)' }}>
-          <div className="landing-corner landing-corner--tr">
-            <h1 style={question}>
+        <section className="landing-slide" data-shot="right">
+          <img className="landing-bg" src={assetHref('/landing/gravel.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-cluster">
+            <h2 className="landing-q">
               Ever bonked out on a ride or a long run — and wished you'd seen it coming?
-            </h1>
-          </div>
-          <div className="landing-corner landing-corner--bl">
-            <p style={caption}>See the gap before it turns critical</p>
-            <img
-              style={shot}
-              src={assetHref('/faq/bonk-crisis/supply-demand-gap.png')}
-              alt="Chart showing the gap between carbs delivered and carbs burned"
-            />
+            </h2>
+            <figure className="landing-shot">
+              <figcaption className="landing-cap">See the gap before it turns critical</figcaption>
+              <img
+                src={assetHref('/faq/bonk-crisis/supply-demand-gap.png')}
+                alt="Chart showing the gap between carbs delivered and carbs burned"
+              />
+            </figure>
           </div>
         </section>
 
         <section
           className="landing-slide"
-          style={{ background: 'var(--surface)', alignItems: 'center', justifyContent: 'center' }}
+          style={{ background: 'var(--surface)', textAlign: 'center' }}
         >
           <div
             style={{
+              position: 'relative',
+              zIndex: 2,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: 22,
-              textAlign: 'center',
               maxWidth: 560,
               padding: 24,
             }}
           >
-            <p style={{ ...caption, color: 'var(--muted-3)' }}>
+            <p
+              className="landing-cap"
+              style={{ margin: 0, color: 'var(--muted-3)', letterSpacing: '0.1em' }}
+            >
               Free · no account · runs in your browser
             </p>
             <h2 style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}>
@@ -189,7 +245,7 @@ export default function LandingEn() {
             </a>
           </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }
