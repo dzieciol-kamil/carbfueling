@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Lang } from '../i18n/strings';
+import { calculatorHref, faqHref, landingHref } from '../urls';
 
 const CHROME: Record<Lang, { back: string; index: string; brand: string }> = {
   en: { back: '← Back to the calculator', index: 'More FAQ articles', brand: 'Carb Fueling' },
@@ -26,12 +27,12 @@ export const articleLinkStyle: CSSProperties = { fontSize: 15, fontWeight: 600 }
 
 export function FaqLayout({ lang, children }: { lang: Lang; children: ReactNode }) {
   const c = CHROME[lang];
-  const indexHref = lang === 'pl' ? '/pl/faq/' : '/faq/';
+  const indexHref = faqHref(lang);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)' }}>
-        <a href="/" style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
+        <a href={landingHref(lang)} style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
           {c.brand}
         </a>
       </header>
@@ -60,7 +61,7 @@ export function FaqLayout({ lang, children }: { lang: Lang; children: ReactNode 
         }}
       >
         <a href={indexHref}>{c.index}</a>
-        <a href="/">{c.back}</a>
+        <a href={calculatorHref(lang)}>{c.back}</a>
       </footer>
     </div>
   );

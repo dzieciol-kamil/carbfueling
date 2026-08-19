@@ -1,6 +1,7 @@
 // src/faq/FaqIndex.pl.tsx
 import { FaqLayout, articleH1Style, articleTextStyle, articleLinkStyle } from './FaqLayout';
 import { ARTICLES } from './registry';
+import { faqHref } from '../urls';
 
 export default function FaqIndexPl() {
   return (
@@ -22,7 +23,7 @@ export default function FaqIndexPl() {
         {ARTICLES.map((a) => (
           <li key={a.slug}>
             <a
-              href={`/pl/faq/${a.slug}/`}
+              href={faqHref('pl', a.slug)}
               style={{ ...articleLinkStyle, fontSize: 17, color: 'var(--ink)' }}
             >
               {a.pl.title}
