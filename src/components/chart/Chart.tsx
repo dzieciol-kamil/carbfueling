@@ -5,6 +5,7 @@ import {
   dist,
   distanceAtTime,
   fmtX,
+  GUT_LIMIT,
   prof,
   samples,
   totalHours,
@@ -17,7 +18,6 @@ import { ElevationLayer, niceStep } from './ElevationLayer';
 import { CHART_COLORS, sourceColor } from './theme';
 
 const FLUID_CAP = 750;
-const GUT_LIMIT = 60;
 const WIDTH = 800;
 
 type NumericSampleKey =

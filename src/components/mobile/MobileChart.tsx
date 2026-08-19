@@ -4,6 +4,7 @@ import {
   carbsFill,
   dist,
   fmtX,
+  GUT_LIMIT,
   prof,
   samples,
   valueAt,
@@ -16,7 +17,6 @@ import { CHART_COLORS, sourceColor } from '../chart/theme';
 
 const WIDTH = 800;
 const HEIGHT = 168;
-const GUT_LIMIT = 60;
 
 type RateKey = 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate' | 'absorbed' | 'need' | 'gut';
 
