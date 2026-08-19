@@ -40,6 +40,9 @@ export const COVERAGE_TARGET_PCT = 80;
 /** Below this, a carb plan isn't "a bit short" any more — it's a different plan. */
 export const COVERAGE_SHORT_PCT = 55;
 
+/** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
+export const GUT_LIMIT = 60;
+
 /**
  * Where the *hydration* bar turns green — deliberately not the carb number.
  *
