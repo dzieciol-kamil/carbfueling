@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { absCap } from '../../domain/fuel';
+import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import {
   buildSettingsExport,
   parseSettingsImport,
@@ -420,7 +421,7 @@ export function MobileProfile() {
             <span>{strings.ftSupport}</span>
           </a>
           <a
-            href={lang === 'pl' ? '/pl/faq/' : '/faq/'}
+            href={FAQ_HREF_FROM_CALCULATOR}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
