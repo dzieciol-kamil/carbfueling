@@ -11,6 +11,7 @@ import { RoutePanel } from './components/RoutePanel';
 import { SummaryCards } from './components/SummaryCards';
 import { TourOverlay } from './components/tour/TourOverlay';
 import { DESKTOP_BREAKPOINT, hasPlanData, isDesktopView, useAppStore } from './store/appStore';
+import { nextLangPath } from './urls';
 
 function App() {
   const panel = useAppStore((s) => s.ui.panel);
@@ -20,6 +21,7 @@ function App() {
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
   const setAutoView = useAppStore((s) => s.setAutoView);
+  const setLang = useAppStore((s) => s.setLang);
 
   useEffect(() => {
     if (tourSeen || hasPlanData(useAppStore.getState())) return;
@@ -30,6 +32,22 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  useEffect(() => {
+    const target = nextLangPath(location.pathname, lang);
+    if (target !== location.pathname) {
+      history.pushState(null, '', target);
+    }
+  }, [lang]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const match = location.pathname.match(/\/(en|pl)\//);
+      if (match) setLang(match[1] as 'en' | 'pl');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [setLang]);
 
   useEffect(() => {
     const update = () =>
