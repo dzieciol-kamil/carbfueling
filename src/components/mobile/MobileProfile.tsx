@@ -157,7 +157,10 @@ export function MobileProfile() {
                   onClick={() => setLang(code)}
                   style={{
                     flex: 1,
-                    padding: '11px 4px',
+                    height: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     borderRadius: 9,
                     border: '1px solid ' + (lang === code ? 'var(--ink)' : 'var(--chip-border)'),
                     background: lang === code ? 'var(--ink)' : '#fff',
@@ -185,7 +188,10 @@ export function MobileProfile() {
                   onClick={() => handleViewModePick(v)}
                   style={{
                     flex: 1,
-                    padding: '11px 4px',
+                    height: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     borderRadius: 9,
                     border: '1px solid ' + (viewMode === v ? 'var(--ink)' : 'var(--chip-border)'),
                     background: viewMode === v ? 'var(--ink)' : '#fff',
