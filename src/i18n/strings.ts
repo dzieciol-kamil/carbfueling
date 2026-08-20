@@ -392,7 +392,7 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Gramy do odmierzenia na każde napełnienie — osobno na bidon, flask czy słoiczek.',
     ratio: 'Maltodekstryna : Fruktoza',
     mixRatioHint:
-      'Malto i fruktoza wchodzą do krwi dwoma osobnymi transporterami jelitowymi — łącząc je, podnosisz limit wchłaniania ponad ok. 60 g/h samej maltodekstryny. Izo 2:1 to domyślna proporcja tej appki, Cukier 1:1 i Miód 0,8:1 to tańsze zamienniki o tym samym mechanizmie.',
+      'Malto i fruktoza wchodzą do krwi dwoma osobnymi transporterami jelitowymi — łącząc je, podnosisz limit wchłaniania ponad ok. 60 g/h samej maltodekstryny. Domyślna proporcja to 2:1, Cukier to 1:1, a Miód 0,8:1 — trzy warianty tego samego mechanizmu.',
     ratioLabelSugar: 'Cukier',
     ratioLabelHoney: 'Miód',
     concLabel: 'cukry',
@@ -757,7 +757,7 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Grams to measure out for each fill — per bottle, flask or jar.',
     ratio: 'Maltodextrin : Fructose',
     mixRatioHint:
-      "Malto and fructose use two separate gut transporters — combining them lifts the absorption limit above the ~60 g/h you'd get from maltodextrin alone. Izo 2:1 is this app's default ratio; Sugar 1:1 and Honey 0.8:1 are cheaper DIY alternatives with the same mechanism.",
+      "Malto and fructose use two separate gut transporters — combining them lifts the absorption limit above the ~60 g/h you'd get from maltodextrin alone. The default ratio is 2:1, Sugar is 1:1, and Honey is 0.8:1 — three variants of the same mechanism.",
     ratioLabelSugar: 'Sugar',
     ratioLabelHoney: 'Honey',
     concLabel: 'carbs',

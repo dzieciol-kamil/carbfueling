@@ -155,6 +155,7 @@ export function MobileMix() {
     <InfoPopover
       hint={strings.mixRatioHint}
       triggerStyle={{ fontSize: 11, color: 'var(--muted-2)' }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
     >
       {strings.ratio} ⓘ
     </InfoPopover>
@@ -163,6 +164,7 @@ export function MobileMix() {
     <InfoPopover
       hint={strings.mixCitricHint}
       triggerStyle={{ fontSize: 11, color: 'var(--muted-2)' }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
     >
       {strings.citricSourceLabel} ⓘ
     </InfoPopover>
