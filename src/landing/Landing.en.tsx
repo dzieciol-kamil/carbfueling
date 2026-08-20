@@ -268,7 +268,11 @@ body { padding-top: var(--landing-header-h); }
     bottom: auto; height: 130svh; top: 50%; transform: translateY(-50%);
     object-position: 11.5% center;
   }
-  .landing-slide[data-slide='4'] > div { padding-top: 12svh !important; }
+  /* The slide is display:block here, and this block carries an inline max-width — so
+     without auto margins it hugs the left edge and only its contents look centred. */
+  .landing-slide[data-slide='4'] > div {
+    padding-top: 12svh !important; margin-left: auto; margin-right: auto;
+  }
   /* The headline stays up top; the button and the FAQ link drop into the bike's
      region further down the photograph. !important because the button carries an
      inline margin. */
