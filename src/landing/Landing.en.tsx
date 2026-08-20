@@ -171,7 +171,7 @@ body { padding-top: var(--landing-header-h); }
      inherit, so a phone gets exactly the same softened backdrop the desktop has. */
   .landing-bg {
     position: fixed; inset: 0; width: 100vw; height: 100svh;
-    object-fit: cover; object-position: 18% center;
+    object-fit: cover; object-position: 18.7% center;
   }
   /* The desktop veil is an ellipse tuned for a landscape frame; on a portrait one it
      smears the whole picture. Here it is a vertical fade instead: dense behind the
