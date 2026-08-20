@@ -715,6 +715,12 @@ export const useAppStore = create<AppState>()(
             // phone opens the desktop layout until the resize effect corrects it.
             // currentState's value has just been computed by defaultAutoView().
             autoView: currentState.ui.autoView,
+            // Where someone happened to be looking last time is not a setting either.
+            // Following the landing's "open the calculator" into a settings panel or
+            // the Me tab is never what that link promised, so both start from their
+            // defaults: no panel open, and the plan.
+            panel: currentState.ui.panel,
+            tab: currentState.ui.tab,
             ...(htmlLang ? { lang: htmlLang } : {}),
           },
         };

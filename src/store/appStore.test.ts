@@ -487,6 +487,19 @@ describe('persisted mix merge', () => {
   });
 });
 
+describe('persisted ui merge — the calculator always opens on the plan', () => {
+  test('a panel left open last time does not come back', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, panel: 'settings', tab: 'me' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.panel).toBeNull();
+    expect(merged.ui.tab).toBe('plan');
+  });
+});
+
 describe('persisted ui merge — autoView is derived, not remembered', () => {
   test('a stale autoView from another device loses to the one computed for this viewport', () => {
     const merge = useAppStore.persist.getOptions().merge!;
