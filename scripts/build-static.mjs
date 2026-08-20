@@ -71,7 +71,9 @@ async function main() {
         name: 'Carb Fueling',
         url: `${SITE}${strip(landingHref(lang))}`,
         description:
-          'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time.',
+          lang === 'pl'
+            ? 'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je na bidony, flaszki i jedzenie w czasie.'
+            : 'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time.',
         applicationCategory: 'SportsApplication',
         operatingSystem: 'Any (runs in a web browser)',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
