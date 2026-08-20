@@ -36,7 +36,11 @@ function App() {
   useEffect(() => {
     const target = nextLangPath(location.pathname, lang);
     if (target !== location.pathname) {
-      history.pushState(null, '', target);
+      // replaceState, not pushState: switching language is not a navigation. A pushed entry
+      // would combine with the popstate listener below to turn Back into a language toggle —
+      // Back from /pl/calculator/ would land on /en/calculator/ and flip the UI to English
+      // instead of leaving the calculator, and every toggle would add another entry to undo.
+      history.replaceState(null, '', target);
     }
   }, [lang]);
 
