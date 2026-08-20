@@ -197,18 +197,23 @@ body { padding-top: var(--landing-header-h); }
    inherits the palette. The drift stops for anyone who asked the system to reduce
    motion. Kept on the closing slide too, since scrolling on from there reaches the
    footer and its "buy me a coffee" link. */
+/* Bigger, and in the ink colour rather than the pale grey it started in: the cue sits at
+   the foot of the slide, where the wash has nearly run out, so over four different
+   photographs the light chevron kept dissolving into whatever was behind it. The white
+   drop-shadow is what carries it across the dark frames. */
 .landing-cue {
   position: absolute; left: 50%; bottom: 18px; z-index: 4;
-  width: 13px; height: 13px; margin-left: -7px;
-  border-right: 2px solid var(--muted-3); border-bottom: 2px solid var(--muted-3);
-  opacity: 0.6; animation: landing-cue-drift 2.1s ease-in-out infinite;
+  width: 17px; height: 17px; margin-left: -9px;
+  border-right: 2.5px solid var(--ink-soft); border-bottom: 2.5px solid var(--ink-soft);
+  filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.6));
+  opacity: 0.75; animation: landing-cue-drift 2.1s ease-in-out infinite;
 }
 @keyframes landing-cue-drift {
-  0%, 100% { transform: rotate(45deg) translate(0, 0); opacity: 0.35; }
-  50% { transform: rotate(45deg) translate(3px, 3px); opacity: 0.8; }
+  0%, 100% { transform: rotate(45deg) translate(0, 0); opacity: 0.5; }
+  50% { transform: rotate(45deg) translate(3px, 3px); opacity: 0.95; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .landing-cue { animation: none; transform: rotate(45deg); opacity: 0.5; }
+  .landing-cue { animation: none; transform: rotate(45deg); opacity: 0.85; }
 }
 
 /* Which of the four slides you are on. Fixed inside the clipped slide, so it is
@@ -369,7 +374,7 @@ body { padding-top: var(--landing-header-h); }
   .site-footer { padding: 16px 1.35em 20px; gap: 16px; }
   .site-footer-columns { grid-template-columns: 1fr; gap: 18px; }
 
-  .landing-cue { bottom: 12px; width: 11px; height: 11px; margin-left: -6px; }
+  .landing-cue { bottom: 12px; width: 15px; height: 15px; margin-left: -8px; }
 
   .landing-dots { display: flex; }
 }
