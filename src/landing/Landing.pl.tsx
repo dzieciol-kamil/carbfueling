@@ -220,6 +220,38 @@ body { padding-top: var(--landing-header-h); }
     margin-left: calc(19.4vw - 2.51vh + 30px);
   }
 
+
+  /* Slide 1 deliberately has no rule here: it is signed off, and the shared rules above
+     already are its rules. Each photograph below needs its own crop and its own offset,
+     because the subject sits somewhere different in each frame and the frames are not
+     even the same shape. The numbers come from the closed form for a portrait
+     cover-crop: subject_x = (subject - pos) * aspect * vh + pos * vw. */
+
+  /* Runner stands at 80% of run.jpg; this puts him at 84% of the screen, and the
+     screenshot bleeds off the LEFT with its right edge a fixed 46px short of him. */
+  .landing-slide[data-slide='2'] .landing-bg { object-position: 78.6% center; }
+  .landing-slide[data-slide='2'] .landing-q {
+    margin-left: auto !important; text-align: right !important;
+  }
+  .landing-slide[data-slide='2'] .landing-cap {
+    margin-left: 0 !important; margin-right: auto !important; text-align: left !important;
+  }
+  .landing-slide[data-slide='2'] .landing-shot img {
+    width: 75.5vh; height: auto;
+    margin-left: calc(78.6vw - 73.01vh - 62.5px);
+  }
+
+  /* Gravel rider stands at 14.9% of the cropped frame, which is a different shape
+     again (1.56 rather than 1.79). */
+  .landing-slide[data-slide='3'] .landing-bg { object-position: 14.43% center; }
+  .landing-slide[data-slide='3'] .landing-shot img {
+    margin-left: calc(14.43vw + 0.73vh + 30px);
+  }
+
+  /* No question and no screenshot here, so the only job is keeping the rider and the
+     left-hand FINISH pylon in a frame that only shows about a quarter of the picture. */
+  .landing-slide[data-slide='4'] .landing-bg { object-position: 10.8% center; }
+
   .landing-dots { display: flex; }
 }
 `;
@@ -249,7 +281,7 @@ export default function LandingPl() {
       </header>
 
       <main>
-        <section className="landing-slide" data-shot="right">
+        <section className="landing-slide" data-shot="right" data-slide="1">
           <img className="landing-bg" src={assetHref('/landing/road.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
@@ -274,7 +306,7 @@ export default function LandingPl() {
           </div>
         </section>
 
-        <section className="landing-slide" data-shot="left">
+        <section className="landing-slide" data-shot="left" data-slide="2">
           <img className="landing-bg" src={assetHref('/landing/run.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
@@ -302,7 +334,7 @@ export default function LandingPl() {
           </div>
         </section>
 
-        <section className="landing-slide" data-shot="right">
+        <section className="landing-slide" data-shot="right" data-slide="3">
           <img className="landing-bg" src={assetHref('/landing/gravel.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
@@ -328,7 +360,7 @@ export default function LandingPl() {
           </div>
         </section>
 
-        <section className="landing-slide" style={{ textAlign: 'center' }}>
+        <section className="landing-slide" style={{ textAlign: 'center' }} data-slide="4">
           <img className="landing-bg" src={assetHref('/landing/finish.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
