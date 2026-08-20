@@ -93,8 +93,8 @@ const ROOT_STYLE = `
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background: linear-gradient(90deg,
       rgba(239, 240, 236, 0) 0%,
-      rgba(239, 240, 236, 0.92) calc(50% - 430px),
-      rgba(239, 240, 236, 0.92) calc(50% + 430px),
+      rgba(239, 240, 236, 0.86) calc(50% - 430px),
+      rgba(239, 240, 236, 0.86) calc(50% + 430px),
       rgba(239, 240, 236, 0) 100%);
   }
 
