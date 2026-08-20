@@ -256,7 +256,7 @@ body { padding-top: var(--landing-header-h); }
      rider, which is what leaves him uncovered. The explanatory column is gone from the
      file for good now, so there is nothing left to park off the edge. */
   .landing-slide[data-slide='3'] .landing-shot img {
-    margin-left: calc(16.56vw - 2.59vh + 63.5px);
+    margin-left: calc(16.56vw - 2.59vh + 70.5px);
   }
 
   /* No question and no screenshot here, so the only job is keeping the rider and the
