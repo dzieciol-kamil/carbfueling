@@ -1,6 +1,6 @@
 // src/landing/Landing.pl.tsx
 import type { CSSProperties } from 'react';
-import { calculatorHref, faqHref, assetHref } from '../urls';
+import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
 
 const headerWordmark: CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' };
 const headerTagline: CSSProperties = {
@@ -110,44 +110,95 @@ body { padding-top: var(--landing-header-h); }
   margin-right: auto; align-items: flex-start; text-align: left;
 }
 
+/* Language on the landing is two links, not a menu: these pages ship zero JS, and the
+   choice needs no storing because the URL already carries it — /pl/ leads to a CTA
+   pointing at /pl/calculator/, whose static "html lang" then wins over whatever the
+   browser had persisted. */
+.landing-actions { display: flex; align-items: center; gap: 10px; }
+.landing-lang {
+  display: inline-flex; align-items: center; gap: 2px; padding: 3px;
+  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+}
+.landing-lang a {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; padding: 5px 7px; border-radius: 999px;
+  font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; color: var(--muted); text-decoration: none;
+}
+.landing-lang a.is-current { background: var(--ink); color: #fff; }
+
+/* Which of the four slides you are on. Fixed inside the clipped slide, so it is
+   clipped along with the photograph and swaps at the same edge. */
+.landing-dots { display: none; }
+.landing-dots {
+  position: fixed; right: 10px; top: 50%; transform: translateY(-50%); z-index: 4;
+  flex-direction: column; gap: 8px;
+}
+.landing-dots i {
+  display: block; width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(22, 25, 28, 0.16);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+.landing-dots i.is-current { background: rgba(22, 25, 28, 0.66); }
+
 @media (max-width: 760px) {
-  /* A phone gets its own layout rather than a squeezed desktop one. Cropping a 16:9
-     frame to a portrait viewport leaves only its middle, and every subject in these
-     photographs stands near an edge — so instead of a full-bleed texture the picture
-     becomes a wide, short band across the top of the slide. At that shape it barely
-     crops at all, which keeps the rider or runner in frame, and it lets the type sit
-     on clean background where it reads best. The wash is unnecessary once nothing
-     overlaps the photograph, so the photograph runs at full strength. */
-  html { scroll-snap-type: none; }
-  /* The header is a fixed 61px bar, so nothing in it may wrap. The tagline is the
-     first thing to go — the wordmark alone still says what the site is. */
+  html { scroll-snap-type: y mandatory; }
+
+  /* The header is a fixed bar, so nothing in it may wrap. The tagline is the first
+     thing to go — the wordmark alone still says what the site is. */
   .landing-header { padding: 0 1.1em; }
   .landing-header > div > span + span { display: none; }
   .landing-header > div > span { font-size: 17px; }
-  .landing-header a {
-    padding: 7px 13px !important; font-size: 12px !important; white-space: nowrap;
+  .landing-actions > a {
+    padding: 7px 12px !important; font-size: 12px !important; white-space: nowrap;
   }
+  .landing-actions { gap: 7px; }
+  .landing-lang a { min-width: 28px; padding: 4px 5px; font-size: 10px; }
+
+  /* Each slide becomes a window onto its own photograph. "clip-path" makes the slide a
+     containing block for a "position: fixed" child, so the picture is pinned to the
+     viewport and never moves — what travels is the slide's edge, sweeping across it and
+     handing over to the next photograph at the boundary. This is the one technique that
+     survives iOS Safari, where "background-attachment: fixed" does not. */
   .landing-slide {
-    display: block; min-height: auto; padding: 0 0 2.8em; scroll-snap-align: none;
+    display: block; position: relative; clip-path: inset(0);
+    padding: 0; scroll-snap-align: start;
+    min-height: calc(100vh - var(--landing-header-h));
+    min-height: calc(100svh - var(--landing-header-h));
   }
+  /* Only the framing changes here: opacity, the desaturation and the wash are left to
+     inherit, so a phone gets exactly the same softened backdrop the desktop has. */
   .landing-bg {
-    position: static; width: 100%; height: clamp(180px, 32svh, 280px);
-    opacity: 1; filter: none; object-position: center center;
+    position: fixed; inset: 0; width: 100vw; height: 100svh;
+    object-fit: cover; object-position: 26% center;
   }
-  .landing-wash { display: none; }
-  .landing-cluster { width: 100%; padding: 1.6em 1.35em 0; font-size: 15px; }
+
+  .landing-cluster {
+    position: relative; z-index: 2; width: 100%; padding: 1.8em 1.2em 0;
+    font-size: 15px;
+  }
   .landing-q {
-    max-width: none; margin: 0 !important; text-align: left !important;
-    font-size: clamp(23px, 6.2vw, 30px);
+    max-width: 74%; margin: 0 !important; text-align: left !important;
+    font-size: clamp(21px, 5.6vw, 27px); line-height: 1.24;
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: 1.4em 0 0 !important;
+    width: 100%; margin: 1.1em 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
   }
-  .landing-shot img { max-height: 46svh; }
-  .landing-cap { max-width: none; }
+  /* Sits with the screenshot it labels, over on the right, rather than stranded at the
+     opposite edge. */
+  .landing-cap { max-width: 80%; margin-left: auto; text-align: right; }
+  /* Half a screenshot, hung off the right edge and dropped below the question, so the
+     rider along the bottom-left of the photograph stays in view. The transform keeps
+     this purely visual — the caption above it does not move with it. */
+  .landing-shot img {
+    width: 150%; max-width: none; height: auto; max-height: none;
+    transform: translateX(20%);
+  }
+
+  .landing-dots { display: flex; }
 }
 `;
 
@@ -160,15 +211,31 @@ export default function LandingPl() {
           <span style={headerWordmark}>CARB FUELING</span>
           <span style={headerTagline}>planer węglowodanów i nawodnienia</span>
         </div>
-        <a href={calculatorHref('pl')} style={ctaButton}>
-          Otwórz kalkulator →
-        </a>
+        <div className="landing-actions">
+          <div className="landing-lang">
+            <a href={landingHref('en')} hrefLang="en">
+              EN
+            </a>
+            <a href={landingHref('pl')} hrefLang="pl" className="is-current">
+              PL
+            </a>
+          </div>
+          <a href={calculatorHref('pl')} style={ctaButton}>
+            Otwórz kalkulator →
+          </a>
+        </div>
       </header>
 
       <main>
         <section className="landing-slide" data-shot="right">
           <img className="landing-bg" src={assetHref('/landing/road.jpg')} alt="" />
           <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i className="is-current" />
+            <i />
+            <i />
+            <i />
+          </div>
           <div className="landing-cluster">
             <h1 className="landing-q">
               Jeździsz na rowerze, biegasz, czy uprawiasz <br />
@@ -188,6 +255,12 @@ export default function LandingPl() {
         <section className="landing-slide" data-shot="left">
           <img className="landing-bg" src={assetHref('/landing/run.jpg')} alt="" />
           <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i />
+            <i className="is-current" />
+            <i />
+            <i />
+          </div>
           <div className="landing-cluster">
             <h2 className="landing-q">
               Czujesz, jak żele czy izotoniki <br />
@@ -210,6 +283,12 @@ export default function LandingPl() {
         <section className="landing-slide" data-shot="right">
           <img className="landing-bg" src={assetHref('/landing/gravel.jpg')} alt="" />
           <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i className="is-current" />
+            <i />
+          </div>
           <div className="landing-cluster">
             <h2 className="landing-q">
               A może złapałeś kiedyś bombę <br />i zastanawiasz się, jak <br />
@@ -230,6 +309,12 @@ export default function LandingPl() {
         <section className="landing-slide" style={{ textAlign: 'center' }}>
           <img className="landing-bg" src={assetHref('/landing/finish.jpg')} alt="" />
           <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i className="is-current" />
+          </div>
           <div
             style={{
               position: 'relative',
