@@ -194,7 +194,7 @@ body { padding-top: var(--landing-header-h); }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: 2.2em 0 0 !important;
+    width: 100%; margin: calc(2.2em + 2svh) 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
   }
   /* Sits with the screenshot it labels, over on the right, rather than stranded at the
