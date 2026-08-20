@@ -487,6 +487,30 @@ describe('persisted mix merge', () => {
   });
 });
 
+describe('persisted ui merge — autoView is derived, not remembered', () => {
+  test('a stale autoView from another device loses to the one computed for this viewport', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, autoView: 'desktop', viewMode: 'auto' } },
+      { ...currentState, ui: { ...currentState.ui, autoView: 'mobile' } },
+    ) as typeof currentState;
+    expect(merged.ui.autoView).toBe('mobile');
+    // an explicit user override is a preference and must still survive
+    expect(merged.ui.viewMode).toBe('auto');
+  });
+
+  test('an explicitly forced viewMode is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, viewMode: 'desktop' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.viewMode).toBe('desktop');
+  });
+});
+
 describe('persisted ui merge — HTML-seeded language precedence', () => {
   test('the HTML-seeded lang wins over a persisted ui.lang; other ui fields survive', () => {
     vi.stubGlobal('document', { documentElement: { lang: 'pl' } });

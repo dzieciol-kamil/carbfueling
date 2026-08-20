@@ -212,7 +212,10 @@ body { padding-top: var(--landing-header-h); }
      left padding. Widening the screen therefore slides both outward together: more of
      the screenshot comes into view, and a little more field opens up to his left. */
   .landing-shot img {
-    width: 200%; max-width: none; height: auto; max-height: 44svh;
+    /* Sized off the viewport HEIGHT, never the container width. A percentage width
+       grew the picture itself as the window widened — it stretched instead of
+       revealing. Fixed like this, widening only uncovers more of it. */
+    height: 44svh; width: auto; max-width: none; max-height: none;
     transform: none;
     margin-left: calc(19.4vw - 2.51vh + 30px);
   }

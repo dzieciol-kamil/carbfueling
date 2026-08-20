@@ -710,6 +710,11 @@ export const useAppStore = create<AppState>()(
           ui: {
             ...currentState.ui,
             ...persisted?.ui,
+            // autoView is derived from the viewport, not a preference — restoring it
+            // makes the first paint depend on whichever device last used the app, so a
+            // phone opens the desktop layout until the resize effect corrects it.
+            // currentState's value has just been computed by defaultAutoView().
+            autoView: currentState.ui.autoView,
             ...(htmlLang ? { lang: htmlLang } : {}),
           },
         };
