@@ -249,8 +249,12 @@ body { padding-top: var(--landing-header-h); }
   /* Gravel rider stands at 14.9% of the cropped frame, which is a different shape
      again (1.56 rather than 1.79). */
   .landing-slide[data-slide='3'] .landing-bg { object-position: 16.56% center; }
+  /* Slide 3 opts out of the glue. The chart runs the full width instead, with its
+     explanatory column parked just off the left edge at 412px and creeping back in as
+     the screen grows — a quarter of every extra pixel goes to the description, the
+     other three quarters uncover more chart past the right edge. */
   .landing-slide[data-slide='3'] .landing-shot img {
-    margin-left: calc(16.56vw - 2.59vh + 29.5px);
+    margin-left: calc(25vw - 21.36vh - 119.5px);
   }
 
   /* No question and no screenshot here, so the only job is keeping the rider and the
