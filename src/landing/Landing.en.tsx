@@ -28,9 +28,9 @@ const ctaButton: CSSProperties = {
 // below the fold, and stopped scroll-snap from holding — so the header is fixed and
 // the snapping happens on <html>.
 //
-// The question sits upper-left and the screenshot lower-right, overlapping around the
-// centre — a diagonal that converges rather than two blocks marooned in opposite
-// corners.
+// Each slide runs the question and the screenshot along a diagonal that converges at
+// the centre, and the diagonal flips slide to slide. The photographs are composed to
+// that flip: the subject always stands on the side the screenshot leaves clear.
 const landingCss = `
 :root { --landing-header-h: 61px; }
 html { scroll-snap-type: y mandatory; scroll-padding-top: var(--landing-header-h); }
@@ -80,8 +80,18 @@ body { padding-top: var(--landing-header-h); }
    the question — the shortest line — instead of sitting apart from it. */
 .landing-shot {
   position: relative; z-index: 3; display: flex; flex-direction: column;
-  align-items: flex-end; text-align: right;
-  width: min(740px, 100%); margin: -64px 0 0 auto;
+  width: min(740px, 100%); margin-top: -64px;
+}
+
+/* The arrangement mirrors slide to slide, and each photograph was shot to match:
+   its subject always stands on the side the screenshot leaves clear. */
+.landing-slide[data-shot='right'] .landing-q { margin-right: auto; }
+.landing-slide[data-shot='right'] .landing-shot {
+  margin-left: auto; align-items: flex-end; text-align: right;
+}
+.landing-slide[data-shot='left'] .landing-q { margin-left: auto; text-align: right; }
+.landing-slide[data-shot='left'] .landing-shot {
+  margin-right: auto; align-items: flex-start; text-align: left;
 }
 .landing-shot img {
   display: block; width: auto; height: auto; max-width: 100%; max-height: 48svh;
@@ -105,13 +115,16 @@ body { padding-top: var(--landing-header-h); }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: 22px 0 0; align-items: flex-start; text-align: left;
+    width: 100%; margin: 22px 0 0 !important;
+    align-items: flex-start !important; text-align: left !important;
   }
+  .landing-q { margin: 0 !important; text-align: left !important; }
   .landing-shot img { max-height: 52svh; }
   .landing-cap { max-width: none; }
-  /* A 16:9 photo cropped to a portrait viewport loses its outer thirds, and the
-     subject always stands near the left edge. */
-  .landing-bg { object-position: 22% center; }
+  /* A 16:9 photo cropped to a portrait viewport loses its outer thirds, so bias the
+     crop toward whichever edge this slide's subject stands on. */
+  .landing-slide[data-shot='right'] .landing-bg { object-position: 22% center; }
+  .landing-slide[data-shot='left'] .landing-bg { object-position: 78% center; }
   .landing-wash {
     background: radial-gradient(ellipse 120% 70% at 50% 50%,
       rgba(239, 240, 236, 0.98) 0%, rgba(239, 240, 236, 0.92) 46%,
@@ -135,7 +148,7 @@ export default function LandingEn() {
       </header>
 
       <main>
-        <section className="landing-slide">
+        <section className="landing-slide" data-shot="right">
           <img className="landing-bg" src={assetHref('/landing/road.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-cluster">
@@ -158,7 +171,7 @@ export default function LandingEn() {
           </div>
         </section>
 
-        <section className="landing-slide">
+        <section className="landing-slide" data-shot="left">
           <img className="landing-bg" src={assetHref('/landing/run.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-cluster">
@@ -183,7 +196,7 @@ export default function LandingEn() {
           </div>
         </section>
 
-        <section className="landing-slide">
+        <section className="landing-slide" data-shot="right">
           <img className="landing-bg" src={assetHref('/landing/gravel.jpg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-cluster">
@@ -203,10 +216,9 @@ export default function LandingEn() {
           </div>
         </section>
 
-        <section
-          className="landing-slide"
-          style={{ background: 'var(--surface)', textAlign: 'center' }}
-        >
+        <section className="landing-slide" style={{ textAlign: 'center' }}>
+          <img className="landing-bg" src={assetHref('/landing/finish.jpg')} alt="" />
+          <div className="landing-wash" />
           <div
             style={{
               position: 'relative',

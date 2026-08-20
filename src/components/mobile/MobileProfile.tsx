@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { absCap } from '../../domain/fuel';
-import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
+import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import {
   buildSettingsExport,
   parseSettingsImport,
@@ -321,9 +321,18 @@ export function MobileProfile() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <a
+            href={LANDING_HREF_FROM_CALCULATOR}
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+              textDecoration: 'none',
+            }}
+          >
             CARB FUELING
-          </span>
+          </a>
           <span
             style={{
               fontFamily: "'JetBrains Mono', monospace",

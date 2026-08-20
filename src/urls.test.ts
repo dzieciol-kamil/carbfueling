@@ -3,6 +3,7 @@ import {
   assetHref,
   calculatorHref,
   FAQ_HREF_FROM_CALCULATOR,
+  LANDING_HREF_FROM_CALCULATOR,
   faqHref,
   landingHref,
   nextLangPath,
@@ -59,5 +60,19 @@ describe('nextLangPath', () => {
 
   test('is a no-op when already at the target language — the pushState guard relies on this', () => {
     expect(nextLangPath('/pl/calculator/', 'pl')).toBe('/pl/calculator/');
+  });
+});
+
+describe('LANDING_HREF_FROM_CALCULATOR', () => {
+  test('is a plain relative path, so it survives the /preview sub-path like the FAQ link does', () => {
+    expect(LANDING_HREF_FROM_CALCULATOR).toBe('../');
+  });
+
+  test("resolves to the calculator's own language landing page, with or without a base path", () => {
+    const resolve = (from: string) =>
+      new URL(LANDING_HREF_FROM_CALCULATOR, `https://x${from}`).pathname;
+    expect(resolve('/en/calculator/')).toBe('/en/');
+    expect(resolve('/pl/calculator/')).toBe('/pl/');
+    expect(resolve('/preview/pl/calculator/')).toBe('/preview/pl/');
   });
 });

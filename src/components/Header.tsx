@@ -8,6 +8,7 @@ import {
 } from '../domain/settingsExport';
 import { LANGS, t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { LANDING_HREF_FROM_CALCULATOR } from '../urls';
 import { saveTextFile } from '../utils/fileSave';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 
@@ -79,7 +80,16 @@ export function Header() {
         flexWrap: 'wrap',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+      <a
+        href={LANDING_HREF_FROM_CALCULATOR}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 12,
+          color: 'var(--ink)',
+          textDecoration: 'none',
+        }}
+      >
         <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
           CARB FUELING
         </span>
@@ -94,7 +104,7 @@ export function Header() {
         >
           {strings.tagline}
         </span>
-      </div>
+      </a>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ position: 'relative' }}>

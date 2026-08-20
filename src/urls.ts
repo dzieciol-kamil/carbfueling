@@ -29,6 +29,12 @@ export function assetHref(path: string): string {
  *  sibling FAQ directory whether or not a /preview prefix sits in front of it. */
 export const FAQ_HREF_FROM_CALCULATOR = '../faq/';
 
+/** Same reasoning as FAQ_HREF_FROM_CALCULATOR, for the way home. The calculator used
+ *  to *be* the site root, so its wordmark never needed to link anywhere; now that it
+ *  lives at /{lang}/calculator/, "../" reaches its own language's landing page under
+ *  any base path. */
+export const LANDING_HREF_FROM_CALCULATOR = '../';
+
 /** Substitutes the /en//pl/ segment in `pathname` for `lang`. Pure and idempotent:
  *  calling it with the language already present in `pathname` returns `pathname`
  *  unchanged — App.tsx's pushState effect relies on that no-op to avoid re-pushing
