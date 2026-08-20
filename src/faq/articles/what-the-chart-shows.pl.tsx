@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -8,7 +9,7 @@ import {
 
 export default function WhatTheChartShowsPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="what-the-chart-shows">
       <h1 style={articleH1Style}>Co właściwie pokazuje wykres: od bidonu do krwiobiegu</h1>
       <p style={articleTextStyle}>
         Każdy punkt na wykresie zaczyna się od jednego prostego faktu: co faktycznie zjadłeś albo
@@ -17,7 +18,7 @@ export default function WhatTheChartShowsPl() {
         trasie, a nie jako jedną sumę dla całej jazdy.
       </p>
       <img
-        src="/faq/what-the-chart-shows/intake-vessels.jpg"
+        src={assetHref('/faq/what-the-chart-shows/intake-vessels.jpg')}
         alt="Wpisy bidonu i żelu na liście planu w Carb Fueling, każdy z opisaną zawartością i ilością."
         style={articleImgStyle}
       />
@@ -28,7 +29,7 @@ export default function WhatTheChartShowsPl() {
         węglowodany chwilę czekają w żołądku, zamiast stawać się dostępne od razu po przełknięciu.
       </p>
       <img
-        src="/faq/what-the-chart-shows/gut-strip.jpg"
+        src={assetHref('/faq/what-the-chart-shows/gut-strip.jpg')}
         alt="Pasek zawartości żołądka na górze wykresu, który wypełnia się i opróżnia w miarę trawienia."
         style={articleImgStyle}
       />
@@ -37,14 +38,14 @@ export default function WhatTheChartShowsPl() {
         węglowodanów na godzinę. To jest sufit wchłaniania i na wykresie widać go jako poziomą linię
         ograniczenia. Przy dobrej mieszance glukozowo-fruktozowej ten sufit dla większości
         rowerzystów wynosi ok. 90 g na godzinę — zobacz,{' '}
-        <a href="/pl/faq/carb-transporter-mix/">
+        <a href={faqHref('pl', 'carb-transporter-mix')}>
           dlaczego ten sufit istnieje i jak mieszanie cukrów go podnosi
         </a>
         . Zjedzenie więcej niż wynosi sufit nic nie daje — nadmiar po prostu dłużej zalega w
         żołądku.
       </p>
       <img
-        src="/faq/what-the-chart-shows/absorption-cap.jpg"
+        src={assetHref('/faq/what-the-chart-shows/absorption-cap.jpg')}
         alt="Płaska, przerywana linia limitu wchłaniania nad rosnącymi liniami zapotrzebowania i wchłoniętych."
         style={articleImgStyle}
       />
@@ -61,7 +62,7 @@ export default function WhatTheChartShowsPl() {
         wykresu.
       </p>
       <img
-        src="/faq/what-the-chart-shows/need-absorbed.jpg"
+        src={assetHref('/faq/what-the-chart-shows/need-absorbed.jpg')}
         alt="Linie zapotrzebowania i wchłoniętych razem, z zacieniowaną luką między nimi pokazującą niedobór."
         style={articleImgStyle}
       />
@@ -69,11 +70,11 @@ export default function WhatTheChartShowsPl() {
         Gdy wchłonięte spadają poniżej zapotrzebowania na jakimś odcinku trasy, ta luka zaznaczana
         jest jako niedobór. Właśnie tu po cichu narasta ryzyko złapania bomby — nie w jednym
         dramatycznym momencie, tylko minuta po minucie, kilometr po kilometrze. Zobacz,{' '}
-        <a href="/pl/faq/bonk-crisis/">co się dzieje, gdy taka luka trwa zbyt długo</a> — tak mały,
-        zignorowany niedobór zamienia się w realny kryzys na rowerze.
+        <a href={faqHref('pl', 'bonk-crisis')}>co się dzieje, gdy taka luka trwa zbyt długo</a> —
+        tak mały, zignorowany niedobór zamienia się w realny kryzys na rowerze.
       </p>
       <img
-        src="/faq/what-the-chart-shows/deficit.jpg"
+        src={assetHref('/faq/what-the-chart-shows/deficit.jpg')}
         alt="Zbliżenie na zacieniowaną lukę niedoboru między liniami zapotrzebowania i wchłoniętych na początku trasy."
         style={articleImgStyle}
       />
@@ -85,7 +86,7 @@ export default function WhatTheChartShowsPl() {
         tylko w jednym jej punkcie.
       </p>
       <img
-        src="/faq/what-the-chart-shows/fluid-lines.png"
+        src={assetHref('/faq/what-the-chart-shows/fluid-lines.png')}
         alt="Linie wypitych płynów i utraty z potem w widoku nawodnienia na wykresie."
         style={articleImgStyle}
       />
@@ -95,7 +96,7 @@ export default function WhatTheChartShowsPl() {
         w coś, co widzisz z wyprzedzeniem — godziny naprzód — i możesz jeszcze naprawić.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zobacz swoją linię odżywiania →
         </a>
       </p>

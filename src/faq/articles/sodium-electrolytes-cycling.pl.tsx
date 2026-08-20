@@ -1,8 +1,9 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function SodiumElectrolytesCyclingPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="sodium-electrolytes-cycling">
       <h1 style={articleH1Style}>
         Sód na rowerze: kiedy dodatkowa suplementacja elektrolitowa ma sens
       </h1>
@@ -59,7 +60,7 @@ export default function SodiumElectrolytesCyclingPl() {
         Jeśli więc celujesz np. w 700 mg sodu na litr, to około 0,18 g soli na 100 ml.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zaplanuj węglowodany i płyny razem →
         </a>
       </p>

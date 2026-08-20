@@ -13,21 +13,22 @@ import { startFillOf } from '../domain/combinedRefill';
 import { dist, presetTagFor } from '../domain/fuel';
 import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
-import { t, type Lang } from '../i18n/strings';
+import { LANGS, t, type Lang } from '../i18n/strings';
 import { createDebouncedLocalStorage } from './persistStorage';
-import type {
-  CitricSource,
-  FoodItem,
-  FoodLibEntry,
-  Intensity,
-  Mode,
-  MixSettings,
-  RatioPreset,
-  RouteInput,
-  Vessel,
-  Fill,
-  ShopStop,
-  XUnit,
+import {
+  DEFAULT_MIX,
+  type CitricSource,
+  type FoodItem,
+  type FoodLibEntry,
+  type Intensity,
+  type Mode,
+  type MixSettings,
+  type RatioPreset,
+  type RouteInput,
+  type Vessel,
+  type Fill,
+  type ShopStop,
+  type XUnit,
 } from '../domain/types';
 
 function defaultLang(): Lang {
@@ -223,20 +224,7 @@ const defaultRoute: RouteInput = {
   gpxError: null,
 };
 
-const defaultMix: MixSettings = {
-  conc: 8.4,
-  gelConc: 60,
-  ratio: 2,
-  gelRatio: 2,
-  ratioPreset: 'iso',
-  gelRatioPreset: 'iso',
-  salt: 0.16,
-  citric: 0.2,
-  gelSalt: 0.4,
-  gelCitric: 0.4,
-  citricSource: 'citric',
-  gelCitricSource: 'citric',
-};
+const defaultMix: MixSettings = DEFAULT_MIX;
 
 const defaultGear: Vessel[] = [
   { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
@@ -689,6 +677,15 @@ export const useAppStore = create<AppState>()(
       },
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AppState> | undefined;
+        // The test suite runs with `environment: 'node'` (no DOM), so `document` is
+        // undefined there — this guard mirrors defaultLang()'s own `typeof navigator`
+        // check above rather than requiring every test file to stub a DOM.
+        // The attribute is not ours alone: Chrome's "always translate this page" rewrites it to
+        // the translation's language. Accepting it unchecked would put e.g. `es` into ui.lang,
+        // which nextLangPath() then pushes into the address bar as /es/calculator/ — a URL that
+        // 404s on reload — and merge's result goes straight back to localStorage, so it sticks.
+        const attrLang = typeof document !== 'undefined' ? document.documentElement.lang : '';
+        const htmlLang = LANGS.includes(attrLang as Lang) ? (attrLang as Lang) : undefined;
         return {
           ...currentState,
           ...persisted,
@@ -696,6 +693,51 @@ export const useAppStore = create<AppState>()(
           // Deep-merge mix so fields added after a user's data was already persisted (e.g.
           // citricSource) fall back to the current default instead of coming back undefined.
           mix: { ...currentState.mix, ...persisted?.mix },
+          // Same deep-merge reasoning for ui, plus: the calculator's two HTML entries
+          // (en/calculator/index.html, pl/calculator/index.html) seed the language via a
+          // static `<html lang>` attribute, read here. That HTML-seeded value always wins
+          // over whatever language was previously persisted — otherwise a returning
+          // visitor's stored preference would silently override a shared /pl/calculator/
+          // link, defeating the point of the URL carrying the language at all.
+          ui: {
+            ...currentState.ui,
+            ...persisted?.ui,
+            // autoView is derived from the viewport, not a preference — restoring it
+            // makes the first paint depend on whichever device last used the app, so a
+            // phone opens the desktop layout until the resize effect corrects it.
+            // currentState's value has just been computed by defaultAutoView().
+            autoView: currentState.ui.autoView,
+            // Where someone happened to be looking last time is not a setting either.
+            // Following the landing's "open the calculator" into a settings panel or
+            // the Me tab is never what that link promised, so both start from their
+            // defaults: no panel open, and the plan.
+            panel: currentState.ui.panel,
+            tab: currentState.ui.tab,
+            // The same argument, one step stronger, for everything that gates a full-screen
+            // overlay. All of these are persisted too (there is no partialize), and the
+            // debounced write flushes on pagehide — so backgrounding a phone with the Mix
+            // sheet open stores `mixSheet: true`, and the next visit opens on that sheet
+            // instead of the plan.
+            //
+            // tourStep is deliberately NOT in this list, even though it gates an overlay too.
+            // startTour sets tourSeen at step 0, and tourSeen is a preference that has to
+            // survive — so resetting the step alone would strand a first-time visitor who
+            // reloaded mid-tour: the overlay would go, and App's `if (tourSeen) return` guard
+            // would never bring it back. Leaving the step persisted resumes the tour where it
+            // was, which is what happened before this block existed.
+            mixSheet: currentState.ui.mixSheet,
+            routeSheet: currentState.ui.routeSheet,
+            shopSheet: currentState.ui.shopSheet,
+            chartHelp: currentState.ui.chartHelp,
+            // In-flight pointer state, persisted for the same reason and just as meaningless
+            // once the pointer is gone: a drag interrupted by backgrounding the phone brought
+            // the bar back rendered mid-drag, with nothing to clear it until the next drag.
+            dragKey: currentState.ui.dragKey,
+            hoverKey: currentState.ui.hoverKey,
+            selKey: currentState.ui.selKey,
+            scrubX: currentState.ui.scrubX,
+            ...(htmlLang ? { lang: htmlLang } : {}),
+          },
         };
       },
     },

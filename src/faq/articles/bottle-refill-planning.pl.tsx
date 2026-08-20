@@ -1,3 +1,4 @@
+import { calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -8,7 +9,7 @@ import {
 
 export default function BottleRefillPlanningPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="bottle-refill-planning">
       <h1 style={articleH1Style}>Jak zaplanować uzupełnianie bidonów na długiej trasie</h1>
       <p style={articleTextStyle}>
         Na dłuższej trasie zapas z paru bidonów już nie wystarczy — nie zmieścisz całego miksu w
@@ -22,7 +23,7 @@ export default function BottleRefillPlanningPl() {
         źródle wody.
       </p>
       <img
-        src="/faq/bottle-refill-planning/shop-stops.png"
+        src={assetHref('/faq/bottle-refill-planning/shop-stops.png')}
         alt="Oś czasu trasy w Carb Fueling z punktami zaopatrzenia ustawionymi między uzupełnieniami bidonów."
         style={articleImgStyle}
       />
@@ -35,7 +36,7 @@ export default function BottleRefillPlanningPl() {
         uzupełnienie przy zerowym zapasie to kryzys.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Dodaj punkty zaopatrzenia do swojej trasy →
         </a>
       </p>

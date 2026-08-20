@@ -3,6 +3,7 @@ import { absCap } from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { hasPlanData, useAppStore } from '../store/appStore';
 import { TourReplayConfirm } from './tour/TourReplayConfirm';
+import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
 
 export function GitHubIcon() {
   return (
@@ -204,7 +205,7 @@ export function Footer() {
               <span>{strings.ftSupport}</span>
             </a>
             <a
-              href={lang === 'pl' ? '/pl/faq/' : '/faq/'}
+              href={FAQ_HREF_FROM_CALCULATOR}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

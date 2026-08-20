@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function DiyFlavorAdditivesEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="diy-flavor-additives">
       <h1 style={articleH1Style}>
         DIY flavor additives: simple ways to make your mix taste better
       </h1>
@@ -40,7 +41,7 @@ export default function DiyFlavorAdditivesEn() {
         flavor enhancer, the same way a pinch of salt rounds out a dish that tastes flat. If your
         mix tastes dull or one-dimensional, a little extra salt is often the fix, separate from
         whatever your overall sodium target is (see{' '}
-        <a href="/faq/sodium-electrolytes-cycling/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
           how much sodium you actually need on the bike
         </a>
         ).
@@ -54,14 +55,14 @@ export default function DiyFlavorAdditivesEn() {
       <p style={articleTextStyle}>
         For the sweetener side of your mix — sugar, honey, or a formulated glucose-fructose blend —
         see{' '}
-        <a href="/faq/honey-sugar-diy-mix/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'honey-sugar-diy-mix')} style={articleLinkStyle}>
           honey or table sugar instead of a store-bought mix
         </a>
         . Flavor additions like the ones above work alongside any of those choices; they change
         taste, not the underlying carb math.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Set your sweetener and sour ingredient →
         </a>
       </p>

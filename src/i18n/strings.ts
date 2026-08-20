@@ -1,4 +1,7 @@
-export const LANGS = ['pl', 'en'] as const;
+// Alphabetical by code, and kept that way as languages are added: this array's order is the
+// order every language list renders in — the calculator's dropdown (Header.tsx), the mobile
+// profile, and the static pages' switch (src/static/LangMenu.tsx).
+export const LANGS = ['en', 'pl'] as const;
 export type Lang = (typeof LANGS)[number];
 
 export interface StringTable {

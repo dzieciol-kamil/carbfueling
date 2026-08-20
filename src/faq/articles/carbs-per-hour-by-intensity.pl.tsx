@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function CarbsPerHourByIntensityPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="carbs-per-hour-by-intensity">
       <h1 style={articleH1Style}>Ile węglowodanów na godzinę naprawdę potrzebujesz?</h1>
       <p style={articleTextStyle}>
         Nie ma jednej słusznej liczby gramów na godzinę. Odpowiednia ilość zależy przede wszystkim
@@ -30,7 +31,7 @@ export default function CarbsPerHourByIntensityPl() {
         podaż do 60–90 g na godzinę. Tak wysoki poziom sensownie osiągnąć tylko przy mieszance
         glukozowo-fruktozowej — sam jeden rodzaj cukru, np. glukoza czy maltodekstryna, zwykle
         wysyca się przy ok. 60 g na godzinę, niezależnie od tego, ile go wypijesz. Zobacz{' '}
-        <a href="/pl/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego istnieje ten sufit i jak podnosi go mieszanka glukozowo-fruktozowa
         </a>
         .
@@ -61,7 +62,7 @@ export default function CarbsPerHourByIntensityPl() {
         węglowodany w ciągu godziny.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Wylicz swój cel na godzinę →
         </a>
       </p>

@@ -1,3 +1,4 @@
+import { faqHref, calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -8,7 +9,7 @@ import {
 
 export default function BonkCrisisEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="bonk-crisis">
       <h1 style={articleH1Style}>What actually happens when you bonk — and how to see it coming</h1>
       <p style={articleTextStyle}>
         A bonk isn't sudden. It's the end point of a gap that's been growing the whole ride —
@@ -17,13 +18,14 @@ export default function BonkCrisisEn() {
       <p style={articleTextStyle}>
         Your muscles burn carbs at a rate set by your effort: harder pace, faster burn. Your gut can
         only deliver carbs at its own rate, capped by the absorption ceiling (see{' '}
-        <a href="/faq/carb-transporter-mix/">why you can't absorb more than ~90g/h</a>). If burn
-        rate stays above delivery rate for long enough, your glycogen stores — the carb reserve in
-        muscle and liver — run down. Once that reserve is close to empty, your body can't keep up
-        the power output: pace collapses fast, along with focus and coordination. That's the bonk.
+        <a href={faqHref('en', 'carb-transporter-mix')}>why you can't absorb more than ~90g/h</a>).
+        If burn rate stays above delivery rate for long enough, your glycogen stores — the carb
+        reserve in muscle and liver — run down. Once that reserve is close to empty, your body can't
+        keep up the power output: pace collapses fast, along with focus and coordination. That's the
+        bonk.
       </p>
       <img
-        src="/faq/bonk-crisis/supply-demand-gap.png"
+        src={assetHref('/faq/bonk-crisis/supply-demand-gap.png')}
         alt="Carb Fueling chart showing carb supply falling below demand, with a visible gap between the two lines."
         style={articleImgStyle}
       />
@@ -34,7 +36,7 @@ export default function BonkCrisisEn() {
         before it turns into a crisis.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Plot your own supply vs demand →
         </a>
       </p>

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { hasPlanData, shouldConfirmViewModeChange, useAppStore } from './appStore';
 import type { Fill, RouteInput } from '../domain/types';
 
@@ -484,6 +484,170 @@ describe('persisted mix merge', () => {
     };
     const merged = merge({ mix: legacyPersistedMix }, currentState) as typeof currentState;
     expect(merged.mix.gelRatio).toBe(currentState.mix.gelRatio);
+  });
+});
+
+describe('persisted ui merge — the calculator always opens on the plan', () => {
+  test('a panel left open last time does not come back', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, panel: 'settings', tab: 'me' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.panel).toBeNull();
+    expect(merged.ui.tab).toBe('plan');
+  });
+});
+
+describe('persisted ui merge — no overlay survives a reload', () => {
+  // Every field here gates a full-screen overlay, and all of them are persisted (there is no
+  // partialize on the persist config). Backgrounding a phone with the Mix sheet open flushes
+  // it to localStorage on pagehide, so without this reset the next visit — typically the
+  // landing's "open the calculator" link — boots straight into that sheet.
+  test('the sheets and the chart help modal all come back closed', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      {
+        ui: {
+          ...currentState.ui,
+          mixSheet: true,
+          routeSheet: true,
+          shopSheet: { editId: 3 },
+          chartHelp: true,
+        },
+      },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.mixSheet).toBe(false);
+    expect(merged.ui.routeSheet).toBe(false);
+    expect(merged.ui.shopSheet).toBeNull();
+    expect(merged.ui.chartHelp).toBe(false);
+  });
+
+  // Pointer state is the same class: persisted, but meaningless once the pointer is gone. A
+  // drag interrupted by backgrounding the phone stored dragKey, and the bar came back rendered
+  // mid-drag — dimmed and highlighted — with nothing to clear it until the next drag.
+  test('in-flight pointer state does not come back', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, dragKey: 'f3', hoverKey: 'f2', selKey: 'f1', scrubX: 120 } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.dragKey).toBeNull();
+    expect(merged.ui.hoverKey).toBeNull();
+    expect(merged.ui.selKey).toBeNull();
+    expect(merged.ui.scrubX).toBeNull();
+  });
+
+  // tourSeen is the opposite case: it is a genuine preference, and resetting it would replay
+  // the tour on every visit.
+  test('but tourSeen is a preference and is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, tourSeen: true } },
+      { ...currentState, ui: { ...currentState.ui, tourSeen: false } },
+    ) as typeof currentState;
+    expect(merged.ui.tourSeen).toBe(true);
+  });
+
+  // The tour is the one overlay that must survive, and it survives as a pair: startTour sets
+  // tourSeen at step 0, so dropping the step while keeping tourSeen would leave a first-time
+  // visitor who reloaded mid-tour with no tour and no way back to it.
+  test('a tour interrupted mid-way resumes where it was', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, tourStep: 2, tourSeen: true } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.tourStep).toBe(2);
+    expect(merged.ui.tourSeen).toBe(true);
+  });
+});
+
+describe('persisted ui merge — autoView is derived, not remembered', () => {
+  test('a stale autoView from another device loses to the one computed for this viewport', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, autoView: 'desktop', viewMode: 'auto' } },
+      { ...currentState, ui: { ...currentState.ui, autoView: 'mobile' } },
+    ) as typeof currentState;
+    expect(merged.ui.autoView).toBe('mobile');
+    // an explicit user override is a preference and must still survive
+    expect(merged.ui.viewMode).toBe('auto');
+  });
+
+  test('an explicitly forced viewMode is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, viewMode: 'desktop' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.viewMode).toBe('desktop');
+  });
+});
+
+describe('persisted ui merge — HTML-seeded language precedence', () => {
+  // Un-stubbing here rather than at the end of each test: an assertion that fails leaves the
+  // rest of its test body unrun, so a trailing unstubAllGlobals() would leak a fake `document`
+  // into every test after it and turn one honest failure into a cascade of confusing ones.
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test('the HTML-seeded lang wins over a persisted ui.lang; other ui fields survive', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    // xUnit stands in for "an ordinary remembered preference" here. panel and tab used
+    // to serve that purpose, but they are deliberately no longer restored — the
+    // calculator always opens on the plan.
+    const persistedUi = { ...currentState.ui, lang: 'en', viewMode: 'desktop', xUnit: 'h' };
+    const merged = merge({ ui: persistedUi }, currentState) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+    expect(merged.ui.viewMode).toBe('desktop');
+    expect(merged.ui.xUnit).toBe('h');
+  });
+
+  // Chrome's "always translate this page" rewrites <html lang> to the translation's language,
+  // so this attribute is not ours to trust. An unchecked value would be pushed into the URL by
+  // nextLangPath() — /es/calculator/ 404s on reload — and written straight back to localStorage.
+  test('a language we do not ship is ignored, and the persisted one survives', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'es' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, lang: 'pl' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+  });
+
+  test('an empty <html lang> is ignored too', () => {
+    vi.stubGlobal('document', { documentElement: { lang: '' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, lang: 'pl' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+  });
+
+  test('first-ever visit (no persisted state): non-lang ui fields fall back to current defaults, lang is still HTML-seeded', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(undefined, currentState) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+    expect(merged.ui.viewMode).toBe(currentState.ui.viewMode);
+    expect(merged.ui.panel).toBe(currentState.ui.panel);
   });
 });
 

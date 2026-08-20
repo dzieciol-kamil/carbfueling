@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HeatCarbPlanPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="heat-carb-plan">
       <h1 style={articleH1Style}>
         Jak upał zmienia Twój plan węglowodanowy (to nie tylko "pij więcej")
       </h1>
@@ -39,7 +40,7 @@ export default function HeatCarbPlanPl() {
         rezerwami płynów, a dobrze wymieszany bidon jest już na łagodniejszym stężeniu. Nie
         zapominaj też o sodzie — wraz z tempem pocenia w upale rośnie też utrata sodu, więc razem z
         zapotrzebowaniem na płyny rośnie zapotrzebowanie na elektrolity (więcej o tym w{' '}
-        <a href="/pl/faq/sodium-electrolytes-cycling/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
           naszym artykule o sodzie i elektrolitach
         </a>
         ).
@@ -60,7 +61,7 @@ export default function HeatCarbPlanPl() {
         więc planując upalny wyjazd, widzisz kompromis płyny-węglowodany wprost, zamiast zgadywać.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zaplanuj swój następny upalny wyjazd →
         </a>
       </p>
