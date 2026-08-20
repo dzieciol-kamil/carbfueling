@@ -47,11 +47,13 @@ block the design; all of them should be settled before the branch ships.
 
 ## Verification still owed
 
-- [ ] **The landing has never been looked at on a narrow viewport.** The mobile
-      aspect-distortion bug is fixed structurally (all three screenshots share one sizing rule,
-      so there is no per-image override left to fight), but that is reasoning, not evidence.
-      The hand-set line breaks also switch off below 760px, and how those questions re-wrap
-      on their own has not been seen.
+- [x] **The landing has been checked at phone width** (420px). It now has a purpose-built
+      layout rather than a squeezed desktop one — see the commit. Two real defects surfaced
+      and were fixed there: words glued together where a hidden `<br />` had been carrying the
+      only space, and a wrapping header overflowing its fixed 61px bar.
+
+- [ ] **Still unchecked between 760px and ~1100px** — tablets and small laptops, where the
+      desktop diagonal is active but the composition is at its most compressed.
 
 - [ ] **Re-run the whole-branch review.** The last one returned 0 Critical, but it judged
       commit `44dcec5`; every landing commit since then is unreviewed.

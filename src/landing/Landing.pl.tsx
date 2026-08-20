@@ -111,29 +111,43 @@ body { padding-top: var(--landing-header-h); }
 }
 
 @media (max-width: 760px) {
-  /* Slides stop being full-height here, so a tall slide degrades to ordinary
-     scrolling instead of trapping its own content inside a mandatory snap point.
-     The diagonal collapses to a plain stack and the composition stops being rigid. */
-  html { scroll-snap-type: y proximity; }
-  .landing-slide { min-height: auto; padding: 2.6em 0; }
-  .landing-cluster { width: 100%; padding: 0 1.5em; font-size: 15px; }
+  /* A phone gets its own layout rather than a squeezed desktop one. Cropping a 16:9
+     frame to a portrait viewport leaves only its middle, and every subject in these
+     photographs stands near an edge — so instead of a full-bleed texture the picture
+     becomes a wide, short band across the top of the slide. At that shape it barely
+     crops at all, which keeps the rider or runner in frame, and it lets the type sit
+     on clean background where it reads best. The wash is unnecessary once nothing
+     overlaps the photograph, so the photograph runs at full strength. */
+  html { scroll-snap-type: none; }
+  /* The header is a fixed 61px bar, so nothing in it may wrap. The tagline is the
+     first thing to go — the wordmark alone still says what the site is. */
+  .landing-header { padding: 0 1.1em; }
+  .landing-header > div > span + span { display: none; }
+  .landing-header > div > span { font-size: 17px; }
+  .landing-header a {
+    padding: 7px 13px !important; font-size: 12px !important; white-space: nowrap;
+  }
+  .landing-slide {
+    display: block; min-height: auto; padding: 0 0 2.8em; scroll-snap-align: none;
+  }
+  .landing-bg {
+    position: static; width: 100%; height: clamp(180px, 32svh, 280px);
+    opacity: 1; filter: none; object-position: center center;
+  }
+  .landing-wash { display: none; }
+  .landing-cluster { width: 100%; padding: 1.6em 1.35em 0; font-size: 15px; }
   .landing-q {
     max-width: none; margin: 0 !important; text-align: left !important;
-    font-size: clamp(23px, 6.4vw, 30px);
+    font-size: clamp(23px, 6.2vw, 30px);
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: 1.5em 0 0 !important;
+    width: 100%; margin: 1.4em 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
   }
-  .landing-shot img { max-height: 52svh; }
+  .landing-shot img { max-height: 46svh; }
   .landing-cap { max-width: none; }
-  .landing-wash {
-    background: radial-gradient(ellipse 120% 70% at 50% 50%,
-      rgba(239, 240, 236, 0.98) 0%, rgba(239, 240, 236, 0.92) 46%,
-      rgba(239, 240, 236, 0.55) 74%, rgba(239, 240, 236, 0) 100%);
-  }
 }
 `;
 
@@ -157,12 +171,9 @@ export default function LandingPl() {
           <div className="landing-wash" />
           <div className="landing-cluster">
             <h1 className="landing-q">
-              Jeździsz na rowerze, biegasz, czy uprawiasz
-              <br />
-              inny sport, w którym musisz
-              <br />
-              uzupełniać energię
-              <br />w trakcie wysiłku?
+              Jeździsz na rowerze, biegasz, czy uprawiasz <br />
+              inny sport, w którym musisz <br />
+              uzupełniać energię <br />w trakcie wysiłku?
             </h1>
             <figure className="landing-shot">
               <figcaption className="landing-cap">Tak wygląda plan na Twoją trasę</figcaption>
@@ -179,12 +190,9 @@ export default function LandingPl() {
           <div className="landing-wash" />
           <div className="landing-cluster">
             <h2 className="landing-q">
-              Czujesz, jak żele czy izotoniki
-              <br />
-              drenują Twój portfel, a nie
-              <br />
-              chcesz z nich
-              <br />
+              Czujesz, jak żele czy izotoniki <br />
+              drenują Twój portfel, a nie <br />
+              chcesz z nich <br />
               rezygnować?
             </h2>
             <figure className="landing-shot">
@@ -204,9 +212,7 @@ export default function LandingPl() {
           <div className="landing-wash" />
           <div className="landing-cluster">
             <h2 className="landing-q">
-              A może złapałeś kiedyś bombę
-              <br />i zastanawiasz się, jak
-              <br />
+              A może złapałeś kiedyś bombę <br />i zastanawiasz się, jak <br />
               temu przeciwdziałać?
             </h2>
             <figure className="landing-shot">
