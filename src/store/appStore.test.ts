@@ -505,7 +505,7 @@ describe('persisted ui merge — no overlay survives a reload', () => {
   // partialize on the persist config). Backgrounding a phone with the Mix sheet open flushes
   // it to localStorage on pagehide, so without this reset the next visit — typically the
   // landing's "open the calculator" link — boots straight into that sheet.
-  test('sheets, the chart help modal and a half-finished tour all come back closed', () => {
+  test('the sheets and the chart help modal all come back closed', () => {
     const merge = useAppStore.persist.getOptions().merge!;
     const currentState = useAppStore.getState();
     const merged = merge(
@@ -516,7 +516,6 @@ describe('persisted ui merge — no overlay survives a reload', () => {
           routeSheet: true,
           shopSheet: { editId: 3 },
           chartHelp: true,
-          tourStep: 2,
         },
       },
       currentState,
@@ -525,7 +524,6 @@ describe('persisted ui merge — no overlay survives a reload', () => {
     expect(merged.ui.routeSheet).toBe(false);
     expect(merged.ui.shopSheet).toBeNull();
     expect(merged.ui.chartHelp).toBe(false);
-    expect(merged.ui.tourStep).toBeNull();
   });
 
   // tourSeen is the opposite case: it is a genuine preference, and resetting it would replay
@@ -537,6 +535,20 @@ describe('persisted ui merge — no overlay survives a reload', () => {
       { ui: { ...currentState.ui, tourSeen: true } },
       { ...currentState, ui: { ...currentState.ui, tourSeen: false } },
     ) as typeof currentState;
+    expect(merged.ui.tourSeen).toBe(true);
+  });
+
+  // The tour is the one overlay that must survive, and it survives as a pair: startTour sets
+  // tourSeen at step 0, so dropping the step while keeping tourSeen would leave a first-time
+  // visitor who reloaded mid-tour with no tour and no way back to it.
+  test('a tour interrupted mid-way resumes where it was', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, tourStep: 2, tourSeen: true } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.tourStep).toBe(2);
     expect(merged.ui.tourSeen).toBe(true);
   });
 });

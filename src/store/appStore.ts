@@ -717,13 +717,18 @@ export const useAppStore = create<AppState>()(
             // overlay. All of these are persisted too (there is no partialize), and the
             // debounced write flushes on pagehide — so backgrounding a phone with the Mix
             // sheet open stores `mixSheet: true`, and the next visit opens on that sheet
-            // instead of the plan. tourSeen is deliberately not in this list: it is a real
-            // preference, and resetting it would replay the tour on every visit.
+            // instead of the plan.
+            //
+            // tourStep is deliberately NOT in this list, even though it gates an overlay too.
+            // startTour sets tourSeen at step 0, and tourSeen is a preference that has to
+            // survive — so resetting the step alone would strand a first-time visitor who
+            // reloaded mid-tour: the overlay would go, and App's `if (tourSeen) return` guard
+            // would never bring it back. Leaving the step persisted resumes the tour where it
+            // was, which is what happened before this block existed.
             mixSheet: currentState.ui.mixSheet,
             routeSheet: currentState.ui.routeSheet,
             shopSheet: currentState.ui.shopSheet,
             chartHelp: currentState.ui.chartHelp,
-            tourStep: currentState.ui.tourStep,
             ...(htmlLang ? { lang: htmlLang } : {}),
           },
         };
