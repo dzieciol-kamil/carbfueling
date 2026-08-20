@@ -53,15 +53,37 @@ block the design; all of them should be settled before the branch ships.
       and were fixed there: words glued together where a hidden `<br />` had been carrying the
       only space, and a wrapping header overflowing its fixed 61px bar.
 
-- [ ] **Still unchecked between 760px and ~1100px** — tablets and small laptops, where the
-      desktop diagonal is active but the composition is at its most compressed.
+- [x] **Checked between 760px and ~1100px**, 2026-08-20, both languages, all four slides plus
+      the FAQ, measured in a fixed-width iframe. No horizontal overflow at any width and no
+      vertical overflow down to 600px-tall viewports. Two real defects surfaced, both fixed:
+      the header wrapped every element onto a second line between 761px and 778px (EN; PL
+      stopped at 769px), which covers 768px — iPad portrait; and the closing slide's rider was
+      cropped to a forearm on portrait tablets, because all four photographs are 1376×768 under
+      `object-fit: cover`, so a 768×1024 window keeps only 45% of the frame against 96% on a
+      laptop. See "Landing at tablet widths" below for what the fixes cost elsewhere.
 
-- [ ] **Re-run the whole-branch review.** The last one returned 0 Critical, but it judged
-      commit `44dcec5`; every landing commit since then is unreviewed.
+- [x] **Whole-branch review re-run** against `master...HEAD` at high effort, 2026-08-20.
+      0 Critical. Two Mediums (the language switch capturing the Back button; the persisted
+      mobile sheets reopening on the next visit) and two Lows; three are fixed, the fourth is
+      recorded under "Noted, not scheduled".
 
 - [ ] **First push to `master` is a required live check on `/preview`.** The spec says the
       sub-path behaviour — relative links, redirects, base-prefixed assets — cannot be fully
       validated until it is actually deployed to GitHub Pages.
+
+## Landing at tablet widths — what the two fixes changed
+
+- The header now holds its line at every width: the wordmark and the CTA carry
+  `white-space: nowrap` in their own styles, and between 761px and 800px the tagline drops,
+  exactly as it already does on a phone. `renderPage.mjs` carries the same band so the FAQ
+  header stays in step.
+- The closing slide's backdrop takes its trim two parts right to one part left
+  (`object-position: 33%`) while the window is narrower than the photograph's own 1376/768.
+  The threshold has to sit there: an earlier cut-off at 5/4 made the frame lurch 59px as the
+  window crossed 1156px. Because there is no horizontal trim left to place at 1376/768, the
+  rule switching off is invisible, and the shift tapers off on its own as windows widen —
+  0px at 1512×860 and 1920×1080, 11px at 1440×900, 41px at 1024×768, 163px at 768×1024.
+  The phone keeps its own stronger 11.5% and is untouched.
 
 ## Noted, not scheduled
 
@@ -73,3 +95,12 @@ block the design; all of them should be settled before the branch ships.
   a tracked follow-up. Checked during review: the three copies have **not** drifted yet.
 - `Lang` is declared twice, in `src/urls.ts` and `src/i18n/strings.ts`. Structurally
   identical; a divergence would surface as a `tsc` error, never a runtime bug.
+- **An explicit in-app language choice cannot survive re-entry through `/`.** `merge` lets the
+  HTML-seeded language win over the persisted one (deliberate — otherwise a shared
+  `/pl/calculator/` link would be overridden by a stored preference), while
+  `public/lang-redirect.js` routes `/` on `navigator.language` alone. So a rider with a Polish
+  browser who deliberately chose English is sent back to Polish every time they come in through
+  the front door. Reviewed 2026-08-20 and left alone: both rules are individually right, the
+  conflict is a design question, and every fix has a real cost — teaching the redirect script
+  the store's persist schema, or reconstructing whether the URL was language-pinned after
+  `location.replace` has already erased the evidence.
