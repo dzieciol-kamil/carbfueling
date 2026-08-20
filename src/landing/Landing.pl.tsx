@@ -256,6 +256,13 @@ body { padding-top: var(--landing-header-h); }
   .landing-slide[data-slide='4'] .landing-bg {
     bottom: auto; height: 130svh; object-position: 11.15% center;
   }
+  /* Anchored to the foot of the slide rather than aimed at a spot in the photograph:
+     the bike sits low in the frame and its exact height moves with the viewport, so
+     bottom alignment lands the button in that region on any screen. */
+  .landing-slide[data-slide='4'] {
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 8svh;
+  }
 
   .landing-dots { display: flex; }
 }
