@@ -146,14 +146,15 @@ body { padding-top: var(--landing-header-h); }
 
   /* The header is a fixed bar, so nothing in it may wrap. The tagline is the first
      thing to go — the wordmark alone still says what the site is. */
-  .landing-header { padding: 0 1.1em; }
+  .landing-header { padding: 0 0.8em; }
   .landing-header > div > span + span { display: none; }
-  .landing-header > div > span { font-size: 17px; }
+  .landing-header > div > span { font-size: 15px; white-space: nowrap; }
   .landing-actions > a {
-    padding: 7px 12px !important; font-size: 12px !important; white-space: nowrap;
+    padding: 6px 10px !important; font-size: 11px !important; white-space: nowrap;
   }
-  .landing-actions { gap: 7px; }
-  .landing-lang a { min-width: 28px; padding: 4px 5px; font-size: 10px; }
+  .landing-actions { gap: 6px; }
+  .landing-lang { padding: 2px; }
+  .landing-lang a { min-width: 24px; padding: 4px; font-size: 10px; }
 
   /* Each slide becomes a window onto its own photograph. "clip-path" makes the slide a
      containing block for a "position: fixed" child, so the picture is pinned to the
@@ -170,32 +171,40 @@ body { padding-top: var(--landing-header-h); }
      inherit, so a phone gets exactly the same softened backdrop the desktop has. */
   .landing-bg {
     position: fixed; inset: 0; width: 100vw; height: 100svh;
-    object-fit: cover; object-position: 26% center;
+    object-fit: cover; object-position: 12% center;
+  }
+  /* The desktop veil is an ellipse tuned for a landscape frame; on a portrait one it
+     smears the whole picture. Here it is a vertical fade instead: dense behind the
+     question at the top, gone by the lower third so the road and the rider read. */
+  .landing-wash {
+    background: linear-gradient(to bottom, rgba(239, 240, 236, 0.93) 0%,
+      rgba(239, 240, 236, 0.88) 32%, rgba(239, 240, 236, 0.45) 54%,
+      rgba(239, 240, 236, 0.08) 72%, rgba(239, 240, 236, 0) 100%);
   }
 
   .landing-cluster {
-    position: relative; z-index: 2; width: 100%; padding: 1.8em 1.2em 0;
+    position: relative; z-index: 2; width: 100%; padding: 1.5em 1.1em 0;
     font-size: 15px;
   }
   .landing-q {
-    max-width: 74%; margin: 0 !important; text-align: left !important;
-    font-size: clamp(21px, 5.6vw, 27px); line-height: 1.24;
+    max-width: 92%; margin: 0 !important; text-align: left !important;
+    font-size: clamp(24px, 7vw, 32px); line-height: 1.2;
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: 1.1em 0 0 !important;
+    width: 100%; margin: 2.2em 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
   }
   /* Sits with the screenshot it labels, over on the right, rather than stranded at the
      opposite edge. */
-  .landing-cap { max-width: 80%; margin-left: auto; text-align: right; }
+  .landing-cap { max-width: 72%; margin-left: auto; text-align: right; }
   /* Half a screenshot, hung off the right edge and dropped below the question, so the
      rider along the bottom-left of the photograph stays in view. The transform keeps
      this purely visual — the caption above it does not move with it. */
   .landing-shot img {
-    width: 150%; max-width: none; height: auto; max-height: none;
-    transform: translateX(20%);
+    width: 200%; max-width: none; height: auto; max-height: none;
+    transform: translateX(12%);
   }
 
   .landing-dots { display: flex; }
