@@ -29,6 +29,14 @@ describe('renderRedirectStub', () => {
     expect(html).toContain('<script src="/preview/redirect.js" data-target="/preview/en/faq/"></script>');
   });
 
+  test('names its destination as canonical, and carries a title and a lang', () => {
+    const html = renderRedirectStub({ targetPath: '/en/faq/', base: '/preview', noindex: true });
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<title>Moved — Carb Fueling</title>');
+    // SITE-absolute and un-prefixed even under /preview, like every other canonical here.
+    expect(html).toContain('<link rel="canonical" href="https://carbfueling.com/en/faq/" />');
+  });
+
   test('adds noindex when requested', () => {
     const html = renderRedirectStub({ targetPath: '/en/faq/', base: '/preview', noindex: true });
     expect(html).toContain('<meta name="robots" content="noindex, nofollow" />');

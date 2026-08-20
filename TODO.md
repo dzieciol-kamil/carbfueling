@@ -18,29 +18,23 @@ block the design; all of them should be settled before the branch ships.
 
 ## Straightforward fixes
 
-- [ ] **The calculator is absent from `sitemap.xml`.** The sitemap is built purely from
-      `build-static.mjs`'s `pages` array, which holds landing + FAQ only; the calculator's two
-      entries come from Vite and never enter it. On `master` the calculator _was_ the sitemap
-      (the hardcoded `/` entry at priority 1.0 that the spec correctly deleted). Both URLs are
-      internally linked so they will still be found, but the explicit signal is gone. Fix: push
-      `/en/calculator/` and `/pl/calculator/` into the array `writeSitemap` receives — only
-      `urlPath` is read. Consider also lifting the landing pages above the flat `0.6` priority,
-      since `/en/` is the home page now.
+- [x] **The calculator is absent from `sitemap.xml`.** Fixed 2026-08-20: `writeSitemap` now
+      receives `pages` plus a `calculatorHref()`-derived entry per language, so both calculator
+      URLs are listed even though Vite, not this script, builds those pages. Priority is no
+      longer flat either — landing `1.0`, calculator `0.9`, FAQ keeps `0.6` as the default.
 
-- [ ] **Redirect stubs carry no `canonical`, no `<title>`, no `<html lang>`.**
-      `scripts/renderPage.mjs`'s `renderRedirectStub`. The ADR accepts the retired `/faq/*`
-      paths as a known SEO risk; a canonical pointing at the target and a title for
-      link-unfurlers is cheap hardening well inside that decision.
+- [x] **Redirect stubs carry no `canonical`, no `<title>`, no `<html lang>`.** Fixed in the
+      same pass: `renderRedirectStub` now emits `<html lang="en">` (every retired path was
+      English), a SITE-absolute canonical naming the target, and a `Moved — Carb Fueling`
+      title for link unfurlers. Covered by a new test in `renderPage.test.mjs`.
 
-- [ ] **`noindex` and the sitemap gate use two spellings of one condition** —
-      `BASE !== ''` at `build-static.mjs:15` versus `!BASE` at the sitemap call. Equivalent
-      today, but the spec was emphatic about this predicate for good reason. Collapse to a
-      single `const isPreview`.
+- [x] **`noindex` and the sitemap gate use two spellings of one condition.** Collapsed to
+      one `const isPreview = BASE !== ''`, used by both the sitemap gate and all three
+      `noindex` call sites.
 
-- [ ] **`appStore.test.ts`'s two new merge tests call `vi.stubGlobal('document', …)` without
-      `try/finally`.** A failed assertion skips `vi.unstubAllGlobals()` and leaks a stubbed
-      `document` into the rest of the file, turning one clean failure into a confusing cascade.
-      `afterEach(() => vi.unstubAllGlobals())` is the usual shape.
+- [x] **`appStore.test.ts`'s two new merge tests call `vi.stubGlobal('document', …)` without
+      `try/finally`.** Replaced by one `afterEach(() => vi.unstubAllGlobals())` on the describe
+      block, so a failed assertion can no longer leak a stubbed `document` into later tests.
 
 ## Frozen
 

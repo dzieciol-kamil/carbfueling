@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { hasPlanData, shouldConfirmViewModeChange, useAppStore } from './appStore';
 import type { Fill, RouteInput } from '../domain/types';
 
@@ -525,6 +525,13 @@ describe('persisted ui merge — autoView is derived, not remembered', () => {
 });
 
 describe('persisted ui merge — HTML-seeded language precedence', () => {
+  // Un-stubbing here rather than at the end of each test: an assertion that fails leaves the
+  // rest of its test body unrun, so a trailing unstubAllGlobals() would leak a fake `document`
+  // into every test after it and turn one honest failure into a cascade of confusing ones.
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test('the HTML-seeded lang wins over a persisted ui.lang; other ui fields survive', () => {
     vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
     const merge = useAppStore.persist.getOptions().merge!;
@@ -537,7 +544,6 @@ describe('persisted ui merge — HTML-seeded language precedence', () => {
     expect(merged.ui.lang).toBe('pl');
     expect(merged.ui.viewMode).toBe('desktop');
     expect(merged.ui.xUnit).toBe('h');
-    vi.unstubAllGlobals();
   });
 
   test('first-ever visit (no persisted state): non-lang ui fields fall back to current defaults, lang is still HTML-seeded', () => {
@@ -548,7 +554,6 @@ describe('persisted ui merge — HTML-seeded language precedence', () => {
     expect(merged.ui.lang).toBe('pl');
     expect(merged.ui.viewMode).toBe(currentState.ui.viewMode);
     expect(merged.ui.panel).toBe(currentState.ui.panel);
-    vi.unstubAllGlobals();
   });
 });
 

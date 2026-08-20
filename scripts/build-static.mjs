@@ -12,7 +12,21 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = path.join(rootDir, 'dist');
 const BASE = process.env.BASE ?? '';
 const LANGS = ['en', 'pl'];
-const noindex = BASE !== '';
+// One predicate, spelled once: a build with a base path is the /preview deploy, and it must
+// be excluded from the index and from the sitemap together. These two were separate
+// expressions (`BASE !== ''` and `!BASE`); equivalent, but the spec is emphatic about this
+// condition, and two spellings are two chances to change one and forget the other.
+const isPreview = BASE !== '';
+
+// A relative hint within our own sitemap, nothing more. The landing pages are the site's
+// entry points, the calculator is the thing people actually come to use, and the FAQ
+// supports both — which is what the default covers.
+const SITEMAP_PRIORITY = new Map([
+  ['/en/', '1.0'],
+  ['/pl/', '1.0'],
+  ['/en/calculator/', '0.9'],
+  ['/pl/calculator/', '0.9'],
+]);
 
 async function writeSitemap(pages) {
   const templatePath = path.join(rootDir, 'public/sitemap.xml');
@@ -20,7 +34,7 @@ async function writeSitemap(pages) {
   const entries = pages
     .map(
       (p) =>
-        `  <url>\n    <loc>${SITE}${p.urlPath}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>`,
+        `  <url>\n    <loc>${SITE}${p.urlPath}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>${SITEMAP_PRIORITY.get(p.urlPath) ?? '0.6'}</priority>\n  </url>`,
     )
     .join('\n');
   const combined = template.replace('</urlset>', `${entries}\n</urlset>`);
@@ -35,7 +49,7 @@ async function main() {
   });
 
   const { ARTICLES } = await server.ssrLoadModule('/src/faq/registry.ts');
-  const { faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
+  const { calculatorHref, faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
   // used *inside* a React component's own JSX (that markup ends up in bodyHtml, which goes
   // through renderPage()'s single prefixInternalUrls pass at write time, same as everything
@@ -147,7 +161,7 @@ async function main() {
 
   for (const page of pages) {
     await mkdir(path.dirname(page.outPath), { recursive: true });
-    await writeFile(page.outPath, renderPage({ ...page, base: BASE, noindex }), 'utf-8');
+    await writeFile(page.outPath, renderPage({ ...page, base: BASE, noindex: isPreview }), 'utf-8');
   }
 
   // `/`: a real copy of the EN landing page's content (not a blank stub — link previews and
@@ -159,7 +173,7 @@ async function main() {
     renderPage({
       ...enLanding,
       base: BASE,
-      noindex,
+      noindex: isPreview,
       canonicalOverride: `${SITE}/en/`,
       langRedirectTarget: '/pl/',
     }),
@@ -178,13 +192,20 @@ async function main() {
     await mkdir(path.dirname(stub.outPath), { recursive: true });
     await writeFile(
       stub.outPath,
-      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex }),
+      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex: isPreview }),
       'utf-8',
     );
   }
 
-  if (!BASE) {
-    await writeSitemap(pages);
+  if (!isPreview) {
+    // The calculator's two pages come from Vite, not from this script, so they never enter
+    // `pages` — and without these two entries the site's main destination would be missing
+    // from the sitemap entirely (on master the calculator *was* the sitemap). Only `urlPath`
+    // is read here, so a bare object is all an entry needs.
+    await writeSitemap([
+      ...pages,
+      ...LANGS.map((lang) => ({ urlPath: strip(calculatorHref(lang)) })),
+    ]);
   }
 
   await server.close();

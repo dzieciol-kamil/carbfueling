@@ -225,13 +225,23 @@ export function renderPage({
   return prefixInternalUrls(html, base);
 }
 
+/** The retired `/faq/*` paths, kept alive as redirects to their `/en/faq/*` replacements.
+ *  The head carries more than a refresh: a canonical naming the destination (so a crawler
+ *  that indexes the stub before following it still credits the real page), a title (so a
+ *  link unfurler has something other than a URL to show), and `lang` (so a screen reader
+ *  reaching one doesn't have to guess). Every stub targets an English page — the retired
+ *  paths only ever served English — hence the hardcoded `en`. Canonical is SITE-absolute
+ *  like every other page's, never base-prefixed; on /preview the noindex flag is what
+ *  keeps the stub out of the index. */
 export function renderRedirectStub({ targetPath, base = '', noindex = false }) {
   const robots = noindex ? '\n    <meta name="robots" content="noindex, nofollow" />' : '';
   const html = `<!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="refresh" content="0;url=__BASE__${targetPath}" />${robots}
+    <link rel="canonical" href="${SITE}${targetPath}" />
+    <title>Moved — Carb Fueling</title>
     <script src="__BASE__/redirect.js" data-target="__BASE__${targetPath}"></script>
   </head>
   <body></body>
