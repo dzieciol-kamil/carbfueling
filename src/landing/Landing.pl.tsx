@@ -93,6 +93,10 @@ body { padding-top: var(--landing-header-h); }
   border-radius: 0.75em; border: 1px solid var(--border); background: #fff;
   box-shadow: 0 1.5em 3.5em rgba(22, 25, 28, 0.16);
 }
+.landing-cap br { display: none; }
+/* Each phrase is atomic, so this line can only break at its separators, never
+   mid-phrase. */
+.landing-cap span { white-space: nowrap; }
 .landing-cap {
   margin: 0 0 0.83em; max-width: 31.6em;
   font-family: 'JetBrains Mono', monospace; font-size: 0.75em; font-weight: 600;
@@ -202,6 +206,7 @@ body { padding-top: var(--landing-header-h); }
   /* Wide enough that only the explicit break splits it — the 72% cap was clipping the
      second line into a third. */
   .landing-cap { max-width: 100%; margin-left: auto; text-align: right; }
+  .landing-cap br { display: inline; }
   /* Half a screenshot, hung off the right edge and dropped below the question, so the
      rider along the bottom-left of the photograph stays in view. The transform keeps
      this purely visual — the caption above it does not move with it. */
@@ -252,20 +257,21 @@ body { padding-top: var(--landing-header-h); }
      the screen grows — a quarter of every extra pixel goes to the description, the
      other three quarters uncover more chart past the right edge. */
   .landing-slide[data-slide='3'] .landing-shot img {
-    margin-left: calc(25vw - 21.36vh - 119.5px);
+    margin-left: calc(25vw - 21.36vh - 61.5px);
   }
 
   /* No question and no screenshot here, so the only job is keeping the rider and the
      left-hand FINISH pylon in a frame that only shows about a quarter of the picture. */
+  /* 115svh rather than 130: at 130 the rear wheel landed at 99% of the screen, i.e.
+     off the bottom edge. Here it sits at about 88%, below the button but in frame. */
   .landing-slide[data-slide='4'] .landing-bg {
-    bottom: auto; height: 130svh; object-position: 11.15% center;
+    bottom: auto; height: 115svh; object-position: 11.15% center;
   }
-  /* Anchored to the foot of the slide rather than aimed at a spot in the photograph:
-     the bike sits low in the frame and its exact height moves with the viewport, so
-     bottom alignment lands the button in that region on any screen. */
-  .landing-slide[data-slide='4'] {
-    display: flex; align-items: flex-end; justify-content: center;
-    padding-bottom: 8svh;
+  .landing-slide[data-slide='4'] > div { padding-top: 12svh !important; }
+
+  .landing-slide[data-slide='4'] .landing-cap {
+    margin: 0 auto !important; text-align: center !important;
+    font-size: 0.66em; letter-spacing: 0.06em;
   }
 
   .landing-dots { display: flex; }
@@ -401,7 +407,7 @@ export default function LandingPl() {
               className="landing-cap"
               style={{ margin: 0, maxWidth: 'none', color: 'var(--muted-3)' }}
             >
-              Za darmo · bez konta · działa w przeglądarce
+              <span>Za darmo</span> · <span>bez konta</span> · <span>działa w przeglądarce</span>
             </p>
             <h2 style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}>
               Zaplanuj, ile węglowodanów i płynów zabrać na trasę — i jak rozłożyć je w czasie.
