@@ -529,11 +529,14 @@ describe('persisted ui merge — HTML-seeded language precedence', () => {
     vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
     const merge = useAppStore.persist.getOptions().merge!;
     const currentState = useAppStore.getState();
-    const persistedUi = { ...currentState.ui, lang: 'en', viewMode: 'desktop', panel: 'settings' };
+    // xUnit stands in for "an ordinary remembered preference" here. panel and tab used
+    // to serve that purpose, but they are deliberately no longer restored — the
+    // calculator always opens on the plan.
+    const persistedUi = { ...currentState.ui, lang: 'en', viewMode: 'desktop', xUnit: 'h' };
     const merged = merge({ ui: persistedUi }, currentState) as typeof currentState;
     expect(merged.ui.lang).toBe('pl');
     expect(merged.ui.viewMode).toBe('desktop');
-    expect(merged.ui.panel).toBe('settings');
+    expect(merged.ui.xUnit).toBe('h');
     vi.unstubAllGlobals();
   });
 
