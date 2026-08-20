@@ -171,7 +171,7 @@ body { padding-top: var(--landing-header-h); }
      inherit, so a phone gets exactly the same softened backdrop the desktop has. */
   .landing-bg {
     position: fixed; inset: 0; width: 100vw; height: 100svh;
-    object-fit: cover; object-position: 18.7% center;
+    object-fit: cover; object-position: 19.4% center;
   }
   /* The desktop veil is an ellipse tuned for a landscape frame; on a portrait one it
      smears the whole picture. Here it is a vertical fade instead: dense behind the
@@ -202,9 +202,16 @@ body { padding-top: var(--landing-header-h); }
   /* Half a screenshot, hung off the right edge and dropped below the question, so the
      rider along the bottom-left of the photograph stays in view. The transform keeps
      this purely visual — the caption above it does not move with it. */
+  /* Pinned to the rider rather than to the container, so the gap between them holds
+     as the screen changes. With "object-fit: cover" on a portrait box the picture is
+     scaled to the height, which puts him at (0.18 - 0.194) * 1.79 * vh + 0.194 * vw —
+     the 19.4vw / 2.51vh below. The constant is the gap itself, minus the cluster's own
+     left padding. Widening the screen therefore slides both outward together: more of
+     the screenshot comes into view, and a little more field opens up to his left. */
   .landing-shot img {
     width: 200%; max-width: none; height: auto; max-height: none;
-    transform: translateX(12%);
+    transform: none;
+    margin-left: calc(19.4vw - 2.51vh + 30px);
   }
 
   .landing-dots { display: flex; }
