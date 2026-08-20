@@ -729,6 +729,13 @@ export const useAppStore = create<AppState>()(
             routeSheet: currentState.ui.routeSheet,
             shopSheet: currentState.ui.shopSheet,
             chartHelp: currentState.ui.chartHelp,
+            // In-flight pointer state, persisted for the same reason and just as meaningless
+            // once the pointer is gone: a drag interrupted by backgrounding the phone brought
+            // the bar back rendered mid-drag, with nothing to clear it until the next drag.
+            dragKey: currentState.ui.dragKey,
+            hoverKey: currentState.ui.hoverKey,
+            selKey: currentState.ui.selKey,
+            scrubX: currentState.ui.scrubX,
             ...(htmlLang ? { lang: htmlLang } : {}),
           },
         };

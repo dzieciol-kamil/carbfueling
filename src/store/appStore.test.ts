@@ -526,6 +526,22 @@ describe('persisted ui merge — no overlay survives a reload', () => {
     expect(merged.ui.chartHelp).toBe(false);
   });
 
+  // Pointer state is the same class: persisted, but meaningless once the pointer is gone. A
+  // drag interrupted by backgrounding the phone stored dragKey, and the bar came back rendered
+  // mid-drag — dimmed and highlighted — with nothing to clear it until the next drag.
+  test('in-flight pointer state does not come back', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, dragKey: 'f3', hoverKey: 'f2', selKey: 'f1', scrubX: 120 } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.dragKey).toBeNull();
+    expect(merged.ui.hoverKey).toBeNull();
+    expect(merged.ui.selKey).toBeNull();
+    expect(merged.ui.scrubX).toBeNull();
+  });
+
   // tourSeen is the opposite case: it is a genuine preference, and resetting it would replay
   // the tour on every visit.
   test('but tourSeen is a preference and is still restored', () => {
