@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
+import { LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
 import { MobileGear } from './MobileGear';
@@ -76,9 +77,18 @@ export function MobileApp() {
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <a
+            href={LANDING_HREF_FROM_CALCULATOR}
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+              textDecoration: 'none',
+            }}
+          >
             CARB FUELING
-          </span>
+          </a>
           <button
             type="button"
             data-tour="route-summary"
