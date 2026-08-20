@@ -257,7 +257,7 @@ body { padding-top: var(--landing-header-h); }
      the screen grows — a quarter of every extra pixel goes to the description, the
      other three quarters uncover more chart past the right edge. */
   .landing-slide[data-slide='3'] .landing-shot img {
-    margin-left: calc(25vw - 21.36vh - 61.5px);
+    margin-left: calc(25vw - 21.36vh - 119.5px);
   }
 
   /* No question and no screenshot here, so the only job is keeping the rider and the
