@@ -13,6 +13,19 @@ describe('prefixInternalUrls', () => {
     const html = `<a href="__BASE__/en/faq/">x</a>`;
     expect(prefixInternalUrls(html, '')).toBe(`<a href="/en/faq/">x</a>`);
   });
+
+  // The workflow spells the same base both ways one line apart — Vite wants the trailing
+  // slash, this wants it gone — so the two must not be tidied into agreement by hand.
+  test('a base with a trailing slash does not double the separator', () => {
+    const html = `<a href="__BASE__/en/faq/">x</a><link href="__BASE__/favicon.svg">`;
+    expect(prefixInternalUrls(html, '/preview/')).toBe(
+      `<a href="/preview/en/faq/">x</a><link href="/preview/favicon.svg">`,
+    );
+  });
+
+  test('a bare slash base behaves like production, not like //', () => {
+    expect(prefixInternalUrls(`<a href="__BASE__/en/">x</a>`, '/')).toBe(`<a href="/en/">x</a>`);
+  });
 });
 
 describe('renderRedirectStub', () => {
@@ -42,6 +55,14 @@ describe('renderRedirectStub', () => {
   test('adds noindex when requested', () => {
     const html = renderRedirectStub({ targetPath: '/en/faq/', base: '/preview', noindex: true });
     expect(html).toContain('<meta name="robots" content="noindex, nofollow" />');
+  });
+
+  // The stub loads /redirect.js, which reads a data- attribute and calls location.replace. It
+  // was the one generated page shipping without the policy every other page carries.
+  test('carries the same CSP as every other generated page', () => {
+    const html = renderRedirectStub({ targetPath: '/en/faq/', base: '', noindex: false });
+    expect(html).toContain('http-equiv="Content-Security-Policy"');
+    expect(html).toContain("script-src 'self'");
   });
 });
 

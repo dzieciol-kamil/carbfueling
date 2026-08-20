@@ -164,7 +164,13 @@ function safeJsonLd(obj) {
  *  data-* attributes, and risk double-prefixing an already-prefixed value. The marker
  *  approach can't do either — it only ever replaces exactly what was deliberately marked. */
 export function prefixInternalUrls(html, base) {
-  return html.split('__BASE__').join(base);
+  // Every marker already starts with its own '/', so a base ending in one would double it and
+  // yield /preview//en/calculator/ — a link that still resolves nowhere useful and raises no
+  // error. The workflow spells the same base two ways one line apart, `--base=/preview/` for
+  // Vite (which requires the slash) and `BASE=/preview` here (which requires its absence), so
+  // anyone tidying those two into agreement would break the build silently. Normalising here
+  // means this function's contract no longer depends on remembering which spelling it wanted.
+  return html.split('__BASE__').join(base.replace(/\/$/, ''));
 }
 
 export function renderPage({
@@ -247,6 +253,10 @@ export function renderRedirectStub({ targetPath, base = '', noindex = false }) {
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://kddudi.goatcounter.com; connect-src 'self' https://kddudi.goatcounter.com; base-uri 'self'; form-action 'self';"
+    />
     <meta http-equiv="refresh" content="0;url=__BASE__${targetPath}" />${robots}
     <link rel="canonical" href="${SITE}${targetPath}" />
     <title>Moved — Carb Fueling</title>
