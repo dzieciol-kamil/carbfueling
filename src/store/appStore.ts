@@ -13,7 +13,7 @@ import { startFillOf } from '../domain/combinedRefill';
 import { dist, presetTagFor } from '../domain/fuel';
 import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
-import { t, type Lang } from '../i18n/strings';
+import { LANGS, t, type Lang } from '../i18n/strings';
 import { createDebouncedLocalStorage } from './persistStorage';
 import {
   DEFAULT_MIX,
@@ -680,8 +680,12 @@ export const useAppStore = create<AppState>()(
         // The test suite runs with `environment: 'node'` (no DOM), so `document` is
         // undefined there — this guard mirrors defaultLang()'s own `typeof navigator`
         // check above rather than requiring every test file to stub a DOM.
-        const htmlLang =
-          typeof document !== 'undefined' ? (document.documentElement.lang as Lang) : undefined;
+        // The attribute is not ours alone: Chrome's "always translate this page" rewrites it to
+        // the translation's language. Accepting it unchecked would put e.g. `es` into ui.lang,
+        // which nextLangPath() then pushes into the address bar as /es/calculator/ — a URL that
+        // 404s on reload — and merge's result goes straight back to localStorage, so it sticks.
+        const attrLang = typeof document !== 'undefined' ? document.documentElement.lang : '';
+        const htmlLang = LANGS.includes(attrLang as Lang) ? (attrLang as Lang) : undefined;
         return {
           ...currentState,
           ...persisted,
@@ -709,6 +713,17 @@ export const useAppStore = create<AppState>()(
             // defaults: no panel open, and the plan.
             panel: currentState.ui.panel,
             tab: currentState.ui.tab,
+            // The same argument, one step stronger, for everything that gates a full-screen
+            // overlay. All of these are persisted too (there is no partialize), and the
+            // debounced write flushes on pagehide — so backgrounding a phone with the Mix
+            // sheet open stores `mixSheet: true`, and the next visit opens on that sheet
+            // instead of the plan. tourSeen is deliberately not in this list: it is a real
+            // preference, and resetting it would replay the tour on every visit.
+            mixSheet: currentState.ui.mixSheet,
+            routeSheet: currentState.ui.routeSheet,
+            shopSheet: currentState.ui.shopSheet,
+            chartHelp: currentState.ui.chartHelp,
+            tourStep: currentState.ui.tourStep,
             ...(htmlLang ? { lang: htmlLang } : {}),
           },
         };
