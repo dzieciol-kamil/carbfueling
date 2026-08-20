@@ -280,7 +280,8 @@ body { padding-top: var(--landing-header-h); }
     font-size: clamp(24px, 7vw, 32px); line-height: 1.2;
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
-  .landing-q br { display: none; }
+  .landing-q br,
+  .landing-cta-title br { display: none; }
   .landing-shot {
     width: 100%; margin: calc(2.2em + 2svh) 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
@@ -514,7 +515,10 @@ export default function LandingEn() {
             >
               <span>Free</span> · <span>no account</span> · <span>runs in your browser</span>
             </p>
-            <h2 style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}>
+            <h2
+              className="landing-cta-title"
+              style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}
+            >
               Plan how many carbs and how much fluid to take on your route — and how to spread them
               out over time.
             </h2>

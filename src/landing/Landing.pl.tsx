@@ -280,7 +280,8 @@ body { padding-top: var(--landing-header-h); }
     font-size: clamp(24px, 7vw, 32px); line-height: 1.2;
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
-  .landing-q br { display: none; }
+  .landing-q br,
+  .landing-cta-title br { display: none; }
   .landing-shot {
     width: 100%; margin: calc(2.2em + 2svh) 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
@@ -415,9 +416,9 @@ export default function LandingPl() {
           <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h1 className="landing-q">
-              Jeździsz na rowerze, biegasz, czy uprawiasz <br />
-              inny sport, w którym musisz <br />
-              uzupełniać energię <br />w trakcie wysiłku?
+              Jeździsz na rowerze, biegasz, czy uprawiasz inny sport, <br />w którym musisz
+              uzupełniać energię w trakcie <br />
+              wysiłku?
             </h1>
             <figure className="landing-shot">
               <figcaption className="landing-cap">Tak wygląda plan na Twoją trasę</figcaption>
@@ -441,9 +442,7 @@ export default function LandingPl() {
           <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h2 className="landing-q">
-              Czujesz, jak żele czy izotoniki <br />
-              drenują Twój portfel, a nie <br />
-              chcesz z nich <br />
+              Czujesz, jak żele czy izotoniki drenują Twój portfel, <br />a nie chcesz z nich
               rezygnować?
             </h2>
             <figure className="landing-shot">
@@ -470,8 +469,8 @@ export default function LandingPl() {
           <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h2 className="landing-q">
-              A może złapałeś kiedyś bombę <br />i zastanawiasz się, jak <br />
-              temu przeciwdziałać?
+              A może złapałeś kiedyś bombę i zastanawiasz się, <br />
+              jak temu przeciwdziałać?
             </h2>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
@@ -513,8 +512,12 @@ export default function LandingPl() {
             >
               <span>Za darmo</span> · <span>bez konta</span> · <span>działa w przeglądarce</span>
             </p>
-            <h2 style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}>
-              Zaplanuj, ile węglowodanów i płynów zabrać na trasę — i jak rozłożyć je w czasie.
+            <h2
+              className="landing-cta-title"
+              style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}
+            >
+              Zaplanuj, ile węglowodanów i płynów <br />
+              zabrać na trasę i jak rozłożyć je <br />w czasie.
             </h2>
             <a
               href={calculatorHref('pl')}
