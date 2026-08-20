@@ -45,6 +45,14 @@ block the design; all of them should be settled before the branch ships.
       `document` into the rest of the file, turning one clean failure into a confusing cascade.
       `afterEach(() => vi.unstubAllGlobals())` is the usual shape.
 
+## Frozen
+
+- **Slide 1 is signed off, desktop and phone — do not touch it.** Tagged locally as
+  `landing-slide1-frozen`. The phone rules live in one shared `max-width: 760px` block,
+  so work on slides 2-4 edits the very CSS that governs slide 1. Before committing any
+  such change, diff slide 1 against the tag:
+  `git diff landing-slide1-frozen -- src/landing/` and re-check it at phone width.
+
 ## Verification still owed
 
 - [x] **The landing has been checked at phone width** (420px). It now has a purpose-built
