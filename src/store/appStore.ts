@@ -15,19 +15,20 @@ import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
 import { t, type Lang } from '../i18n/strings';
 import { createDebouncedLocalStorage } from './persistStorage';
-import type {
-  CitricSource,
-  FoodItem,
-  FoodLibEntry,
-  Intensity,
-  Mode,
-  MixSettings,
-  RatioPreset,
-  RouteInput,
-  Vessel,
-  Fill,
-  ShopStop,
-  XUnit,
+import {
+  DEFAULT_MIX,
+  type CitricSource,
+  type FoodItem,
+  type FoodLibEntry,
+  type Intensity,
+  type Mode,
+  type MixSettings,
+  type RatioPreset,
+  type RouteInput,
+  type Vessel,
+  type Fill,
+  type ShopStop,
+  type XUnit,
 } from '../domain/types';
 
 function defaultLang(): Lang {
@@ -223,20 +224,7 @@ const defaultRoute: RouteInput = {
   gpxError: null,
 };
 
-const defaultMix: MixSettings = {
-  conc: 8.4,
-  gelConc: 60,
-  ratio: 2,
-  gelRatio: 2,
-  ratioPreset: 'iso',
-  gelRatioPreset: 'iso',
-  salt: 0.16,
-  citric: 0.2,
-  gelSalt: 0.4,
-  gelCitric: 0.4,
-  citricSource: 'citric',
-  gelCitricSource: 'citric',
-};
+const defaultMix: MixSettings = DEFAULT_MIX;
 
 const defaultGear: Vessel[] = [
   { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },

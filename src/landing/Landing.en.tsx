@@ -1,6 +1,7 @@
 // src/landing/Landing.en.tsx
 import type { CSSProperties } from 'react';
 import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
+import SiteFooter from './SiteFooter';
 
 const headerWordmark: CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' };
 const headerTagline: CSSProperties = {
@@ -134,19 +135,84 @@ body { padding-top: var(--landing-header-h); }
 /* Sits after the last slide and is only as tall as its own contents, so scrolling
    past the closing slide reveals it from the bottom rather than handing over a whole
    further screen. scroll-snap-align: end parks its foot against the foot of the
-   viewport, leaving the closing slide still visible above it. */
+   viewport, leaving the closing slide still visible above it. The real site footer
+   (SiteFooter) supplies its own padding/layout below, so this wrapper only carries
+   the snap behaviour and the band's background. */
 .landing-footer {
-  position: relative; z-index: 2; scroll-snap-align: end;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 18px; padding: 20px 32px;
+  position: relative; z-index: 3; scroll-snap-align: end;
   background: var(--surface); border-top: 1px solid var(--border);
 }
-.landing-footer .landing-footer-mark {
-  font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+/* The closing slide holds still while the footer rides up over it, matching how the
+   slides hand over to each other. Two things make that work: the slide sticks, and
+   the footer sits inside the same <main> — a sticky element stops sticking at its
+   parent's edge, so a footer placed after </main> would unstick the slide at exactly
+   the moment it arrived. */
+.landing-slide:last-of-type {
+  position: sticky; top: var(--landing-header-h); z-index: 1;
 }
-.landing-footer nav { display: flex; align-items: center; gap: 18px; }
-.landing-footer a {
-  font-size: 13px; font-weight: 600; color: var(--muted-2); text-decoration: none;
+
+.site-footer { width: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+  gap: 22px; padding: 22px 32px 26px; }
+.site-footer-columns { display: grid; grid-template-columns: 3fr 2fr; gap: 64px; align-items: start; }
+.site-footer-about { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.site-footer-mark-row { display: flex; align-items: baseline; gap: 9px; }
+.site-footer-mark { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.site-footer-version {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em;
+  color: var(--muted-3);
+}
+.site-footer-about-body { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted-2); }
+.site-footer-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--muted-3); }
+.site-footer-privacy {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted-3);
+}
+.site-footer-contribute { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.site-footer-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.site-footer-links { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.site-footer-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.site-footer-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+  padding: 7px 13px; font-size: 12px; font-weight: 600; color: var(--ink);
+}
+.site-footer-pill-coffee { gap: 9px; padding: 9px 16px; font-size: 13.5px; color: var(--gel); }
+.site-footer-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; box-sizing: border-box;
+  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+  color: var(--ink-soft);
+}
+.site-footer-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.site-footer-disclaimer { display: flex; flex-direction: column; gap: 9px; }
+.site-footer-disclaimer-body { margin: 0; font-size: 11.5px; line-height: 1.65; color: var(--muted); }
+.site-footer-bottom {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  flex-wrap: wrap; border-top: 1px solid #E6E8E2; padding-top: 14px;
+}
+.site-footer-copyright {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+  color: var(--muted-3);
+}
+
+/* Points past the fold. Two rotated borders rather than an SVG: no request, and it
+   inherits the palette. The drift stops for anyone who asked the system to reduce
+   motion. Kept on the closing slide too, since scrolling on from there reaches the
+   footer and its "buy me a coffee" link. */
+.landing-cue {
+  position: absolute; left: 50%; bottom: 18px; z-index: 4;
+  width: 13px; height: 13px; margin-left: -7px;
+  border-right: 2px solid var(--muted-3); border-bottom: 2px solid var(--muted-3);
+  opacity: 0.6; animation: landing-cue-drift 2.1s ease-in-out infinite;
+}
+@keyframes landing-cue-drift {
+  0%, 100% { transform: rotate(45deg) translate(0, 0); opacity: 0.35; }
+  50% { transform: rotate(45deg) translate(3px, 3px); opacity: 0.8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-cue { animation: none; transform: rotate(45deg); opacity: 0.5; }
 }
 
 /* Which of the four slides you are on. Fixed inside the clipped slide, so it is
@@ -303,8 +369,10 @@ body { padding-top: var(--landing-header-h); }
     font-size: 0.66em; letter-spacing: 0.06em;
   }
 
-  .landing-footer { padding: 16px 1.35em; gap: 10px; }
-  .landing-footer nav { gap: 14px; }
+  .site-footer { padding: 16px 1.35em 20px; gap: 16px; }
+  .site-footer-columns { grid-template-columns: 1fr; gap: 18px; }
+
+  .landing-cue { bottom: 12px; width: 11px; height: 11px; margin-left: -6px; }
 
   .landing-dots { display: flex; }
 }
@@ -344,6 +412,7 @@ export default function LandingEn() {
             <i />
             <i />
           </div>
+          <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h1 className="landing-q">
               Do you ride, run, or do some other <br />
@@ -371,6 +440,7 @@ export default function LandingEn() {
             <i />
             <i />
           </div>
+          <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h2 className="landing-q">
               Do gels and isotonic drinks quietly drain <br />
@@ -400,6 +470,7 @@ export default function LandingEn() {
             <i className="is-current" />
             <i />
           </div>
+          <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h2 className="landing-q">
               Ever bonked out on a ride or a long run <br />— and wished you'd seen <br />
@@ -424,6 +495,7 @@ export default function LandingEn() {
             <i />
             <i className="is-current" />
           </div>
+          <span className="landing-cue" aria-hidden="true" />
           <div
             style={{
               position: 'relative',
@@ -471,15 +543,10 @@ export default function LandingEn() {
             </a>
           </div>
         </section>
+        <footer className="landing-footer">
+          <SiteFooter lang="en" />
+        </footer>
       </main>
-
-      <footer className="landing-footer">
-        <span className="landing-footer-mark">CARB FUELING</span>
-        <nav>
-          <a href={calculatorHref('en')}>Calculator</a>
-          <a href={faqHref('en')}>FAQ</a>
-        </nav>
-      </footer>
     </div>
   );
 }
