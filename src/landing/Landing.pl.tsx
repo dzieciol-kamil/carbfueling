@@ -199,7 +199,9 @@ body { padding-top: var(--landing-header-h); }
   }
   /* Sits with the screenshot it labels, over on the right, rather than stranded at the
      opposite edge. */
-  .landing-cap { max-width: 72%; margin-left: auto; text-align: right; }
+  /* Wide enough that only the explicit break splits it — the 72% cap was clipping the
+     second line into a third. */
+  .landing-cap { max-width: 100%; margin-left: auto; text-align: right; }
   /* Half a screenshot, hung off the right edge and dropped below the question, so the
      rider along the bottom-left of the photograph stays in view. The transform keeps
      this purely visual — the caption above it does not move with it. */
