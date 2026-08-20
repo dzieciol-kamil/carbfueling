@@ -131,6 +131,24 @@ body { padding-top: var(--landing-header-h); }
 }
 .landing-lang a.is-current { background: var(--ink); color: #fff; }
 
+/* Sits after the last slide and is only as tall as its own contents, so scrolling
+   past the closing slide reveals it from the bottom rather than handing over a whole
+   further screen. scroll-snap-align: end parks its foot against the foot of the
+   viewport, leaving the closing slide still visible above it. */
+.landing-footer {
+  position: relative; z-index: 2; scroll-snap-align: end;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; padding: 20px 32px;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.landing-footer .landing-footer-mark {
+  font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+}
+.landing-footer nav { display: flex; align-items: center; gap: 18px; }
+.landing-footer a {
+  font-size: 13px; font-weight: 600; color: var(--muted-2); text-decoration: none;
+}
+
 /* Which of the four slides you are on. Fixed inside the clipped slide, so it is
    clipped along with the photograph and swaps at the same edge. */
 .landing-dots { display: none; }
@@ -284,6 +302,9 @@ body { padding-top: var(--landing-header-h); }
     margin: 0 auto !important; text-align: center !important;
     font-size: 0.66em; letter-spacing: 0.06em;
   }
+
+  .landing-footer { padding: 16px 1.35em; gap: 10px; }
+  .landing-footer nav { gap: 14px; }
 
   .landing-dots { display: flex; }
 }
@@ -449,6 +470,14 @@ export default function LandingPl() {
           </div>
         </section>
       </main>
+
+      <footer className="landing-footer">
+        <span className="landing-footer-mark">CARB FUELING</span>
+        <nav>
+          <a href={calculatorHref('pl')}>Kalkulator</a>
+          <a href={faqHref('pl')}>FAQ</a>
+        </nav>
+      </footer>
     </div>
   );
 }
