@@ -4,7 +4,16 @@ import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
 import SiteFooter from './SiteFooter';
 import LangMenu from '../static/LangMenu';
 
-const headerWordmark: CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' };
+// The header is a fixed 61px bar, so nothing in it may wrap — the phone block already says
+// so, but the rule holds at every width: between 761px and ~778px the desktop bar runs out of
+// room and the wordmark, the tagline and the CTA all break onto a second line at once, which
+// puts the button's arrow on a line of its own. nowrap here, and the tagline drops below.
+const headerWordmark: CSSProperties = {
+  fontSize: 22,
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
+  whiteSpace: 'nowrap',
+};
 const headerTagline: CSSProperties = {
   fontFamily: "'JetBrains Mono', monospace",
   fontSize: 11,
@@ -23,6 +32,7 @@ const ctaButton: CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   color: 'var(--ink)',
+  whiteSpace: 'nowrap',
 };
 
 // The page is one scroll container: the document itself. An inner scroller sitting
@@ -65,6 +75,22 @@ body { padding-top: var(--landing-header-h); }
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: center center;
   opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
+}
+/* The closing photograph is 1376x768, and "cover" fills the height first — so the taller the
+   window, the more of the sides it eats. A 1024px-wide window keeps 81% of the frame, but a
+   768x1024 tablet in portrait keeps 45%: both FINISH pylons and the rider's body fall outside
+   it, leaving a forearm stuck to the left edge. Here the trim comes off two parts right to one
+   part left, which holds the rider in shot. The phone does the same thing more strongly at
+   11.5%.
+
+   The cut-off is the photograph's own 1376/768, and it has to be: any threshold placed while
+   there is still something to trim makes the frame jump as the window crosses it — at 5/4 and
+   a 925px-tall window that was a 59px lurch at exactly 1156px wide. Once the window is wider
+   than the picture, "cover" scales to the width and there is no horizontal trim left to place,
+   so this rule switching off there changes nothing on screen. Wider windows keep the centred
+   frame that was signed off; between the two the shift tapers to zero on its own. */
+@media (min-width: 761px) and (max-aspect-ratio: 1376/768) {
+  .landing-slide[data-slide='4'] .landing-bg { object-position: 33% center; }
 }
 .landing-wash {
   position: absolute; inset: 0; pointer-events: none;
@@ -229,6 +255,13 @@ body { padding-top: var(--landing-header-h); }
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 .landing-dots i.is-current { background: rgba(22, 25, 28, 0.66); }
+
+/* The band just above the phone breakpoint, where the desktop bar still applies but no longer
+   fits. The wordmark and the CTA hold their line from their own styles; the tagline goes the
+   same way it goes on a phone — the wordmark alone still says what the site is. */
+@media (min-width: 761px) and (max-width: 800px) {
+  .landing-header > div > span + span { display: none; }
+}
 
 @media (max-width: 760px) {
   html { scroll-snap-type: y mandatory; }

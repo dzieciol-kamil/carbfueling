@@ -105,6 +105,14 @@ const ROOT_STYLE = `
       rgba(239, 240, 236, 0) 100%);
   }
 
+  /* The band just above the phone breakpoint: the desktop bar still applies but no longer fits,
+     and the tagline drops there on the landing too. Kept in step so the two headers still match
+     across the whole range. The wordmark and the button hold their line at every width. */
+  @media (min-width: 761px) and (max-width: 800px) {
+    .faq-tagline { display: none; }
+  }
+  .faq-wordmark, .faq-actions > a { white-space: nowrap; }
+
   /* Phone: the landing's header is a fixed bar with no room to spare, so the trigger drops
      to the language code alone, and the FAQ header's tagline goes the way the landing's
      does — the wordmark alone still says what the site is. The open panel keeps both code
