@@ -5,19 +5,16 @@ block the design; all of them should be settled before the branch ships.
 
 ## Needs a decision from the rider
 
-- [ ] **`/en/` and `/en/calculator/` ship byte-identical `<title>` and `<meta description>`**
-      (same for the Polish pair). Two indexable, self-canonical pages carrying the same
-      metadata is the textbook near-duplicate signal — Google picks one and suppresses the
-      other, and which one it picks is not ours to choose. On `master` that copy described
-      exactly one URL; the restructure split it across two. Fix is copy, not code: keep the
-      marketing line on the landing and give the calculator something tool-shaped
-      ("Fueling calculator — enter your route, get a bottle-by-bottle plan"). Sources:
-      `scripts/build-static.mjs` (landing title/description) and
-      `en/calculator/index.html` / `pl/calculator/index.html`.
+- [x] **`/en/` and `/en/calculator/` ship byte-identical `<title>` and `<meta description>`**
+      (same for the Polish pair). Settled 2026-08-20: the landing keeps its product line
+      unchanged, the calculator took a tool-shaped pair of its own — "Route sheet: bottles,
+      gels, stops — Carb Fueling" / "Rozpiska na trasę: bidony, żele, postoje — Carb Fueling",
+      with a description that states input and output. All four titles are now distinct.
 
-- [ ] **Polish pages carry an English JSON-LD `description`.** `pl/calculator/index.html`
-      and the `WebApplication` block `build-static.mjs` emits for both landings. Worth doing
-      in the same sitting as the item above, since it is the same content pass.
+- [x] **Polish pages carry an English JSON-LD `description`.** Fixed in the same pass: the
+      `WebApplication` block in `build-static.mjs` now branches on `lang` (so `/pl/` is Polish
+      and `/`, which reuses the EN landing, stays English), and `pl/calculator/index.html`
+      carries the Polish sentence.
 
 ## Straightforward fixes
 
@@ -47,11 +44,13 @@ block the design; all of them should be settled before the branch ships.
 
 ## Frozen
 
-- **Slide 1 is signed off, desktop and phone — do not touch it.** Tagged locally as
-  `landing-slide1-frozen`. The phone rules live in one shared `max-width: 760px` block,
-  so work on slides 2-4 edits the very CSS that governs slide 1. Before committing any
-  such change, diff slide 1 against the tag:
-  `git diff landing-slide1-frozen -- src/landing/` and re-check it at phone width.
+- **All four slides are signed off, desktop and phone — do not touch them.** As of
+  2026-08-20 the freeze covers every slide and everything in it: layout, elements,
+  colours, fonts, copy. Nothing there moves without asking first. Slide 1 additionally
+  has a local tag, `landing-slide1-frozen`. The phone rules live in one shared
+  `max-width: 760px` block, so any landing CSS edit reaches every slide at once —
+  before committing one, diff against the tag:
+  `git diff landing-slide1-frozen -- src/landing/` and re-check at phone width.
 
 ## Verification still owed
 
