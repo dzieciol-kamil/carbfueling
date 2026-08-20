@@ -238,9 +238,12 @@ body { padding-top: var(--landing-header-h); }
   .landing-slide[data-slide='2'] .landing-cap {
     margin-left: 0 !important; margin-right: auto !important; text-align: left !important;
   }
+  /* mix.jpg is a 3.5:1 banner, so its width is what governs. Sized so the window
+     starts below 48% of the card — "Sugar 1:1" begins at 54% and "Lemon" at 52.5%,
+     and both need to be whole for the slide to make its point. */
   .landing-slide[data-slide='2'] .landing-shot img {
-    width: 75.5vh; height: auto;
-    margin-left: calc(78.6vw - 73.01vh - 62.5px);
+    width: 62vh; height: auto;
+    margin-left: calc(78.6vw - 59.49vh - 62.5px);
   }
 
   /* Gravel rider stands at 14.9% of the cropped frame, which is a different shape
