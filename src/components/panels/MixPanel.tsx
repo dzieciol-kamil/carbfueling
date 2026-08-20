@@ -12,6 +12,7 @@ import type { CitricSource, Content, RatioPreset } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { sourceColor } from '../chart/theme';
+import { InfoPopover } from '../ui/InfoPopover';
 import { NumberInput } from '../ui/NumberInput';
 import { createVesselReorderHandler } from './gearDragHandler';
 import { PanelShell } from './PanelShell';
@@ -170,7 +171,13 @@ function RatioRow({ value, onChange, strings, forGel, preset, disabled = false }
         flexWrap: 'wrap',
       }}
     >
-      <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.ratio}</span>
+      <InfoPopover
+        hint={strings.mixRatioHint}
+        triggerStyle={{ fontSize: 12, color: 'var(--muted-2)' }}
+        popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+      >
+        {strings.ratio} ⓘ
+      </InfoPopover>
       <span
         style={{
           display: 'flex',
@@ -339,7 +346,13 @@ export function MixPanel() {
             flexWrap: 'wrap',
           }}
         >
-          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.citricSourceLabel}</span>
+          <InfoPopover
+            hint={strings.mixCitricHint}
+            triggerStyle={{ fontSize: 12, color: 'var(--muted-2)' }}
+            popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+          >
+            {strings.citricSourceLabel} ⓘ
+          </InfoPopover>
           <span
             style={{
               display: 'flex',
@@ -470,7 +483,13 @@ export function MixPanel() {
             opacity: gelLocked ? 0.6 : 1,
           }}
         >
-          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.citricSourceLabel}</span>
+          <InfoPopover
+            hint={strings.mixCitricHint}
+            triggerStyle={{ fontSize: 12, color: 'var(--muted-2)' }}
+            popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+          >
+            {strings.citricSourceLabel} ⓘ
+          </InfoPopover>
           <span
             style={{
               display: 'flex',

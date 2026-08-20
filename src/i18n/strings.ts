@@ -79,12 +79,14 @@ export interface StringTable {
   recipes: string;
   recipesHint: string;
   ratio: string;
+  mixRatioHint: string;
   ratioLabelSugar: string;
   ratioLabelHoney: string;
   concLabel: string;
   saltLabel: string;
   citricLabel: string;
   citricSourceLabel: string;
+  mixCitricHint: string;
   citricSourceCitric: string;
   citricSourceLemon: string;
   citricSourceLime: string;
@@ -389,12 +391,16 @@ export const STR: Record<Lang, StringTable> = {
     recipes: 'Skład bidonów',
     recipesHint: 'Gramy do odmierzenia na każde napełnienie — osobno na bidon, flask czy słoiczek.',
     ratio: 'Maltodekstryna : Fruktoza',
+    mixRatioHint:
+      'Malto i fruktoza wchodzą do krwi dwoma osobnymi transporterami jelitowymi — łącząc je, podnosisz limit wchłaniania ponad ok. 60 g/h samej maltodekstryny. Izo 2:1 to domyślna proporcja tej appki, Cukier 1:1 i Miód 0,8:1 to tańsze zamienniki o tym samym mechanizmie.',
     ratioLabelSugar: 'Cukier',
     ratioLabelHoney: 'Miód',
     concLabel: 'cukry',
     saltLabel: 'sól',
     citricLabel: 'kwasek',
     citricSourceLabel: 'Kwasek',
+    mixCitricHint:
+      'Kwasek to tylko smak — nie wpływa na tempo wchłaniania węglowodanów ani na limit g/h.',
     citricSourceCitric: 'Kwasek cytrynowy',
     citricSourceLemon: 'Cytryna',
     citricSourceLime: 'Limonka',
@@ -750,12 +756,16 @@ export const STR: Record<Lang, StringTable> = {
     recipes: 'Bottle recipes',
     recipesHint: 'Grams to measure out for each fill — per bottle, flask or jar.',
     ratio: 'Maltodextrin : Fructose',
+    mixRatioHint:
+      "Malto and fructose use two separate gut transporters — combining them lifts the absorption limit above the ~60 g/h you'd get from maltodextrin alone. Izo 2:1 is this app's default ratio; Sugar 1:1 and Honey 0.8:1 are cheaper DIY alternatives with the same mechanism.",
     ratioLabelSugar: 'Sugar',
     ratioLabelHoney: 'Honey',
     concLabel: 'carbs',
     saltLabel: 'salt',
     citricLabel: 'citric',
     citricSourceLabel: 'Acid',
+    mixCitricHint:
+      "Citric is purely about taste — it doesn't affect carb absorption speed or your g/h limit.",
     citricSourceCitric: 'Citric acid',
     citricSourceLemon: 'Lemon',
     citricSourceLime: 'Lime',
