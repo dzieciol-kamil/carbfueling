@@ -271,7 +271,7 @@ body { padding-top: var(--landing-header-h); }
      region further down the photograph. !important because the button carries an
      inline margin. */
   .landing-slide[data-slide='4'] > div > a:nth-of-type(1) {
-    margin-top: 26svh !important;
+    margin-top: 40svh !important;
   }
 
   .landing-slide[data-slide='4'] .landing-cap {
