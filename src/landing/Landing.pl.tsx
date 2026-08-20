@@ -268,6 +268,12 @@ body { padding-top: var(--landing-header-h); }
     bottom: auto; height: 115svh; object-position: 11.15% center;
   }
   .landing-slide[data-slide='4'] > div { padding-top: 12svh !important; }
+  /* The headline stays up top; the button and the FAQ link drop into the bike's
+     region further down the photograph. !important because the button carries an
+     inline margin. */
+  .landing-slide[data-slide='4'] > div > a:nth-of-type(1) {
+    margin-top: 26svh !important;
+  }
 
   .landing-slide[data-slide='4'] .landing-cap {
     margin: 0 auto !important; text-align: center !important;
