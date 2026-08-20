@@ -183,7 +183,8 @@ body { padding-top: var(--landing-header-h); }
   }
 
   .landing-cluster {
-    position: relative; z-index: 2; width: 100%; padding: 1.5em 1.1em 0;
+    position: relative; z-index: 2; width: 100%;
+    padding: calc(1.5em + 10svh) 1.1em 0;
     font-size: 15px;
   }
   .landing-q {
@@ -209,7 +210,7 @@ body { padding-top: var(--landing-header-h); }
      left padding. Widening the screen therefore slides both outward together: more of
      the screenshot comes into view, and a little more field opens up to his left. */
   .landing-shot img {
-    width: 200%; max-width: none; height: auto; max-height: none;
+    width: 200%; max-width: none; height: auto; max-height: 44svh;
     transform: none;
     margin-left: calc(19.4vw - 2.51vh + 30px);
   }

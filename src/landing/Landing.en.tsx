@@ -93,6 +93,7 @@ body { padding-top: var(--landing-header-h); }
   border-radius: 0.75em; border: 1px solid var(--border); background: #fff;
   box-shadow: 0 1.5em 3.5em rgba(22, 25, 28, 0.16);
 }
+.landing-cap br { display: none; }
 .landing-cap {
   margin: 0 0 0.83em; max-width: 31.6em;
   font-family: 'JetBrains Mono', monospace; font-size: 0.75em; font-weight: 600;
@@ -183,7 +184,8 @@ body { padding-top: var(--landing-header-h); }
   }
 
   .landing-cluster {
-    position: relative; z-index: 2; width: 100%; padding: 1.5em 1.1em 0;
+    position: relative; z-index: 2; width: 100%;
+    padding: calc(1.5em + 10svh) 1.1em 0;
     font-size: 15px;
   }
   .landing-q {
@@ -199,6 +201,7 @@ body { padding-top: var(--landing-header-h); }
   /* Sits with the screenshot it labels, over on the right, rather than stranded at the
      opposite edge. */
   .landing-cap { max-width: 72%; margin-left: auto; text-align: right; }
+  .landing-cap br { display: inline; }
   /* Half a screenshot, hung off the right edge and dropped below the question, so the
      rider along the bottom-left of the photograph stays in view. The transform keeps
      this purely visual — the caption above it does not move with it. */
@@ -209,7 +212,7 @@ body { padding-top: var(--landing-header-h); }
      left padding. Widening the screen therefore slides both outward together: more of
      the screenshot comes into view, and a little more field opens up to his left. */
   .landing-shot img {
-    width: 200%; max-width: none; height: auto; max-height: none;
+    width: 200%; max-width: none; height: auto; max-height: 44svh;
     transform: none;
     margin-left: calc(19.4vw - 2.51vh + 30px);
   }
@@ -260,7 +263,7 @@ export default function LandingEn() {
             </h1>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
-                This is what a plan for your route looks like
+                This is what <br />a plan for your route looks like
               </figcaption>
               <img
                 src={assetHref('/landing/hero.jpg')}
