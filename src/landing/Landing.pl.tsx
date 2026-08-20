@@ -84,6 +84,11 @@ body { padding-top: var(--landing-header-h); }
   position: relative; z-index: 3; margin: 0; max-width: 56.25em;
   font-weight: 700; letter-spacing: -0.015em;
   font-size: 2.1875em; line-height: 1.26;
+  /* Always the height of four lines. The cluster is centred vertically, so a shorter
+     question made a shorter cluster and started lower down the slide — the block
+     appeared to sink whenever the copy lost a line. Reserving the tallest case keeps
+     every slide's question and screenshot at the same height. */
+  min-height: 5.04em;
 }
 .landing-shot {
   position: relative; z-index: 2; display: flex; flex-direction: column;
@@ -275,9 +280,11 @@ body { padding-top: var(--landing-header-h); }
     padding: calc(1.5em + 10svh) 1.1em 0;
     font-size: 15px;
   }
+  /* Phones are top-aligned, so nothing sinks and the reservation would only add dead
+     space above a re-wrapped question. */
   .landing-q {
     max-width: 92%; margin: 0 !important; text-align: left !important;
-    font-size: clamp(24px, 7vw, 32px); line-height: 1.2;
+    font-size: clamp(24px, 7vw, 32px); line-height: 1.2; min-height: 0;
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br,
