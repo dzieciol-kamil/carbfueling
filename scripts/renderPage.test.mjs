@@ -26,7 +26,9 @@ describe('renderRedirectStub', () => {
   test('base-prefixes both the target and the script src', () => {
     const html = renderRedirectStub({ targetPath: '/en/faq/', base: '/preview', noindex: false });
     expect(html).toContain('content="0;url=/preview/en/faq/"');
-    expect(html).toContain('<script src="/preview/redirect.js" data-target="/preview/en/faq/"></script>');
+    expect(html).toContain(
+      '<script src="/preview/redirect.js" data-target="/preview/en/faq/"></script>',
+    );
   });
 
   test('names its destination as canonical, and carries a title and a lang', () => {
