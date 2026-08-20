@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function GutTrainingCarbToleranceEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="gut-training-carb-tolerance">
       <h1 style={articleH1Style}>Training your gut: how to safely raise your carb tolerance</h1>
       <p style={articleTextStyle}>
         Your gut's ability to absorb carbs during exercise is not fixed. It works a bit like a

@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function HydrationWaterPerHourPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="hydration-water-per-hour">
       <h1 style={articleH1Style}>Ile wody na godzinę? Nawodnienie, temperatura i tempo pocenia</h1>
       <p style={articleTextStyle}>
         Nie ma jednej uniwersalnej liczby "pij X ml na godzinę", która pasuje do każdego rowerzysty.

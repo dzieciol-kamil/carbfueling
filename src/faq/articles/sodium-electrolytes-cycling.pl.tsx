@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function SodiumElectrolytesCyclingPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="sodium-electrolytes-cycling">
       <h1 style={articleH1Style}>
         Sód na rowerze: kiedy dodatkowa suplementacja elektrolitowa ma sens
       </h1>

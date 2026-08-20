@@ -9,7 +9,7 @@ import {
 
 export default function BottleRefillPlanningEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="bottle-refill-planning">
       <h1 style={articleH1Style}>Planning bottle refills on a long ride</h1>
       <p style={articleTextStyle}>
         Once a ride is longer than a couple of bottles' worth of mix, you can't carry the whole plan

@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function HeatCarbPlanPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="heat-carb-plan">
       <h1 style={articleH1Style}>
         Jak upał zmienia Twój plan węglowodanowy (to nie tylko "pij więcej")
       </h1>

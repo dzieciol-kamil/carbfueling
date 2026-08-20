@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function HeatCarbPlanEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="heat-carb-plan">
       <h1 style={articleH1Style}>How heat changes your carb plan (it's not just "drink more")</h1>
       <p style={articleTextStyle}>
         Heat raises your sweat rate, and it also puts extra stress on your core temperature. To cool

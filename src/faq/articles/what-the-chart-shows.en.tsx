@@ -9,7 +9,7 @@ import {
 
 export default function WhatTheChartShowsEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="what-the-chart-shows">
       <h1 style={articleH1Style}>What the chart actually shows: from bottle to bloodstream</h1>
       <p style={articleTextStyle}>
         Every point on the chart starts with one simple fact: what you actually ate or drank at that

@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function MaltoFructoseBlendEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="malto-fructose-blend">
       <h1 style={articleH1Style}>
         Maltodextrin + fructose: why a transport blend beats glucose alone
       </h1>

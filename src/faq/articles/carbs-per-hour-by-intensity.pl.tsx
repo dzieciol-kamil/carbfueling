@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function CarbsPerHourByIntensityPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="carbs-per-hour-by-intensity">
       <h1 style={articleH1Style}>Ile węglowodanów na godzinę naprawdę potrzebujesz?</h1>
       <p style={articleTextStyle}>
         Nie ma jednej słusznej liczby gramów na godzinę. Odpowiednia ilość zależy przede wszystkim

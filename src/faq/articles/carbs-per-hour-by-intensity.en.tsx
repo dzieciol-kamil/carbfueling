@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function CarbsPerHourByIntensityEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="carbs-per-hour-by-intensity">
       <h1 style={articleH1Style}>How many carbs per hour do you actually need?</h1>
       <p style={articleTextStyle}>
         There's no single correct number of grams per hour. The right amount depends mainly on how

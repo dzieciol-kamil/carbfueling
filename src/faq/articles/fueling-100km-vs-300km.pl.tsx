@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function Fueling100kmVs300kmPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="fueling-100km-vs-300km">
       <h1 style={articleH1Style}>Fueling na 100 km vs. 300 km: co się zmienia w strategii</h1>
       <p style={articleTextStyle}>
         Trasa 300 km to nie jest po prostu "100 km razy trzy". Wraz z liczbą godzin na siodełku

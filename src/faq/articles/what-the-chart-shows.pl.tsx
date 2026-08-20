@@ -9,7 +9,7 @@ import {
 
 export default function WhatTheChartShowsPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="what-the-chart-shows">
       <h1 style={articleH1Style}>Co właściwie pokazuje wykres: od bidonu do krwiobiegu</h1>
       <p style={articleTextStyle}>
         Każdy punkt na wykresie zaczyna się od jednego prostego faktu: co faktycznie zjadłeś albo

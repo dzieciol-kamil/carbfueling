@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function BottleVsGelEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="bottle-vs-gel">
       <h1 style={articleH1Style}>
         Bottle or gel? When each carb-delivery format actually pays off
       </h1>

@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function BottleVsGelPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="bottle-vs-gel">
       <h1 style={articleH1Style}>
         Bidon czy żel? Kiedy opłaca się każda forma dostarczania węglowodanów
       </h1>

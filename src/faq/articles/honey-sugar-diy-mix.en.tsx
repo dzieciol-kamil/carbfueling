@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function HoneySugarDiyMixEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="honey-sugar-diy-mix">
       <h1 style={articleH1Style}>
         Honey or table sugar instead of a store-bought mix — does it work as well?
       </h1>

@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function PacePowerAbsorptionEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="pace-power-absorption">
       <h1 style={articleH1Style}>Does your pace or power affect how much you can absorb?</h1>
       <p style={articleTextStyle}>
         It's easy to mix up two different things: how many carbs your effort burns, and how many

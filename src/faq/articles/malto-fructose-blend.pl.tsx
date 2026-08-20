@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function MaltoFructoseBlendPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="malto-fructose-blend">
       <h1 style={articleH1Style}>
         Malto + fruktoza: dlaczego mieszanka transportowa działa lepiej niż sama glukoza
       </h1>

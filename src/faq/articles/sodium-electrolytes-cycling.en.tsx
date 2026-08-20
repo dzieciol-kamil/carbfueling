@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function SodiumElectrolytesCyclingEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="sodium-electrolytes-cycling">
       <h1 style={articleH1Style}>
         Sodium on the bike: when extra electrolytes actually make a difference
       </h1>

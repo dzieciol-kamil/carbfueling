@@ -9,7 +9,7 @@ import {
 
 export default function CarbTransporterMixEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="carb-transporter-mix">
       <h1 style={articleH1Style}>Why can't you absorb more than ~90g of carbs per hour?</h1>
       <p style={articleTextStyle}>
         Your gut absorbs sugar through two separate doors — two different transport proteins built

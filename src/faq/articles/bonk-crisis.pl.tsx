@@ -9,7 +9,7 @@ import {
 
 export default function BonkCrisisPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="bonk-crisis">
       <h1 style={articleH1Style}>Co się dzieje, gdy "łapiesz bombę" — i jak to przewidzieć</h1>
       <p style={articleTextStyle}>
         Bomba nie przychodzi nagle. To efekt luki, która rośnie przez całą trasę — między

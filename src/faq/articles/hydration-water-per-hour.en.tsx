@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function HydrationWaterPerHourEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="hydration-water-per-hour">
       <h1 style={articleH1Style}>How much water per hour? Hydration, heat, and sweat rate</h1>
       <p style={articleTextStyle}>
         There is no single "drink X ml per hour" number that works for every rider. Sweat rate

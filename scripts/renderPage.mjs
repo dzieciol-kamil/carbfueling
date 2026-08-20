@@ -45,6 +45,80 @@ const ROOT_STYLE = `
     -webkit-font-smoothing: antialiased; }
   a { color: var(--water); text-decoration: none; }
   a:hover { color: #2f7099; }
+
+  /* Language switch, shared by the landing and the FAQ pages (src/static/LangMenu.tsx).
+     Shaped to match the calculator's own dropdown in Header.tsx — the values below are that
+     component's inline styles — but built on <details>, since these pages ship no script to
+     open a panel with. It lives in this stylesheet rather than in a page's own <style> block
+     because two different page types render the same widget. */
+  .lang-menu { position: relative; }
+  .lang-menu > summary {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+    border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+    padding: 7px 13px; color: var(--ink);
+  }
+  .lang-menu > summary::-webkit-details-marker { display: none; }
+  .lang-menu[open] > summary { border-color: var(--ink); }
+  .lang-menu-code { font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    font-weight: 700; letter-spacing: 0.06em; }
+  .lang-menu > summary .lang-menu-name { font-size: 12px; color: var(--muted); }
+  .lang-menu-caret { font-size: 9px; color: var(--muted-3); }
+  .lang-menu-list {
+    display: flex; flex-direction: column; gap: 2px;
+    position: absolute; top: calc(100% + 6px); right: 0; min-width: 178px;
+    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 6px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14); z-index: 60;
+  }
+  .lang-menu-list a { display: flex; align-items: center; gap: 9px; border-radius: 8px;
+    padding: 8px 10px; color: var(--ink); }
+  .lang-menu-list a.is-current { background: #f2f5ef; }
+  .lang-menu-list .lang-menu-code { flex: 0 0 22px; letter-spacing: normal; }
+  .lang-menu-list .lang-menu-name { font-size: 12.5px; font-weight: 500; }
+  .lang-menu-check { margin-left: auto; font-size: 11px; color: var(--carb);
+    visibility: hidden; }
+  .lang-menu-list a.is-current .lang-menu-check { visibility: visible; }
+
+  /* The FAQ pages carry the landing's opening photograph, held still behind the article:
+     fixed, so it never scrolls with the text, and washed over the reading column so the
+     prose keeps its contrast. The wash is a band as wide as the column plus slack rather
+     than a percentage of the viewport, so it covers the text at every window width; below
+     ~860px both its stops fall off the edges and the whole screen washes over, which is
+     what a phone should get. */
+  .faq-bg {
+    position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0;
+    object-fit: cover; object-position: center center;
+    opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
+  }
+  .faq-wash {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: linear-gradient(90deg,
+      rgba(239, 240, 236, 0) 0%,
+      rgba(239, 240, 236, 0.92) calc(50% - 430px),
+      rgba(239, 240, 236, 0.92) calc(50% + 430px),
+      rgba(239, 240, 236, 0) 100%);
+  }
+
+  /* Phone: the landing's header is a fixed bar with no room to spare, so the trigger drops
+     to the language code alone, and the FAQ header's tagline goes the way the landing's
+     does — the wordmark alone still says what the site is. The open panel keeps both code
+     and name. */
+  @media (max-width: 760px) {
+    .lang-menu > summary { gap: 6px; padding: 6px 10px; }
+    .lang-menu > summary .lang-menu-name { display: none; }
+    /* The landing's own phone rules for the same bar, kept in step so the header still
+       matches once the tagline drops and the button shrinks. The "!important" on the button
+       is the landing's too, and needed for the same reason: the padding and size it
+       overrides are inline styles on the element. (The landing pairs this with a 15px
+       wordmark rule that its own inline font-size silently overrides — so the wordmark
+       stays 22px on a phone there, and the rule is not copied here.) */
+    .faq-header { padding: 0 0.8em; }
+    .faq-tagline { display: none; }
+    .faq-wordmark { white-space: nowrap; }
+    .faq-actions { gap: 6px; }
+    .faq-actions > a {
+      padding: 6px 10px !important; font-size: 11px !important; white-space: nowrap;
+    }
+  }
 `;
 
 function escapeHtml(str) {

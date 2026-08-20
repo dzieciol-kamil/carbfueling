@@ -2,6 +2,7 @@
 import type { CSSProperties } from 'react';
 import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
 import SiteFooter from './SiteFooter';
+import LangMenu from '../static/LangMenu';
 
 const headerWordmark: CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' };
 const headerTagline: CSSProperties = {
@@ -120,22 +121,12 @@ body { padding-top: var(--landing-header-h); }
   margin-right: auto; align-items: flex-start; text-align: left;
 }
 
-/* Language on the landing is two links, not a menu: these pages ship zero JS, and the
-   choice needs no storing because the URL already carries it — /pl/ leads to a CTA
-   pointing at /pl/calculator/, whose static "html lang" then wins over whatever the
+/* The language switch is the shared LangMenu (src/static/LangMenu.tsx), styled in
+   renderPage.mjs's ROOT_STYLE alongside the FAQ pages' copy of it. Its entries are plain
+   links because the choice needs no storing — the URL already carries it: /pl/ leads to a
+   CTA pointing at /pl/calculator/, whose static "html lang" then wins over whatever the
    browser had persisted. */
 .landing-actions { display: flex; align-items: center; gap: 10px; }
-.landing-lang {
-  display: inline-flex; align-items: center; gap: 2px; padding: 3px;
-  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
-}
-.landing-lang a {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 32px; padding: 5px 7px; border-radius: 999px;
-  font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 700;
-  letter-spacing: 0.06em; color: var(--muted); text-decoration: none;
-}
-.landing-lang a.is-current { background: var(--ink); color: #fff; }
 
 /* Sits after the last slide and is only as tall as its own contents, so scrolling
    past the closing slide reveals it from the bottom rather than handing over a whole
@@ -246,8 +237,6 @@ body { padding-top: var(--landing-header-h); }
     padding: 6px 10px !important; font-size: 11px !important; white-space: nowrap;
   }
   .landing-actions { gap: 6px; }
-  .landing-lang { padding: 2px; }
-  .landing-lang a { min-width: 24px; padding: 4px; font-size: 10px; }
 
   /* Each slide becomes a window onto its own photograph. "clip-path" makes the slide a
      containing block for a "position: fixed" child, so the picture is pinned to the
@@ -396,14 +385,7 @@ export default function LandingPl() {
           <span style={headerTagline}>planer węglowodanów i nawodnienia</span>
         </div>
         <div className="landing-actions">
-          <div className="landing-lang">
-            <a href={landingHref('en')} hrefLang="en">
-              EN
-            </a>
-            <a href={landingHref('pl')} hrefLang="pl" className="is-current">
-              PL
-            </a>
-          </div>
+          <LangMenu lang="pl" hrefFor={landingHref} />
           <a href={calculatorHref('pl')} style={ctaButton}>
             Otwórz kalkulator →
           </a>

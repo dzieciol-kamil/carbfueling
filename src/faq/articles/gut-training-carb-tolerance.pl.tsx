@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function GutTrainingCarbTolerancePl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="gut-training-carb-tolerance">
       <h1 style={articleH1Style}>
         Trening jelita: jak bezpiecznie zwiększać tolerancję na węglowodany
       </h1>

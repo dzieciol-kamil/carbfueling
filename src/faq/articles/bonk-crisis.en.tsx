@@ -9,7 +9,7 @@ import {
 
 export default function BonkCrisisEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="bonk-crisis">
       <h1 style={articleH1Style}>What actually happens when you bonk — and how to see it coming</h1>
       <p style={articleTextStyle}>
         A bonk isn't sudden. It's the end point of a gap that's been growing the whole ride —

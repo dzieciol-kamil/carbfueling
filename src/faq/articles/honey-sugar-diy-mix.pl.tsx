@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function HoneySugarDiyMixPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="honey-sugar-diy-mix">
       <h1 style={articleH1Style}>
         Miód albo cukier zamiast gotowego proszku — czy to działa tak samo dobrze?
       </h1>

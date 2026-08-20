@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function DiyFlavorAdditivesPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="diy-flavor-additives">
       <h1 style={articleH1Style}>
         Domowe dodatki smakowe: proste sposoby na lepszy smak izotonika
       </h1>

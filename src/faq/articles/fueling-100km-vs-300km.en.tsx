@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function Fueling100kmVs300kmEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="fueling-100km-vs-300km">
       <h1 style={articleH1Style}>
         Fueling a 100 km ride vs. a 300+ km ride: what actually changes
       </h1>

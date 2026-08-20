@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function PacePowerAbsorptionPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="pace-power-absorption">
       <h1 style={articleH1Style}>Czy tempo lub moc wpływają na to, ile możesz wchłonąć?</h1>
       <p style={articleTextStyle}>
         Łatwo pomylić dwie różne rzeczy: ile węglowodanów spala Twój wysiłek i ile węglowodanów jest

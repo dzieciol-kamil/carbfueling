@@ -3,7 +3,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 
 export default function DiyFlavorAdditivesEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="diy-flavor-additives">
       <h1 style={articleH1Style}>
         DIY flavor additives: simple ways to make your mix taste better
       </h1>

@@ -9,7 +9,7 @@ import {
 
 export default function CarbTransporterMixPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="carb-transporter-mix">
       <h1 style={articleH1Style}>
         Dlaczego nie wchłoniesz więcej niż ok. 90 g węglowodanów na godzinę?
       </h1>
