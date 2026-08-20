@@ -31,6 +31,13 @@ const ctaButton: CSSProperties = {
 // Each slide runs the question and the screenshot along a diagonal that converges at
 // the centre, and the diagonal flips slide to slide. The photographs are composed to
 // that flip: the subject always stands on the side the screenshot leaves clear.
+//
+// Sizing works off ONE lever. `.landing-cluster` carries a clamped font-size and every
+// dimension inside it is expressed in `em`, so the whole composition is a single
+// rigid object: above ~1190px it sits at its design size and stops growing, and below
+// that it shrinks as one piece, keeping the question and the screenshot in exactly the
+// same relationship to each other. The `min(..., svh)` term applies the same treatment
+// to short viewports, which is what keeps a squarish screen from overflowing.
 const landingCss = `
 :root { --landing-header-h: 61px; }
 html { scroll-snap-type: y mandatory; scroll-padding-top: var(--landing-header-h); }
@@ -45,20 +52,18 @@ body { padding-top: var(--landing-header-h); }
 .landing-slide {
   position: relative; overflow: hidden; scroll-snap-align: start;
   display: flex; align-items: center; justify-content: center;
-  padding: 48px 0; background: var(--bg);
+  padding: 3em 0; background: var(--bg);
   min-height: calc(100vh - var(--landing-header-h));
   min-height: calc(100svh - var(--landing-header-h));
 }
 
-/* Decorative: the sport photograph reads as texture, not as a picture competing with
-   the type. It stays strongest at the left and right edges — the only part of the
-   frame the content cluster never covers. */
+/* Decorative. Anchored dead centre so that narrowing the window trims the photograph
+   evenly from both sides instead of sliding its content across the frame. */
 .landing-bg {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center center;
   opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
 }
-/* A feathered wash of the page background keeps the centre clean under the type. Kept
-   deliberately tight: widen it and the photograph washes out into grey fog. */
 .landing-wash {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 46% 60% at 50% 50%,
@@ -67,20 +72,31 @@ body { padding-top: var(--landing-header-h); }
 }
 
 .landing-cluster {
-  position: relative; z-index: 2; width: min(1100px, 100%);
-  margin: 0 auto; padding: 0 32px;
+  position: relative; z-index: 2; width: 68.75em; max-width: 100%;
+  margin: 0 auto; padding: 0 2em;
+  font-size: min(clamp(9px, 1.35vw, 16px), 2.15vh);
+  font-size: min(clamp(9px, 1.35vw, 16px), 2.15svh);
 }
-/* The line breaks are hand-set in the markup so each line is shorter than the last.
-   max-width is only a backstop against a line outgrowing the cluster. */
+/* Above the screenshot, so a long question can ride over it rather than slide beneath
+   it and become unreadable. */
 .landing-q {
-  margin: 0; max-width: 900px; font-weight: 700; letter-spacing: -0.015em;
-  font-size: clamp(24px, 2.6vw, 35px); line-height: 1.26;
+  position: relative; z-index: 3; margin: 0; max-width: 56.25em;
+  font-weight: 700; letter-spacing: -0.015em;
+  font-size: 2.1875em; line-height: 1.26;
 }
-/* The negative margin is the whole point: the screenshot rides up over the tail of
-   the question — the shortest line — instead of sitting apart from it. */
 .landing-shot {
-  position: relative; z-index: 3; display: flex; flex-direction: column;
-  width: min(740px, 100%); margin-top: -64px;
+  position: relative; z-index: 2; display: flex; flex-direction: column;
+  width: 46.25em; max-width: 100%; margin-top: -4em;
+}
+.landing-shot img {
+  display: block; width: auto; height: auto; max-width: 100%; max-height: 23.5em;
+  border-radius: 0.75em; border: 1px solid var(--border); background: #fff;
+  box-shadow: 0 1.5em 3.5em rgba(22, 25, 28, 0.16);
+}
+.landing-cap {
+  margin: 0 0 0.83em; max-width: 31.6em;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75em; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2);
 }
 
 /* The arrangement mirrors slide to slide, and each photograph was shot to match:
@@ -93,42 +109,30 @@ body { padding-top: var(--landing-header-h); }
 .landing-slide[data-shot='left'] .landing-shot {
   margin-right: auto; align-items: flex-start; text-align: left;
 }
-.landing-shot img {
-  display: block; width: auto; height: auto; max-width: 100%; max-height: 48svh;
-  border-radius: 12px; border: 1px solid var(--border); background: #fff;
-  box-shadow: 0 24px 56px rgba(22, 25, 28, 0.16);
-}
-/* Capped and right-aligned so it can never reach back into the question's lines. */
-.landing-cap {
-  margin: 0 0 10px; max-width: 380px;
-  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2);
-}
 
 @media (max-width: 760px) {
   /* Slides stop being full-height here, so a tall slide degrades to ordinary
-     scrolling instead of trapping its own content inside a mandatory snap point. */
+     scrolling instead of trapping its own content inside a mandatory snap point.
+     The diagonal collapses to a plain stack and the composition stops being rigid. */
   html { scroll-snap-type: y proximity; }
-  .landing-slide { min-height: auto; padding: 40px 0; }
-  .landing-cluster { padding: 0 22px; }
-  .landing-q { max-width: none; font-size: clamp(23px, 6.4vw, 30px); }
+  .landing-slide { min-height: auto; padding: 2.6em 0; }
+  .landing-cluster { width: 100%; padding: 0 1.5em; font-size: 15px; }
+  .landing-q {
+    max-width: none; margin: 0 !important; text-align: left !important;
+    font-size: clamp(23px, 6.4vw, 30px);
+  }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
   .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: 22px 0 0 !important;
+    width: 100%; margin: 1.5em 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
   }
-  .landing-q { margin: 0 !important; text-align: left !important; }
   .landing-shot img { max-height: 52svh; }
   .landing-cap { max-width: none; }
-  /* A 16:9 photo cropped to a portrait viewport loses its outer thirds, so bias the
-     crop toward whichever edge this slide's subject stands on. */
-  .landing-slide[data-shot='right'] .landing-bg { object-position: 22% center; }
-  .landing-slide[data-shot='left'] .landing-bg { object-position: 78% center; }
   .landing-wash {
     background: radial-gradient(ellipse 120% 70% at 50% 50%,
       rgba(239, 240, 236, 0.98) 0%, rgba(239, 240, 236, 0.92) 46%,
-      rgba(239, 240, 236, 0.5) 74%, rgba(239, 240, 236, 0) 100%);
+      rgba(239, 240, 236, 0.55) 74%, rgba(239, 240, 236, 0) 100%);
   }
 }
 `;
