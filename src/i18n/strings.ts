@@ -159,7 +159,6 @@ export interface StringTable {
   editInSettings: string;
   ratioCustom: string;
   resetDefaults: string;
-  gearMix: string;
   foodSection: string;
   addFoodItem: string;
   newFood: string;
@@ -474,7 +473,6 @@ export const STR: Record<Lang, StringTable> = {
     editInSettings: 'ustawienia mieszanki',
     ratioCustom: 'własna',
     resetDefaults: 'Przywróć domyślne',
-    gearMix: 'Mieszanka i bidony',
     foodSection: 'Jedzenie i dodatki',
     addFoodItem: 'Dodaj produkt',
     newFood: 'Nowy produkt',
@@ -547,7 +545,7 @@ export const STR: Record<Lang, StringTable> = {
       'Ten przycisk otwiera formularz punktu zaopatrzenia — wpisujesz kilometr i nazwę (np. sklep), żeby zaznaczyć, gdzie planujesz dokupić jedzenie lub napój.',
     tourClosingTitle: 'To wszystko na start',
     tourClosingBody:
-      'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Ustawienia (waga, ustawienia dostępnych produktów) oraz Mieszanka i bidony (pozwala ustalić proporcje i dostępne bidony) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
+      'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Sprzęt, Mieszankę, Produkty i Ustawienia (waga, tryb widoku) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
     tourClosingBodyMobile:
       'Przepisy na uzupełnianie bidonów znajdziesz pod przyciskiem „Skład bidonów” na liście planu. Ustawienia i język zmienisz w zakładce „Ja”, a proporcje mieszanki i dostępne bidony — w zakładkach „Mix” i „Sprzęt”. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w zakładce „Ja”. Jeśli zechcesz dowiedzieć się więcej, FAQ znajdziesz też w zakładce „Ja”.',
     tourNext: 'Dalej',
@@ -839,7 +837,6 @@ export const STR: Record<Lang, StringTable> = {
     editInSettings: 'mix settings',
     ratioCustom: 'custom',
     resetDefaults: 'Reset to defaults',
-    gearMix: 'Mix & bottles',
     foodSection: 'Food & extras',
     addFoodItem: 'Add product',
     newFood: 'New product',
@@ -912,7 +909,7 @@ export const STR: Record<Lang, StringTable> = {
       'This button opens a small form for a resupply point — enter the kilometer and a name (e.g. a shop) to mark where you plan to buy more food or drink.',
     tourClosingTitle: "That's the essentials",
     tourClosingBody:
-      "Recipes for topping up the bottles and fills you've added are under the chart. Settings (weight, available-product settings) and Mix & bottles (set ratios and available bottles) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
+      "Recipes for topping up the bottles and fills you've added are under the chart. Gear, Mix, Products and Settings (weight, view mode) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
     tourClosingBodyMobile:
       'Recipes for topping up bottles are behind the "Bottle recipes" button on the plan list. Change settings and language in the "Me" tab, and mix ratios and available bottles in the "Mix" and "Gear" tabs. Replay this tour any time from the button in the "Me" tab. Want to know more? The FAQ is in the "Me" tab too.',
     tourNext: 'Next',
