@@ -84,6 +84,13 @@ const ROOT_STYLE = `
      than a percentage of the viewport, so it covers the text at every window width; below
      ~860px both its stops fall off the edges and the whole screen washes over, which is
      what a phone should get. */
+  /* The FAQ header's padding and its button group's gap live here rather than in the inline
+     styles the rest of that bar uses, for one reason: the phone rules below have to be able
+     to override them, and an inline style beats a stylesheet rule. Keeping them here is what
+     makes the two headers land in the same place on a phone as they do on a desktop. */
+  .faq-header { padding: 0 32px; }
+  .faq-actions { display: flex; align-items: center; gap: 10px; }
+
   .faq-bg {
     position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0;
     object-fit: cover; object-position: center center;

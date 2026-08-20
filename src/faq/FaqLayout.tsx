@@ -32,7 +32,6 @@ const headerTagline: CSSProperties = {
   textTransform: 'uppercase',
   color: 'var(--muted)',
 };
-const headerActions: CSSProperties = { display: 'flex', alignItems: 'center', gap: 10 };
 const ctaButton: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -95,7 +94,6 @@ export function FaqLayout({
           height: 61,
           boxSizing: 'border-box',
           background: 'var(--bg)',
-          padding: '0 32px',
           borderBottom: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
@@ -113,7 +111,7 @@ export function FaqLayout({
             {t(lang).tagline}
           </span>
         </a>
-        <div className="faq-actions" style={headerActions}>
+        <div className="faq-actions">
           <LangMenu lang={lang} hrefFor={(code) => faqHref(code, slug)} />
           <a href={calculatorHref(lang)} style={ctaButton}>
             {c.open}
