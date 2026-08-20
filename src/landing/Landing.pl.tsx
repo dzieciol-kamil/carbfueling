@@ -261,17 +261,19 @@ body { padding-top: var(--landing-header-h); }
 
   /* No question and no screenshot here, so the only job is keeping the rider and the
      left-hand FINISH pylon in a frame that only shows about a quarter of the picture. */
-  /* 115svh rather than 130: at 130 the rear wheel landed at 99% of the screen, i.e.
-     off the bottom edge. Here it sits at about 88%, below the button but in frame. */
+  /* Pinned by its middle rather than hung from the top, so the overflow is split
+     evenly and the frame cannot drift: at 130svh centred, 15svh of sky goes off the
+     top and the rider comes up larger. */
   .landing-slide[data-slide='4'] .landing-bg {
-    bottom: auto; height: 115svh; object-position: 11.15% center;
+    bottom: auto; height: 130svh; top: 50%; transform: translateY(-50%);
+    object-position: 11.5% center;
   }
   .landing-slide[data-slide='4'] > div { padding-top: 12svh !important; }
   /* The headline stays up top; the button and the FAQ link drop into the bike's
      region further down the photograph. !important because the button carries an
      inline margin. */
   .landing-slide[data-slide='4'] > div > a:nth-of-type(1) {
-    margin-top: 40svh !important;
+    margin-top: 30svh !important;
   }
 
   .landing-slide[data-slide='4'] .landing-cap {
