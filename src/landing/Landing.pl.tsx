@@ -240,20 +240,22 @@ body { padding-top: var(--landing-header-h); }
      starts below 48% of the card — "Sugar 1:1" begins at 54% and "Lemon" at 52.5%,
      and both need to be whole for the slide to make its point. */
   .landing-slide[data-slide='2'] .landing-shot img {
-    width: 62vh; height: auto;
-    margin-left: calc(78.6vw - 59.49vh - 62.5px);
+    width: 66vh; height: auto;
+    margin-left: calc(78.6vw - 63.49vh - 62.5px);
   }
 
   /* Gravel rider stands at 14.9% of the cropped frame, which is a different shape
      again (1.56 rather than 1.79). */
-  .landing-slide[data-slide='3'] .landing-bg { object-position: 14.43% center; }
+  .landing-slide[data-slide='3'] .landing-bg { object-position: 16.56% center; }
   .landing-slide[data-slide='3'] .landing-shot img {
-    margin-left: calc(14.43vw + 0.73vh + 30px);
+    margin-left: calc(16.56vw - 2.59vh + 29.5px);
   }
 
   /* No question and no screenshot here, so the only job is keeping the rider and the
      left-hand FINISH pylon in a frame that only shows about a quarter of the picture. */
-  .landing-slide[data-slide='4'] .landing-bg { object-position: 10.8% center; }
+  .landing-slide[data-slide='4'] .landing-bg {
+    bottom: auto; height: 130svh; object-position: 11.15% center;
+  }
 
   .landing-dots { display: flex; }
 }
