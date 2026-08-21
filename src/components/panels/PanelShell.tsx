@@ -20,7 +20,7 @@ export function PanelShell({ title, onClose, children }: PanelShellProps) {
           right: 0,
           bottom: 0,
           width: '43%',
-          minWidth: 560,
+          minWidth: 660,
           maxWidth: 820,
           background: '#fff',
           borderLeft: '1px solid var(--border)',
