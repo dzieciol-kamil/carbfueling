@@ -77,7 +77,7 @@ function normalizeHoursMinutes(route: RouteInput): RouteInput {
 
 export type ViewMode = 'auto' | 'desktop' | 'mobile';
 export type YMode = 'rate' | 'fluid' | 'sum';
-export type PanelId = 'settings' | 'mix' | null;
+export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | null;
 export type MobileTab = 'plan' | 'gear' | 'mix' | 'food' | 'me';
 
 interface UiState {

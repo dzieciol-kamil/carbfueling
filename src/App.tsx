@@ -4,6 +4,8 @@ import { ChartHelpModal } from './components/chart/ChartHelpModal';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileApp } from './components/mobile/MobileApp';
+import { FoodPanel } from './components/panels/FoodPanel';
+import { GearPanel } from './components/panels/GearPanel';
 import { MixPanel } from './components/panels/MixPanel';
 import { SettingsPanel } from './components/panels/SettingsPanel';
 import { RecipesSection } from './components/recipes/RecipesSection';
@@ -83,8 +85,10 @@ function App() {
       }}
     >
       <Header />
-      {panel === 'settings' && <SettingsPanel />}
+      {panel === 'gear' && <GearPanel />}
       {panel === 'mix' && <MixPanel />}
+      {panel === 'food' && <FoodPanel />}
+      {panel === 'settings' && <SettingsPanel />}
       <div
         style={{ width: '100%', maxWidth: 1420, display: 'flex', flexDirection: 'column', gap: 16 }}
       >

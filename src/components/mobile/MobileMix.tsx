@@ -11,6 +11,7 @@ import {
 import type { CitricSource, RatioPreset } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { InfoPopover } from '../ui/InfoPopover';
 import { MobileStepper } from './MobileStepper';
 
 const RATIO_PRESETS = [2, 1.5, 1, 0.8];
@@ -146,6 +147,29 @@ export function MobileMix() {
     };
   };
 
+  // Desktop's MixPanel.tsx shows "Maltodextrin : Fructose" and "Acid" as plain labels above these
+  // same controls; mobile had no equivalent label at all, so these double as the label mobile was
+  // missing and as the InfoPopover trigger (same content-in-trigger pattern as recoveryHint in
+  // SummaryCards.tsx).
+  const mixRatioLabel = (
+    <InfoPopover
+      hint={strings.mixRatioHint}
+      triggerStyle={{ fontSize: 11, color: 'var(--muted-2)' }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+    >
+      {strings.ratio} ⓘ
+    </InfoPopover>
+  );
+  const mixCitricSourceLabel = (
+    <InfoPopover
+      hint={strings.mixCitricHint}
+      triggerStyle={{ fontSize: 11, color: 'var(--muted-2)' }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+    >
+      {strings.citricSourceLabel} ⓘ
+    </InfoPopover>
+  );
+
   const ratioButtons = (
     value: number,
     onChange: (n: number, preset: RatioPreset) => void,
@@ -212,7 +236,9 @@ export function MobileMix() {
         >
           {strings.mixIzo}
         </div>
+        {mixRatioLabel}
         {ratioButtons(mix.ratio, setRatio, false, false, mix.ratioPreset)}
+        {mixCitricSourceLabel}
         {citricSourceButtons(mix.citricSource, setCitricSource)}
         <MobileStepper
           label={strings.concLabel + ' (' + strings.per100 + ')'}
@@ -303,7 +329,9 @@ export function MobileMix() {
             {strings.gelLockedNote}
           </p>
         )}
+        {mixRatioLabel}
         {ratioButtons(mix.gelRatio, setGelRatio, true, gelLocked, mix.gelRatioPreset)}
+        {mixCitricSourceLabel}
         {citricSourceButtons(mix.gelCitricSource, setGelCitricSource, gelLocked)}
         <MobileStepper
           label={strings.gelConcLabel + ' (' + strings.per100 + ')'}
