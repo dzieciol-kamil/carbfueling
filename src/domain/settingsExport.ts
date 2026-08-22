@@ -28,11 +28,11 @@ const MAX_IMPORT_ARRAY_LENGTH = 500;
 // scrub position) — none of that is "settings" and importing it would just
 // leave the app in a weird mid-interaction state.
 export type SettingsExportViewMode = 'auto' | 'desktop' | 'mobile';
-export type SettingsExportYMode = 'rate' | 'fluid' | 'sum';
+export type SettingsExportYMode = 'rate' | 'fluid';
 export type SettingsExportXUnit = 'km' | 'h';
 
 const VIEW_MODES: SettingsExportViewMode[] = ['auto', 'desktop', 'mobile'];
-const Y_MODES: SettingsExportYMode[] = ['rate', 'fluid', 'sum'];
+const Y_MODES: SettingsExportYMode[] = ['rate', 'fluid'];
 const X_UNITS: SettingsExportXUnit[] = ['km', 'h'];
 const CONTENTS: Content[] = ['water', 'izo', 'gel'];
 
@@ -254,6 +254,11 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
     parsed.schemaVersion > SETTINGS_EXPORT_SCHEMA_VERSION
   ) {
     return { ok: false, reason: 'unsupported-version' };
+  }
+  // A file exported before the chart's "sum" y-mode was removed may still carry it — fall
+  // back to "rate" rather than rejecting an otherwise-valid backup over one stale UI pref.
+  if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.yMode === 'sum') {
+    parsed.data.ui.yMode = 'rate';
   }
   if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
   return { ok: true, data: parsed.data };

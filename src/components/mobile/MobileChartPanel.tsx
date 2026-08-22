@@ -5,10 +5,9 @@ import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileChart } from './MobileChart';
 import { MobileLaneStrip } from './MobileLaneStrip';
 
-const Y_MODES: { mode: YMode; label?: string }[] = [
+const Y_MODES: { mode: YMode; label: string }[] = [
   { mode: 'rate', label: 'g/h' },
   { mode: 'fluid', label: 'ml/h' },
-  { mode: 'sum' },
 ];
 
 export function MobileChartPanel() {
@@ -31,9 +30,7 @@ export function MobileChartPanel() {
     ? strings.narrationProfile
     : yMode === 'fluid'
       ? strings.narrationFluid
-      : yMode === 'sum'
-        ? strings.narrationSum
-        : strings.narrationRate;
+      : strings.narrationRate;
 
   const axisPoints = [0, distanceKm / 3, (distanceKm * 2) / 3, distanceKm];
 
@@ -52,10 +49,7 @@ export function MobileChartPanel() {
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
         >
           <SegmentedControl
-            options={Y_MODES.map(({ mode, label }) => ({
-              value: mode,
-              label: label ?? strings.sumMode,
-            }))}
+            options={Y_MODES.map(({ mode, label }) => ({ value: mode, label }))}
             value={yMode}
             onChange={setYMode}
             fullWidth={false}

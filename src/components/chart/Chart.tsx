@@ -22,15 +22,7 @@ const FLUID_CAP = FLUID_ABSORPTION_CAP_ML_H;
 const WIDTH = 800;
 
 type NumericSampleKey =
-  | 'intake'
-  | 'absorbed'
-  | 'gut'
-  | 'ml'
-  | 'need'
-  | 'rate'
-  | 'needRate'
-  | 'fluidRate'
-  | 'fluidNeedRate';
+  'absorbed' | 'gut' | 'ml' | 'need' | 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate';
 
 function polyline(
   samplesArr: Sample[],
@@ -71,9 +63,8 @@ export function Chart({ height, showAxis }: ChartProps) {
   const P = prof(route);
 
   const fluidMode = yMode === 'fluid';
-  const rateMode = yMode === 'rate' || fluidMode;
-  const yk: NumericSampleKey = fluidMode ? 'fluidRate' : rateMode ? 'rate' : 'absorbed';
-  const nk: NumericSampleKey = fluidMode ? 'fluidNeedRate' : rateMode ? 'needRate' : 'need';
+  const yk: NumericSampleKey = fluidMode ? 'fluidRate' : 'rate';
+  const nk: NumericSampleKey = fluidMode ? 'fluidNeedRate' : 'needRate';
   const izoCarbs = fills
     .filter((f) => f.content === 'izo')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
@@ -85,11 +76,9 @@ export function Chart({ height, showAxis }: ChartProps) {
 
   const maxY = fluidMode
     ? Math.max(FLUID_CAP * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate))) * 1.1
-    : rateMode
-      ? Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15
-      : Math.max(1, ...S.map((p) => Math.max(p.intake, p.need))) * 1.08;
+    : Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15;
 
-  const yUnit = fluidMode ? ' ml/h' : rateMode ? ' g/h' : ' g';
+  const yUnit = fluidMode ? ' ml/h' : ' g/h';
   const yStep = niceStep(maxY, 3);
   const yTicks: number[] = [];
   for (let v = 0; v <= maxY + 0.001; v += yStep) yTicks.push(v);
@@ -124,12 +113,6 @@ export function Chart({ height, showAxis }: ChartProps) {
   const fluidZoneY1 = py(fluidZoneDomainMax);
   const fluidZoneOffset = (v: number) => (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0);
   const fluidZoneStops = fluidZoneGradientStops(FLUID_CAP, fluidZoneOffset);
-
-  let worst = { d: 0, x: 0 };
-  S.forEach((p) => {
-    const d = p.need - p.absorbed;
-    if (d > worst.d) worst = { d, x: p.x };
-  });
 
   const gutOver = S.some((p) => p.gut > GUT_LIMIT);
 
@@ -355,47 +338,31 @@ export function Chart({ height, showAxis }: ChartProps) {
 
         <path d={area} fill={fluidMode ? 'url(#fpb)' : 'url(#fpg)'} />
 
-        {rateMode && (
-          <path
-            fill={CHART_COLORS.climb}
-            opacity={0.16}
-            d={
-              polyline(S, nk, px, py) +
-              ' ' +
-              S.slice()
-                .reverse()
-                .map((p) => 'L' + px(p.x).toFixed(1) + ' ' + py(Math.min(p[yk], p[nk])).toFixed(1))
-                .join(' ') +
-              ' Z'
-            }
-          />
-        )}
+        <path
+          fill={CHART_COLORS.climb}
+          opacity={0.16}
+          d={
+            polyline(S, nk, px, py) +
+            ' ' +
+            S.slice()
+              .reverse()
+              .map((p) => 'L' + px(p.x).toFixed(1) + ' ' + py(Math.min(p[yk], p[nk])).toFixed(1))
+              .join(' ') +
+            ' Z'
+          }
+        />
 
-        {rateMode && (
-          <line
-            x1={0}
-            x2={WIDTH}
-            y1={py(capY)}
-            y2={py(capY)}
-            stroke={fluidMode ? CHART_COLORS.water : CHART_COLORS.carb}
-            strokeWidth={1}
-            strokeDasharray="3 5"
-            opacity={0.8}
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
-
-        {!rateMode && (
-          <path
-            d={polyline(S, 'intake', px, py)}
-            fill="none"
-            stroke={CHART_COLORS.carb}
-            strokeWidth={1.2}
-            strokeDasharray="2 4"
-            opacity={0.55}
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
+        <line
+          x1={0}
+          x2={WIDTH}
+          y1={py(capY)}
+          y2={py(capY)}
+          stroke={fluidMode ? CHART_COLORS.water : CHART_COLORS.carb}
+          strokeWidth={1}
+          strokeDasharray="3 5"
+          opacity={0.8}
+          vectorEffect="non-scaling-stroke"
+        />
 
         <path
           d={polyline(S, nk, px, py)}
@@ -420,19 +387,6 @@ export function Chart({ height, showAxis }: ChartProps) {
               .join(' ')}
           />
         ))}
-
-        {!rateMode && worst.d > 12 && (
-          <line
-            x1={px(worst.x)}
-            x2={px(worst.x)}
-            y1={4}
-            y2={height - PB}
-            stroke={CHART_COLORS.climb}
-            strokeWidth={1.5}
-            strokeDasharray="3 3"
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
 
         {showAxis &&
           yTicks.map((v, i) => (

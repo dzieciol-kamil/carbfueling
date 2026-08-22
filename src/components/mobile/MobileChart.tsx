@@ -19,7 +19,7 @@ import { CHART_COLORS, FLUID_ZONE, fluidZoneGradientStops, sourceColor } from '.
 const WIDTH = 800;
 const HEIGHT = 168;
 
-type RateKey = 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate' | 'absorbed' | 'need' | 'gut';
+type RateKey = 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate' | 'gut';
 
 function polyline(
   arr: Sample[],
@@ -55,10 +55,8 @@ export function MobileChart() {
   const P = prof(route);
 
   const fluidMode = yMode === 'fluid';
-  const sumMode = yMode === 'sum';
-  const rateMode = !sumMode;
-  const yk: RateKey = fluidMode ? 'fluidRate' : rateMode ? 'rate' : 'absorbed';
-  const nk: RateKey = fluidMode ? 'fluidNeedRate' : rateMode ? 'needRate' : 'need';
+  const yk: RateKey = fluidMode ? 'fluidRate' : 'rate';
+  const nk: RateKey = fluidMode ? 'fluidNeedRate' : 'needRate';
   const izoCarbs = fills
     .filter((f) => f.content === 'izo')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
@@ -72,9 +70,7 @@ export function MobileChart() {
         FLUID_ABSORPTION_CAP_ML_H * 1.1,
         ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate)),
       ) * 1.1
-    : rateMode
-      ? Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15
-      : Math.max(1, ...S.map((p) => Math.max(p.absorbed, p.need))) * 1.08;
+    : Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15;
   // A route with zero total hours (distance set but speed still 0) makes samples()'s
   // rate EMA divide by a zero dt, producing NaN — guard here so a degenerate route
   // never puts a non-finite number into an SVG attribute.
@@ -125,7 +121,7 @@ export function MobileChart() {
 
   const gutOver = S.some((p) => p.gut > GUT_LIMIT);
   const capY = fluidMode ? FLUID_ABSORPTION_CAP_ML_H : cap;
-  const unit = fluidMode ? ' ml/h' : rateMode ? ' g/h' : ' g';
+  const unit = fluidMode ? ' ml/h' : ' g/h';
 
   // Same severity gradient as the desktop chart — see Chart.tsx for the full reasoning, including
   // why the span is anchored to the cap and not to `maxY`.
@@ -268,19 +264,17 @@ export function MobileChart() {
               opacity={0.18}
             />
 
-            {rateMode && (
-              <line
-                x1={0}
-                x2={WIDTH}
-                y1={py(capY)}
-                y2={py(capY)}
-                stroke={sourceColor(fluidMode ? 'water' : 'izo')}
-                strokeWidth={1}
-                strokeDasharray="3 5"
-                opacity={0.8}
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
+            <line
+              x1={0}
+              x2={WIDTH}
+              y1={py(capY)}
+              y2={py(capY)}
+              stroke={sourceColor(fluidMode ? 'water' : 'izo')}
+              strokeWidth={1}
+              strokeDasharray="3 5"
+              opacity={0.8}
+              vectorEffect="non-scaling-stroke"
+            />
 
             <path
               d={polyline(S, nk, px, py)}

@@ -176,6 +176,17 @@ describe('settingsExport', () => {
     expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
   });
 
+  test('normalizes a legacy "sum" y-mode from an older export to "rate"', () => {
+    const file = buildSettingsExport(makeData());
+    const json = JSON.stringify({
+      ...file,
+      data: { ...file.data, ui: { ...file.data.ui, yMode: 'sum' } },
+    });
+    const result = parseSettingsImport(json);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.ui.yMode).toBe('rate');
+  });
+
   test('accepts an optional gpx track and nullable route strings', () => {
     const data = makeData({
       route: {
