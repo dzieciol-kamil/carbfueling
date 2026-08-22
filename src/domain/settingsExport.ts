@@ -7,6 +7,7 @@ import type {
   MixSettings,
   RouteInput,
   ShopStop,
+  Sport,
   Vessel,
 } from './types';
 
@@ -22,6 +23,9 @@ export const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
 // of thousands of synthetic `fills` entries can't freeze the importing tab
 // rendering all of it (chart, Schedule list, recipe cards).
 const MAX_IMPORT_ARRAY_LENGTH = 500;
+
+// Default for `sport` on old exports (added after `sport` became part of `RouteInput`).
+const DEFAULT_SPORT: Sport = 'cycling';
 
 // Durable UI preferences worth carrying across devices. Deliberately excludes
 // transient UI state (open panels/sheets, hover/drag/selection, tour progress,
@@ -114,6 +118,7 @@ function isInRange(v: unknown, min: number, max: number): boolean {
 function isValidRoute(v: unknown): v is RouteInput {
   if (!isRecord(v)) return false;
   if (v.mode !== 'route' && v.mode !== 'time') return false;
+  if (v.sport !== undefined && v.sport !== 'cycling' && v.sport !== 'running') return false;
   if (
     !isInRange(v.distance, 0, 2000) ||
     !isInRange(v.speed, 0, 100) ||
@@ -261,5 +266,11 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
     parsed.data.ui.yMode = 'rate';
   }
   if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
-  return { ok: true, data: parsed.data };
+  return {
+    ok: true,
+    data: {
+      ...parsed.data,
+      route: { ...parsed.data.route, sport: parsed.data.route.sport ?? DEFAULT_SPORT },
+    },
+  };
 }
