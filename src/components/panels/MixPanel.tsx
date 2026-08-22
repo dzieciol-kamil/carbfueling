@@ -251,7 +251,7 @@ function RatioButtons({
               ...segmentItemStyle(presetIndex === -1, { disabled }),
               // Wider than the 4 preset segments (flex 1 each): it carries an input, not just
               // a short label, so it needs more room to breathe than an equal 1/5 share gives it.
-              flex: '2 1 0',
+              flex: '1.3 1 0',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
