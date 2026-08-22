@@ -53,7 +53,8 @@ export const GUT_LIMIT = 60;
  * failure as running low on carbs — bonking hurts, hyperthermia is dangerous — so water keeps the
  * stricter 85/60 it always had on desktop and does not inherit the carb recalibration.
  *
- * `hydrationPct` is unchanged by any of this: still the plain `fluidPlanned / sweatLoss` ratio,
+ * `hydrationPct` is unchanged by any of this: still the plain `fluidAbsorbedTotal / sweatLoss`
+ * ratio (capped at the gut's absorption rate — see `samples()` — not the raw volume poured),
  * reported as 100 below the short-ride gate. Note this is also stricter than the `>= 70` the
  * *mobile* card used to apply on its own — that number was never calibrated against anything and
  * disagreed with desktop, which is the whole class of bug this work set out to remove.
@@ -546,6 +547,25 @@ export function fracFood(food: FoodItem, x: number, route: RouteInput): number {
   return Math.max(0, Math.min(1, (eff(route, x) - a) / (b - a)));
 }
 
+/**
+ * One step of the stomach-buffer model shared by carbs and fluid: whatever arrived since last
+ * step (`cum - prevCum`) joins the backlog, then at most `capPerStep` of that backlog clears this
+ * step — the rest waits for a later step (or never clears, if the ride ends first). The very
+ * first step only accumulates; nothing has cleared yet for anything to compare against.
+ */
+function stepStomachBuffer(
+  prevBuf: number,
+  prevCum: number,
+  cum: number,
+  capPerStep: number,
+  isFirstStep: boolean,
+): [buf: number, took: number] {
+  const buf = prevBuf + Math.max(0, cum - prevCum);
+  if (isFirstStep) return [buf, 0];
+  const took = Math.min(buf, capPerStep);
+  return [buf - took, took];
+}
+
 export function samples(state: PlanState): Sample[] {
   const { route, mix, gear, fills, foods } = state;
   const D = dist(route);
@@ -568,10 +588,12 @@ export function samples(state: PlanState): Sample[] {
 
   const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
   const sweatLoss = sweatRate * hrs;
-  // Unlike carbs, fluid has no real digestion-lag physiology (the stomach passes water on to the
-  // gut quickly; there's no enzyme-limited absorption cap the way there is for carbs), so a
-  // time-varying "ramp" had no physiological basis. Real hydration guidance is stated as a flat
-  // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
+  // This is about the *target* (need) line, not delivery: unlike carbs, fluid has no
+  // enzyme-limited transporter stage on top of the stomach — the gut buffer added below models
+  // the stomach's own gastric-emptying rate cap (fluid can back up there too), but nothing further
+  // downstream slows it in stages the way carb digestion does, so there's no physiological basis
+  // for a time-varying "ramp" in what's *needed*. Real hydration guidance is stated as a flat rate
+  // (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
   // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
   // `HYDRATION_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
@@ -625,25 +647,24 @@ export function samples(state: PlanState): Sample[] {
       }
     });
 
-    gut += Math.max(0, intake - prevIn);
+    let took: number;
+    [gut, took] = stepStomachBuffer(gut, prevIn, intake, cap * dt, i === 0);
+    absorbed += took;
     prevIn = intake;
-    if (i) {
-      const take = Math.min(gut, cap * dt);
-      gut -= take;
-      absorbed += take;
-    }
 
     // Same gut-buffer treatment as carbs above: the stomach can only pass fluid on to the gut at
     // FLUID_ABSORPTION_CAP_ML_H, so pouring faster than that doesn't get absorbed any faster — it
     // backs up in the stomach and comes through once the drinking rate drops back below the cap
     // (or, if the ride ends first, never counts at all).
-    fluidGut += Math.max(0, ml - prevMl);
+    [fluidGut, took] = stepStomachBuffer(
+      fluidGut,
+      prevMl,
+      ml,
+      FLUID_ABSORPTION_CAP_ML_H * dt,
+      i === 0,
+    );
+    mlAbsorbed += took;
     prevMl = ml;
-    if (i) {
-      const take = Math.min(fluidGut, FLUID_ABSORPTION_CAP_ML_H * dt);
-      fluidGut -= take;
-      mlAbsorbed += take;
-    }
 
     out.push({
       x,

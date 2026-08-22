@@ -173,7 +173,8 @@ export function SummaryCards() {
             {strings.sweatLoss} <b style={footerValueStyle}>{summary.sweatLoss} ml</b>
           </span>
           <span>
-            {strings.planned} <b style={footerValueStyle}>{summary.fluidPlanned} ml</b>
+            {strings.tAbsorbed}{' '}
+            <b style={footerValueStyle}>{Math.round(summary.fluidAbsorbedTotal)} ml</b>
           </span>
         </div>
       </div>
