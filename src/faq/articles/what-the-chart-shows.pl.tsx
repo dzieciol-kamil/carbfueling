@@ -80,10 +80,7 @@ export default function WhatTheChartShowsPl() {
       />
       <p style={articleTextStyle}>
         Płyny działają dokładnie tak samo, na swojej własnej parze linii: wypite płyny kontra utrata
-        z potem — śledzisz to dokładnie tak samo, tylko dla nawodnienia zamiast węglowodanów. A
-        jeśli wolisz sprawdzać sumy zamiast tempa na godzinę, wykres ma też skumulowane wersje tych
-        linii — "od startu trasy" — dzięki czemu widzisz, czy trzymasz tempo na całej trasie, a nie
-        tylko w jednym jej punkcie.
+        z potem — śledzisz to dokładnie tak samo, tylko dla nawodnienia zamiast węglowodanów.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/fluid-lines.png')}
