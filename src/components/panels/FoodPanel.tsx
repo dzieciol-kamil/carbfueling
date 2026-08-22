@@ -57,8 +57,11 @@ export function FoodPanel() {
 
   return (
     <PanelShell title={strings.tabFood} onClose={closePanel}>
-      <p style={{ margin: '0 0 14px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
+      <p style={{ margin: '0 0 6px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
         {strings.foodSectionHint}
+      </p>
+      <p style={{ margin: '0 0 14px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
+        {strings.foodContHint}
       </p>
 
       <div
@@ -77,7 +80,7 @@ export function FoodPanel() {
         <span>{strings.fName}</span>
         <span style={{ textAlign: 'center' }}>{strings.fCarbs}</span>
         <span style={{ textAlign: 'center' }}>{strings.fMl}</span>
-        <span />
+        <span style={{ textAlign: 'center' }}>{strings.fContHeader}</span>
         <span />
       </div>
 

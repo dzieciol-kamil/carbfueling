@@ -80,18 +80,27 @@ export interface StringTable {
   recipesHint: string;
   ratio: string;
   mixRatioHint: string;
+  mixSugarBlendHeader: string;
+  mixSugarAmountIzo: string;
+  mixSugarAmountGel: string;
+  mixSaltAmount: string;
   ratioLabelSugar: string;
   ratioLabelHoney: string;
   concLabel: string;
   saltLabel: string;
   citricLabel: string;
   citricSourceLabel: string;
+  mixFlavorHeader: string;
   mixCitricHint: string;
   citricSourceCitric: string;
   citricSourceLemon: string;
   citricSourceLime: string;
   citricSourceLemonJuice: string;
   citricSourceLimeJuice: string;
+  citricFieldLemon: string;
+  citricFieldLime: string;
+  citricFieldLemonJuice: string;
+  citricFieldLimeJuice: string;
   gelConcLabel: string;
   per100: string;
   per100Ml: string;
@@ -166,8 +175,18 @@ export interface StringTable {
   fCarbs: string;
   fMl: string;
   fCont: string;
+  fContHeader: string;
   foodSectionHint: string;
-  mixHint: string;
+  foodContHint: string;
+  mixHintPre: string;
+  mixHintLink1: string;
+  mixHintMid1: string;
+  mixHintLink2: string;
+  mixHintMid2: string;
+  mixHintLink3: string;
+  mixHintMid3: string;
+  mixHintLink4: string;
+  mixHintPost: string;
   notes: { title: string; body: string }[];
   ftAboutBody: string;
   ftSources2: string;
@@ -391,20 +410,28 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Gramy do odmierzenia na każde napełnienie — osobno na bidon, flask czy słoiczek.',
     ratio: 'Maltodekstryna : Fruktoza',
     mixRatioHint:
-      'Malto i fruktoza wchodzą do krwi dwoma osobnymi transporterami jelitowymi — łącząc je, podnosisz limit wchłaniania ponad ok. 60 g/h samej maltodekstryny. Domyślna proporcja to 2:1, Cukier to 1:1, a Miód 0,8:1 — trzy warianty tego samego mechanizmu.',
+      'Maltodekstryna i fruktoza wchłaniają się w jelicie dwoma osobnymi drogami — łącząc je, organizm przyswaja więcej węglowodanów w ciągu godziny niż z samej maltodekstryny. Domyślna proporcja to 2:1, ale ten sam efekt daje zwykły cukier (naturalnie ok. 1:1 glukozy do fruktozy) albo miód (ok. 0,8:1) — to gotowe, naturalne odpowiedniki tej samej mieszanki.',
+    mixSugarBlendHeader: 'Mieszanka cukrów — stosunek Maltodekstryny do Fruktozy',
+    mixSugarAmountIzo: 'Ile cukru (łącznie) ma być w izotoniku',
+    mixSugarAmountGel: 'Ile cukru (łącznie) ma być w żelu',
+    mixSaltAmount: 'Uzupełnienie soli mineralnych: sól',
     ratioLabelSugar: 'Cukier',
     ratioLabelHoney: 'Miód',
     concLabel: 'cukry',
     saltLabel: 'sól',
     citricLabel: 'kwasek',
     citricSourceLabel: 'Kwasek',
-    mixCitricHint:
-      'Kwasek to tylko smak — nie wpływa na tempo wchłaniania węglowodanów ani na limit g/h.',
+    mixFlavorHeader: 'Dodatek smakowy redukujący słodki smak',
+    mixCitricHint: 'Kwasek to tylko smak — nie wpływa na tempo wchłaniania węglowodanów.',
     citricSourceCitric: 'Kwasek cytrynowy',
     citricSourceLemon: 'Cytryna',
     citricSourceLime: 'Limonka',
     citricSourceLemonJuice: 'Sok z cytryny',
     citricSourceLimeJuice: 'Sok z limonki',
+    citricFieldLemon: 'Świeża cytryna',
+    citricFieldLime: 'Świeża limonka',
+    citricFieldLemonJuice: 'Sok z cytryny w butelce',
+    citricFieldLimeJuice: 'Sok z limonki w butelce',
     gelConcLabel: 'cukry',
     per100: 'g/100 ml',
     per100Ml: 'ml/100 ml',
@@ -480,9 +507,21 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'cukry (g)',
     fMl: 'płyn (ml)',
     fCont: 'stopniowo',
+    fContHeader: 'uwalnianie',
     foodSectionHint:
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
-    mixHint: 'Wartości na 100 ml — stąd liczą się gramy dla każdego napełnienia.',
+    foodContHint:
+      'Zaznaczenie „stopniowo” sprawia, że produkt trafia na wykres powoli, rozłożony na kilku kilometrach — banana zjesz od razu, ale żelki podjadasz po drodze.',
+    mixHintPre: 'Tu ustalisz, z czego będzie się składać Twój izotonik i żel — ',
+    mixHintLink1: 'proporcja cukrów',
+    mixHintMid1: ' (możesz też użyć zwykłego ',
+    mixHintLink2: 'cukru albo miodu',
+    mixHintMid2: '), ',
+    mixHintLink3: 'sól',
+    mixHintMid3: ' i ',
+    mixHintLink4: 'dodatek smakowy',
+    mixHintPost:
+      '. Wartości podajesz na 100 ml, więc stąd liczone są gramy dla każdego napełnienia w planie.',
     notes: [
       {
         title: 'Linia na każdy bidon',
@@ -755,20 +794,28 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Grams to measure out for each fill — per bottle, flask or jar.',
     ratio: 'Maltodextrin : Fructose',
     mixRatioHint:
-      "Malto and fructose use two separate gut transporters — combining them lifts the absorption limit above the ~60 g/h you'd get from maltodextrin alone. The default ratio is 2:1, Sugar is 1:1, and Honey is 0.8:1 — three variants of the same mechanism.",
+      "Maltodextrin and fructose are absorbed through two separate gut pathways — combining them lets your body take in more carbs per hour than from maltodextrin alone. The default ratio is 2:1, but plain sugar (naturally about 1:1 glucose to fructose) or honey (about 0.8:1) give the same effect — they're ready-made, natural equivalents of the same blend.",
+    mixSugarBlendHeader: 'Sugar blend — Maltodextrin to Fructose ratio',
+    mixSugarAmountIzo: 'How much sugar (total) should be in the isotonic',
+    mixSugarAmountGel: 'How much sugar (total) should be in the gel',
+    mixSaltAmount: 'Mineral salt top-up: salt',
     ratioLabelSugar: 'Sugar',
     ratioLabelHoney: 'Honey',
     concLabel: 'carbs',
     saltLabel: 'salt',
     citricLabel: 'citric',
     citricSourceLabel: 'Acid',
-    mixCitricHint:
-      "Citric is purely about taste — it doesn't affect carb absorption speed or your g/h limit.",
+    mixFlavorHeader: 'Flavor additive to reduce sweetness',
+    mixCitricHint: "Citric is purely about taste — it doesn't affect carb absorption speed.",
     citricSourceCitric: 'Citric acid',
     citricSourceLemon: 'Lemon',
     citricSourceLime: 'Lime',
     citricSourceLemonJuice: 'Lemon juice',
     citricSourceLimeJuice: 'Lime juice',
+    citricFieldLemon: 'Fresh lemon',
+    citricFieldLime: 'Fresh lime',
+    citricFieldLemonJuice: 'Bottled lemon juice',
+    citricFieldLimeJuice: 'Bottled lime juice',
     gelConcLabel: 'carbs',
     per100: 'g/100 ml',
     per100Ml: 'ml/100 ml',
@@ -844,9 +891,20 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'carbs (g)',
     fMl: 'fluid (ml)',
     fCont: 'over time',
+    fContHeader: 'release',
     foodSectionHint:
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
-    mixHint: 'Values per 100 ml — per-fill grams are derived from this.',
+    foodContHint:
+      'Turning on "over time" spreads the product on the chart gradually over a few kilometers — you eat a banana right away, but you nibble gummies along the way.',
+    mixHintPre: "Here you'll set the composition of your isotonic drink and gel — ",
+    mixHintLink1: 'sugar ratio',
+    mixHintMid1: ' (plain ',
+    mixHintLink2: 'sugar or honey',
+    mixHintMid2: ' work too), ',
+    mixHintLink3: 'salt',
+    mixHintMid3: ' and a ',
+    mixHintLink4: 'flavor additive',
+    mixHintPost: '. Values are per 100 ml, so per-fill grams in the plan are derived from this.',
     notes: [
       {
         title: 'A lane per bottle',

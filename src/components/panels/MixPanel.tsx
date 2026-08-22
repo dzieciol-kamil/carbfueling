@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { combinedGroups } from '../../domain/combinedRefill';
 import {
   citricAmount,
@@ -13,10 +13,24 @@ import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { InfoPopover } from '../ui/InfoPopover';
 import { NumberInput } from '../ui/NumberInput';
+import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import { PanelShell } from './PanelShell';
 
 const RATIO_PRESETS = [2, 1.5, 1, 0.8];
 const CITRIC_SOURCES: CitricSource[] = ['citric', 'lemon', 'lemonJuice', 'lime', 'limeJuice'];
+
+function FaqLink({ slug, children }: { slug: string; children: ReactNode }) {
+  return (
+    <a
+      href={FAQ_HREF_FROM_CALCULATOR + slug + '/'}
+      target="_blank"
+      rel="noopener"
+      style={{ color: 'inherit', textDecoration: 'underline' }}
+    >
+      {children}
+    </a>
+  );
+}
 
 const sectionCardStyle: CSSProperties = {
   border: '1px solid #E9EBE5',
@@ -25,14 +39,26 @@ const sectionCardStyle: CSSProperties = {
   background: '#FBFCFA',
   marginBottom: 10,
 };
-const miniLabelStyle: CSSProperties = {
+const blockHeaderStyle: CSSProperties = { fontSize: 13, fontWeight: 700, marginBottom: 10 };
+const buttonRowStyle: CSSProperties = {
+  display: 'flex',
+  gap: 6,
+  marginBottom: 10,
+  flexWrap: 'wrap',
+};
+const inputRowStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  gap: 6,
+  gap: 12,
+  marginBottom: 10,
+};
+const inputBoxStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
   border: '1px solid var(--chip-border)',
-  borderRadius: 10,
-  padding: '9px 10px',
+  borderRadius: 8,
+  padding: '6px 10px',
   background: '#fff',
 };
 const miniInputStyle: CSSProperties = {
@@ -59,16 +85,23 @@ function citricSourceLabel(source: CitricSource, strings: ReturnType<typeof t>):
   }
 }
 
-// The citric-amount grid field is unit-aware: plain citric-acid powder keeps its own short
-// "kwasek" label, but the whole-fruit/juice sources swap in the source's own name (e.g. "cytryna",
-// "sok z cytryny") since the field is no longer showing grams of powder but a practical amount of
-// that ingredient. Lowercased here (unlike the source-picker buttons, which stay Title Case) so
-// this label slot matches its sibling columns ("cukry", "kwasek") regardless of which source is
-// selected.
+// The citric-amount field label is deliberately wordier than the source-picker button it follows
+// (e.g. button "Cytryna" vs field "Świeża cytryna") — the button is a short pick, but the field
+// needs to disambiguate a squeezed whole fruit from bottled juice, since that distinction is what
+// determines the unit (fraction-of-fruit vs ml) the number below it is in.
 function citricFieldLabel(source: CitricSource, strings: ReturnType<typeof t>): string {
-  return source === 'citric'
-    ? strings.citricLabel
-    : citricSourceLabel(source, strings).toLowerCase();
+  switch (source) {
+    case 'lemon':
+      return strings.citricFieldLemon;
+    case 'lemonJuice':
+      return strings.citricFieldLemonJuice;
+    case 'lime':
+      return strings.citricFieldLime;
+    case 'limeJuice':
+      return strings.citricFieldLimeJuice;
+    default:
+      return strings.citricLabel.charAt(0).toUpperCase() + strings.citricLabel.slice(1);
+  }
 }
 
 function citricSubLabel(unit: CitricAmount['unit'], strings: ReturnType<typeof t>): string {
@@ -127,7 +160,56 @@ function cOpt(on: boolean, color: string, disabled = false): CSSProperties {
   };
 }
 
-interface RatioRowProps {
+function SectionBlockHeader({
+  title,
+  hint,
+  disabled,
+}: {
+  title: string;
+  hint: ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <InfoPopover
+      hint={hint}
+      triggerStyle={{ ...blockHeaderStyle, display: 'inline-block', opacity: disabled ? 0.6 : 1 }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+    >
+      {title} <span style={{ fontWeight: 400, color: 'var(--muted-2)' }}>ⓘ</span>
+    </InfoPopover>
+  );
+}
+
+interface InputRowProps {
+  label: string;
+  subLabel: string;
+  value: number;
+  onChange: (n: number) => void;
+  step: number;
+  round?: (n: number) => number;
+  disabled?: boolean;
+}
+
+function InputRow({ label, subLabel, value, onChange, step, round, disabled }: InputRowProps) {
+  return (
+    <label style={{ ...inputRowStyle, opacity: disabled ? 0.6 : 1 }}>
+      <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>{label}</span>
+      <span style={inputBoxStyle}>
+        <NumberInput
+          step={step}
+          value={value}
+          onChange={onChange}
+          round={round}
+          disabled={disabled}
+          style={miniInputStyle}
+        />
+        <span style={{ fontSize: 11, color: 'var(--muted-3)', marginLeft: 4 }}>{subLabel}</span>
+      </span>
+    </label>
+  );
+}
+
+interface RatioButtonsProps {
   value: number;
   onChange: (n: number, preset: RatioPreset) => void;
   strings: ReturnType<typeof t>;
@@ -136,92 +218,105 @@ interface RatioRowProps {
   disabled?: boolean;
 }
 
-function RatioRow({ value, onChange, strings, forGel, preset, disabled = false }: RatioRowProps) {
+function RatioButtons({
+  value,
+  onChange,
+  strings,
+  forGel,
+  preset,
+  disabled = false,
+}: RatioButtonsProps) {
   const isPreset = RATIO_PRESETS.includes(value) && preset !== 'custom';
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        marginBottom: 10,
-        flexWrap: 'wrap',
-      }}
-    >
-      <InfoPopover
-        hint={strings.mixRatioHint}
-        triggerStyle={{ fontSize: 12, color: 'var(--muted-2)' }}
-        popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
-      >
-        {strings.ratio} ⓘ
-      </InfoPopover>
-      <span
-        style={{
-          display: 'flex',
-          gap: 4,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          justifyContent: 'flex-end',
-          marginLeft: 'auto',
-        }}
-      >
-        {RATIO_PRESETS.map((r) => {
-          const caption = presetCaption(r, strings, forGel);
-          return (
-            <button
-              key={r}
-              onClick={() => onChange(r, presetTagFor(r))}
-              disabled={disabled}
-              style={{
-                ...cOpt(value === r && preset === presetTagFor(r), 'var(--ink)', disabled),
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'baseline',
-                gap: 4,
-              }}
-            >
-              {caption && (
-                <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.75 }}>{caption}</span>
-              )}
-              <span>{r}:1</span>
-            </button>
-          );
-        })}
-        <label
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-            borderRadius: 7,
-            padding: '4px 8px',
-            border: '1px solid ' + (isPreset ? 'var(--chip-border)' : 'var(--ink)'),
-            background: disabled ? '#F7F8F5' : '#fff',
-            opacity: disabled ? 0.6 : 1,
-          }}
-        >
-          <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{strings.ratioCustom}</span>
-          <NumberInput
-            min={0.2}
-            max={10}
-            step={0.1}
-            value={value}
-            onChange={(n) => onChange(n, 'custom')}
-            fallback={2}
+    <div style={buttonRowStyle}>
+      {RATIO_PRESETS.map((r) => {
+        const caption = presetCaption(r, strings, forGel);
+        return (
+          <button
+            key={r}
+            onClick={() => onChange(r, presetTagFor(r))}
             disabled={disabled}
             style={{
-              width: 44,
-              border: 'none',
-              background: 'transparent',
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 12,
-              fontWeight: 700,
-              textAlign: 'right',
+              ...cOpt(value === r && preset === presetTagFor(r), 'var(--ink)', disabled),
+              flex: '1 1 70px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
             }}
-          />
-          <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>:1</span>
-        </label>
-      </span>
+          >
+            {caption && (
+              <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.75 }}>{caption}</span>
+            )}
+            <span>{r}:1</span>
+          </button>
+        );
+      })}
+      <label
+        style={{
+          flex: '1 1 70px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          borderRadius: 7,
+          padding: '5px 8px',
+          border: '1px solid ' + (isPreset ? 'var(--chip-border)' : 'var(--ink)'),
+          background: disabled ? '#F7F8F5' : '#fff',
+          opacity: disabled ? 0.6 : 1,
+        }}
+      >
+        <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{strings.ratioCustom}</span>
+        <NumberInput
+          min={0.2}
+          max={10}
+          step={0.1}
+          value={value}
+          onChange={(n) => onChange(n, 'custom')}
+          fallback={2}
+          disabled={disabled}
+          style={{
+            width: 34,
+            border: 'none',
+            background: 'transparent',
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 12,
+            fontWeight: 700,
+            textAlign: 'right',
+          }}
+        />
+        <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>:1</span>
+      </label>
+    </div>
+  );
+}
+
+interface CitricSourceButtonsProps {
+  active: CitricSource;
+  onChange: (src: CitricSource) => void;
+  strings: ReturnType<typeof t>;
+  disabled?: boolean;
+}
+
+function CitricSourceButtons({
+  active,
+  onChange,
+  strings,
+  disabled = false,
+}: CitricSourceButtonsProps) {
+  return (
+    <div style={buttonRowStyle}>
+      {CITRIC_SOURCES.map((src) => (
+        <button
+          key={src}
+          onClick={() => onChange(src)}
+          disabled={disabled}
+          style={{ ...cOpt(active === src, 'var(--ink)', disabled), flex: '1 1 70px' }}
+        >
+          {citricSourceLabel(src, strings)}
+        </button>
+      ))}
     </div>
   );
 }
@@ -256,6 +351,20 @@ export function MixPanel() {
   // in real time, including while this panel is open.
   const selectedFills = fills.filter((f) => combinedFillIds.includes(f.fid));
   const gelLocked = combinedGroups(selectedFills, gear, mix).some((g) => g.content === 'mixed');
+
+  const mixIntro = (
+    <>
+      {strings.mixHintPre}
+      <FaqLink slug="malto-fructose-blend">{strings.mixHintLink1}</FaqLink>
+      {strings.mixHintMid1}
+      <FaqLink slug="honey-sugar-diy-mix">{strings.mixHintLink2}</FaqLink>
+      {strings.mixHintMid2}
+      <FaqLink slug="sodium-electrolytes-cycling">{strings.mixHintLink3}</FaqLink>
+      {strings.mixHintMid3}
+      <FaqLink slug="diy-flavor-additives">{strings.mixHintLink4}</FaqLink>
+      {strings.mixHintPost}
+    </>
+  );
 
   return (
     <PanelShell title={strings.tabMix} onClose={closePanel}>
@@ -297,98 +406,53 @@ export function MixPanel() {
         </button>
       </div>
       <p style={{ margin: '0 0 12px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
-        {strings.mixHint}
+        {mixIntro}
       </p>
 
       <div style={sectionCardStyle}>
         <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>{strings.mixIzo}</div>
-        <RatioRow
+
+        <SectionBlockHeader title={strings.mixSugarBlendHeader} hint={strings.mixRatioHint} />
+        <RatioButtons
           value={mix.ratio}
           onChange={setRatio}
           strings={strings}
           forGel={false}
           preset={mix.ratioPreset}
         />
-        <div
-          style={{
-            marginBottom: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            flexWrap: 'wrap',
-          }}
-        >
-          <InfoPopover
-            hint={strings.mixCitricHint}
-            triggerStyle={{ fontSize: 12, color: 'var(--muted-2)' }}
-            popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
-          >
-            {strings.citricSourceLabel} ⓘ
-          </InfoPopover>
-          <span
-            style={{
-              display: 'flex',
-              gap: 6,
-              flexWrap: 'wrap',
-              justifyContent: 'flex-end',
-              marginLeft: 'auto',
-            }}
-          >
-            {CITRIC_SOURCES.map((src) => (
-              <button
-                key={src}
-                onClick={() => setCitricSource(src)}
-                style={cOpt(mix.citricSource === src, 'var(--ink)')}
-              >
-                {citricSourceLabel(src, strings)}
-              </button>
-            ))}
-          </span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <label style={miniLabelStyle}>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                {strings.concLabel}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>{strings.per100}</span>
-            </span>
-            <NumberInput step={0.5} value={mix.conc} onChange={setConc} style={miniInputStyle} />
-          </label>
-          <label style={miniLabelStyle}>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                {strings.saltLabel}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>{strings.per100}</span>
-            </span>
-            <NumberInput step={0.05} value={mix.salt} onChange={setSalt} style={miniInputStyle} />
-          </label>
-          <label style={miniLabelStyle}>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                {citricFieldLabel(mix.citricSource, strings)}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
-                {citricSubLabel(izoCitric.unit, strings)}
-              </span>
-            </span>
-            <NumberInput
-              step={citricStep(izoCitric.unit)}
-              value={citricDisplayAmount(izoCitric.amount, izoCitric.unit)}
-              onChange={(v) =>
-                setCitric(
-                  citricGramsFromAmount(
-                    citricAmountFromDisplay(v, izoCitric.unit),
-                    mix.citricSource,
-                  ),
-                )
-              }
-              round={(v) => roundCitricDisplay(v, izoCitric.unit)}
-              style={miniInputStyle}
-            />
-          </label>
-        </div>
+        <InputRow
+          label={strings.mixSugarAmountIzo}
+          subLabel={strings.per100}
+          value={mix.conc}
+          onChange={setConc}
+          step={0.5}
+        />
+        <InputRow
+          label={strings.mixSaltAmount}
+          subLabel={strings.per100}
+          value={mix.salt}
+          onChange={setSalt}
+          step={0.05}
+        />
+
+        <SectionBlockHeader title={strings.mixFlavorHeader} hint={strings.mixCitricHint} />
+        <CitricSourceButtons
+          active={mix.citricSource}
+          onChange={setCitricSource}
+          strings={strings}
+        />
+        <InputRow
+          label={citricFieldLabel(mix.citricSource, strings)}
+          subLabel={citricSubLabel(izoCitric.unit, strings)}
+          value={citricDisplayAmount(izoCitric.amount, izoCitric.unit)}
+          onChange={(v) =>
+            setCitric(
+              citricGramsFromAmount(citricAmountFromDisplay(v, izoCitric.unit), mix.citricSource),
+            )
+          }
+          step={citricStep(izoCitric.unit)}
+          round={(v) => roundCitricDisplay(v, izoCitric.unit)}
+        />
       </div>
 
       <div style={sectionCardStyle}>
@@ -437,7 +501,13 @@ export function MixPanel() {
             {strings.gelLockedNote}
           </p>
         )}
-        <RatioRow
+
+        <SectionBlockHeader
+          title={strings.mixSugarBlendHeader}
+          hint={strings.mixRatioHint}
+          disabled={gelLocked}
+        />
+        <RatioButtons
           value={mix.gelRatio}
           onChange={setGelRatio}
           strings={strings}
@@ -445,100 +515,49 @@ export function MixPanel() {
           preset={mix.gelRatioPreset}
           disabled={gelLocked}
         />
-        <div
-          style={{
-            marginBottom: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            flexWrap: 'wrap',
-            opacity: gelLocked ? 0.6 : 1,
-          }}
-        >
-          <InfoPopover
-            hint={strings.mixCitricHint}
-            triggerStyle={{ fontSize: 12, color: 'var(--muted-2)' }}
-            popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
-          >
-            {strings.citricSourceLabel} ⓘ
-          </InfoPopover>
-          <span
-            style={{
-              display: 'flex',
-              gap: 6,
-              flexWrap: 'wrap',
-              justifyContent: 'flex-end',
-              marginLeft: 'auto',
-            }}
-          >
-            {CITRIC_SOURCES.map((src) => (
-              <button
-                key={src}
-                onClick={() => setGelCitricSource(src)}
-                disabled={gelLocked}
-                style={cOpt(mix.gelCitricSource === src, 'var(--ink)', gelLocked)}
-              >
-                {citricSourceLabel(src, strings)}
-              </button>
-            ))}
-          </span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <label style={miniLabelStyle}>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                {strings.gelConcLabel}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>{strings.per100}</span>
-            </span>
-            <NumberInput
-              step={1}
-              value={mix.gelConc}
-              onChange={setGelConc}
-              style={miniInputStyle}
-            />
-          </label>
-          <label style={{ ...miniLabelStyle, opacity: gelLocked ? 0.6 : 1 }}>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                {strings.saltLabel}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>{strings.per100}</span>
-            </span>
-            <NumberInput
-              step={0.05}
-              value={mix.gelSalt}
-              onChange={setGelSalt}
-              disabled={gelLocked}
-              style={miniInputStyle}
-            />
-          </label>
-          <label style={{ ...miniLabelStyle, opacity: gelLocked ? 0.6 : 1 }}>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>
-                {citricFieldLabel(mix.gelCitricSource, strings)}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
-                {citricSubLabel(gelCitricAmt.unit, strings)}
-              </span>
-            </span>
-            <NumberInput
-              step={citricStep(gelCitricAmt.unit)}
-              value={citricDisplayAmount(gelCitricAmt.amount, gelCitricAmt.unit)}
-              onChange={(v) =>
-                setGelCitric(
-                  citricGramsFromAmount(
-                    citricAmountFromDisplay(v, gelCitricAmt.unit),
-                    mix.gelCitricSource,
-                  ),
-                )
-              }
-              round={(v) => roundCitricDisplay(v, gelCitricAmt.unit)}
-              disabled={gelLocked}
-              style={miniInputStyle}
-            />
-          </label>
-        </div>
+        <InputRow
+          label={strings.mixSugarAmountGel}
+          subLabel={strings.per100}
+          value={mix.gelConc}
+          onChange={setGelConc}
+          step={1}
+        />
+        <InputRow
+          label={strings.mixSaltAmount}
+          subLabel={strings.per100}
+          value={mix.gelSalt}
+          onChange={setGelSalt}
+          step={0.05}
+          disabled={gelLocked}
+        />
+
+        <SectionBlockHeader
+          title={strings.mixFlavorHeader}
+          hint={strings.mixCitricHint}
+          disabled={gelLocked}
+        />
+        <CitricSourceButtons
+          active={mix.gelCitricSource}
+          onChange={setGelCitricSource}
+          strings={strings}
+          disabled={gelLocked}
+        />
+        <InputRow
+          label={citricFieldLabel(mix.gelCitricSource, strings)}
+          subLabel={citricSubLabel(gelCitricAmt.unit, strings)}
+          value={citricDisplayAmount(gelCitricAmt.amount, gelCitricAmt.unit)}
+          onChange={(v) =>
+            setGelCitric(
+              citricGramsFromAmount(
+                citricAmountFromDisplay(v, gelCitricAmt.unit),
+                mix.gelCitricSource,
+              ),
+            )
+          }
+          step={citricStep(gelCitricAmt.unit)}
+          round={(v) => roundCitricDisplay(v, gelCitricAmt.unit)}
+          disabled={gelLocked}
+        />
       </div>
     </PanelShell>
   );
