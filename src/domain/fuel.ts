@@ -53,7 +53,8 @@ export const GUT_LIMIT = 60;
  * failure as running low on carbs — bonking hurts, hyperthermia is dangerous — so water keeps the
  * stricter 85/60 it always had on desktop and does not inherit the carb recalibration.
  *
- * `hydrationPct` is unchanged by any of this: still the plain `fluidPlanned / sweatLoss` ratio,
+ * `hydrationPct` is unchanged by any of this: still the plain `fluidAbsorbedTotal / sweatLoss`
+ * ratio (capped at the gut's absorption rate — see `samples()` — not the raw volume poured),
  * reported as 100 below the short-ride gate. Note this is also stricter than the `>= 70` the
  * *mobile* card used to apply on its own — that number was never calibrated against anything and
  * disagreed with desktop, which is the whole class of bug this work set out to remove.
@@ -130,6 +131,10 @@ export interface Sample {
   absorbed: number;
   gut: number;
   ml: number;
+  /** Cumulative fluid that has actually cleared the stomach, capped at
+   *  `FLUID_ABSORPTION_CAP_ML_H` the same way `absorbed` caps carb intake — `ml` is what was
+   *  poured, this is what physiologically got through. `fluidRate` is derived from this, not `ml`. */
+  mlAbsorbed: number;
   need: number;
   active: ActiveSource;
   rate: number;
@@ -542,6 +547,25 @@ export function fracFood(food: FoodItem, x: number, route: RouteInput): number {
   return Math.max(0, Math.min(1, (eff(route, x) - a) / (b - a)));
 }
 
+/**
+ * One step of the stomach-buffer model shared by carbs and fluid: whatever arrived since last
+ * step (`cum - prevCum`) joins the backlog, then at most `capPerStep` of that backlog clears this
+ * step — the rest waits for a later step (or never clears, if the ride ends first). The very
+ * first step only accumulates; nothing has cleared yet for anything to compare against.
+ */
+function stepStomachBuffer(
+  prevBuf: number,
+  prevCum: number,
+  cum: number,
+  capPerStep: number,
+  isFirstStep: boolean,
+): [buf: number, took: number] {
+  const buf = prevBuf + Math.max(0, cum - prevCum);
+  if (isFirstStep) return [buf, 0];
+  const took = Math.min(buf, capPerStep);
+  return [buf - took, took];
+}
+
 export function samples(state: PlanState): Sample[] {
   const { route, mix, gear, fills, foods } = state;
   const D = dist(route);
@@ -564,10 +588,12 @@ export function samples(state: PlanState): Sample[] {
 
   const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
   const sweatLoss = sweatRate * hrs;
-  // Unlike carbs, fluid has no real digestion-lag physiology (the stomach passes water on to the
-  // gut quickly; there's no enzyme-limited absorption cap the way there is for carbs), so a
-  // time-varying "ramp" had no physiological basis. Real hydration guidance is stated as a flat
-  // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
+  // This is about the *target* (need) line, not delivery: unlike carbs, fluid has no
+  // enzyme-limited transporter stage on top of the stomach — the gut buffer added below models
+  // the stomach's own gastric-emptying rate cap (fluid can back up there too), but nothing further
+  // downstream slows it in stages the way carb digestion does, so there's no physiological basis
+  // for a time-varying "ramp" in what's *needed*. Real hydration guidance is stated as a flat rate
+  // (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
   // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
   // `HYDRATION_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
@@ -586,6 +612,9 @@ export function samples(state: PlanState): Sample[] {
   let gut = preRideGut(route, cap);
   let absorbed = 0;
   let prevIn = 0;
+  let fluidGut = 0;
+  let mlAbsorbed = 0;
+  let prevMl = 0;
 
   for (let i = 0; i <= N; i++) {
     const x = (D * i) / N;
@@ -618,13 +647,24 @@ export function samples(state: PlanState): Sample[] {
       }
     });
 
-    gut += Math.max(0, intake - prevIn);
+    let took: number;
+    [gut, took] = stepStomachBuffer(gut, prevIn, intake, cap * dt, i === 0);
+    absorbed += took;
     prevIn = intake;
-    if (i) {
-      const take = Math.min(gut, cap * dt);
-      gut -= take;
-      absorbed += take;
-    }
+
+    // Same gut-buffer treatment as carbs above: the stomach can only pass fluid on to the gut at
+    // FLUID_ABSORPTION_CAP_ML_H, so pouring faster than that doesn't get absorbed any faster — it
+    // backs up in the stomach and comes through once the drinking rate drops back below the cap
+    // (or, if the ride ends first, never counts at all).
+    [fluidGut, took] = stepStomachBuffer(
+      fluidGut,
+      prevMl,
+      ml,
+      FLUID_ABSORPTION_CAP_ML_H * dt,
+      i === 0,
+    );
+    mlAbsorbed += took;
+    prevMl = ml;
 
     out.push({
       x,
@@ -632,6 +672,7 @@ export function samples(state: PlanState): Sample[] {
       absorbed,
       gut,
       ml,
+      mlAbsorbed,
       need: target * (eff(route, x) / tot),
       active,
       rate: 0,
@@ -722,7 +763,7 @@ export function samples(state: PlanState): Sample[] {
     return pass2;
   }
 
-  const fluidRates = causalSmoothRate(out.map((p) => p.ml));
+  const fluidRates = causalSmoothRate(out.map((p) => p.mlAbsorbed));
   const fluidNeedRates = causalSmoothRate(out.map((p) => p.fluidNeed));
   out.forEach((p, i) => {
     p.fluidRate = fluidRates[i];
@@ -866,6 +907,11 @@ export interface PlanSummary {
    *  Not the same as `absorbedTotal`, which ignores whether a gram arrived when it was needed. */
   coveredCarbs: number;
   absorbedTotal: number;
+  /** Fluid that actually cleared the stomach over the whole ride, capped at
+   *  `FLUID_ABSORPTION_CAP_ML_H` — what `hydrationPct` is based on. Not the same as `fluidPlanned`,
+   *  which is the raw volume poured and can be higher if it was poured faster than the gut can
+   *  pass it on. */
+  fluidAbsorbedTotal: number;
 }
 
 export function planSummary(state: PlanState): PlanSummary {
@@ -892,12 +938,12 @@ export function planSummary(state: PlanState): PlanSummary {
   // apply — otherwise a mild/short ride with zero fills showed the chart's target line flat at
   // 0 (satisfied) while this badge showed 0%, red: the same disagreement this whole rework set
   // out to eliminate, just in the opposite direction.
+  const { coverage, coveredCarbs, samples: S } = rateStats(state);
+  const fluidAbsorbedTotal = S[S.length - 1].mlAbsorbed;
   const hydrationPct =
     sweatLoss > 0 && sweatLoss >= route.weight * HYDRATION_BUFFER_ML_PER_KG
-      ? Math.round((fluidPlanned / sweatLoss) * 100)
+      ? Math.round((fluidAbsorbedTotal / sweatLoss) * 100)
       : 100;
-
-  const { coverage, coveredCarbs, samples: S } = rateStats(state);
 
   return {
     target,
@@ -911,6 +957,7 @@ export function planSummary(state: PlanState): PlanSummary {
     coverage,
     coveredCarbs,
     absorbedTotal: S[S.length - 1].absorbed,
+    fluidAbsorbedTotal,
   };
 }
 
