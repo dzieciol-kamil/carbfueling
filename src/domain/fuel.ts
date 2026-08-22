@@ -190,6 +190,11 @@ export function dist(route: RouteInput): number {
 export function cph(route: RouteInput): number {
   const h = totalHours(route);
   const i = route.intensity;
+  if (route.sport === 'running') {
+    if (h < 1) return i === 'high' ? 45 : i === 'low' ? 20 : 30;
+    if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
+    return i === 'low' ? 45 : i === 'high' ? 75 : 60;
+  }
   if (h < 1) return i === 'high' ? 60 : i === 'low' ? 30 : 45;
   if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
   return i === 'low' ? 60 : i === 'high' ? 90 : 75;

@@ -192,6 +192,27 @@ describe('cph', () => {
     expect(cph({ ...h, intensity: 'mid' })).toBe(75);
     expect(cph({ ...h, intensity: 'high' })).toBe(90);
   });
+
+  test('running, under 1 hour', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 10, speed: 20 }); // 0.5h
+    expect(cph({ ...h, intensity: 'low' })).toBe(20);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(30);
+    expect(cph({ ...h, intensity: 'high' })).toBe(45);
+  });
+
+  test('running, between 1 and 2.5 hours inclusive (same as cycling)', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 50, speed: 25 }); // 2h
+    expect(cph({ ...h, intensity: 'low' })).toBe(30);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(45);
+    expect(cph({ ...h, intensity: 'high' })).toBe(60);
+  });
+
+  test('running, over 2.5 hours', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 300, speed: 25 }); // 12h
+    expect(cph({ ...h, intensity: 'low' })).toBe(45);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(60);
+    expect(cph({ ...h, intensity: 'high' })).toBe(75);
+  });
 });
 
 describe('sweat', () => {
