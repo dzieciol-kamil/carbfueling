@@ -16,7 +16,7 @@ import {
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { ElevationLayer, niceStep } from './ElevationLayer';
-import { CHART_COLORS, sourceColor } from './theme';
+import { CHART_COLORS, FLUID_ZONE, fluidZoneGradientStops, sourceColor } from './theme';
 
 const FLUID_CAP = FLUID_ABSORPTION_CAP_ML_H;
 const WIDTH = 800;
@@ -114,18 +114,16 @@ export function Chart({ height, showAxis }: ChartProps) {
   // clamp on the data: unlike carbs' transporter-limited ceiling, gastric emptying rate is
   // volume-proportional and varies ~4x between riders, so there's no single correct cutoff to
   // enforce — this flags rising risk instead of asserting an exact one.
+  //
+  // The gradient's own span is anchored to FLUID_ZONE.spanMultiple × the cap, not to `maxY`
+  // (the chart's actual y-scale): maxY shrinks to fit whatever the current plan's peak is, so for
+  // any overpour under 2x the cap, using maxY as the span would push the higher color stops off
+  // the top of the gradient's own range and collapse them together — see FLUID_ZONE's doc comment.
+  const fluidZoneDomainMax = Math.max(maxY, FLUID_CAP * FLUID_ZONE.spanMultiple);
   const fluidZoneY0 = py(0);
-  const fluidZoneY1 = py(maxY);
-  const fluidZoneOffset = (v: number) =>
-    Math.max(0, Math.min(1, (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0)));
-  const fluidZoneStops: { o: number; c: string }[] = [
-    { o: fluidZoneOffset(0), c: CHART_COLORS.water },
-    { o: fluidZoneOffset(FLUID_CAP), c: CHART_COLORS.water },
-    { o: fluidZoneOffset(FLUID_CAP * 1.3), c: CHART_COLORS.fluidWarn },
-    { o: fluidZoneOffset(FLUID_CAP * 1.6), c: CHART_COLORS.climb },
-    { o: fluidZoneOffset(FLUID_CAP * 2), c: CHART_COLORS.fluidDanger },
-    { o: 1, c: CHART_COLORS.fluidDanger },
-  ];
+  const fluidZoneY1 = py(fluidZoneDomainMax);
+  const fluidZoneOffset = (v: number) => (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0);
+  const fluidZoneStops = fluidZoneGradientStops(FLUID_CAP, fluidZoneOffset);
 
   let worst = { d: 0, x: 0 };
   S.forEach((p) => {
@@ -228,7 +226,7 @@ export function Chart({ height, showAxis }: ChartProps) {
               y2={fluidZoneY1}
             >
               {fluidZoneStops.map((s, i) => (
-                <stop key={i} offset={s.o} stopColor={s.c} />
+                <stop key={i} offset={s.offset} stopColor={s.color} />
               ))}
             </linearGradient>
           </defs>

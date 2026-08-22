@@ -249,6 +249,7 @@ export interface StringTable {
   chartHelpDeficitLabel: string;
   chartHelpDeficitBody: string;
   chartHelpFluidAbsorbedBody: string;
+  chartHelpFluidCapBody: string;
   chartHelpSweatBody: string;
   chartHelpSumAbsorbedBody: string;
   chartHelpSumNeedBody: string;
@@ -626,6 +627,8 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpDeficitLabel: 'Niedobór',
     chartHelpDeficitBody: 'Tu wchłaniasz mniej, niż potrzebujesz — ryzyko spadku formy.',
     chartHelpFluidAbsorbedBody: 'Ile faktycznie pijesz w tej godzinie.',
+    chartHelpFluidCapBody:
+      'Orientacyjne tempo, z jakim żołądek oddaje płyn do jelita. Powyżej niego linia robi się coraz bardziej żółta, potem pomarańczowa i czerwona — to rosnące ryzyko zalegania, nie twardy limit.',
     chartHelpSweatBody: 'Ile tracisz z potem — Twoje zapotrzebowanie na płyny.',
     chartHelpSumAbsorbedBody: 'Łącznie wchłonięte węglowodany od startu trasy.',
     chartHelpSumNeedBody: 'Łącznie ile było Ci potrzeba od startu trasy.',
@@ -1007,6 +1010,8 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpDeficitLabel: 'Deficit',
     chartHelpDeficitBody: "Here you're absorbing less than you need — risk of running low.",
     chartHelpFluidAbsorbedBody: "How much you're actually drinking in that hour.",
+    chartHelpFluidCapBody:
+      'Roughly how fast the stomach passes fluid on to the gut. Above it the line shifts from yellow to orange to red — rising risk of it backing up, not a hard cutoff.',
     chartHelpSweatBody: 'How much you lose through sweat — your fluid requirement.',
     chartHelpSumAbsorbedBody: 'Total carbs absorbed since the start of the route.',
     chartHelpSumNeedBody: "Total amount you've needed since the start of the route.",

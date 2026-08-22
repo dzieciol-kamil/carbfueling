@@ -14,7 +14,7 @@ import {
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { ElevationLayer } from '../chart/ElevationLayer';
-import { CHART_COLORS, sourceColor } from '../chart/theme';
+import { CHART_COLORS, FLUID_ZONE, fluidZoneGradientStops, sourceColor } from '../chart/theme';
 
 const WIDTH = 800;
 const HEIGHT = 168;
@@ -127,19 +127,13 @@ export function MobileChart() {
   const capY = fluidMode ? FLUID_ABSORPTION_CAP_ML_H : cap;
   const unit = fluidMode ? ' ml/h' : rateMode ? ' g/h' : ' g';
 
-  // Same severity gradient as the desktop chart — see Chart.tsx for the full reasoning.
+  // Same severity gradient as the desktop chart — see Chart.tsx for the full reasoning, including
+  // why the span is anchored to the cap and not to `maxY`.
+  const fluidZoneDomainMax = Math.max(maxY, capY * FLUID_ZONE.spanMultiple);
   const fluidZoneY0 = py(0);
-  const fluidZoneY1 = py(maxY);
-  const fluidZoneOffset = (v: number) =>
-    Math.max(0, Math.min(1, (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0)));
-  const fluidZoneStops: { o: number; c: string }[] = [
-    { o: fluidZoneOffset(0), c: CHART_COLORS.water },
-    { o: fluidZoneOffset(capY), c: CHART_COLORS.water },
-    { o: fluidZoneOffset(capY * 1.3), c: CHART_COLORS.fluidWarn },
-    { o: fluidZoneOffset(capY * 1.6), c: CHART_COLORS.climb },
-    { o: fluidZoneOffset(capY * 2), c: CHART_COLORS.fluidDanger },
-    { o: 1, c: CHART_COLORS.fluidDanger },
-  ];
+  const fluidZoneY1 = py(fluidZoneDomainMax);
+  const fluidZoneOffset = (v: number) => (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0);
+  const fluidZoneStops = fluidZoneGradientStops(capY, fluidZoneOffset);
 
   let badgeLines: [string, string, string] | null = null;
   if (scrubX != null) {
@@ -187,7 +181,7 @@ export function MobileChart() {
               y2={fluidZoneY1}
             >
               {fluidZoneStops.map((s, i) => (
-                <stop key={i} offset={s.o} stopColor={s.c} />
+                <stop key={i} offset={s.offset} stopColor={s.color} />
               ))}
             </linearGradient>
           </defs>
