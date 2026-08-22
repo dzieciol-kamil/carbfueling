@@ -12,6 +12,7 @@ import {
 function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportData {
   return {
     route: {
+      sport: 'cycling',
       mode: 'route',
       distance: 90,
       speed: 28,

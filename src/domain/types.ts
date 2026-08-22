@@ -1,4 +1,5 @@
 export type Mode = 'route' | 'time';
+export type Sport = 'cycling' | 'running';
 export type Intensity = 'low' | 'mid' | 'high';
 export type XUnit = 'km' | 'h';
 export type Content = 'water' | 'izo' | 'gel';
@@ -13,6 +14,7 @@ export type CitricSource = 'citric' | 'lemon' | 'lemonJuice' | 'lime' | 'limeJui
 export type RatioPreset = 'iso' | 'sugar' | 'honey' | 'ratio15' | 'custom';
 
 export interface RouteInput {
+  sport: Sport;
   mode: Mode;
   distance: number;
   speed: number;

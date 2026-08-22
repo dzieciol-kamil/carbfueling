@@ -42,6 +42,7 @@ import type { Fill, FoodItem, MixSettings, PlanState, RouteInput, Vessel } from 
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 100,
     speed: 25,

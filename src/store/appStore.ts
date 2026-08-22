@@ -208,6 +208,7 @@ interface AppState {
 }
 
 const defaultRoute: RouteInput = {
+  sport: 'cycling',
   mode: 'route',
   distance: 0,
   speed: 0,
