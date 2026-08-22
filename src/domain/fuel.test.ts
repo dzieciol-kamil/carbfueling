@@ -23,6 +23,7 @@ import {
   honeyGramsFromCarbs,
   hydrationStatus,
   mixSplit,
+  paceToSpeed,
   planExtras,
   planSummary,
   preRideGut,
@@ -33,6 +34,7 @@ import {
   rateStats,
   recoveryCarbs,
   samples,
+  speedToPace,
   sweat,
   timeAtDistance,
   timeWeight,
@@ -124,6 +126,33 @@ describe('totalHours', () => {
 
   test('time mode: hours + minutes/60', () => {
     expect(totalHours(makeRoute({ mode: 'time', hours: 1, minutes: 30 }))).toBe(1.5);
+  });
+});
+
+describe('speedToPace / paceToSpeed', () => {
+  test('speedToPace converts km/h to whole min:sec per km', () => {
+    expect(speedToPace(12)).toEqual({ min: 5, sec: 0 });
+    expect(speedToPace(10.9)).toEqual({ min: 5, sec: 30 });
+  });
+
+  test('speedToPace returns zero pace for zero or negative speed', () => {
+    expect(speedToPace(0)).toEqual({ min: 0, sec: 0 });
+    expect(speedToPace(-5)).toEqual({ min: 0, sec: 0 });
+  });
+
+  test('paceToSpeed converts min:sec per km back to km/h', () => {
+    expect(paceToSpeed(5, 0)).toBe(12);
+    expect(paceToSpeed(5, 30)).toBe(10.91);
+  });
+
+  test('paceToSpeed returns zero speed for zero pace', () => {
+    expect(paceToSpeed(0, 0)).toBe(0);
+  });
+
+  test('round-trips within one second of precision', () => {
+    const pace = speedToPace(9.5);
+    const speed = paceToSpeed(pace.min, pace.sec);
+    expect(speedToPace(speed)).toEqual(pace);
   });
 });
 

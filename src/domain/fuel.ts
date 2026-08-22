@@ -170,6 +170,18 @@ export function totalHours(route: RouteInput): number {
   return (route.hours || 0) + (route.minutes || 0) / 60;
 }
 
+export function speedToPace(speedKmh: number): { min: number; sec: number } {
+  if (speedKmh <= 0) return { min: 0, sec: 0 };
+  const totalSec = Math.round(3600 / speedKmh);
+  return { min: Math.floor(totalSec / 60), sec: totalSec % 60 };
+}
+
+export function paceToSpeed(min: number, sec: number): number {
+  const totalSec = min * 60 + sec;
+  if (totalSec <= 0) return 0;
+  return Math.round((3600 / totalSec) * 100) / 100;
+}
+
 export function dist(route: RouteInput): number {
   if (route.mode === 'route') return Math.max(1, route.distance);
   return Math.max(1, Math.round(totalHours(route) * 10));
