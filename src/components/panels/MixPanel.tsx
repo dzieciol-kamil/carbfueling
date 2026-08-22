@@ -160,11 +160,19 @@ function cOpt(on: boolean, color: string, disabled = false): CSSProperties {
   };
 }
 
-function SectionBlockHeader({ title, hint }: { title: string; hint: ReactNode }) {
+function SectionBlockHeader({
+  title,
+  hint,
+  disabled,
+}: {
+  title: string;
+  hint: ReactNode;
+  disabled?: boolean;
+}) {
   return (
     <InfoPopover
       hint={hint}
-      triggerStyle={{ ...blockHeaderStyle, display: 'inline-block' }}
+      triggerStyle={{ ...blockHeaderStyle, display: 'inline-block', opacity: disabled ? 0.6 : 1 }}
       popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
     >
       {title} <span style={{ fontWeight: 400, color: 'var(--muted-2)' }}>ⓘ</span>
@@ -184,9 +192,9 @@ interface InputRowProps {
 
 function InputRow({ label, subLabel, value, onChange, step, round, disabled }: InputRowProps) {
   return (
-    <div style={{ ...inputRowStyle, opacity: disabled ? 0.6 : 1 }}>
+    <label style={{ ...inputRowStyle, opacity: disabled ? 0.6 : 1 }}>
       <span style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600 }}>{label}</span>
-      <label style={inputBoxStyle}>
+      <span style={inputBoxStyle}>
         <NumberInput
           step={step}
           value={value}
@@ -196,8 +204,8 @@ function InputRow({ label, subLabel, value, onChange, step, round, disabled }: I
           style={miniInputStyle}
         />
         <span style={{ fontSize: 11, color: 'var(--muted-3)', marginLeft: 4 }}>{subLabel}</span>
-      </label>
-    </div>
+      </span>
+    </label>
   );
 }
 
@@ -494,7 +502,11 @@ export function MixPanel() {
           </p>
         )}
 
-        <SectionBlockHeader title={strings.mixSugarBlendHeader} hint={strings.mixRatioHint} />
+        <SectionBlockHeader
+          title={strings.mixSugarBlendHeader}
+          hint={strings.mixRatioHint}
+          disabled={gelLocked}
+        />
         <RatioButtons
           value={mix.gelRatio}
           onChange={setGelRatio}
@@ -519,7 +531,11 @@ export function MixPanel() {
           disabled={gelLocked}
         />
 
-        <SectionBlockHeader title={strings.mixFlavorHeader} hint={strings.mixCitricHint} />
+        <SectionBlockHeader
+          title={strings.mixFlavorHeader}
+          hint={strings.mixCitricHint}
+          disabled={gelLocked}
+        />
         <CitricSourceButtons
           active={mix.gelCitricSource}
           onChange={setGelCitricSource}
