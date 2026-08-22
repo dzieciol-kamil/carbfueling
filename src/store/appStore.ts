@@ -296,7 +296,11 @@ export const useAppStore = create<AppState>()(
           return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
         }),
       setSport: (sport) =>
-        set((s) => ({ route: { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] } })),
+        set((s) =>
+          s.route.sport === sport
+            ? {}
+            : { route: { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] } },
+        ),
       // Distance/hours/minutes are edited through free-typing number fields, which
       // commit a value on every keystroke (for live chart feedback) — reconciling
       // fills/foods/shops right here would clamp them against transient in-progress

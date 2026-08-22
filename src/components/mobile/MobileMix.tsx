@@ -22,6 +22,7 @@ const CITRIC_SOURCES: CitricSource[] = ['citric', 'lemon', 'lemonJuice', 'lime',
 export function MobileMix() {
   const lang = useAppStore((s) => s.ui.lang);
   const mix = useAppStore((s) => s.mix);
+  const intensity = useAppStore((s) => s.route.intensity);
   const gear = useAppStore((s) => s.gear);
   const fills = useAppStore((s) => s.fills);
   const combinedFillIds = useAppStore((s) => s.combinedFillIds);
@@ -41,7 +42,7 @@ export function MobileMix() {
 
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since this is a live preview of the mix settings themselves, not a plan.
-  const cap = absCap(mix);
+  const cap = absCap(mix, 0, 0, intensity);
   // Same lock condition as MixPanel.tsx's desktop counterpart: gel's ratio/salt/citric/source
   // are inherited from izo whenever there's an active cross-type combine, so those controls
   // become read-only here too. Reads live store state so it tracks the combine selection while

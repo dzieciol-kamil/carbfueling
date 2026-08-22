@@ -198,7 +198,7 @@ export function speedToPace(speedKmh: number): { min: number; sec: number } {
 export function paceToSpeed(min: number, sec: number): number {
   const totalSec = min * 60 + sec;
   if (totalSec <= 0) return 0;
-  return Math.round((3600 / totalSec) * 100) / 100;
+  return Math.round((3600 / totalSec) * 1000) / 1000;
 }
 
 export function dist(route: RouteInput): number {
@@ -236,6 +236,11 @@ export function sweat(route: RouteInput): number {
  * absorption note, the mobile "Me" tab, and the mix-editing screen's live preview), rather than
  * pretending to know a real-world split. Call sites that do have fills/gear (samples() below,
  * the desktop/mobile charts) pass the actual carb totals for a true blended figure.
+ *
+ * `intensity` defaults to 'mid' (no change). At 'high', the ceiling is trimmed by
+ * `HIGH_INTENSITY_ABS_CAP_FACTOR` — above roughly 80-90% of max effort, blood flow shifts away
+ * from the gut — then re-floored at 45 so the trim can never push below the same practical
+ * minimum the untrimmed cap already respects.
  */
 export function absCap(
   mix: MixSettings,
@@ -253,7 +258,7 @@ export function absCap(
   const glu = wIzo * gluIzo + wGel * gluGel;
   const fru = 1 - glu;
   const cap = Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
-  return intensity === 'high' ? Math.round(cap * HIGH_INTENSITY_ABS_CAP_FACTOR) : cap;
+  return intensity === 'high' ? Math.max(45, Math.round(cap * HIGH_INTENSITY_ABS_CAP_FACTOR)) : cap;
 }
 
 export function preRideGut(route: RouteInput, cap: number): number {

@@ -68,6 +68,12 @@ describe('setSport', () => {
     expect(useAppStore.getState().route.sport).toBe('cycling');
     expect(useAppStore.getState().route.speed).toBe(28);
   });
+
+  test('clicking the already-active sport is a no-op (does not reset speed)', () => {
+    useAppStore.setState({ route: route({ sport: 'cycling', speed: 32 }) });
+    useAppStore.getState().setSport('cycling');
+    expect(useAppStore.getState().route.speed).toBe(32);
+  });
 });
 
 const initialState = useAppStore.getState();

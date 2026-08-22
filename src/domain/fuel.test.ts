@@ -158,7 +158,7 @@ describe('speedToPace / paceToSpeed', () => {
 
   test('paceToSpeed converts min:sec per km back to km/h', () => {
     expect(paceToSpeed(5, 0)).toBe(12);
-    expect(paceToSpeed(5, 30)).toBe(10.91);
+    expect(paceToSpeed(5, 30)).toBe(10.909);
   });
 
   test('paceToSpeed returns zero speed for zero pace', () => {
@@ -169,6 +169,11 @@ describe('speedToPace / paceToSpeed', () => {
     const pace = speedToPace(9.5);
     const speed = paceToSpeed(pace.min, pace.sec);
     expect(speedToPace(speed)).toEqual(pace);
+  });
+
+  test('round-trips at slower (11:00/km) paces that 2-decimal rounding used to lose', () => {
+    const speed = paceToSpeed(11, 0);
+    expect(speedToPace(speed)).toEqual({ min: 11, sec: 0 });
   });
 });
 
@@ -300,6 +305,29 @@ describe('absCap', () => {
     expect(absCap(mix, 0, 0, 'low')).toBe(90);
     expect(absCap(mix, 0, 0, 'mid')).toBe(90);
     expect(absCap(mix, 0, 0, 'high')).toBe(79);
+  });
+
+  test('high intensity trim never pushes the cap below its own 45 floor', () => {
+    const mix = makeMix({ gelRatio: 0.5 });
+    const cap = absCap(mix, 0, 100, 'high'); // all carbs from the low-ratio gel
+    expect(cap).toBeGreaterThanOrEqual(45);
+  });
+});
+
+describe('cph() vs absCap() interaction at cycling, high intensity, long duration', () => {
+  test('pins the achievable coverage ceiling so a future retune cannot silently move it', () => {
+    const route = makeRoute({
+      sport: 'cycling',
+      mode: 'route',
+      distance: 300,
+      speed: 25,
+      intensity: 'high',
+    });
+    const target = cph(route);
+    const cap = absCap(makeMix(), 0, 0, route.intensity);
+    expect(target).toBe(90);
+    expect(cap).toBe(79);
+    expect(Math.round((cap / target) * 100)).toBe(88);
   });
 });
 

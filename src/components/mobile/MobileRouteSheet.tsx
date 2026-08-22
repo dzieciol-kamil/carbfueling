@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useRef } from 'react';
-import { paceToSpeed, prof } from '../../domain/fuel';
+import { paceToSpeed, prof, speedToPace } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
@@ -147,8 +147,11 @@ export function MobileRouteSheet() {
           />
           {route.sport === 'running' ? (
             <MobileStepper
-              label={strings.paceMin + '/' + strings.paceSec}
-              value={route.speed > 0 ? Math.round(3600 / route.speed) : 0}
+              label={strings.pace}
+              value={(() => {
+                const pace = speedToPace(route.speed);
+                return pace.min * 60 + pace.sec;
+              })()}
               min={150}
               max={900}
               smallStep={5}
