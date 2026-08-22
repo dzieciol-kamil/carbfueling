@@ -13,6 +13,10 @@ export interface StringTable {
   byTime: string;
   distance: string;
   speed: string;
+  sportCycling: string;
+  sportRunning: string;
+  paceMin: string;
+  paceSec: string;
   hours: string;
   minutes: string;
   duration: string;
@@ -327,6 +331,10 @@ export const STR: Record<Lang, StringTable> = {
     byTime: 'Czas',
     distance: 'Dystans',
     speed: 'Śr. prędkość',
+    sportCycling: 'Rower',
+    sportRunning: 'Bieg',
+    paceMin: 'Min/km',
+    paceSec: 'S/km',
     hours: 'Godziny',
     minutes: 'Minuty',
     duration: 'Czas trwania',
@@ -705,6 +713,10 @@ export const STR: Record<Lang, StringTable> = {
     byTime: 'Time',
     distance: 'Distance',
     speed: 'Avg speed',
+    sportCycling: 'Cycling',
+    sportRunning: 'Running',
+    paceMin: 'Min/km',
+    paceSec: 'Sec/km',
     hours: 'Hours',
     minutes: 'Minutes',
     duration: 'Duration',
