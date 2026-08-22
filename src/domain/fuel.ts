@@ -342,6 +342,7 @@ export function presetTagFor(r: number): RatioPreset {
   if (r === 2) return 'iso';
   if (r === 1) return 'sugar';
   if (r === 0.8) return 'honey';
+  if (r === 1.5) return 'ratio15';
   return 'custom';
 }
 

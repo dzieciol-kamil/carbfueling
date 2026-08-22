@@ -1281,14 +1281,14 @@ describe('mixSplit', () => {
 });
 
 describe('presetTagFor', () => {
-  test('maps the three named presets to their tag', () => {
+  test('maps the four named presets to their tag', () => {
     expect(presetTagFor(2)).toBe('iso');
     expect(presetTagFor(1)).toBe('sugar');
     expect(presetTagFor(0.8)).toBe('honey');
+    expect(presetTagFor(1.5)).toBe('ratio15');
   });
 
-  test('maps any other ratio (including the untagged 1.5 preset button) to custom', () => {
-    expect(presetTagFor(1.5)).toBe('custom');
+  test('maps any other ratio to custom', () => {
     expect(presetTagFor(3)).toBe('custom');
   });
 });
