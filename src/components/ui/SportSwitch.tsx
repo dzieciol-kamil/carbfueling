@@ -56,11 +56,11 @@ function RunIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle cx={14} cy={4} r={1.6} fill="currentColor" stroke="none" />
-      <path d="M12.5 6.5 L10 10.5 L6 12.5" />
-      <path d="M12.5 6.5 L16 8.5 L19.5 7" />
-      <path d="M12.5 6.5 L11.5 11 L14.5 13.5 L13 18.5" />
-      <path d="M14.5 13.5 L18 16" />
+      <circle cx={13.5} cy={4.5} r={1.7} fill="currentColor" stroke="none" />
+      <path d="M12 6.5 L9 11 L5.5 13.5" />
+      <path d="M9 11 L12.5 14.5 L11 19" />
+      <path d="M12 6.5 L15.5 9 L18.5 7.5" />
+      <path d="M12 6.5 L9.5 4.8" />
     </svg>
   );
 }
