@@ -6,6 +6,7 @@ import {
   citricDisplayAmount,
   citricGramsFromAmount,
   presetTagFor,
+  ratioPresetIndex,
   type CitricAmount,
 } from '../../domain/fuel';
 import type { CitricSource, RatioPreset } from '../../domain/types';
@@ -207,8 +208,7 @@ function RatioButtons({
   preset,
   disabled = false,
 }: RatioButtonsProps) {
-  const matches = RATIO_PRESETS.map((r) => value === r && preset === presetTagFor(r));
-  const presetIndex = matches.indexOf(true);
+  const presetIndex = ratioPresetIndex(value, preset, RATIO_PRESETS);
   const selectedIndex = presetIndex === -1 ? RATIO_PRESETS.length : presetIndex;
 
   return (
@@ -228,7 +228,7 @@ function RatioButtons({
                 onClick={() => onChange(r, presetTagFor(r))}
                 disabled={disabled}
                 style={{
-                  ...segmentItemStyle(matches[i], { disabled }),
+                  ...segmentItemStyle(i === presetIndex, { disabled }),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

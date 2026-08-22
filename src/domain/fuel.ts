@@ -346,6 +346,21 @@ export function presetTagFor(r: number): RatioPreset {
   return 'custom';
 }
 
+/**
+ * Which of `presets` (if any) the current ratio/preset pair points at — both must match, since
+ * `preset` disambiguates a numerically-coincidental custom entry from an actual preset pick (see
+ * RatioPreset's doc comment). Returns -1 when neither, meaning the free-entry "custom" slot is
+ * the one selected. Shared by desktop MixPanel.tsx and mobile MobileMix.tsx so their ratio
+ * pickers can't drift apart on which segment lights up.
+ */
+export function ratioPresetIndex(
+  value: number,
+  preset: RatioPreset,
+  presets: readonly number[],
+): number {
+  return presets.findIndex((r) => value === r && preset === presetTagFor(r));
+}
+
 // Honey is roughly 80% carbohydrate by weight — the rest is mostly water, plus trace
 // minerals and enzymes. A rough real-world ballpark (varies ~76-83% by floral source
 // and moisture content), not a lab figure — enough to turn "73g of carbs from honey"

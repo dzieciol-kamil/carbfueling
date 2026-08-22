@@ -28,6 +28,7 @@ import {
   presetTagFor,
   prof,
   rangeLabel,
+  ratioPresetIndex,
   rateStats,
   recoveryCarbs,
   samples,
@@ -1290,6 +1291,23 @@ describe('presetTagFor', () => {
 
   test('maps any other ratio to custom', () => {
     expect(presetTagFor(3)).toBe('custom');
+  });
+});
+
+describe('ratioPresetIndex', () => {
+  const presets = [2, 1.5, 1, 0.8];
+
+  test('finds the preset whose value and tag both match', () => {
+    expect(ratioPresetIndex(1.5, 'ratio15', presets)).toBe(1);
+    expect(ratioPresetIndex(0.8, 'honey', presets)).toBe(3);
+  });
+
+  test('returns -1 when the tag is custom even if the value matches a preset', () => {
+    expect(ratioPresetIndex(1.5, 'custom', presets)).toBe(-1);
+  });
+
+  test('returns -1 for a genuinely custom ratio not in the preset list', () => {
+    expect(ratioPresetIndex(3, 'custom', presets)).toBe(-1);
   });
 });
 

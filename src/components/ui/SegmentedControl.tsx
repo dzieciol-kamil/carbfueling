@@ -28,6 +28,8 @@ export function SegmentedTrack({
 }: SegmentedTrackProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
+  const observedElRef = useRef<HTMLElement | null>(null);
+  const observerRef = useRef<ResizeObserver | null>(null);
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -37,12 +39,19 @@ export function SegmentedTrack({
       setIndicator(null);
       return;
     }
-    const update = () => setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    ro.observe(container);
-    return () => ro.disconnect();
+    setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    if (!observerRef.current) {
+      observerRef.current = new ResizeObserver(() => {
+        const target = observedElRef.current;
+        if (target) setIndicator({ left: target.offsetLeft, width: target.offsetWidth });
+      });
+    }
+    observedElRef.current = el;
+    const observer = observerRef.current;
+    observer.disconnect();
+    observer.observe(el);
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [selectedIndex]);
 
   const registerRef = (index: number) => (el: HTMLElement | null) => {

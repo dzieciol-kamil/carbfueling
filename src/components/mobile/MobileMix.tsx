@@ -6,6 +6,7 @@ import {
   citricDisplayAmount,
   citricGramsFromAmount,
   presetTagFor,
+  ratioPresetIndex,
   type CitricAmount,
 } from '../../domain/fuel';
 import type { CitricSource, RatioPreset } from '../../domain/types';
@@ -161,11 +162,10 @@ export function MobileMix() {
     disabled = false,
     preset: RatioPreset = 'custom',
   ) => {
-    const matches = RATIO_PRESETS.map((r) => value === r && preset === presetTagFor(r));
-    const selectedIndex = matches.indexOf(true);
+    const presetIndex = ratioPresetIndex(value, preset, RATIO_PRESETS);
     return (
       <SegmentedTrack
-        selectedIndex={disabled ? -1 : selectedIndex}
+        selectedIndex={disabled ? -1 : presetIndex}
         style={{ opacity: disabled ? 0.6 : 1 }}
       >
         {(registerRef) => (
@@ -179,7 +179,7 @@ export function MobileMix() {
                   type="button"
                   onClick={() => onChange(r, presetTagFor(r))}
                   disabled={disabled}
-                  style={segmentItemStyle(matches[i], { disabled, minHeight: 44 })}
+                  style={segmentItemStyle(i === presetIndex, { disabled, minHeight: 44 })}
                 >
                   {caption ? caption + ' ' : ''}
                   {r}:1

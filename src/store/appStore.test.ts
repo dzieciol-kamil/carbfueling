@@ -687,3 +687,25 @@ describe('migrate: ratioPreset inference (v2 -> v3)', () => {
     expect(migrate({}, 2)).toEqual({});
   });
 });
+
+describe('migrate: 1.5:1 preset re-tagging (v3 -> v4)', () => {
+  test('re-tags a ratio of 1.5 previously stored as custom', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = {
+      mix: { ratio: 1.5, ratioPreset: 'custom', gelRatio: 1.5, gelRatioPreset: 'custom' },
+    };
+    const migrated = migrate(legacy, 3) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.mix.ratioPreset).toBe('ratio15');
+    expect(migrated.mix.gelRatioPreset).toBe('ratio15');
+  });
+
+  test('leaves a genuinely custom ratio (not 1.5) alone', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = {
+      mix: { ratio: 1.3, ratioPreset: 'custom', gelRatio: 2, gelRatioPreset: 'iso' },
+    };
+    const migrated = migrate(legacy, 3) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.mix.ratioPreset).toBe('custom');
+    expect(migrated.mix.gelRatioPreset).toBe('iso');
+  });
+});
