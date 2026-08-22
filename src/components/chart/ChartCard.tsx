@@ -5,6 +5,7 @@ import { useAppStore, type YMode } from '../../store/appStore';
 import type { XUnit } from '../../domain/types';
 import { FoodLibraryChips } from '../FoodLibraryChips';
 import { LanesSection } from '../lanes/LanesSection';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { ShopMarkers } from './ShopMarkers';
 import { TimelineSection } from '../timeline/TimelineSection';
 import { Chart } from './Chart';
@@ -15,28 +16,6 @@ const CHART_HEIGHT = 300;
 const CHART_PB = 22;
 const ELEVATION_SHARE = 0.62;
 
-function segButton(on: boolean, small = false): CSSProperties {
-  return {
-    border: 'none',
-    borderRadius: 6,
-    padding: small ? '4px 8px' : '5px 10px',
-    fontSize: small ? 10 : 11,
-    fontWeight: 700,
-    fontFamily: "'JetBrains Mono', monospace",
-    cursor: 'pointer',
-    background: on ? '#fff' : 'transparent',
-    color: on ? 'var(--ink)' : 'var(--muted)',
-    boxShadow: on ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-  };
-}
-
-const segGroupStyle: CSSProperties = {
-  display: 'flex',
-  background: 'var(--track)',
-  borderRadius: 8,
-  padding: 3,
-  gap: 2,
-};
 const legendItemStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -158,29 +137,19 @@ export function ChartCard() {
               {strings.gutLane}
             </span>
           )}
-          <div style={segGroupStyle}>
-            {yModeOptions.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setYMode(opt.value)}
-                style={segButton(yMode === opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={yModeOptions}
+            value={yMode}
+            onChange={setYMode}
+            fullWidth={false}
+          />
           {showUnits && (
-            <div style={segGroupStyle}>
-              {xUnitOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setXUnit(opt.value)}
-                  style={segButton(xUnit === opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={xUnitOptions}
+              value={xUnit}
+              onChange={setXUnit}
+              fullWidth={false}
+            />
           )}
         </div>
       </div>

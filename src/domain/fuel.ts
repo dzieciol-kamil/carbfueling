@@ -342,7 +342,23 @@ export function presetTagFor(r: number): RatioPreset {
   if (r === 2) return 'iso';
   if (r === 1) return 'sugar';
   if (r === 0.8) return 'honey';
+  if (r === 1.5) return 'ratio15';
   return 'custom';
+}
+
+/**
+ * Which of `presets` (if any) the current ratio/preset pair points at — both must match, since
+ * `preset` disambiguates a numerically-coincidental custom entry from an actual preset pick (see
+ * RatioPreset's doc comment). Returns -1 when neither, meaning the free-entry "custom" slot is
+ * the one selected. Shared by desktop MixPanel.tsx and mobile MobileMix.tsx so their ratio
+ * pickers can't drift apart on which segment lights up.
+ */
+export function ratioPresetIndex(
+  value: number,
+  preset: RatioPreset,
+  presets: readonly number[],
+): number {
+  return presets.findIndex((r) => value === r && preset === presetTagFor(r));
 }
 
 // Honey is roughly 80% carbohydrate by weight — the rest is mostly water, plus trace

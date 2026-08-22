@@ -642,7 +642,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'carbfueling',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -652,6 +652,10 @@ export const useAppStore = create<AppState>()(
       // once from the persisted numeric ratio/gelRatio (same mapping as presetTagFor) so a
       // rider who already had Miód/Cukier selected doesn't silently lose that label after the
       // upgrade — going forward, the tag is only ever set by an explicit preset-button click.
+      // v3 -> v4: the 1.5:1 ratio preset used to have no tag of its own and fell back to
+      // 'custom' (see presetTagFor) — a rider who clicked the "1.5:1" button therefore got
+      // 'custom' persisted. Now that 1.5 has its own 'ratio15' tag, re-derive the tag for
+      // anyone sitting at exactly 1.5 so the segmented control still highlights their choice.
       migrate: (persistedState, version) => {
         const s = persistedState as
           (Partial<AppState> & { combineStartGids?: string[] }) | undefined;
@@ -671,6 +675,15 @@ export const useAppStore = create<AppState>()(
           }
           if (mix.gelRatioPreset == null && typeof mix.gelRatio === 'number') {
             mix.gelRatioPreset = presetTagFor(mix.gelRatio);
+          }
+        }
+        if (version < 4 && s.mix) {
+          const mix = s.mix as Partial<MixSettings>;
+          if (mix.ratio === 1.5 && mix.ratioPreset === 'custom') {
+            mix.ratioPreset = 'ratio15';
+          }
+          if (mix.gelRatio === 1.5 && mix.gelRatioPreset === 'custom') {
+            mix.gelRatioPreset = 'ratio15';
           }
         }
         return s;

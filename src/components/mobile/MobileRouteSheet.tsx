@@ -5,6 +5,7 @@ import type { Intensity, RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { InfoPopover } from '../ui/InfoPopover';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileStepper } from './MobileStepper';
 
 function elevationGain(route: RouteInput): number {
@@ -46,20 +47,6 @@ const sectionTitleStyle: CSSProperties = {
   paddingTop: 14,
   marginTop: 4,
 };
-
-function chip(active: boolean): CSSProperties {
-  return {
-    flex: 1,
-    padding: '14px 4px',
-    borderRadius: 9,
-    border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
-    background: active ? 'var(--ink)' : '#fff',
-    color: active ? '#fff' : 'var(--muted-2)',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-  };
-}
 
 export function MobileRouteSheet() {
   const open = useAppStore((s) => s.ui.routeSheet);
@@ -189,18 +176,12 @@ export function MobileRouteSheet() {
                 ⓘ
               </InfoPopover>
             </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {intensityOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  style={chip(route.intensity === opt.value)}
-                  onClick={() => setIntensity(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={intensityOptions}
+              value={route.intensity}
+              onChange={setIntensity}
+              minHeight={44}
+            />
           </div>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>

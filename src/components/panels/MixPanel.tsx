@@ -6,6 +6,7 @@ import {
   citricDisplayAmount,
   citricGramsFromAmount,
   presetTagFor,
+  ratioPresetIndex,
   type CitricAmount,
 } from '../../domain/fuel';
 import type { CitricSource, RatioPreset } from '../../domain/types';
@@ -13,6 +14,7 @@ import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { InfoPopover } from '../ui/InfoPopover';
 import { NumberInput } from '../ui/NumberInput';
+import { SegmentedControl, SegmentedTrack, segmentItemStyle } from '../ui/SegmentedControl';
 import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import { PanelShell } from './PanelShell';
 
@@ -40,12 +42,6 @@ const sectionCardStyle: CSSProperties = {
   marginBottom: 10,
 };
 const blockHeaderStyle: CSSProperties = { fontSize: 13, fontWeight: 700, marginBottom: 10 };
-const buttonRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: 6,
-  marginBottom: 10,
-  flexWrap: 'wrap',
-};
 const inputRowStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -146,20 +142,6 @@ function presetCaption(r: number, strings: ReturnType<typeof t>, forGel: boolean
   return null;
 }
 
-function cOpt(on: boolean, color: string, disabled = false): CSSProperties {
-  return {
-    border: '1px solid ' + (disabled ? 'var(--chip-border)' : on ? color : 'var(--chip-border)'),
-    background: disabled ? '#F7F8F5' : on ? color : '#fff',
-    color: disabled ? '#C9CEC7' : on ? '#fff' : 'var(--muted)',
-    borderRadius: 7,
-    padding: '5px 10px',
-    fontSize: 11,
-    fontWeight: 700,
-    fontFamily: 'Archivo, sans-serif',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-  };
-}
-
 function SectionBlockHeader({
   title,
   hint,
@@ -226,69 +208,78 @@ function RatioButtons({
   preset,
   disabled = false,
 }: RatioButtonsProps) {
-  const isPreset = RATIO_PRESETS.includes(value) && preset !== 'custom';
+  const presetIndex = ratioPresetIndex(value, preset, RATIO_PRESETS);
+  const selectedIndex = presetIndex === -1 ? RATIO_PRESETS.length : presetIndex;
+
   return (
-    <div style={buttonRowStyle}>
-      {RATIO_PRESETS.map((r) => {
-        const caption = presetCaption(r, strings, forGel);
-        return (
-          <button
-            key={r}
-            onClick={() => onChange(r, presetTagFor(r))}
-            disabled={disabled}
+    <SegmentedTrack
+      selectedIndex={disabled ? -1 : selectedIndex}
+      style={{ opacity: disabled ? 0.6 : 1, marginBottom: 10 }}
+    >
+      {(registerRef) => (
+        <>
+          {RATIO_PRESETS.map((r, i) => {
+            const caption = presetCaption(r, strings, forGel);
+            return (
+              <button
+                key={r}
+                ref={registerRef(i)}
+                type="button"
+                onClick={() => onChange(r, presetTagFor(r))}
+                disabled={disabled}
+                style={{
+                  ...segmentItemStyle(i === presetIndex, { disabled }),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4,
+                }}
+              >
+                {caption && (
+                  <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.75 }}>{caption}</span>
+                )}
+                <span>{r}:1</span>
+              </button>
+            );
+          })}
+          <label
+            ref={registerRef(RATIO_PRESETS.length)}
+            onClick={() => {
+              if (presetIndex !== -1 && !disabled) onChange(value, 'custom');
+            }}
             style={{
-              ...cOpt(value === r && preset === presetTagFor(r), 'var(--ink)', disabled),
-              flex: '1 1 70px',
-              display: 'flex',
-              flexDirection: 'row',
+              ...segmentItemStyle(presetIndex === -1, { disabled }),
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
             }}
           >
-            {caption && (
-              <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.75 }}>{caption}</span>
-            )}
-            <span>{r}:1</span>
-          </button>
-        );
-      })}
-      <label
-        style={{
-          flex: '1 1 70px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-          borderRadius: 7,
-          padding: '5px 8px',
-          border: '1px solid ' + (isPreset ? 'var(--chip-border)' : 'var(--ink)'),
-          background: disabled ? '#F7F8F5' : '#fff',
-          opacity: disabled ? 0.6 : 1,
-        }}
-      >
-        <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{strings.ratioCustom}</span>
-        <NumberInput
-          min={0.2}
-          max={10}
-          step={0.1}
-          value={value}
-          onChange={(n) => onChange(n, 'custom')}
-          fallback={2}
-          disabled={disabled}
-          style={{
-            width: 34,
-            border: 'none',
-            background: 'transparent',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 12,
-            fontWeight: 700,
-            textAlign: 'right',
-          }}
-        />
-        <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>:1</span>
-      </label>
-    </div>
+            <span style={{ opacity: 0.75 }}>{strings.ratioCustom}</span>
+            <NumberInput
+              min={0.2}
+              max={10}
+              step={0.1}
+              value={value}
+              onChange={(n) => onChange(n, 'custom')}
+              fallback={2}
+              disabled={disabled}
+              style={{
+                width: 34,
+                border: 'none',
+                background: 'transparent',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 12,
+                fontWeight: 700,
+                textAlign: 'right',
+                color: 'inherit',
+              }}
+            />
+            <span>:1</span>
+          </label>
+        </>
+      )}
+    </SegmentedTrack>
   );
 }
 
@@ -306,18 +297,16 @@ function CitricSourceButtons({
   disabled = false,
 }: CitricSourceButtonsProps) {
   return (
-    <div style={buttonRowStyle}>
-      {CITRIC_SOURCES.map((src) => (
-        <button
-          key={src}
-          onClick={() => onChange(src)}
-          disabled={disabled}
-          style={{ ...cOpt(active === src, 'var(--ink)', disabled), flex: '1 1 70px' }}
-        >
-          {citricSourceLabel(src, strings)}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      options={CITRIC_SOURCES.map((src) => ({
+        value: src,
+        label: citricSourceLabel(src, strings),
+      }))}
+      value={active}
+      onChange={onChange}
+      disabled={disabled}
+      style={{ marginBottom: 10 }}
+    />
   );
 }
 

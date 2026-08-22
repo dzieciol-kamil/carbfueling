@@ -6,12 +6,14 @@ import {
   citricDisplayAmount,
   citricGramsFromAmount,
   presetTagFor,
+  ratioPresetIndex,
   type CitricAmount,
 } from '../../domain/fuel';
 import type { CitricSource, RatioPreset } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { InfoPopover } from '../ui/InfoPopover';
+import { SegmentedControl, SegmentedTrack, segmentItemStyle } from '../ui/SegmentedControl';
 import { MobileStepper } from './MobileStepper';
 
 const RATIO_PRESETS = [2, 1.5, 1, 0.8];
@@ -96,32 +98,13 @@ export function MobileMix() {
     onChange: (src: CitricSource) => void,
     disabled = false,
   ) => (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
-      {CITRIC_SOURCES.map((src) => {
-        const isActive = active === src;
-        return (
-          <button
-            key={src}
-            type="button"
-            onClick={() => onChange(src)}
-            disabled={disabled}
-            style={{
-              flex: '1 1 76px',
-              padding: '10px 4px',
-              borderRadius: 9,
-              border: '1px solid ' + (isActive ? 'var(--ink)' : 'var(--chip-border)'),
-              background: isActive ? 'var(--ink)' : '#fff',
-              color: isActive ? '#fff' : 'var(--muted-2)',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {citricSourceCaption(src)}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      options={CITRIC_SOURCES.map((src) => ({ value: src, label: citricSourceCaption(src) }))}
+      value={active}
+      onChange={onChange}
+      disabled={disabled}
+      minHeight={44}
+    />
   );
 
   // Stepper bounds/step/format tuned per displayed unit: fine grams for powder, coarser ml for
@@ -178,36 +161,36 @@ export function MobileMix() {
     forGel: boolean,
     disabled = false,
     preset: RatioPreset = 'custom',
-  ) => (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
-      {RATIO_PRESETS.map((r) => {
-        const caption = presetCaption(r, forGel);
-        const active = value === r && preset === presetTagFor(r);
-        return (
-          <button
-            key={r}
-            type="button"
-            onClick={() => onChange(r, presetTagFor(r))}
-            disabled={disabled}
-            style={{
-              flex: '1 1 76px',
-              padding: '14px 4px',
-              borderRadius: 9,
-              border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
-              background: active ? 'var(--ink)' : '#fff',
-              color: active ? '#fff' : 'var(--muted-2)',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {caption ? caption + ' ' : ''}
-            {r}:1
-          </button>
-        );
-      })}
-    </div>
-  );
+  ) => {
+    const presetIndex = ratioPresetIndex(value, preset, RATIO_PRESETS);
+    return (
+      <SegmentedTrack
+        selectedIndex={disabled ? -1 : presetIndex}
+        style={{ opacity: disabled ? 0.6 : 1 }}
+      >
+        {(registerRef) => (
+          <>
+            {RATIO_PRESETS.map((r, i) => {
+              const caption = presetCaption(r, forGel);
+              return (
+                <button
+                  key={r}
+                  ref={registerRef(i)}
+                  type="button"
+                  onClick={() => onChange(r, presetTagFor(r))}
+                  disabled={disabled}
+                  style={segmentItemStyle(i === presetIndex, { disabled, minHeight: 44 })}
+                >
+                  {caption ? caption + ' ' : ''}
+                  {r}:1
+                </button>
+              );
+            })}
+          </>
+        )}
+      </SegmentedTrack>
+    );
+  };
 
   return (
     <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>

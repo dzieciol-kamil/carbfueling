@@ -6,6 +6,7 @@ import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
 import { NumberInput } from './ui/NumberInput';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 const inputStyle: CSSProperties = {
   width: '100%',
@@ -26,39 +27,6 @@ const labelStyle: CSSProperties = {
   flex: '1 1 0',
   minWidth: 0,
 };
-
-function seg(on: boolean): CSSProperties {
-  return {
-    flex: '1 1 0',
-    minWidth: 0,
-    whiteSpace: 'nowrap',
-    textAlign: 'center',
-    border: 'none',
-    borderRadius: 7,
-    padding: '8px 6px',
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily: 'Archivo, sans-serif',
-    cursor: 'pointer',
-    background: on ? '#fff' : 'transparent',
-    color: on ? 'var(--ink)' : 'var(--muted)',
-    boxShadow: on ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-  };
-}
-
-function chip(on: boolean): CSSProperties {
-  return {
-    border: '1px solid ' + (on ? 'var(--ink)' : 'var(--chip-border)'),
-    borderRadius: 9,
-    padding: '9px 14px',
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily: 'Archivo, sans-serif',
-    cursor: 'pointer',
-    background: on ? 'var(--ink)' : '#fff',
-    color: on ? '#fff' : 'var(--ink-soft)',
-  };
-}
 
 function elevationGain(routeState: RouteInput): number {
   const pts = prof(routeState).pts;
@@ -127,26 +95,15 @@ export function RoutePanel() {
           {strings.route}
         </span>
 
-        <div
-          style={{
-            display: 'flex',
-            alignSelf: 'flex-start',
-            width: 272,
-            maxWidth: '100%',
-            boxSizing: 'border-box',
-            background: 'var(--track)',
-            borderRadius: 9,
-            padding: 3,
-            gap: 2,
-          }}
-        >
-          <button onClick={() => setMode('route')} style={seg(route.mode === 'route')}>
-            {strings.byRoute}
-          </button>
-          <button onClick={() => setMode('time')} style={seg(route.mode === 'time')}>
-            {strings.byTime}
-          </button>
-        </div>
+        <SegmentedControl
+          options={[
+            { value: 'route' as const, label: strings.byRoute },
+            { value: 'time' as const, label: strings.byTime },
+          ]}
+          value={route.mode}
+          onChange={setMode}
+          style={{ alignSelf: 'flex-start', width: 272, maxWidth: '100%' }}
+        />
 
         {route.mode === 'route' ? (
           <div
@@ -229,17 +186,11 @@ export function RoutePanel() {
                 ⓘ
               </InfoPopover>
             </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {intensityOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setIntensity(opt.value)}
-                  style={chip(route.intensity === opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={intensityOptions}
+              value={route.intensity}
+              onChange={setIntensity}
+            />
           </div>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>

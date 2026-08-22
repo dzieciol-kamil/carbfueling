@@ -10,7 +10,7 @@ export type CitricSource = 'citric' | 'lemon' | 'lemonJuice' | 'lime' | 'limeJui
 /** Which preset produced `ratio`/`gelRatio` — 'custom' whenever the value was typed into the
  *  free-entry field, even if it numerically matches a preset value. Drives whether the bottle-
  *  composition card shows a single Miód/Cukier line or the Malto/Frukto split. */
-export type RatioPreset = 'iso' | 'sugar' | 'honey' | 'custom';
+export type RatioPreset = 'iso' | 'sugar' | 'honey' | 'ratio15' | 'custom';
 
 export interface RouteInput {
   mode: Mode;

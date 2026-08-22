@@ -2,30 +2,10 @@ import { useState, type CSSProperties } from 'react';
 import { t } from '../../i18n/strings';
 import { shouldConfirmViewModeChange, useAppStore, type ViewMode } from '../../store/appStore';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { PanelShell } from './PanelShell';
 
 const VIEW_MODES: ViewMode[] = ['auto', 'desktop', 'mobile'];
-
-function contStyle(active: boolean): CSSProperties {
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
-    background: active ? 'var(--ink)' : '#fff',
-    color: active ? '#fff' : 'var(--muted-2)',
-    borderRadius: 8,
-    padding: '6px 4px',
-    fontSize: 10,
-    fontWeight: 600,
-    fontFamily: 'Archivo, sans-serif',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    width: '100%',
-    justifyContent: 'center',
-    boxSizing: 'border-box',
-  };
-}
 
 const sectionTitleStyle: CSSProperties = {
   fontSize: 12,
@@ -59,21 +39,20 @@ export function SettingsPanel() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.viewLabel}</span>
-            <div style={{ display: 'flex', gap: 6, flex: 1, minWidth: 160 }}>
-              {VIEW_MODES.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => handleViewModePick(v)}
-                  style={{ ...contStyle(viewMode === v), width: 'auto', flex: 1 }}
-                >
-                  {v === 'auto'
+            <SegmentedControl
+              options={VIEW_MODES.map((v) => ({
+                value: v,
+                label:
+                  v === 'auto'
                     ? strings.viewAuto
                     : v === 'desktop'
                       ? strings.desktop
-                      : strings.mobile}
-                </button>
-              ))}
-            </div>
+                      : strings.mobile,
+              }))}
+              value={viewMode}
+              onChange={handleViewModePick}
+              style={{ flex: 1, minWidth: 160 }}
+            />
           </div>
           {viewMode === 'auto' && (
             <span style={{ fontSize: 11, color: 'var(--muted-3)' }}>

@@ -19,6 +19,7 @@ import { saveTextFile } from '../../utils/fileSave';
 import { CoffeeIcon, GitHubIcon } from '../Footer';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileStepper } from './MobileStepper';
 
 export function MobileProfile() {
@@ -150,68 +151,33 @@ export function MobileProfile() {
               ))}
             </select>
           ) : (
-            <div style={{ display: 'flex', gap: 6 }}>
-              {LANGS.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => setLang(code)}
-                  style={{
-                    flex: 1,
-                    minHeight: 44,
-                    padding: '0 4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 9,
-                    border: '1px solid ' + (lang === code ? 'var(--ink)' : 'var(--chip-border)'),
-                    background: lang === code ? 'var(--ink)' : '#fff',
-                    color: lang === code ? '#fff' : 'var(--muted-2)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {t(code).langShort}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={LANGS.map((code) => ({ value: code, label: t(code).langShort }))}
+              value={lang}
+              onChange={setLang}
+              minHeight={44}
+            />
           )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.meView}</span>
-            <div style={{ display: 'flex', gap: 6, flex: 1, minWidth: 160 }}>
-              {(['auto', 'desktop', 'mobile'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => handleViewModePick(v)}
-                  style={{
-                    flex: 1,
-                    minHeight: 44,
-                    padding: '0 4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 9,
-                    border: '1px solid ' + (viewMode === v ? 'var(--ink)' : 'var(--chip-border)'),
-                    background: viewMode === v ? 'var(--ink)' : '#fff',
-                    color: viewMode === v ? '#fff' : 'var(--muted-2)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {v === 'auto'
+            <SegmentedControl
+              options={(['auto', 'desktop', 'mobile'] as const).map((v) => ({
+                value: v,
+                label:
+                  v === 'auto'
                     ? strings.viewAuto
                     : v === 'desktop'
                       ? strings.desktop
-                      : strings.mobile}
-                </button>
-              ))}
-            </div>
+                      : strings.mobile,
+              }))}
+              value={viewMode}
+              onChange={handleViewModePick}
+              minHeight={44}
+              style={{ flex: 1, minWidth: 160 }}
+            />
           </div>
           {viewMode === 'auto' && (
             <span style={{ fontSize: 11, color: 'var(--muted-3)' }}>
