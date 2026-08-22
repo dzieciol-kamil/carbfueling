@@ -3,6 +3,7 @@ import type {
   Content,
   Fill,
   FoodItem,
+  Intensity,
   MixSettings,
   PlanState,
   RatioPreset,
@@ -63,6 +64,13 @@ export const HYDRATION_TARGET_PCT = 85;
 
 /** Amber/red split for water. Same reasoning as `HYDRATION_TARGET_PCT`. */
 export const HYDRATION_SHORT_PCT = 60;
+
+/**
+ * Above roughly 80-90% of max effort — the app's 'high' intensity tier — blood flow shifts
+ * away from the gut, lowering how much carb it can actually absorb. Same effect for both
+ * sports (it is an intensity effect, not a sport one); starting-point trim, not a citation.
+ */
+const HIGH_INTENSITY_ABS_CAP_FACTOR = 0.88;
 
 /**
  * How much unused absorbed carb `rateStats` lets a rider carry forward, expressed as minutes of
@@ -218,7 +226,12 @@ export function sweat(route: RouteInput): number {
  * pretending to know a real-world split. Call sites that do have fills/gear (samples() below,
  * the desktop/mobile charts) pass the actual carb totals for a true blended figure.
  */
-export function absCap(mix: MixSettings, izoCarbs = 0, gelCarbs = 0): number {
+export function absCap(
+  mix: MixSettings,
+  izoCarbs = 0,
+  gelCarbs = 0,
+  intensity: Intensity = 'mid',
+): number {
   const rIzo = mix.ratio || 2;
   const rGel = mix.gelRatio || 2;
   const gluIzo = rIzo / (rIzo + 1);
@@ -228,7 +241,8 @@ export function absCap(mix: MixSettings, izoCarbs = 0, gelCarbs = 0): number {
   const wIzo = 1 - wGel;
   const glu = wIzo * gluIzo + wGel * gluGel;
   const fru = 1 - glu;
-  return Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
+  const cap = Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
+  return intensity === 'high' ? Math.round(cap * HIGH_INTENSITY_ABS_CAP_FACTOR) : cap;
 }
 
 export function preRideGut(route: RouteInput, cap: number): number {
@@ -601,7 +615,7 @@ export function samples(state: PlanState): Sample[] {
   const gelCarbs = fills
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
-  const cap = absCap(mix, izoCarbs, gelCarbs);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
   // Assumes equal time per equal-distance sample (flat-pace approximation); the chart's
   // time axis is now terrain-aware (see timeAtDistance) but this absorption model is not — a
   // known, deliberate scope boundary, not an oversight.

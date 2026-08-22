@@ -276,6 +276,15 @@ describe('absCap', () => {
     expect(blended).toBeGreaterThanOrEqual(gelOnlyCap);
     expect(blended).toBeLessThanOrEqual(izoOnlyCap);
   });
+
+  test('high intensity trims the cap by ~12%, other intensities do not', () => {
+    const mix = makeMix({ ratio: 2, gelRatio: 2 });
+    const baseline = absCap(mix); // no plan mix, defaults to 'mid' -> no trim
+    expect(baseline).toBe(90);
+    expect(absCap(mix, 0, 0, 'low')).toBe(90);
+    expect(absCap(mix, 0, 0, 'mid')).toBe(90);
+    expect(absCap(mix, 0, 0, 'high')).toBe(79);
+  });
 });
 
 describe('preRideGut', () => {

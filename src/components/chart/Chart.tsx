@@ -71,7 +71,7 @@ export function Chart({ height, showAxis }: ChartProps) {
   const gelCarbs = fills
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
-  const cap = absCap(mix, izoCarbs, gelCarbs);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
   const capY = fluidMode ? FLUID_CAP : cap;
 
   const maxY = fluidMode
