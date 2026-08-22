@@ -5,7 +5,7 @@ import type { StringTable } from '../../i18n/strings';
 // hand-drawn SVG reconstruction — attempts at faithfully redrawing the gut band / deficit
 // fill / gel-vs-bottle color coding by hand kept drifting from how the real chart actually
 // behaves (e.g. gut content dipping mid-way through a still-ongoing bottle fill), so the
-// source of truth is a real capture instead. `fluid`/`sum` still use hand-authored SVG below.
+// source of truth is a real capture instead. `fluid` still uses hand-authored SVG below.
 // Same image regardless of app language — the callout list below is already localized, and
 // the on-image "Izo · 650 ml" / "Energy gel" labels are legible either way.
 import chartHelpRateImg from '../../assets/chart-help-rate.jpg';
@@ -19,7 +19,7 @@ interface ChartHelpDiagramProps {
 
 interface Callout {
   n: number;
-  // Only needed for callouts rendered as SVG markers (fluid/sum) — rate mode uses a real
+  // Only needed for callouts rendered as SVG markers (fluid) — rate mode uses a real
   // screenshot instead of a hand-drawn diagram, so its callouts have no on-image marker.
   x?: number;
   y?: number;
@@ -31,7 +31,7 @@ interface Callout {
 const VIEW_W = 400;
 const VIEW_H = 230;
 
-// Fixed, hand-authored demo shapes for `fluid`/`sum` — deliberately not derived from any
+// Fixed, hand-authored demo shapes for `fluid` — deliberately not derived from any
 // live or store data (see the "Why a static diagram" note in the plan's Global Constraints).
 const NEED_PTS: [number, number][] = [
   [30, 200],
@@ -58,52 +58,7 @@ const ABSORBED_PTS: [number, number][] = [
   [330, 90],
   [380, 80],
 ];
-const GUT_PTS: [number, number][] = [
-  [30, 40],
-  [70, 30],
-  [110, 38],
-  [150, 34],
-  [190, 26],
-  [230, 32],
-  [270, 28],
-  [310, 20],
-  [350, 24],
-  [380, 22],
-];
-
-const SUM_ABSORBED_PTS: [number, number][] = [
-  [30, 200],
-  [80, 175],
-  [130, 155],
-  [180, 140],
-  [230, 125],
-  [280, 105],
-  [330, 85],
-  [380, 60],
-];
-const SUM_NEED_PTS: [number, number][] = [
-  [30, 200],
-  [80, 165],
-  [130, 135],
-  [180, 110],
-  [230, 90],
-  [280, 72],
-  [330, 58],
-  [380, 45],
-];
-const SUM_INTAKE_PTS: [number, number][] = [
-  [30, 200],
-  [80, 170],
-  [130, 145],
-  [180, 120],
-  [230, 95],
-  [280, 75],
-  [330, 55],
-  [380, 35],
-];
 const CAP_Y = 70;
-const GUT_LIMIT_Y = 14;
-const GUT_BASE_Y = 48;
 
 function pathFrom(pts: [number, number][]): string {
   return pts.map(([x, y], i) => (i ? 'L' : 'M') + x + ',' + y).join(' ');
@@ -266,90 +221,6 @@ function fluidDiagram(strings: StringTable) {
   return { svg, callouts, lanes: undefined as ReactNode };
 }
 
-function sumDiagram(strings: StringTable) {
-  const callouts: Callout[] = [
-    {
-      n: 1,
-      x: 280,
-      y: 105,
-      color: CHART_COLORS.carb,
-      label: strings.absorbed,
-      body: strings.chartHelpSumAbsorbedBody,
-    },
-    {
-      n: 2,
-      x: 330,
-      y: 58,
-      color: CHART_COLORS.neutralLine,
-      label: strings.need,
-      body: strings.chartHelpSumNeedBody,
-    },
-    {
-      n: 3,
-      x: 230,
-      y: 95,
-      color: CHART_COLORS.carb,
-      label: strings.intake,
-      body: strings.chartHelpSumIntakeBody,
-    },
-    {
-      n: 4,
-      x: 200,
-      y: 34,
-      color: '#B08E1E',
-      label: strings.gutLane,
-      body: strings.chartHelpGutBody,
-    },
-  ];
-  const svg = frame(
-    <>
-      <path
-        d={
-          pathFrom(GUT_PTS) +
-          ` L${GUT_PTS[GUT_PTS.length - 1][0]},${GUT_BASE_Y} L${GUT_PTS[0][0]},${GUT_BASE_Y} Z`
-        }
-        fill="#C9A227"
-        opacity={0.18}
-      />
-      <path d={pathFrom(GUT_PTS)} fill="none" stroke="#B08E1E" strokeWidth={1.6} />
-      <line
-        x1={30}
-        x2={380}
-        y1={GUT_LIMIT_Y}
-        y2={GUT_LIMIT_Y}
-        stroke={CHART_COLORS.climb}
-        strokeWidth={1}
-        strokeDasharray="4 4"
-        opacity={0.7}
-      />
-      <line x1={30} x2={380} y1={GUT_BASE_Y} y2={GUT_BASE_Y} stroke="#E3E5E0" strokeWidth={1} />
-      <path
-        d={pathFrom(SUM_NEED_PTS)}
-        fill="none"
-        stroke="#A8AEA9"
-        strokeWidth={2}
-        strokeDasharray="6 5"
-      />
-      <path
-        d={pathFrom(SUM_INTAKE_PTS)}
-        fill="none"
-        stroke={CHART_COLORS.carb}
-        strokeWidth={1.2}
-        strokeDasharray="2 4"
-        opacity={0.7}
-      />
-      <path
-        d={pathFrom(SUM_ABSORBED_PTS)}
-        fill="none"
-        stroke={CHART_COLORS.carb}
-        strokeWidth={2.8}
-      />
-      {callouts.map((c) => marker(c.n, c.x!, c.y!, c.color))}
-    </>,
-  );
-  return { svg, callouts, lanes: undefined as ReactNode };
-}
-
 const listItemStyle: CSSProperties = {
   display: 'flex',
   gap: 9,
@@ -374,12 +245,7 @@ const badgeStyle = (color: string): CSSProperties => ({
 });
 
 export function ChartHelpDiagram({ mode, strings, desktop }: ChartHelpDiagramProps) {
-  const { svg, callouts, lanes } =
-    mode === 'fluid'
-      ? fluidDiagram(strings)
-      : mode === 'sum'
-        ? sumDiagram(strings)
-        : rateDiagram(strings);
+  const { svg, callouts, lanes } = mode === 'fluid' ? fluidDiagram(strings) : rateDiagram(strings);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

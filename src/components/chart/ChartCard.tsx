@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { dist, planSummary, prof } from '../../domain/fuel';
+import { dist, prof } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
 import type { XUnit } from '../../domain/types';
@@ -26,11 +26,6 @@ const legendItemStyle: CSSProperties = {
 
 export function ChartCard() {
   const route = useAppStore((s) => s.route);
-  const mix = useAppStore((s) => s.mix);
-  const gear = useAppStore((s) => s.gear);
-  const fills = useAppStore((s) => s.fills);
-  const foods = useAppStore((s) => s.foods);
-  const foodLib = useAppStore((s) => s.foodLib);
   const lang = useAppStore((s) => s.ui.lang);
   const yMode = useAppStore((s) => s.ui.yMode);
   const xUnit = useAppStore((s) => s.ui.xUnit);
@@ -40,10 +35,6 @@ export function ChartCard() {
   const openChartHelp = useAppStore((s) => s.openChartHelp);
   const strings = t(lang);
 
-  const planState = { route, mix, gear, fills, foods, foodLib };
-  const summary = planSummary(planState);
-
-  const showEaten = yMode === 'sum' && summary.totalCarbs - summary.absorbedTotal > 5;
   const showGutLane = yMode !== 'fluid';
   const showUnits = route.mode !== 'time';
   const legMain = yMode === 'fluid' ? strings.legFluid : strings.absorbed;
@@ -52,12 +43,10 @@ export function ChartCard() {
     yMode === 'fluid'
       ? 'var(--water)'
       : `linear-gradient(90deg, ${CHART_COLORS.neutralLine}, ${CHART_COLORS.carb}, ${CHART_COLORS.water}, ${CHART_COLORS.gel}, ${CHART_COLORS.food})`;
-  const showCapLeg = yMode !== 'sum';
 
   const yModeOptions: { value: YMode; label: string }[] = [
     { value: 'rate', label: strings.carbMode },
     { value: 'fluid', label: strings.fluidMode },
-    { value: 'sum', label: strings.sumMode },
   ];
   const xUnitOptions: { value: XUnit; label: string }[] = [
     { value: 'km', label: 'km' },
@@ -109,28 +98,20 @@ export function ChartCard() {
             <span style={{ width: 14, height: 3, borderRadius: 2, background: legMainColor }} />
             {legMain}
           </span>
-          {showEaten && (
-            <span style={legendItemStyle}>
-              <span style={{ width: 14, height: 0, borderTop: '2px dotted var(--carb)' }} />
-              {strings.intake}
-            </span>
-          )}
           <span style={legendItemStyle}>
             <span style={{ width: 14, height: 0, borderTop: '2px dashed #A8AEA9' }} />
             {legNeed}
           </span>
-          {showCapLeg && (
-            <span style={legendItemStyle}>
-              <span
-                style={{
-                  width: 14,
-                  height: 0,
-                  borderTop: '2px dotted ' + (yMode === 'fluid' ? 'var(--water)' : 'var(--carb)'),
-                }}
-              />
-              {strings.legCap}
-            </span>
-          )}
+          <span style={legendItemStyle}>
+            <span
+              style={{
+                width: 14,
+                height: 0,
+                borderTop: '2px dotted ' + (yMode === 'fluid' ? 'var(--water)' : 'var(--carb)'),
+              }}
+            />
+            {strings.legCap}
+          </span>
           {showGutLane && (
             <span style={legendItemStyle}>
               <span style={{ width: 14, height: 8, borderRadius: 2, background: '#DCC98A' }} />
@@ -160,11 +141,6 @@ export function ChartCard() {
             {showGutLane && (
               <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
                 {strings.gutHint}
-              </span>
-            )}
-            {yMode === 'sum' && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
-                {strings.curveHintSum}
               </span>
             )}
             {yMode === 'rate' && (

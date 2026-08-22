@@ -39,8 +39,6 @@ export interface StringTable {
   curve: string;
   gutHint: string;
   curveHint: string;
-  curveHintSum: string;
-  intake: string;
   absorbed: string;
   gutLane: string;
   need: string;
@@ -50,7 +48,6 @@ export interface StringTable {
   gutAt: string;
   dry: string;
   dryAt: string;
-  sumMode: string;
   carbMode: string;
   fluidMode: string;
   tDry: string;
@@ -233,7 +230,6 @@ export interface StringTable {
   editRoutePrefix: string;
   narrationRate: string;
   narrationFluid: string;
-  narrationSum: string;
   narrationProfile: string;
   scrubHint: string;
   legendGpx: string;
@@ -251,9 +247,6 @@ export interface StringTable {
   chartHelpFluidAbsorbedBody: string;
   chartHelpFluidCapBody: string;
   chartHelpSweatBody: string;
-  chartHelpSumAbsorbedBody: string;
-  chartHelpSumNeedBody: string;
-  chartHelpSumIntakeBody: string;
   foodSection2: string;
   gearHintMobile: string;
   mixHintMobile: string;
@@ -365,9 +358,6 @@ export const STR: Record<Lang, StringTable> = {
       'To Twój żołądek: górny pasek pokazuje, co w nim zalega i jak szybko się trawi, aż do górnego limitu pojemności.',
     curveHint:
       'Gruba ciągła linia to tempo, w jakim realnie wchłaniasz węglowodany — rdzawe pola to godziny, w których wchłaniasz mniej, niż potrzebujesz.',
-    curveHintSum:
-      'Gruba ciągła linia to suma węglowodanów, które realnie wchłonąłeś do danej godziny.',
-    intake: 'Zjedzone',
     absorbed: 'Wchłonięte',
     gutLane: 'W żołądku',
     need: 'Zapotrzebowanie',
@@ -377,7 +367,6 @@ export const STR: Record<Lang, StringTable> = {
     gutAt: ' g zalega w żołądku ok. ',
     dry: 'Dziura w tankowaniu: ',
     dryAt: ' bez cukru, ok. ',
-    sumMode: 'Suma',
     carbMode: 'Węglowodany (g/h)',
     fluidMode: 'Nawodnienie (ml/h)',
     tDry: 'Najdłuższa dziura',
@@ -605,8 +594,6 @@ export const STR: Record<Lang, StringTable> = {
       'Ile węgli na godzinę realnie wchłaniasz (linia) wobec zapotrzebowania (przerywana). Kropkowana to limit wchłaniania.',
     narrationFluid:
       'Ile płynu pijesz na godzinę (linia) wobec tego, ile tracisz z potem (przerywana).',
-    narrationSum:
-      'Węgle zsumowane od startu: co wchłoniesz (linia) wobec zapotrzebowania (przerywana).',
     narrationProfile:
       'Profil trasy — wysokość nad poziomem morza. Podjazdy podnoszą zapotrzebowanie.',
     scrubHint: 'przesuń palcem, by odczytać',
@@ -630,9 +617,6 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpFluidCapBody:
       'Orientacyjne tempo, z jakim żołądek oddaje płyn do jelita. Powyżej niego linia robi się coraz bardziej żółta, potem pomarańczowa i czerwona — to rosnące ryzyko zalegania, nie twardy limit.',
     chartHelpSweatBody: 'Ile tracisz z potem — Twoje zapotrzebowanie na płyny.',
-    chartHelpSumAbsorbedBody: 'Łącznie wchłonięte węglowodany od startu trasy.',
-    chartHelpSumNeedBody: 'Łącznie ile było Ci potrzeba od startu trasy.',
-    chartHelpSumIntakeBody: 'Ile faktycznie zjadłeś — różnica czeka w żołądku.',
     foodSection2: 'Jedzenie',
     gearHintMobile:
       'Co masz na rowerze. Objętość i dozwolona zawartość decydują o tym, ile węgli wchodzi w jedno napełnienie.',
@@ -751,9 +735,6 @@ export const STR: Record<Lang, StringTable> = {
       "This is your stomach: the top strip shows what's sitting in it and how fast it's digesting, up to its capacity limit.",
     curveHint:
       "The thick solid line is the rate you're actually absorbing carbs at — rust areas are the hours you're absorbing less than you need.",
-    curveHintSum:
-      "The thick solid line is the cumulative carbs you've actually absorbed by a given hour.",
-    intake: 'Eaten',
     absorbed: 'Absorbed',
     gutLane: 'In the gut',
     need: 'Requirement',
@@ -763,7 +744,6 @@ export const STR: Record<Lang, StringTable> = {
     gutAt: ' g sitting in the stomach around ',
     dry: 'Fuelling gap: ',
     dryAt: ' with no carbs, around ',
-    sumMode: 'Total',
     carbMode: 'Carbs (g/h)',
     fluidMode: 'Hydration (ml/h)',
     tDry: 'Longest gap',
@@ -990,8 +970,6 @@ export const STR: Record<Lang, StringTable> = {
       "How many carbs per hour you're actually absorbing (line) vs. requirement (dashed). Dotted is the absorption limit.",
     narrationFluid:
       "How much fluid you're drinking per hour (line) vs. how much you lose to sweat (dashed).",
-    narrationSum:
-      "Carbs summed from the start: what you'll absorb (line) vs. requirement (dashed).",
     narrationProfile: 'Route profile — elevation above sea level. Climbs raise the requirement.',
     scrubHint: 'drag to read',
     legendGpx: 'target',
@@ -1013,10 +991,6 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpFluidCapBody:
       'Roughly how fast the stomach passes fluid on to the gut. Above it the line shifts from yellow to orange to red — rising risk of it backing up, not a hard cutoff.',
     chartHelpSweatBody: 'How much you lose through sweat — your fluid requirement.',
-    chartHelpSumAbsorbedBody: 'Total carbs absorbed since the start of the route.',
-    chartHelpSumNeedBody: "Total amount you've needed since the start of the route.",
-    chartHelpSumIntakeBody:
-      "How much you've actually eaten — the difference is waiting in your stomach.",
     foodSection2: 'Food',
     gearHintMobile:
       "What's on your bike. Volume and allowed contents decide how many carbs fit in one fill.",

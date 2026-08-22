@@ -76,7 +76,7 @@ function normalizeHoursMinutes(route: RouteInput): RouteInput {
 }
 
 export type ViewMode = 'auto' | 'desktop' | 'mobile';
-export type YMode = 'rate' | 'fluid' | 'sum';
+export type YMode = 'rate' | 'fluid';
 export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | null;
 export type MobileTab = 'plan' | 'gear' | 'mix' | 'food' | 'me';
 
@@ -642,7 +642,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'carbfueling',
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -656,6 +656,8 @@ export const useAppStore = create<AppState>()(
       // 'custom' (see presetTagFor) — a rider who clicked the "1.5:1" button therefore got
       // 'custom' persisted. Now that 1.5 has its own 'ratio15' tag, re-derive the tag for
       // anyone sitting at exactly 1.5 so the segmented control still highlights their choice.
+      // v4 -> v5: the chart's "sum" (cumulative) y-mode was removed — fall a rider who had it
+      // selected back to "rate" instead of leaving a value the type no longer allows.
       migrate: (persistedState, version) => {
         const s = persistedState as
           (Partial<AppState> & { combineStartGids?: string[] }) | undefined;
@@ -685,6 +687,9 @@ export const useAppStore = create<AppState>()(
           if (mix.gelRatio === 1.5 && mix.gelRatioPreset === 'custom') {
             mix.gelRatioPreset = 'ratio15';
           }
+        }
+        if (version < 5 && s.ui && (s.ui as { yMode?: string }).yMode === 'sum') {
+          (s.ui as { yMode?: string }).yMode = 'rate';
         }
         return s;
       },

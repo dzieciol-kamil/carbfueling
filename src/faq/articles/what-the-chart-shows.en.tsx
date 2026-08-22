@@ -76,9 +76,7 @@ export default function WhatTheChartShowsEn() {
       />
       <p style={articleTextStyle}>
         Fluid works the same way, on its own pair of lines: fluid absorbed versus sweat loss,
-        tracking hydration instead of carbs. And if you'd rather check totals than hourly rates, the
-        chart also has cumulative versions of these lines — "since the start of the ride" — so you
-        can see whether you're on pace over the whole route, not just at one point on it.
+        tracking hydration instead of carbs.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/fluid-lines.png')}
