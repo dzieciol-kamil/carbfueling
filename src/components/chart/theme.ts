@@ -9,6 +9,11 @@ export const CHART_COLORS = {
   ink: '#16191C',
   muted: '#7A817C',
   neutralLine: '#5C635E',
+  /** Hydration-rate warning zones, faster than gastric emptying can clear — see
+   *  `FLUID_ABSORPTION_CAP_ML_H` in fuel.ts. Applied as a gradient, not a hard cutoff: severity is
+   *  continuous, not a single threshold. */
+  fluidWarn: '#D9A400',
+  fluidDanger: '#7A1F12',
 } as const;
 
 export function sourceColor(active: ActiveSource): string {

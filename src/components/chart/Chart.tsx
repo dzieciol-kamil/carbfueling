@@ -4,6 +4,7 @@ import {
   carbsFill,
   dist,
   distanceAtTime,
+  FLUID_ABSORPTION_CAP_ML_H,
   fmtX,
   GUT_LIMIT,
   prof,
@@ -17,7 +18,7 @@ import { useAppStore } from '../../store/appStore';
 import { ElevationLayer, niceStep } from './ElevationLayer';
 import { CHART_COLORS, sourceColor } from './theme';
 
-const FLUID_CAP = 750;
+const FLUID_CAP = FLUID_ABSORPTION_CAP_ML_H;
 const WIDTH = 800;
 
 type NumericSampleKey =
@@ -104,6 +105,27 @@ export function Chart({ height, showAxis }: ChartProps) {
 
   const area =
     polyline(S, yk, px, py) + ' L' + WIDTH + ' ' + (height - PB) + ' L0 ' + (height - PB) + ' Z';
+
+  // Severity gradient for the fluid-rate line: below the absorption cap it's the plain water
+  // blue; above it, the color eases through yellow/orange/red as the pour rate increasingly
+  // outpaces gastric emptying. A vertical (userSpaceOnUse) gradient keyed to rate value works
+  // because py() is a monotonic value→pixel map — wherever the line's y-coordinate lands, that
+  // pixel is already the right color for that rate, at any x. Deliberately a gradient, not a hard
+  // clamp on the data: unlike carbs' transporter-limited ceiling, gastric emptying rate is
+  // volume-proportional and varies ~4x between riders, so there's no single correct cutoff to
+  // enforce — this flags rising risk instead of asserting an exact one.
+  const fluidZoneY0 = py(0);
+  const fluidZoneY1 = py(maxY);
+  const fluidZoneOffset = (v: number) =>
+    Math.max(0, Math.min(1, (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0)));
+  const fluidZoneStops: { o: number; c: string }[] = [
+    { o: fluidZoneOffset(0), c: CHART_COLORS.water },
+    { o: fluidZoneOffset(FLUID_CAP), c: CHART_COLORS.water },
+    { o: fluidZoneOffset(FLUID_CAP * 1.3), c: CHART_COLORS.fluidWarn },
+    { o: fluidZoneOffset(FLUID_CAP * 1.6), c: CHART_COLORS.climb },
+    { o: fluidZoneOffset(FLUID_CAP * 2), c: CHART_COLORS.fluidDanger },
+    { o: 1, c: CHART_COLORS.fluidDanger },
+  ];
 
   let worst = { d: 0, x: 0 };
   S.forEach((p) => {
@@ -195,6 +217,22 @@ export function Chart({ height, showAxis }: ChartProps) {
             <stop offset="100%" stopColor={CHART_COLORS.water} stopOpacity={0.02} />
           </linearGradient>
         </defs>
+        {fluidMode && (
+          <defs>
+            <linearGradient
+              id="fluidZone"
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={fluidZoneY0}
+              x2={0}
+              y2={fluidZoneY1}
+            >
+              {fluidZoneStops.map((s, i) => (
+                <stop key={i} offset={s.o} stopColor={s.c} />
+              ))}
+            </linearGradient>
+          </defs>
+        )}
 
         <ElevationLayer
           pts={prof(route).pts}
@@ -374,7 +412,7 @@ export function Chart({ height, showAxis }: ChartProps) {
           <path
             key={'r' + i}
             fill="none"
-            stroke={fluidMode ? CHART_COLORS.water : run.color}
+            stroke={fluidMode ? 'url(#fluidZone)' : run.color}
             strokeWidth={2.6}
             strokeLinejoin="miter"
             strokeLinecap="butt"
