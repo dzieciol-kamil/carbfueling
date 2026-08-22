@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react';
 import { useRef } from 'react';
-import { prof } from '../domain/fuel';
+import { paceToSpeed, prof, speedToPace } from '../domain/fuel';
 import type { Intensity, RouteInput } from '../domain/types';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
 import { NumberInput } from './ui/NumberInput';
 import { SegmentedControl } from './ui/SegmentedControl';
+import { SportSwitch } from './ui/SportSwitch';
 
 const inputStyle: CSSProperties = {
   width: '100%',
@@ -44,6 +45,7 @@ export function RoutePanel() {
   const setMode = useAppStore((s) => s.setMode);
   const setDistance = useAppStore((s) => s.setDistance);
   const setSpeed = useAppStore((s) => s.setSpeed);
+  const setSport = useAppStore((s) => s.setSport);
   const setHours = useAppStore((s) => s.setHours);
   const setMinutes = useAppStore((s) => s.setMinutes);
   const reconcilePlan = useAppStore((s) => s.reconcilePlan);
@@ -84,16 +86,24 @@ export function RoutePanel() {
       <div
         style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '0 0 272px', width: 272 }}
       >
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {strings.route}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {strings.route}
+          </span>
+          <SportSwitch
+            sport={route.sport}
+            onChange={setSport}
+            cyclingLabel={strings.sportCycling}
+            runningLabel={strings.sportRunning}
+          />
+        </div>
 
         <SegmentedControl
           options={[
@@ -125,10 +135,44 @@ export function RoutePanel() {
                 style={inputStyle}
               />
             </label>
-            <label style={labelStyle}>
-              <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.speed} (km/h)</span>
-              <NumberInput value={route.speed} onChange={setSpeed} zeroAsEmpty style={inputStyle} />
-            </label>
+            {route.sport === 'running' ? (
+              <>
+                <label style={labelStyle}>
+                  <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.paceMin}</span>
+                  <NumberInput
+                    value={speedToPace(route.speed).min}
+                    onChange={(min) => setSpeed(paceToSpeed(min, speedToPace(route.speed).sec))}
+                    parser="int"
+                    zeroAsEmpty
+                    style={inputStyle}
+                  />
+                </label>
+                <label style={labelStyle}>
+                  <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.paceSec}</span>
+                  <NumberInput
+                    value={speedToPace(route.speed).sec}
+                    onChange={(sec) => setSpeed(paceToSpeed(speedToPace(route.speed).min, sec))}
+                    parser="int"
+                    min={0}
+                    max={59}
+                    zeroAsEmpty
+                    style={inputStyle}
+                  />
+                </label>
+              </>
+            ) : (
+              <label style={labelStyle}>
+                <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>
+                  {strings.speed} (km/h)
+                </span>
+                <NumberInput
+                  value={route.speed}
+                  onChange={setSpeed}
+                  zeroAsEmpty
+                  style={inputStyle}
+                />
+              </label>
+            )}
           </div>
         ) : (
           <div
