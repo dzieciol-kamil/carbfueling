@@ -206,4 +206,19 @@ export const ARTICLES: FaqArticleMeta[] = [
       description: 'Wykres linia po linii — spożycie, żołądek, sufit wchłaniania i niedobór.',
     },
   },
+  {
+    slug: 'running-vs-cycling-carbs',
+    datePublished: '2026-08-22',
+    en: {
+      title: 'Running vs. cycling: how carb needs and absorption really differ',
+      description:
+        "Your gut's absorption ceiling doesn't change between running and cycling — but your practical target should. Here's why.",
+    },
+    pl: {
+      title:
+        'Bieganie vs rower: czym naprawdę różni się zapotrzebowanie i wchłanianie węglowodanów',
+      description:
+        'Sufit wchłaniania jelita nie zmienia się między bieganiem a rowerem — ale Twój praktyczny cel powinien. Oto dlaczego.',
+    },
+  },
 ];
