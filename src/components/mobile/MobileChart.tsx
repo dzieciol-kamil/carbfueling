@@ -3,6 +3,7 @@ import {
   absCap,
   carbsFill,
   dist,
+  FLUID_ABSORPTION_CAP_ML_H,
   fmtX,
   GUT_LIMIT,
   prof,
@@ -13,7 +14,7 @@ import {
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { ElevationLayer } from '../chart/ElevationLayer';
-import { CHART_COLORS, sourceColor } from '../chart/theme';
+import { CHART_COLORS, FLUID_ZONE, fluidZoneGradientStops, sourceColor } from '../chart/theme';
 
 const WIDTH = 800;
 const HEIGHT = 168;
@@ -67,7 +68,10 @@ export function MobileChart() {
   const cap = absCap(mix, izoCarbs, gelCarbs);
 
   const rawMaxY = fluidMode
-    ? Math.max(750 * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate))) * 1.1
+    ? Math.max(
+        FLUID_ABSORPTION_CAP_ML_H * 1.1,
+        ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate)),
+      ) * 1.1
     : rateMode
       ? Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15
       : Math.max(1, ...S.map((p) => Math.max(p.absorbed, p.need))) * 1.08;
@@ -120,8 +124,16 @@ export function MobileChart() {
   const badgeFlip = scrubFrac != null && scrubFrac > 0.62;
 
   const gutOver = S.some((p) => p.gut > GUT_LIMIT);
-  const capY = fluidMode ? 750 : cap;
+  const capY = fluidMode ? FLUID_ABSORPTION_CAP_ML_H : cap;
   const unit = fluidMode ? ' ml/h' : rateMode ? ' g/h' : ' g';
+
+  // Same severity gradient as the desktop chart — see Chart.tsx for the full reasoning, including
+  // why the span is anchored to the cap and not to `maxY`.
+  const fluidZoneDomainMax = Math.max(maxY, capY * FLUID_ZONE.spanMultiple);
+  const fluidZoneY0 = py(0);
+  const fluidZoneY1 = py(fluidZoneDomainMax);
+  const fluidZoneOffset = (v: number) => (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0);
+  const fluidZoneStops = fluidZoneGradientStops(capY, fluidZoneOffset);
 
   let badgeLines: [string, string, string] | null = null;
   if (scrubX != null) {
@@ -158,6 +170,22 @@ export function MobileChart() {
         preserveAspectRatio="none"
         style={{ width: '100%', height: HEIGHT, display: 'block' }}
       >
+        {fluidMode && (
+          <defs>
+            <linearGradient
+              id="fluidZoneMobile"
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={fluidZoneY0}
+              x2={0}
+              y2={fluidZoneY1}
+            >
+              {fluidZoneStops.map((s, i) => (
+                <stop key={i} offset={s.offset} stopColor={s.color} />
+              ))}
+            </linearGradient>
+          </defs>
+        )}
         {showProfile ? (
           <ElevationLayer
             pts={P.pts}
@@ -267,7 +295,7 @@ export function MobileChart() {
               <path
                 key={'r' + i}
                 fill="none"
-                stroke={fluidMode ? CHART_COLORS.water : run.color}
+                stroke={fluidMode ? 'url(#fluidZoneMobile)' : run.color}
                 strokeWidth={2.8}
                 vectorEffect="non-scaling-stroke"
                 d={run.pts

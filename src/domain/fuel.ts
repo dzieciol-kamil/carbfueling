@@ -11,7 +11,7 @@ import type {
   XUnit,
 } from './types';
 
-const FLUID_ABSORPTION_CAP_ML_H = 750;
+const FLUID_ABSORPTION_CAP_ML_H = 900;
 
 /**
  * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
@@ -133,14 +133,19 @@ export interface Sample {
   ml: number;
   /** Cumulative fluid that has actually cleared the stomach, capped at
    *  `FLUID_ABSORPTION_CAP_ML_H` the same way `absorbed` caps carb intake — `ml` is what was
-   *  poured, this is what physiologically got through. `fluidRate` is derived from this, not `ml`. */
+   *  poured, this is what physiologically got through. Feeds `hydrationPct`/coverage (the *total*
+   *  question: was there enough ride left for it to clear?), not `fluidRate` — see there for why. */
   mlAbsorbed: number;
   need: number;
   active: ActiveSource;
   rate: number;
   needRate: number;
   /** Actual fluid delivery rate — causally smoothed (double-pass EMA, ~6min time constant) so
-   *  fill-boundary transitions ease in as a gentle S-curve instead of an instant cliff. */
+   *  fill-boundary transitions ease in as a gentle S-curve instead of an instant cliff. Derived
+   *  from raw `ml`, not the capped `mlAbsorbed`: unlike carbs' transporter-limited ceiling, gastric
+   *  emptying is volume-proportional and ~4x individual, so there's no single physiologically
+   *  correct instantaneous rate to clamp to. The chart shows the honest pour rate and colors it
+   *  by how far it sits above `FLUID_ABSORPTION_CAP_ML_H` instead of asserting a hard cutoff. */
   fluidRate: number;
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
    *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
@@ -763,7 +768,7 @@ export function samples(state: PlanState): Sample[] {
     return pass2;
   }
 
-  const fluidRates = causalSmoothRate(out.map((p) => p.mlAbsorbed));
+  const fluidRates = causalSmoothRate(out.map((p) => p.ml));
   const fluidNeedRates = causalSmoothRate(out.map((p) => p.fluidNeed));
   out.forEach((p, i) => {
     p.fluidRate = fluidRates[i];

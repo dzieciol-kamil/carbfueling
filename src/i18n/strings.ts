@@ -249,6 +249,7 @@ export interface StringTable {
   chartHelpDeficitLabel: string;
   chartHelpDeficitBody: string;
   chartHelpFluidAbsorbedBody: string;
+  chartHelpFluidCapBody: string;
   chartHelpSweatBody: string;
   chartHelpSumAbsorbedBody: string;
   chartHelpSumNeedBody: string;
@@ -387,7 +388,7 @@ export const STR: Record<Lang, StringTable> = {
     capNote2:
       ' — tyle maksymalnie na godzinę wchłonie Twoje jelito, obojętnie ile zjesz; nadwyżka nie znika, tylko czeka w żołądku. Rośnie, gdy mieszasz glukozę z fruktozą, bo mają osobne drogi wchłaniania (glukoza ok. 60 g/h, fruktoza dokłada do tego ok. 30 g/h) — dlatego liczę go z Twojej proporcji maltodekstryna:fruktoza (Jeukendrup, przegląd 2010–2014).',
     capNoteFluid:
-      'Limit wchłaniania: 750 ml/h — tyle płynu żołądek oddaje do jelita w wysiłku (przerywana linia). Nadwyżka nie wchłania się, tylko zalega. Przy zwiększonej potliwości podczas wysiłku da się deficyt ograniczyć, ale nie wyzerować.',
+      'Limit wchłaniania: ok. 900 ml/h — tyle żołądek średnio oddaje do jelita w wysiłku (przerywana linia); u konkretnej osoby to realnie ±kilkaset ml, zależnie od intensywności i wytrenowania jelita. Powyżej tego tempa linia robi się coraz bardziej żółta, potem pomarańczowa i czerwona — to sygnał rosnącego ryzyka zalegania i dyskomfortu, nie twardy limit. Do sumy nawodnienia i tak liczy się tylko tyle, ile żołądek zdążył przepuścić, zanim trasa się skończyła.',
     tAbsorbed: 'Wchłonięte',
     tCap: 'Limit wchłaniania',
     tGutPeak: 'Max w żołądku',
@@ -626,6 +627,8 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpDeficitLabel: 'Niedobór',
     chartHelpDeficitBody: 'Tu wchłaniasz mniej, niż potrzebujesz — ryzyko spadku formy.',
     chartHelpFluidAbsorbedBody: 'Ile faktycznie pijesz w tej godzinie.',
+    chartHelpFluidCapBody:
+      'Orientacyjne tempo, z jakim żołądek oddaje płyn do jelita. Powyżej niego linia robi się coraz bardziej żółta, potem pomarańczowa i czerwona — to rosnące ryzyko zalegania, nie twardy limit.',
     chartHelpSweatBody: 'Ile tracisz z potem — Twoje zapotrzebowanie na płyny.',
     chartHelpSumAbsorbedBody: 'Łącznie wchłonięte węglowodany od startu trasy.',
     chartHelpSumNeedBody: 'Łącznie ile było Ci potrzeba od startu trasy.',
@@ -771,7 +774,7 @@ export const STR: Record<Lang, StringTable> = {
     capNote2:
       " — that's the most your gut can absorb per hour no matter how much you eat; anything above it doesn't vanish, it just waits in the stomach. It goes up when you mix glucose and fructose, since they're absorbed through separate routes (glucose ~60 g/h, fructose adds ~30 g/h on top) — that's why it's derived from your maltodextrin:fructose ratio (Jeukendrup, 2010–2014 reviews).",
     capNoteFluid:
-      'Absorption limit: 750 ml/h — that is how fast the stomach passes fluid on to the gut under load (dashed line). Anything above it is not absorbed, it just sits there. With a higher sweat rate you can limit the deficit, not erase it.',
+      'Absorption limit: ~900 ml/h — roughly how fast the stomach passes fluid on to the gut under load (dashed line); the real number varies by a few hundred ml either way depending on intensity and gut training. Above that pace the line shifts from yellow to orange to red — a comfort-risk signal, not a hard cutoff. Your hydration total still only counts what the stomach had time to clear before the ride ended.',
     tAbsorbed: 'Absorbed',
     tCap: 'Absorption limit',
     tGutPeak: 'Peak in stomach',
@@ -1007,6 +1010,8 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpDeficitLabel: 'Deficit',
     chartHelpDeficitBody: "Here you're absorbing less than you need — risk of running low.",
     chartHelpFluidAbsorbedBody: "How much you're actually drinking in that hour.",
+    chartHelpFluidCapBody:
+      'Roughly how fast the stomach passes fluid on to the gut. Above it the line shifts from yellow to orange to red — rising risk of it backing up, not a hard cutoff.',
     chartHelpSweatBody: 'How much you lose through sweat — your fluid requirement.',
     chartHelpSumAbsorbedBody: 'Total carbs absorbed since the start of the route.',
     chartHelpSumNeedBody: "Total amount you've needed since the start of the route.",

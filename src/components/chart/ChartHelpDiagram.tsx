@@ -237,7 +237,7 @@ function fluidDiagram(strings: StringTable) {
       y: 70,
       color: CHART_COLORS.water,
       label: strings.legCap,
-      body: strings.chartHelpCapBody,
+      body: strings.chartHelpFluidCapBody,
     },
   ];
   const svg = frame(
