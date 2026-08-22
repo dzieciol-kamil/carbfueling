@@ -57,6 +57,19 @@ describe('hasPlanData', () => {
   });
 });
 
+describe('setSport', () => {
+  test('switching sport resets speed to that sport default', () => {
+    useAppStore.setState({ route: route({ sport: 'cycling', speed: 28 }) });
+    useAppStore.getState().setSport('running');
+    expect(useAppStore.getState().route.sport).toBe('running');
+    expect(useAppStore.getState().route.speed).toBe(10.9);
+
+    useAppStore.getState().setSport('cycling');
+    expect(useAppStore.getState().route.sport).toBe('cycling');
+    expect(useAppStore.getState().route.speed).toBe(28);
+  });
+});
+
 const initialState = useAppStore.getState();
 
 beforeEach(() => {

@@ -28,6 +28,7 @@ import {
   type Vessel,
   type Fill,
   type ShopStop,
+  type Sport,
   type XUnit,
 } from '../domain/types';
 
@@ -123,6 +124,7 @@ interface AppState {
   nextShopId: number;
 
   setMode: (mode: Mode) => void;
+  setSport: (sport: Sport) => void;
   setDistance: (n: number) => void;
   setSpeed: (n: number) => void;
   setHours: (n: number) => void;
@@ -206,6 +208,8 @@ interface AppState {
   removeFoodLibEntry: (key: string) => void;
   addFoodLibEntry: () => void;
 }
+
+const SPORT_DEFAULT_SPEED: Record<Sport, number> = { cycling: 28, running: 10.9 };
 
 const defaultRoute: RouteInput = {
   sport: 'cycling',
@@ -291,6 +295,8 @@ export const useAppStore = create<AppState>()(
           const route = { ...s.route, mode };
           return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
         }),
+      setSport: (sport) =>
+        set((s) => ({ route: { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] } })),
       // Distance/hours/minutes are edited through free-typing number fields, which
       // commit a value on every keystroke (for live chart feedback) — reconciling
       // fills/foods/shops right here would clamp them against transient in-progress
