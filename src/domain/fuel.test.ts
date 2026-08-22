@@ -113,6 +113,22 @@ describe('timeWeight', () => {
   test('steep downhill (-20%): clamped at the 0.55 floor', () => {
     expect(timeWeight(-20)).toBe(0.55);
   });
+
+  test('running, flat ground: weight 1', () => {
+    expect(timeWeight(0, 'running')).toBe(1);
+  });
+
+  test('running, moderate uphill (5%): steeper penalty than cycling', () => {
+    expect(timeWeight(5, 'running')).toBeCloseTo(1.6, 6);
+  });
+
+  test('running, moderate downhill (-5%): a small gain, much less than cycling', () => {
+    expect(timeWeight(-5, 'running')).toBeCloseTo(0.9, 6);
+  });
+
+  test('running, steep downhill (-20%): clamped at the shallower 0.85 floor', () => {
+    expect(timeWeight(-20, 'running')).toBe(0.85);
+  });
 });
 
 describe('totalHours', () => {
@@ -325,6 +341,12 @@ describe('prof / eff', () => {
     expect(eff(route, 0)).toBe(0);
     expect(eff(route, 50)).toBe(80);
     expect(eff(route, 100)).toBe(160);
+  });
+
+  test('running effort stays within a narrower band than cycling', () => {
+    const route = makeRoute({ sport: 'running', mode: 'route', distance: 100, useGpx: true });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.effort >= 0.6 && p.effort <= 1.8)).toBe(true);
   });
 
   test('synthetic profile (useGpx on, no track) stays within physical bounds', () => {

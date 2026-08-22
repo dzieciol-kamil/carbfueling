@@ -8,6 +8,7 @@ import type {
   PlanState,
   RatioPreset,
   RouteInput,
+  Sport,
   Vessel,
   XUnit,
 } from './types';
@@ -109,10 +110,20 @@ const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
 const PACE_DOWN_FLOOR = 0.55;
+const RUN_PACE_UP_K = 0.12;
+const RUN_PACE_DOWN_K = 0.02;
+const RUN_PACE_DOWN_FLOOR = 0.85;
+const RUN_EFFORT_MIN = 0.6;
+const RUN_EFFORT_MAX = 1.8;
+const RUN_EFFORT_UP_K = 0.15;
+const RUN_EFFORT_DOWN_K = 0.04;
 
-export function timeWeight(gradPercent: number): number {
-  if (gradPercent >= 0) return 1 + gradPercent * PACE_UP_K;
-  return Math.max(PACE_DOWN_FLOOR, 1 + gradPercent * PACE_DOWN_K);
+export function timeWeight(gradPercent: number, sport: Sport = 'cycling'): number {
+  const upK = sport === 'running' ? RUN_PACE_UP_K : PACE_UP_K;
+  const downK = sport === 'running' ? RUN_PACE_DOWN_K : PACE_DOWN_K;
+  const floor = sport === 'running' ? RUN_PACE_DOWN_FLOOR : PACE_DOWN_FLOOR;
+  if (gradPercent >= 0) return 1 + gradPercent * upK;
+  return Math.max(floor, 1 + gradPercent * downK);
 }
 
 export interface ProfilePoint {
@@ -306,7 +317,15 @@ export function prof(route: RouteInput): Profile {
     const dx = (b.x - a.x) * 1000;
     pts[i].grad = dx > 0 ? ((b.ele - a.ele) / dx) * 100 : 0;
     pts[i].effort = route.useGpx
-      ? Math.max(0.32, Math.min(2.3, 1 + pts[i].grad * (pts[i].grad > 0 ? 0.19 : 0.11)))
+      ? route.sport === 'running'
+        ? Math.max(
+            RUN_EFFORT_MIN,
+            Math.min(
+              RUN_EFFORT_MAX,
+              1 + pts[i].grad * (pts[i].grad > 0 ? RUN_EFFORT_UP_K : RUN_EFFORT_DOWN_K),
+            ),
+          )
+        : Math.max(0.32, Math.min(2.3, 1 + pts[i].grad * (pts[i].grad > 0 ? 0.19 : 0.11)))
       : 1;
   }
 
@@ -315,8 +334,8 @@ export function prof(route: RouteInput): Profile {
 
   const cumTime = [0];
   for (let i = 1; i <= N; i++) {
-    const wA = route.useGpx ? timeWeight(pts[i - 1].grad) : 1;
-    const wB = route.useGpx ? timeWeight(pts[i].grad) : 1;
+    const wA = route.useGpx ? timeWeight(pts[i - 1].grad, route.sport) : 1;
+    const wB = route.useGpx ? timeWeight(pts[i].grad, route.sport) : 1;
     cumTime[i] = cumTime[i - 1] + (pts[i].x - pts[i - 1].x) * ((wA + wB) / 2);
   }
 
