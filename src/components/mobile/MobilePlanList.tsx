@@ -244,7 +244,7 @@ export function MobilePlanList() {
               color: hydTint.fg,
             }}
           >
-            {summary.fluidPlanned} / {summary.sweatLoss} ml
+            {Math.round(summary.fluidAbsorbedTotal)} / {summary.sweatLoss} ml
           </div>
         </div>
       </div>

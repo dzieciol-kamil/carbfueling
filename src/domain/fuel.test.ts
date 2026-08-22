@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   COVERAGE_SHORT_PCT,
   COVERAGE_TARGET_PCT,
+  FLUID_ABSORPTION_CAP_ML_H,
   HYDRATION_SHORT_PCT,
   HYDRATION_TARGET_PCT,
   absCap,
@@ -857,6 +858,24 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
       expect(after[i].fluidRate).toBeLessThanOrEqual(after[i - 1].fluidRate + 1e-9);
     }
   });
+
+  test('fluidRate never exceeds the absorption cap, even when a fill pours faster than the gut can pass it on', () => {
+    const gear: Vessel[] = [
+      { gid: 'g1', name: 'Bidon', vol: 1000, allowed: ['water'], gelParts: 1 },
+    ];
+    // 1000ml crammed into the last 10km (~0.4h at 25kph) is ~2500ml/h — over 3x the 750ml/h cap.
+    const fills: Fill[] = [{ fid: 1, gid: 'g1', content: 'water', from: 90, to: 100 }];
+    const S = samples(makePlan({ route, gear, fills }));
+    S.forEach((p) => expect(p.fluidRate).toBeLessThanOrEqual(FLUID_ABSORPTION_CAP_ML_H + 1e-6));
+
+    // Poured this late, most of it can't clear the stomach before the ride ends: only
+    // cap * legDuration (750 * 0.4h = 300ml) of the 1000ml poured is credited as absorbed —
+    // it doesn't vanish from the chart (`ml` still shows 1000 poured), it just never counts
+    // as absorbed, same as carbs that arrive too late to be digested.
+    const last = S[S.length - 1];
+    expect(last.ml).toBeCloseTo(1000, 0);
+    expect(last.mlAbsorbed).toBeCloseTo(300, 0);
+  });
 });
 
 describe('rateStats coverage', () => {
@@ -1180,6 +1199,27 @@ describe('planSummary', () => {
     const summary = planSummary(mildPlan);
     expect(summary.sweatLoss).toBe(344); // round(430 * 0.8h), under the 85*15=1275ml buffer
     expect(summary.hydrationPct).toBe(100);
+  });
+
+  test('hydrationPct is based on absorbed fluid, not raw poured volume, when a fill outpaces the gut', () => {
+    // Same 1000ml-in-the-last-10km setup as the fluidRate cap test: physiologically only
+    // 750*0.4h = 300ml of it clears the stomach before the ride ends, even though the rider
+    // carried and drank the full 1000ml.
+    const gear: Vessel[] = [
+      { gid: 'g1', name: 'Bidon', vol: 1000, allowed: ['water'], gelParts: 1 },
+    ];
+    const fills: Fill[] = [{ fid: 1, gid: 'g1', content: 'water', from: 90, to: 100 }];
+    const plan = makePlan({
+      route: makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' }),
+      gear,
+      fills,
+    });
+    const summary = planSummary(plan);
+    expect(summary.fluidPlanned).toBe(1000); // still reports what was actually poured/carried
+    expect(summary.fluidAbsorbedTotal).toBeCloseTo(300, 0); // but only this much was absorbable
+    // sweatLoss here is 2800ml (see fluidNeed describe block above for the same route/weight/temp).
+    expect(summary.hydrationPct).toBe(Math.round((300 / 2800) * 100));
+    expect(summary.hydrationPct).toBeLessThan(Math.round((1000 / 2800) * 100));
   });
 });
 
