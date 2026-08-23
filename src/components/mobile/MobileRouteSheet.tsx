@@ -121,6 +121,7 @@ export function MobileRouteSheet() {
               onChange={setSport}
               cyclingLabel={strings.sportCycling}
               runningLabel={strings.sportRunning}
+              size={44}
             />
             <button
               type="button"

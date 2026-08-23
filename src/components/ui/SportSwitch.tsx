@@ -1,36 +1,13 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import type { Sport } from '../../domain/types';
+import { SegmentedTrack, segmentItemStyle } from './SegmentedControl';
 
-const trackStyle: CSSProperties = {
-  display: 'flex',
-  boxSizing: 'border-box',
-  background: 'var(--track)',
-  borderRadius: 9,
-  padding: 3,
-  gap: 2,
-};
-
-function btnStyle(on: boolean): CSSProperties {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 30,
-    height: 26,
-    border: 'none',
-    borderRadius: 7,
-    cursor: 'pointer',
-    background: on ? 'var(--ink)' : 'transparent',
-    color: on ? '#fff' : 'var(--muted)',
-  };
-}
-
-function BikeIcon() {
+function BikeIcon({ size }: { size: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width={16}
-      height={16}
+      width={size}
+      height={size}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
@@ -44,12 +21,12 @@ function BikeIcon() {
   );
 }
 
-function RunIcon() {
+function RunIcon({ size }: { size: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width={16}
-      height={16}
+      width={size}
+      height={size}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}
@@ -65,37 +42,61 @@ function RunIcon() {
   );
 }
 
+const ICONS: Record<Sport, (props: { size: number }) => ReactElement> = {
+  cycling: BikeIcon,
+  running: RunIcon,
+};
+const ORDER: Sport[] = ['cycling', 'running'];
+
+function iconItemStyle(selected: boolean, size: number): CSSProperties {
+  return {
+    ...segmentItemStyle(selected, { fullWidth: false }),
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: size,
+    height: size,
+    padding: 0,
+  };
+}
+
 export function SportSwitch({
   sport,
   onChange,
   cyclingLabel,
   runningLabel,
+  size = 30,
 }: {
   sport: Sport;
   onChange: (sport: Sport) => void;
   cyclingLabel: string;
   runningLabel: string;
+  /** Button size in px — bump to 44 on mobile so it matches the touch-target size used
+   *  elsewhere (e.g. MobileStepper's arrow buttons) instead of reading visibly smaller. */
+  size?: number;
 }) {
+  const labels: Record<Sport, string> = { cycling: cyclingLabel, running: runningLabel };
+  const iconSize = Math.round(size * 0.55);
   return (
-    <div style={trackStyle}>
-      <button
-        type="button"
-        onClick={() => onChange('cycling')}
-        style={btnStyle(sport === 'cycling')}
-        aria-label={cyclingLabel}
-        aria-pressed={sport === 'cycling'}
-      >
-        <BikeIcon />
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('running')}
-        style={btnStyle(sport === 'running')}
-        aria-label={runningLabel}
-        aria-pressed={sport === 'running'}
-      >
-        <RunIcon />
-      </button>
-    </div>
+    <SegmentedTrack selectedIndex={ORDER.indexOf(sport)} fullWidth={false} style={{ gap: 2 }}>
+      {(registerRef) =>
+        ORDER.map((value, i) => {
+          const Icon = ICONS[value];
+          return (
+            <button
+              key={value}
+              ref={registerRef(i)}
+              type="button"
+              onClick={() => onChange(value)}
+              aria-label={labels[value]}
+              aria-pressed={value === sport}
+              style={iconItemStyle(value === sport, size)}
+            >
+              <Icon size={iconSize} />
+            </button>
+          );
+        })
+      }
+    </SegmentedTrack>
   );
 }

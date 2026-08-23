@@ -88,8 +88,8 @@ describe('setMode reconciling existing plan items', () => {
       route: route({ mode: 'route', distance: 100, hours: 1, minutes: 0 }),
       fills: [{ fid: 1, gid: 'g1', content: 'water', from: 70, to: 90 }],
     });
-    useAppStore.getState().setMode('time'); // dist() in time mode = round(hours*10) = 10
-    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 0, to: 10 });
+    useAppStore.getState().setMode('time'); // dist() in time mode = round(1h * 28 km/h cycling-mid) = 28
+    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 8, to: 28 });
   });
 });
 

@@ -117,13 +117,43 @@ const RUN_EFFORT_MIN = 0.6;
 const RUN_EFFORT_MAX = 1.8;
 const RUN_EFFORT_UP_K = 0.15;
 const RUN_EFFORT_DOWN_K = 0.04;
+const CYCLE_EFFORT_MIN = 0.32;
+const CYCLE_EFFORT_MAX = 2.3;
+const CYCLE_EFFORT_UP_K = 0.19;
+const CYCLE_EFFORT_DOWN_K = 0.11;
+
+const TIME_WEIGHT_PARAMS: Record<Sport, { upK: number; downK: number; floor: number }> = {
+  cycling: { upK: PACE_UP_K, downK: PACE_DOWN_K, floor: PACE_DOWN_FLOOR },
+  running: { upK: RUN_PACE_UP_K, downK: RUN_PACE_DOWN_K, floor: RUN_PACE_DOWN_FLOOR },
+};
 
 export function timeWeight(gradPercent: number, sport: Sport = 'cycling'): number {
-  const upK = sport === 'running' ? RUN_PACE_UP_K : PACE_UP_K;
-  const downK = sport === 'running' ? RUN_PACE_DOWN_K : PACE_DOWN_K;
-  const floor = sport === 'running' ? RUN_PACE_DOWN_FLOOR : PACE_DOWN_FLOOR;
+  const { upK, downK, floor } = TIME_WEIGHT_PARAMS[sport];
   if (gradPercent >= 0) return 1 + gradPercent * upK;
   return Math.max(floor, 1 + gradPercent * downK);
+}
+
+const EFFORT_GRAD_PARAMS: Record<Sport, { min: number; max: number; upK: number; downK: number }> =
+  {
+    cycling: {
+      min: CYCLE_EFFORT_MIN,
+      max: CYCLE_EFFORT_MAX,
+      upK: CYCLE_EFFORT_UP_K,
+      downK: CYCLE_EFFORT_DOWN_K,
+    },
+    running: {
+      min: RUN_EFFORT_MIN,
+      max: RUN_EFFORT_MAX,
+      upK: RUN_EFFORT_UP_K,
+      downK: RUN_EFFORT_DOWN_K,
+    },
+  };
+
+/** Per-sample effort multiplier from local grade — steeper climbs cost more, descents cost less,
+ *  clamped to each sport's plausible range. Shared by `prof()`'s per-point effort field. */
+function gradEffort(gradPercent: number, sport: Sport): number {
+  const { min, max, upK, downK } = EFFORT_GRAD_PARAMS[sport];
+  return Math.max(min, Math.min(max, 1 + gradPercent * (gradPercent > 0 ? upK : downK)));
 }
 
 export interface ProfilePoint {
@@ -201,22 +231,47 @@ export function paceToSpeed(min: number, sec: number): number {
   return Math.round((3600 / totalSec) * 1000) / 1000;
 }
 
+/** A sport's baseline pace — also what a sport switch resets `route.speed` to (see appStore's
+ *  `setSport`). Lives here, not appStore.ts, so `dist()` below can share it framework-free. */
+export const SPORT_DEFAULT_SPEED: Record<Sport, number> = { cycling: 28, running: 10.9 };
+
+/**
+ * Relative pace by effort tier, applied to `SPORT_DEFAULT_SPEED` for the 'time' mode's virtual
+ * distance scale — same effect for both sports (a harder effort raises pace by roughly the same
+ * fraction regardless of sport), not a sport-specific number. Same reasoning as
+ * `HIGH_INTENSITY_ABS_CAP_FACTOR` above.
+ */
+const INTENSITY_SPEED_FACTOR: Record<Intensity, number> = { low: 0.85, mid: 1, high: 1.15 };
+
 export function dist(route: RouteInput): number {
   if (route.mode === 'route') return Math.max(1, route.distance);
-  return Math.max(1, Math.round(totalHours(route) * 10));
+  const speed = SPORT_DEFAULT_SPEED[route.sport] * INTENSITY_SPEED_FACTOR[route.intensity];
+  return Math.max(1, Math.round(totalHours(route) * speed));
 }
 
+type DurationTier = 'short' | 'mid' | 'long';
+
+function durationTier(h: number): DurationTier {
+  if (h < 1) return 'short';
+  if (h <= 2.5) return 'mid';
+  return 'long';
+}
+
+const CPH_TABLE: Record<Sport, Record<DurationTier, Record<Intensity, number>>> = {
+  cycling: {
+    short: { low: 30, mid: 45, high: 60 },
+    mid: { low: 30, mid: 45, high: 60 },
+    long: { low: 60, mid: 75, high: 90 },
+  },
+  running: {
+    short: { low: 20, mid: 30, high: 45 },
+    mid: { low: 30, mid: 45, high: 60 },
+    long: { low: 45, mid: 60, high: 75 },
+  },
+};
+
 export function cph(route: RouteInput): number {
-  const h = totalHours(route);
-  const i = route.intensity;
-  if (route.sport === 'running') {
-    if (h < 1) return i === 'high' ? 45 : i === 'low' ? 20 : 30;
-    if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
-    return i === 'low' ? 45 : i === 'high' ? 75 : 60;
-  }
-  if (h < 1) return i === 'high' ? 60 : i === 'low' ? 30 : 45;
-  if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
-  return i === 'low' ? 60 : i === 'high' ? 90 : 75;
+  return CPH_TABLE[route.sport][durationTier(totalHours(route))][route.intensity];
 }
 
 export function sweat(route: RouteInput): number {
@@ -321,17 +376,7 @@ export function prof(route: RouteInput): Profile {
     const b = pts[Math.min(N, i + 1)];
     const dx = (b.x - a.x) * 1000;
     pts[i].grad = dx > 0 ? ((b.ele - a.ele) / dx) * 100 : 0;
-    pts[i].effort = route.useGpx
-      ? route.sport === 'running'
-        ? Math.max(
-            RUN_EFFORT_MIN,
-            Math.min(
-              RUN_EFFORT_MAX,
-              1 + pts[i].grad * (pts[i].grad > 0 ? RUN_EFFORT_UP_K : RUN_EFFORT_DOWN_K),
-            ),
-          )
-        : Math.max(0.32, Math.min(2.3, 1 + pts[i].grad * (pts[i].grad > 0 ? 0.19 : 0.11)))
-      : 1;
+    pts[i].effort = route.useGpx ? gradEffort(pts[i].grad, route.sport) : 1;
   }
 
   const cum = [0];
