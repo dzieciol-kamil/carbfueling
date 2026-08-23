@@ -38,4 +38,31 @@ describe('parseGpxXml', () => {
   test('throws on malformed XML with no usable points', () => {
     expect(() => parseGpxXml('<not-gpx></not-gpx>')).toThrow();
   });
+
+  test('parses a large degenerate file (unclosed trkpt tags) in roughly linear time', () => {
+    function degenerateGpx(unclosedTags: number): string {
+      const junk = '<trkpt lat="50.0" lon="19.0">'.repeat(unclosedTags);
+      const valid = linePoints(8)
+        .map((p) => `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.ele}</ele></trkpt>`)
+        .join('');
+      return `<?xml version="1.0"?><gpx><trk><trkseg>${junk}${valid}</trkseg></trk></gpx>`;
+    }
+
+    const small = degenerateGpx(35_000); // ~1 MB
+    const large = degenerateGpx(280_000); // ~8 MB, 8x small
+
+    parseGpxXml(small); // warm up the JIT before timing
+    const t0 = performance.now();
+    parseGpxXml(small);
+    const smallMs = performance.now() - t0;
+
+    const t1 = performance.now();
+    parseGpxXml(large);
+    const largeMs = performance.now() - t1;
+
+    // Linear parsing scales ~8x with the input; a generous 25x ceiling still
+    // catches quadratic/catastrophic-backtracking blowup (~64x) while tolerating
+    // timer noise on small, sub-millisecond durations.
+    expect(largeMs).toBeLessThan(Math.max(smallMs * 25, 200));
+  });
 });
