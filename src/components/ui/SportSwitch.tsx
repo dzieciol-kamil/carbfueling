@@ -10,13 +10,15 @@ function BikeIcon({ size }: { size: number }) {
       height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={1.7}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle cx={6} cy={17} r={3.3} />
-      <circle cx={18} cy={17} r={3.3} />
-      <path d="M6 17 L11 9 L16 9 L18 17 M11 9 L14 17" />
+      <circle cx="6" cy="15" r="3.3" />
+      <circle cx="18" cy="15" r="3.3" />
+      <path d="M6 15 L9 9 L15 9 L18 15" />
+      <path d="M7 10 L7 9 L9 9 L13 15 L18 15" />
+      <path d="M13 15 L16 7 L14 7 L17 7" />
     </svg>
   );
 }
@@ -33,11 +35,10 @@ function RunIcon({ size }: { size: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle cx={13.5} cy={4.5} r={1.7} fill="currentColor" stroke="none" />
-      <path d="M12 6.5 L9 11 L5.5 13.5" />
-      <path d="M9 11 L12.5 14.5 L11 19" />
-      <path d="M12 6.5 L15.5 9 L18.5 7.5" />
-      <path d="M12 6.5 L9.5 4.8" />
+      <circle cx="13.5" cy="4.5" r="1.7" fill="currentColor" />
+      <path d="M13.5 4.5 L11 13 L14 16 L12 20" />
+      <path d="M11 13 L8 15 L4 13" />
+      <path d="M17 8 L15 10 L13 7 L9 7 L7 9" />
     </svg>
   );
 }

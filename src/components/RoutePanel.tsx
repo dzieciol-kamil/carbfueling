@@ -2,12 +2,21 @@ import type { CSSProperties } from 'react';
 import { useRef } from 'react';
 import { paceToSpeed, prof, speedToPace } from '../domain/fuel';
 import type { Intensity, RouteInput } from '../domain/types';
-import { t } from '../i18n/strings';
+import { t, type StringTable } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
 import { NumberInput } from './ui/NumberInput';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { SportSwitch } from './ui/SportSwitch';
+
+function routeTitle(sport: RouteInput['sport'], strings: StringTable): string {
+  switch (sport) {
+    case 'running':
+      return strings.routeRunning;
+    default:
+      return strings.routeCycling;
+  }
+}
 
 const inputStyle: CSSProperties = {
   width: '100%',
@@ -96,7 +105,7 @@ export function RoutePanel() {
               textTransform: 'uppercase',
             }}
           >
-            {strings.route}
+            {routeTitle(route.sport, strings)}
           </span>
           <SportSwitch
             sport={route.sport}

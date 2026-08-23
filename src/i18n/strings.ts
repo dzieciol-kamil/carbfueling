@@ -8,7 +8,8 @@ export interface StringTable {
   tagline: string;
   desktop: string;
   mobile: string;
-  route: string;
+  routeCycling: string;
+  routeRunning: string;
   byRoute: string;
   byTime: string;
   distance: string;
@@ -272,7 +273,8 @@ export interface StringTable {
   mixRowSalt: string;
   mixRowCitric: string;
   mixRowWater: string;
-  routeSheetTitle: string;
+  routeSheetTitleCycling: string;
+  routeSheetTitleRunning: string;
   routeSheetPreStart: string;
   routeSheetIntensity: string;
   routeSheetTemp: string;
@@ -327,7 +329,8 @@ export const STR: Record<Lang, StringTable> = {
     tagline: 'planer węglowodanów i nawodnienia',
     desktop: 'Komputer',
     mobile: 'Telefon',
-    route: 'Trasa',
+    routeCycling: 'Trasa rowerowa',
+    routeRunning: 'Trasa biegowa',
     byRoute: 'Dystans + tempo',
     byTime: 'Czas',
     distance: 'Dystans',
@@ -649,7 +652,8 @@ export const STR: Record<Lang, StringTable> = {
     mixRowSalt: 'Sól',
     mixRowCitric: 'Kwasek cytrynowy',
     mixRowWater: 'Woda',
-    routeSheetTitle: 'TRASA I WARUNKI',
+    routeSheetTitleCycling: 'TRASA ROWEROWA I WARUNKI',
+    routeSheetTitleRunning: 'TRASA BIEGOWA I WARUNKI',
     routeSheetPreStart: 'PRZED STARTEM',
     routeSheetIntensity: 'Intensywność',
     routeSheetTemp: 'Temperatura',
@@ -710,7 +714,8 @@ export const STR: Record<Lang, StringTable> = {
     tagline: 'carbohydrate & hydration planner',
     desktop: 'Desktop',
     mobile: 'Phone',
-    route: 'Route',
+    routeCycling: 'Cycling route',
+    routeRunning: 'Running route',
     byRoute: 'Distance + pace',
     byTime: 'Time',
     distance: 'Distance',
@@ -1028,7 +1033,8 @@ export const STR: Record<Lang, StringTable> = {
     mixRowSalt: 'Salt',
     mixRowCitric: 'Citric acid',
     mixRowWater: 'Water',
-    routeSheetTitle: 'ROUTE & CONDITIONS',
+    routeSheetTitleCycling: 'CYCLING ROUTE & CONDITIONS',
+    routeSheetTitleRunning: 'RUNNING ROUTE & CONDITIONS',
     routeSheetPreStart: 'BEFORE THE START',
     routeSheetIntensity: 'Intensity',
     routeSheetTemp: 'Temperature',

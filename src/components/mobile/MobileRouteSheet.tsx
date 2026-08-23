@@ -2,12 +2,21 @@ import type { CSSProperties } from 'react';
 import { useRef } from 'react';
 import { paceToSpeed, prof, speedToPace } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
-import { t } from '../../i18n/strings';
+import { t, type StringTable } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { InfoPopover } from '../ui/InfoPopover';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { SportSwitch } from '../ui/SportSwitch';
 import { MobileStepper } from './MobileStepper';
+
+function routeSheetTitle(sport: RouteInput['sport'], strings: StringTable): string {
+  switch (sport) {
+    case 'running':
+      return strings.routeSheetTitleRunning;
+    default:
+      return strings.routeSheetTitleCycling;
+  }
+}
 
 function elevationGain(route: RouteInput): number {
   const pts = prof(route).pts;
@@ -113,7 +122,7 @@ export function MobileRouteSheet() {
               letterSpacing: '0.08em',
             }}
           >
-            {strings.routeSheetTitle}
+            {routeSheetTitle(route.sport, strings)}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <SportSwitch
