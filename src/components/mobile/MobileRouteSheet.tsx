@@ -74,6 +74,10 @@ export function MobileRouteSheet() {
     { value: 'mid', label: strings.medium },
     { value: 'high', label: strings.high },
   ];
+  const paceSec = (() => {
+    const pace = speedToPace(route.speed);
+    return Math.min(900, Math.max(150, pace.min * 60 + pace.sec));
+  })();
 
   function close() {
     closeRouteSheet();
@@ -148,10 +152,7 @@ export function MobileRouteSheet() {
           {route.sport === 'running' ? (
             <MobileStepper
               label={strings.pace}
-              value={(() => {
-                const pace = speedToPace(route.speed);
-                return pace.min * 60 + pace.sec;
-              })()}
+              value={paceSec}
               min={150}
               max={900}
               smallStep={5}

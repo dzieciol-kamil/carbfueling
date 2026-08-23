@@ -63,6 +63,7 @@ export function RoutePanel() {
     { value: 'mid', label: strings.medium },
     { value: 'high', label: strings.high },
   ];
+  const pace = speedToPace(route.speed);
 
   return (
     <div
@@ -140,9 +141,10 @@ export function RoutePanel() {
                 <label style={labelStyle}>
                   <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.paceMin}</span>
                   <NumberInput
-                    value={speedToPace(route.speed).min}
-                    onChange={(min) => setSpeed(paceToSpeed(min, speedToPace(route.speed).sec))}
+                    value={pace.min}
+                    onChange={(min) => setSpeed(paceToSpeed(min, pace.sec))}
                     parser="int"
+                    min={0}
                     zeroAsEmpty
                     style={inputStyle}
                   />
@@ -150,8 +152,8 @@ export function RoutePanel() {
                 <label style={labelStyle}>
                   <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.paceSec}</span>
                   <NumberInput
-                    value={speedToPace(route.speed).sec}
-                    onChange={(sec) => setSpeed(paceToSpeed(speedToPace(route.speed).min, sec))}
+                    value={pace.sec}
+                    onChange={(sec) => setSpeed(paceToSpeed(pace.min, sec))}
                     parser="int"
                     min={0}
                     max={59}
