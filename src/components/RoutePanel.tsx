@@ -1,13 +1,100 @@
-import type { CSSProperties } from 'react';
-import { useRef } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { paceToSpeed, prof, speedToPace } from '../domain/fuel';
 import type { Intensity, RouteInput } from '../domain/types';
-import { t } from '../i18n/strings';
+import { t, type StringTable } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
 import { NumberInput } from './ui/NumberInput';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { SportSwitch } from './ui/SportSwitch';
+
+function routeTitle(sport: RouteInput['sport'], strings: StringTable): string {
+  switch (sport) {
+    case 'running':
+      return strings.routeRunning;
+    default:
+      return strings.routeCycling;
+  }
+}
+
+function formatPaceText(min: number, sec: number): string {
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
+
+// Keeps only digits and a single ':' while typing, and caps the seconds side to 2 digits — so
+// the field can never drift into something like "5:300" mid-edit that `parsePaceText` would
+// then have to guess how to salvage.
+function sanitizePaceText(raw: string): string {
+  let out = '';
+  let colonSeen = false;
+  let secDigits = 0;
+  for (const ch of raw) {
+    if (ch === ':' && !colonSeen) {
+      out += ':';
+      colonSeen = true;
+    } else if (/[0-9]/.test(ch)) {
+      if (colonSeen) {
+        if (secDigits < 2) {
+          out += ch;
+          secDigits++;
+        }
+      } else {
+        out += ch;
+      }
+    }
+  }
+  return out;
+}
+
+function parsePaceText(text: string): { min: number; sec: number } | null {
+  const m = /^(\d{1,3}):(\d{1,2})$/.exec(text);
+  if (!m) return null;
+  return { min: parseInt(m[1], 10), sec: Math.min(59, parseInt(m[2], 10)) };
+}
+
+/** Free-text "M:SS" pace entry — forces the ':' and caps seconds at 2 digits while typing (see
+ *  `sanitizePaceText`), and reformats to the canonical `min:SS` shape on blur. Replaces two
+ *  separate min/sec NumberInputs, which read as unrelated numbers rather than one pace value. */
+function PaceInput({
+  pace,
+  onChangePace,
+  style,
+}: {
+  pace: { min: number; sec: number };
+  onChangePace: (min: number, sec: number) => void;
+  style?: CSSProperties;
+}) {
+  const [text, setText] = useState(formatPaceText(pace.min, pace.sec));
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setText(formatPaceText(pace.min, pace.sec));
+  }, [pace.min, pace.sec]);
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      style={style}
+      value={text}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={(e) => {
+        const sanitized = sanitizePaceText(e.target.value);
+        setText(sanitized);
+        const parsed = parsePaceText(sanitized);
+        if (parsed) onChangePace(parsed.min, parsed.sec);
+      }}
+      onBlur={() => {
+        focused.current = false;
+        const parsed = parsePaceText(text) ?? pace;
+        setText(formatPaceText(parsed.min, parsed.sec));
+        onChangePace(parsed.min, parsed.sec);
+      }}
+    />
+  );
+}
 
 const inputStyle: CSSProperties = {
   width: '100%',
@@ -96,7 +183,7 @@ export function RoutePanel() {
               textTransform: 'uppercase',
             }}
           >
-            {strings.route}
+            {routeTitle(route.sport, strings)}
           </span>
           <SportSwitch
             sport={route.sport}
@@ -137,31 +224,14 @@ export function RoutePanel() {
               />
             </label>
             {route.sport === 'running' ? (
-              <>
-                <label style={labelStyle}>
-                  <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.paceMin}</span>
-                  <NumberInput
-                    value={pace.min}
-                    onChange={(min) => setSpeed(paceToSpeed(min, pace.sec))}
-                    parser="int"
-                    min={0}
-                    zeroAsEmpty
-                    style={inputStyle}
-                  />
-                </label>
-                <label style={labelStyle}>
-                  <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.paceSec}</span>
-                  <NumberInput
-                    value={pace.sec}
-                    onChange={(sec) => setSpeed(paceToSpeed(pace.min, sec))}
-                    parser="int"
-                    min={0}
-                    max={59}
-                    zeroAsEmpty
-                    style={inputStyle}
-                  />
-                </label>
-              </>
+              <label style={labelStyle}>
+                <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.pace}</span>
+                <PaceInput
+                  pace={pace}
+                  onChangePace={(min, sec) => setSpeed(paceToSpeed(min, sec))}
+                  style={inputStyle}
+                />
+              </label>
             ) : (
               <label style={labelStyle}>
                 <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>

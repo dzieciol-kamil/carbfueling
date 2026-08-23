@@ -8,16 +8,15 @@ export interface StringTable {
   tagline: string;
   desktop: string;
   mobile: string;
-  route: string;
+  routeCycling: string;
+  routeRunning: string;
   byRoute: string;
   byTime: string;
   distance: string;
   speed: string;
   sportCycling: string;
   sportRunning: string;
-  paceMin: string;
   pace: string;
-  paceSec: string;
   hours: string;
   minutes: string;
   duration: string;
@@ -272,7 +271,8 @@ export interface StringTable {
   mixRowSalt: string;
   mixRowCitric: string;
   mixRowWater: string;
-  routeSheetTitle: string;
+  routeSheetTitleCycling: string;
+  routeSheetTitleRunning: string;
   routeSheetPreStart: string;
   routeSheetIntensity: string;
   routeSheetTemp: string;
@@ -327,16 +327,15 @@ export const STR: Record<Lang, StringTable> = {
     tagline: 'planer węglowodanów i nawodnienia',
     desktop: 'Komputer',
     mobile: 'Telefon',
-    route: 'Trasa',
+    routeCycling: 'Trasa rowerowa',
+    routeRunning: 'Trasa biegowa',
     byRoute: 'Dystans + tempo',
     byTime: 'Czas',
     distance: 'Dystans',
     speed: 'Śr. prędkość',
     sportCycling: 'Rower',
     sportRunning: 'Bieg',
-    paceMin: 'Min/km',
     pace: 'Tempo (min/km)',
-    paceSec: 'S/km',
     hours: 'Godziny',
     minutes: 'Minuty',
     duration: 'Czas trwania',
@@ -649,7 +648,8 @@ export const STR: Record<Lang, StringTable> = {
     mixRowSalt: 'Sól',
     mixRowCitric: 'Kwasek cytrynowy',
     mixRowWater: 'Woda',
-    routeSheetTitle: 'TRASA I WARUNKI',
+    routeSheetTitleCycling: 'TRASA ROWEROWA I WARUNKI',
+    routeSheetTitleRunning: 'TRASA BIEGOWA I WARUNKI',
     routeSheetPreStart: 'PRZED STARTEM',
     routeSheetIntensity: 'Intensywność',
     routeSheetTemp: 'Temperatura',
@@ -710,16 +710,15 @@ export const STR: Record<Lang, StringTable> = {
     tagline: 'carbohydrate & hydration planner',
     desktop: 'Desktop',
     mobile: 'Phone',
-    route: 'Route',
+    routeCycling: 'Cycling route',
+    routeRunning: 'Running route',
     byRoute: 'Distance + pace',
     byTime: 'Time',
     distance: 'Distance',
     speed: 'Avg speed',
     sportCycling: 'Cycling',
     sportRunning: 'Running',
-    paceMin: 'Min/km',
     pace: 'Pace (min/km)',
-    paceSec: 'Sec/km',
     hours: 'Hours',
     minutes: 'Minutes',
     duration: 'Duration',
@@ -1028,7 +1027,8 @@ export const STR: Record<Lang, StringTable> = {
     mixRowSalt: 'Salt',
     mixRowCitric: 'Citric acid',
     mixRowWater: 'Water',
-    routeSheetTitle: 'ROUTE & CONDITIONS',
+    routeSheetTitleCycling: 'CYCLING ROUTE & CONDITIONS',
+    routeSheetTitleRunning: 'RUNNING ROUTE & CONDITIONS',
     routeSheetPreStart: 'BEFORE THE START',
     routeSheetIntensity: 'Intensity',
     routeSheetTemp: 'Temperature',

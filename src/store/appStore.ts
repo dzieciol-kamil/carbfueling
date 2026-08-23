@@ -10,7 +10,7 @@ import {
   nextShopAt,
 } from '../domain/dragMath';
 import { startFillOf } from '../domain/combinedRefill';
-import { dist, presetTagFor } from '../domain/fuel';
+import { dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
 import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
 import { LANGS, t, type Lang } from '../i18n/strings';
@@ -208,8 +208,6 @@ interface AppState {
   removeFoodLibEntry: (key: string) => void;
   addFoodLibEntry: () => void;
 }
-
-const SPORT_DEFAULT_SPEED: Record<Sport, number> = { cycling: 28, running: 10.9 };
 
 const defaultRoute: RouteInput = {
   sport: 'cycling',

@@ -183,9 +183,15 @@ describe('dist', () => {
     expect(dist(makeRoute({ mode: 'route', distance: 0 }))).toBe(1);
   });
 
-  test('time mode: virtual km = round(totalHours * 10)', () => {
-    expect(dist(makeRoute({ mode: 'time', hours: 1, minutes: 0 }))).toBe(10);
-    expect(dist(makeRoute({ mode: 'time', hours: 0, minutes: 6 }))).toBe(1);
+  test('time mode: virtual km scales with sport+intensity nominal speed', () => {
+    expect(dist(makeRoute({ mode: 'time', hours: 1, minutes: 0 }))).toBe(28); // cycling mid: 28 km/h
+    expect(dist(makeRoute({ mode: 'time', hours: 0, minutes: 6 }))).toBe(3); // round(0.1h * 28)
+  });
+
+  test('time mode: intensity and sport shift the nominal pace', () => {
+    expect(dist(makeRoute({ mode: 'time', hours: 1, intensity: 'low' }))).toBe(24); // round(28*0.85)
+    expect(dist(makeRoute({ mode: 'time', hours: 1, intensity: 'high' }))).toBe(32); // round(28*1.15)
+    expect(dist(makeRoute({ mode: 'time', hours: 1, sport: 'running' }))).toBe(11); // round(10.9)
   });
 });
 
@@ -800,7 +806,7 @@ describe('samples', () => {
       route: makeRoute({ mode: 'time', hours: 2, minutes: 30, intensity: 'mid', useGpx: false }),
     });
     const S = samples(plan);
-    expect(dist(plan.route)).toBe(25);
+    expect(dist(plan.route)).toBe(70); // round(2.5h * 28 km/h cycling-mid nominal)
     expect(S[0].need).toBe(0);
     expect(S[160].need).toBeCloseTo(2.5 * 45, 6); // totalHours=2.5 -> cph mid=45
   });
@@ -1222,8 +1228,8 @@ describe('fmtX', () => {
   });
 
   test('time mode always uses the time axis regardless of xUnit', () => {
-    const route = makeRoute({ mode: 'time', hours: 2, minutes: 0 }); // dist=20, 10 km/h
-    expect(fmtX(10, true, route, 'km')).toBe('1:00 h');
+    const route = makeRoute({ mode: 'time', hours: 2, minutes: 0 }); // dist=56, 28 km/h cycling-mid
+    expect(fmtX(28, true, route, 'km')).toBe('1:00 h');
   });
 
   test('time axis reflects gradient when useGpx is true (climb gets a later label than flat division would)', () => {
