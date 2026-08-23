@@ -20,7 +20,14 @@
 import { describe, expect, test } from 'vitest';
 import { autoplan, STOP_SNAP_KM } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
-import { dist, planSummary, samples, totalHours } from './fuel';
+import {
+  COVERAGE_TARGET_PCT,
+  dist,
+  HYDRATION_TARGET_PCT,
+  planSummary,
+  samples,
+  totalHours,
+} from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -31,9 +38,6 @@ import type {
   Stop,
   Vessel,
 } from './types';
-
-/** The threshold the app itself paints green, for both carbs and hydration. */
-const GREEN_PCT = 85;
 
 /** Nothing is delivered on the finish line — there'd be no time left to absorb it. */
 const FINISH_GAP_FRACTION = 0.02;
@@ -340,8 +344,15 @@ function expectStopProducts(r: Run): void {
 }
 
 /**
- * R4: the fluid line never sags below 85% of the target, anywhere on the route. It may wave above
- * it and the ride may finish at 100%+ — what it may not do is dip.
+ * The rider's own floor on the *shape* of the fluid line — unrelated to `HYDRATION_TARGET_PCT`
+ * (the badge threshold) and deliberately not unified with it, even though both are 85 today: this
+ * one is about the line never dipping, not about the route-total ratio. See `expectFluidNeverSags`.
+ */
+const FLUID_SAG_FLOOR_PCT = 85;
+
+/**
+ * R4: the fluid line never sags below `FLUID_SAG_FLOOR_PCT` of the target, anywhere on the route.
+ * It may wave above it and the ride may finish at 100%+ — what it may not do is dip.
  *
  * This is the whole capacity rule restated pointwise: since a load's delivery rate is
  * `volume / leg duration`, the floor caps how long a leg may be (`vol / (0.85 × need)`), and the
@@ -354,7 +365,7 @@ function expectFluidNeverSags(r: Run): void {
   expect(
     worst,
     'the fluid line sags below the floor somewhere on the route',
-  ).toBeGreaterThanOrEqual(GREEN_PCT);
+  ).toBeGreaterThanOrEqual(FLUID_SAG_FLOOR_PCT);
 }
 
 /**
@@ -394,7 +405,7 @@ describe('autoplan combined scenarios — water + izo', () => {
     );
     expectThen(r, {
       minCarbs: 90,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 5,
       maxRefills: 5,
       products: [],
@@ -408,8 +419,8 @@ describe('autoplan combined scenarios — water + izo', () => {
       ]),
     );
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 4,
       maxRefills: 4,
       products: [],
@@ -429,8 +440,8 @@ describe('autoplan combined scenarios — water + izo', () => {
     );
     // Five stops today, two of them 5km apart — they are one stop, so four is the ceiling.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 4,
       maxRefills: 6,
       products: [],
@@ -451,7 +462,7 @@ describe('autoplan combined scenarios — gel vessel reused for water', () => {
     // shortfall isn't "eat everything by km 50, then coast" (expectNotWorseThanEvenSpread).
     expectThen(r, {
       minCarbs: 62,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 5,
       maxRefills: 8,
       products: [],
@@ -497,7 +508,7 @@ describe('autoplan combined scenarios — products alongside bottles', () => {
     // up after the izo runs out.
     expectThen(r, {
       minCarbs: 90,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 3,
       maxRefills: 4,
       products: ['gel', 'gel', 'gel', 'gel', 'chew', 'chew', 'banana'],
@@ -515,7 +526,7 @@ describe('autoplan combined scenarios — products alongside bottles', () => {
     // The rider allowed four colas, so four stops is the honest answer — and the water bottle gets
     // topped up at every one of them, which is why the stop count buys more than the carbs.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: 90,
       maxStops: 4,
       maxRefills: 4,
@@ -542,8 +553,8 @@ describe('autoplan combined scenarios — the full kit', () => {
     // Today: seven stops, two of them 2km apart, and three gels packed 9km apart in the middle of
     // an otherwise empty back half.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 6,
       maxRefills: 8,
       productCounts: { gel: 3, banana: 1, chew: 2, cola: 2 },
@@ -567,8 +578,8 @@ describe('autoplan combined scenarios — the full kit', () => {
     // plain sum ratio), which is exactly why `expectNoTrickleLeg` and the fluid-rate comparison in
     // `expectNotWorseThanEvenSpread` are here.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 9,
       maxRefills: 12,
       productCounts: { gel: 6, chew: 3, cola: 3 },
@@ -584,7 +595,12 @@ describe('autoplan combined scenarios — the full kit', () => {
     );
     // Under an hour, so no carbs at all — but 1152ml of sweat clears the 1125ml buffer, so both
     // vessels are water vessels for this ride, including the one that could have taken izo.
-    expectThen(r, { minCarbs: null, minHydration: GREEN_PCT, maxStops: 1, maxRefills: 2 });
+    expectThen(r, {
+      minCarbs: null,
+      minHydration: HYDRATION_TARGET_PCT,
+      maxStops: 1,
+      maxRefills: 2,
+    });
     expect(r.result.foods).toEqual([]);
     for (const f of r.result.fills) expect(f.content).toBe('water');
   });

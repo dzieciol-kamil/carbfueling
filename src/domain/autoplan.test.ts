@@ -11,7 +11,7 @@ import {
   selectItemsForAmount,
 } from './autoplan';
 import type { FoodSelectionEntry } from './autoplan';
-import { planSummary, rateStats, samples, sweat, totalHours } from './fuel';
+import { COVERAGE_TARGET_PCT, planSummary, rateStats, samples, sweat, totalHours } from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -768,11 +768,11 @@ describe('autoplan (golden path, app default gear)', () => {
 
   test('hydration and carb coverage clear the rider-accepted floors', () => {
     const summary = planSummary(applyResult(state, result).state);
-    // Floors, not targets. The carb floor came down from 90 to the app's own green threshold
-    // (85, `statusColor()`); hydration stays at the older, weaker 80 on purpose — this is mixed
+    // Floors, not targets. The carb floor tracks the app's own green threshold
+    // (`COVERAGE_TARGET_PCT`); hydration stays at the older, weaker 80 on purpose — this is mixed
     // gear (one bottle shared between izo and water), which the siloed scenarios don't cover.
     expect(summary.hydrationPct).toBeGreaterThanOrEqual(80);
-    expect(summary.coverage).toBeGreaterThanOrEqual(85);
+    expect(summary.coverage).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT);
   });
 
   test('carbs are spread across the route, not crammed into the first two hours', () => {

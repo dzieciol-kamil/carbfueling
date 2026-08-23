@@ -18,7 +18,7 @@
 import { describe, expect, test } from 'vitest';
 import { autoplan } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
-import { dist, planSummary } from './fuel';
+import { COVERAGE_TARGET_PCT, dist, HYDRATION_TARGET_PCT, planSummary } from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -29,9 +29,6 @@ import type {
   Stop,
   Vessel,
 } from './types';
-
-/** The threshold the app itself paints green, for both carbs and hydration. */
-const GREEN_PCT = 85;
 
 /**
  * Smallest end-of-route gap seen in the rider's real builds (izo-6 stopped 5km short of a 100km
@@ -248,7 +245,7 @@ describe('autoplan scenarios — water only', () => {
     // 330ml of sweat loss against a 500ml bottle — confirmed against the rider's export.
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 0,
       maxRefills: 0,
       products: [],
@@ -265,7 +262,7 @@ describe('autoplan scenarios — water only', () => {
     // 5600ml needed, 1000ml carried: four top-ups get hydration to 89%.
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(5600, 1000),
       maxRefills: loadsNeeded(5600, 1000),
       products: [],
@@ -302,7 +299,7 @@ describe('autoplan scenarios — water only', () => {
     );
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(4080, 650),
       maxRefills: loadsNeeded(4080, 650),
       products: [],
@@ -319,7 +316,7 @@ describe('autoplan scenarios — water only', () => {
     // Same 1000ml as #6, just in two bottles — so the same stops, but each one tops up both.
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(3880, 1000),
       maxRefills: 2 * loadsNeeded(3880, 1000),
       products: [],
@@ -334,7 +331,7 @@ describe('autoplan scenarios — water only', () => {
     const r = run(makePlan(route, [water(1000)]));
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(3880, 1000),
       maxRefills: loadsNeeded(3880, 1000),
       products: [],
@@ -352,7 +349,7 @@ describe('autoplan scenarios — water only', () => {
     );
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(9840, 750),
       maxRefills: loadsNeeded(9840, 750),
       products: [],
@@ -367,7 +364,7 @@ describe('autoplan scenarios — water only', () => {
     );
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(1225, 1000),
       maxRefills: loadsNeeded(1225, 1000),
       products: [],
@@ -399,7 +396,7 @@ describe('autoplan scenarios — water only', () => {
     // The one scenario where the old "<1h means don't bother" rule and the sweat gate disagree.
     expectThen(r, {
       minCarbs: null,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(1152, 500),
       maxRefills: loadsNeeded(1152, 500),
       products: [],
@@ -411,7 +408,7 @@ describe('autoplan scenarios — izo only', () => {
   test('izo-1: 60km / 650ml @ 8.4g', () => {
     const r = run(makePlan(makeRoute({ distance: 60 }), [izo(650)]));
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: loadsNeeded(108, 54.6),
       maxRefills: loadsNeeded(108, 54.6),
@@ -422,7 +419,7 @@ describe('autoplan scenarios — izo only', () => {
   test('izo-2: 150km / 750ml @ 8.4g', () => {
     const r = run(makePlan(makeRoute({ distance: 150 }), [izo(750)]));
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: loadsNeeded(450, 63),
       maxRefills: loadsNeeded(450, 63),
@@ -434,7 +431,7 @@ describe('autoplan scenarios — izo only', () => {
     const r = run(makePlan(makeRoute({ distance: 250 }), [izo(500)]));
     // 15 is what the raw sums demand; the real integral has room to need fewer.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: loadsNeeded(750, 42),
       maxRefills: loadsNeeded(750, 42),
@@ -446,7 +443,7 @@ describe('autoplan scenarios — izo only', () => {
     const r = run(makePlan(makeRoute({ distance: 60 }), [izo(650)], makeMix({ conc: 15 })));
     // 97.5g of a 108g target, 90% — green without stopping. Confirmed against the export.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: 0,
       maxRefills: 0,
@@ -458,7 +455,7 @@ describe('autoplan scenarios — izo only', () => {
   test('izo-5: 60km at high intensity — the higher target costs more than izo-1', () => {
     const r = run(makePlan(makeRoute({ distance: 60, intensity: 'high' }), [izo(650)]));
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: loadsNeeded(144, 54.6),
       maxRefills: loadsNeeded(144, 54.6),
@@ -473,7 +470,7 @@ describe('autoplan scenarios — izo only', () => {
     // Built by hand twice, both times two stops near 32 and 64 — one fewer than the raw sums
     // demand, because `coverage()` integrates absorption instead of dividing totals.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: 2,
       maxRefills: 2,
@@ -495,8 +492,8 @@ describe('autoplan scenarios — products only', () => {
     const r = run(makePlan(makeRoute({ distance: 90 }), [water(750)]), [{ key: 'gel', count: 11 }]);
     // 242g of a 270g target: the selection runs out before the target does.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(2520, 750),
       maxRefills: loadsNeeded(2520, 750),
       products: Array(11).fill('gel'),
@@ -518,8 +515,8 @@ describe('autoplan scenarios — products only', () => {
     // Both of the rider's independent builds landed on 3 gels + 1 banana + 2 chews = 149g (90%),
     // eaten in exactly that order, with the cola left in the pocket.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(1623, 750),
       maxRefills: loadsNeeded(1623, 750),
       products: ['gel', 'gel', 'gel', 'banana', 'chew', 'chew'],
@@ -536,7 +533,7 @@ describe('autoplan scenarios — products only', () => {
     expectThen(r, {
       minCarbs: null,
       maxCarbs: 45,
-      minHydration: GREEN_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(1180, 750),
       maxRefills: loadsNeeded(1180, 750),
       products: ['gel'],
@@ -549,7 +546,7 @@ describe('autoplan scenarios — products only', () => {
     ]);
     // 2 gels miss the 54g target, 3 clear it. 840ml of sweat is under the gate, so no water stop.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: null,
       maxStops: 0,
       maxRefills: 0,
@@ -563,8 +560,8 @@ describe('autoplan scenarios — products only', () => {
       [{ key: 'chew', count: 2 }],
     );
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: loadsNeeded(1180, 750),
       maxRefills: loadsNeeded(1180, 750),
       products: ['chew', 'chew'],
@@ -592,8 +589,8 @@ describe('autoplan scenarios — products only', () => {
     ]);
     // 1000ml carried + 990ml of cola against 1680ml of sweat loss — green without stopping.
     expectThen(r, {
-      minCarbs: GREEN_PCT,
-      minHydration: GREEN_PCT,
+      minCarbs: COVERAGE_TARGET_PCT,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 0,
       maxRefills: 0,
       products: ['cola', 'cola', 'cola'],
