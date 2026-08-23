@@ -396,6 +396,58 @@ describe('applyAutoplan', () => {
       expect(after.stops.some((sh) => sh.id === adopted.id && sh.name === 'Źródełko')).toBe(true);
     });
   });
+
+  /**
+   * `options` (autoplanOptions.ts) is what the pre-flight modal collects. Every call above omits
+   * it and still gets today's behavior via the default parameter — these cover the two things it
+   * newly lets the caller do: drop the rider's own stops too, and leave a vessel home for the run.
+   */
+  describe('options', () => {
+    test("stopsMode 'clear' drops the rider's own stops, not just autoplan's prior guesses", () => {
+      useAppStore.setState({
+        route: route({ distance: 300, speed: 25 }),
+        fills: [],
+        foods: [],
+        // An id far outside the auto-assigned range (which starts at nextStopId, here 501) so a
+        // freshly created stop can never collide with it by coincidence.
+        stops: [{ id: 1, at: 40, name: 'Manual stop' }],
+        nextStopId: 501,
+      });
+
+      useAppStore.getState().applyAutoplan([], true, {
+        stopsMode: 'clear',
+        carriedVesselGids: null,
+        preference: 'balanced',
+      });
+
+      const after = useAppStore.getState();
+      expect(after.stops.some((sh) => sh.id === 1 || sh.name === 'Manual stop')).toBe(false);
+    });
+
+    test('carriedVesselGids keeps an unchecked vessel out of the run without touching saved gear', () => {
+      useAppStore.setState({
+        route: route({ distance: 200, speed: 25 }),
+        gear: [
+          { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
+          { gid: 'g2', name: 'Flask', vol: 250, allowed: ['izo', 'water', 'gel'], gelParts: 4 },
+        ],
+        fills: [],
+        foods: [],
+        stops: [],
+      });
+
+      useAppStore.getState().applyAutoplan([], true, {
+        stopsMode: 'keepAndAdd',
+        carriedVesselGids: ['g1'],
+        preference: 'balanced',
+      });
+
+      const after = useAppStore.getState();
+      expect(after.fills.every((f) => f.gid !== 'g2')).toBe(true);
+      // Left home for this run only — the saved gear list itself is untouched.
+      expect(after.gear.map((g) => g.gid)).toEqual(['g1', 'g2']);
+    });
+  });
 });
 
 describe('mobile ui state', () => {

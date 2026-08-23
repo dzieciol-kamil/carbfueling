@@ -323,17 +323,28 @@ export interface StringTable {
   recoveryLabel: string;
   recoveryHint: string;
   autoplanButton: string;
-  autoplanConfirmReplaceTitle: string;
-  autoplanConfirmReplaceBody: string;
-  autoplanConfirmReplaceCancel: string;
-  autoplanConfirmReplaceConfirm: string;
-  autoplanKeepPrevStopsLabel: string;
-  autoplanKeepPrevStopsHint: string;
-  autoplanDialogTitle: string;
+  autoplanPreflightTitle: string;
+  autoplanPreflightReplaceNote: string;
+  autoplanPreflightConfirm: string;
+  autoplanRouteTitle: string;
+  autoplanElevationLabel: string;
+  autoplanStopsTitle: string;
+  autoplanStopsKeepAndAdd: string;
+  autoplanStopsKeepAndAddHint: string;
+  autoplanStopsKeepOnly: string;
+  autoplanStopsKeepOnlyHint: string;
+  autoplanStopsClear: string;
+  autoplanGearTitle: string;
+  autoplanGearHint: string;
+  autoplanGearEditLink: string;
+  autoplanFoodTitle: string;
   autoplanDialogHint: string;
   autoplanDialogCountLabel: string;
-  autoplanDialogConfirm: string;
   autoplanDialogCancel: string;
+  autoplanPreferenceTitle: string;
+  autoplanPreferenceFewerStops: string;
+  autoplanPreferenceBalanced: string;
+  autoplanPreferenceLighter: string;
   autoplanShortRideNote: string;
   autoplanNeedsDuration: string;
   autoplanAppliedNote: string;
@@ -724,22 +735,35 @@ export const STR: Record<Lang, StringTable> = {
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     recoveryLabel: 'Regeneracja',
     recoveryHint:
-      'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
+      'Ilość węglowodanów, którą należy spożyć po wysiłku, aby uzupełnić glikogen mięśniowy.',
     autoplanButton: 'Zaproponuj plan',
-    autoplanConfirmReplaceTitle: 'Zastąpić obecny plan?',
-    autoplanConfirmReplaceBody:
+    autoplanPreflightTitle: 'Zanim ułożę plan',
+    autoplanPreflightReplaceNote:
       'To nadpisze obecne napełnienia i produkty na trasie nową propozycją.',
-    autoplanConfirmReplaceCancel: 'Anuluj',
-    autoplanConfirmReplaceConfirm: 'Zastąp',
-    autoplanKeepPrevStopsLabel: 'Zostaw postoje z poprzedniej propozycji',
-    autoplanKeepPrevStopsHint:
-      'Postoje, które dodałeś sam, zostają zawsze — nowy plan będzie się do nich dopasowywał.',
-    autoplanDialogTitle: 'Co masz ze sobą?',
+    autoplanPreflightConfirm: 'Ułóż plan',
+    autoplanRouteTitle: 'Trasa i warunki',
+    autoplanElevationLabel: 'Przewyższenie',
+    autoplanStopsTitle: 'Twoje stopy',
+    autoplanStopsKeepAndAdd: 'Zostaw moje i dołóż, jeśli trzeba',
+    autoplanStopsKeepAndAddHint:
+      'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
+    autoplanStopsKeepOnly: 'Zostaw tylko moje, nic nie dokładaj',
+    autoplanStopsKeepOnlyHint:
+      'Sprawdzimy, czy dasz radę na stopach, które już znasz — jeśli nie, zobaczysz brakującą ilość zamiast nowego stopu.',
+    autoplanStopsClear: 'Wyczyść moje i zaplanuj od nowa',
+    autoplanGearTitle: 'Sprzęt, który zabierasz',
+    autoplanGearHint:
+      'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
+    autoplanGearEditLink: 'Edytuj sprzęt',
+    autoplanFoodTitle: 'Produkty',
     autoplanDialogHint:
       'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
     autoplanDialogCountLabel: 'Ile sztuk',
-    autoplanDialogConfirm: 'Zaproponuj plan',
     autoplanDialogCancel: 'Anuluj',
+    autoplanPreferenceTitle: 'Co wolisz',
+    autoplanPreferenceFewerStops: 'Mniej stopów',
+    autoplanPreferenceBalanced: 'Zrównoważony',
+    autoplanPreferenceLighter: 'Mniej bagażu',
     autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
     autoplanShortRideNote:
       'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
@@ -1124,22 +1148,35 @@ export const STR: Record<Lang, StringTable> = {
     exportPlanError: 'Could not save the file. Please try again.',
     recoveryLabel: 'Recovery',
     recoveryHint:
-      'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
+      'The amount of carbohydrates you should consume after exercise to replenish muscle glycogen.',
     autoplanButton: 'Suggest a plan',
-    autoplanConfirmReplaceTitle: 'Replace the current plan?',
-    autoplanConfirmReplaceBody:
+    autoplanPreflightTitle: 'Before I build the plan',
+    autoplanPreflightReplaceNote:
       'This will overwrite your current fills and food with a new suggestion.',
-    autoplanConfirmReplaceCancel: 'Cancel',
-    autoplanConfirmReplaceConfirm: 'Replace',
-    autoplanKeepPrevStopsLabel: 'Keep the stops from the last suggestion',
-    autoplanKeepPrevStopsHint:
-      'Stops you added yourself always stay — the new plan will work around them.',
-    autoplanDialogTitle: 'What are you carrying?',
+    autoplanPreflightConfirm: 'Build the plan',
+    autoplanRouteTitle: 'Route & conditions',
+    autoplanElevationLabel: 'Elevation',
+    autoplanStopsTitle: 'Your stops',
+    autoplanStopsKeepAndAdd: 'Keep mine, add more if needed',
+    autoplanStopsKeepAndAddHint:
+      'Your stops stay, and new ones only appear where the ride genuinely needs them.',
+    autoplanStopsKeepOnly: "Keep only mine, don't add any",
+    autoplanStopsKeepOnlyHint:
+      "We'll check whether you can fuel the ride on the stops you already know — if not, you'll see the shortfall instead of a new stop.",
+    autoplanStopsClear: 'Clear mine and start over',
+    autoplanGearTitle: "Gear you're taking",
+    autoplanGearHint:
+      "Uncheck anything you're not carrying today — for this plan only, it won't change your saved gear.",
+    autoplanGearEditLink: 'Edit gear',
+    autoplanFoodTitle: 'Food',
     autoplanDialogHint:
       "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
     autoplanDialogCountLabel: 'Count',
-    autoplanDialogConfirm: 'Suggest plan',
     autoplanDialogCancel: 'Cancel',
+    autoplanPreferenceTitle: 'What you prefer',
+    autoplanPreferenceFewerStops: 'Fewer stops',
+    autoplanPreferenceBalanced: 'Balanced',
+    autoplanPreferenceLighter: 'Less to carry',
     autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
     autoplanShortRideNote:
       "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",

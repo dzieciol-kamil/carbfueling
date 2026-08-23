@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import {
+  DEFAULT_AUTOPLAN_OPTIONS,
+  type AutoplanOptions,
+  type AutoplanPreference,
+} from '../components/autoplan/autoplanOptions';
 import { autoplan, type FoodSelectionEntry } from '../domain/autoplan';
 import {
   bestGapSpan,
@@ -103,6 +108,9 @@ interface UiState {
   routeSheet: boolean;
   stopSheet: { editId: number | null } | null;
   chartHelp: boolean;
+  // Standing preference, unlike the pre-flight modal's per-run stops choice and vessel
+  // checklist — see autoplanOptions.ts.
+  autoplanPreference: AutoplanPreference;
 }
 
 interface AppState {
@@ -209,7 +217,12 @@ interface AppState {
   removeFoodLibEntry: (key: string) => void;
   addFoodLibEntry: () => void;
 
-  applyAutoplan: (selection: FoodSelectionEntry[], removePreviousAutoStops: boolean) => void;
+  applyAutoplan: (
+    selection: FoodSelectionEntry[],
+    removePreviousAutoStops: boolean,
+    options?: AutoplanOptions,
+  ) => void;
+  setAutoplanPreference: (preference: AutoplanPreference) => void;
 }
 
 const defaultRoute: RouteInput = {
@@ -286,6 +299,7 @@ export const useAppStore = create<AppState>()(
         routeSheet: false,
         stopSheet: null,
         chartHelp: false,
+        autoplanPreference: DEFAULT_AUTOPLAN_OPTIONS.preference,
       },
       nextGid: 3,
       nextFid: 1,
@@ -427,6 +441,8 @@ export const useAppStore = create<AppState>()(
       closeRouteSheet: () => set((s) => ({ ui: { ...s.ui, routeSheet: false } })),
       openStopSheet: (editId) => set((s) => ({ ui: { ...s.ui, stopSheet: { editId } } })),
       closeStopSheet: () => set((s) => ({ ui: { ...s.ui, stopSheet: null } })),
+      setAutoplanPreference: (preference) =>
+        set((s) => ({ ui: { ...s.ui, autoplanPreference: preference } })),
       startTour: () =>
         set((s) => ({
           ui: { ...s.ui, tab: 'plan', tourStep: 0, tourSeen: true, tourDemoFid: null },
@@ -672,12 +688,25 @@ export const useAppStore = create<AppState>()(
       // an existing stop already covers a required refill point, so if a soon-to-be-removed
       // auto stop were left in during that computation, autoplan would wrongly skip recreating
       // a stop it still needs there.
-      applyAutoplan: (selection, removePreviousAutoStops) =>
+      //
+      // `options` (see autoplanOptions.ts) is what the pre-flight modal collects: it shapes the
+      // state autoplan() gets to see — stopsMode 'clear' additionally drops the rider's own
+      // stops, carriedVesselGids filters gear down to what's checked — without ever touching
+      // the saved `gear`/`stops` themselves (those come back in the returned patch untouched
+      // except for the fills/foods/stops replacement already described above). `preference`
+      // isn't read by today's engine yet; it's carried through for when it is. Omitted by
+      // every call site that predates the pre-flight modal, so it defaults to today's behavior.
+      applyAutoplan: (selection, removePreviousAutoStops, options = DEFAULT_AUTOPLAN_OPTIONS) =>
         set((s) => {
           const survivingStops = removePreviousAutoStops
             ? s.stops.filter((sh) => !sh.autoCreated)
             : s.stops;
-          const baseState = removePreviousAutoStops ? { ...s, stops: survivingStops } : s;
+          // "Wyczyść i zaplanuj od nowa" clears the rider's own stops too, not just autoplan's
+          // prior guesses — that's the whole point of the option.
+          const stopsForRun = options.stopsMode === 'clear' ? [] : survivingStops;
+          const carried = options.carriedVesselGids;
+          const gearForRun = carried ? s.gear.filter((g) => carried.includes(g.gid)) : s.gear;
+          const baseState = { ...s, stops: stopsForRun, gear: gearForRun };
           const result = autoplan(baseState, selection);
 
           let fid = s.nextFid;
@@ -702,7 +731,7 @@ export const useAppStore = create<AppState>()(
           return {
             fills,
             foods,
-            stops: [...survivingStops, ...newStops],
+            stops: [...stopsForRun, ...newStops],
             // Everything that named a fill by id named one of the fills just replaced: the
             // rider's "prepare these together" batch, and whatever was hovered, dragged or
             // selected. Left behind they resolve to nothing — the Recipes block for the batch

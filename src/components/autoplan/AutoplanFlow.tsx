@@ -3,10 +3,9 @@ import { totalHours } from '../../domain/fuel';
 import type { RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { AutoplanFoodDialog } from './AutoplanFoodDialog';
+import { AutoplanPreflightModal } from './AutoplanPreflightModal';
 
-type Phase = 'idle' | 'confirmReplace' | 'foodSelect' | 'appliedNote';
+type Phase = 'idle' | 'preflight' | 'appliedNote';
 
 const desktopButtonStyle: CSSProperties = {
   display: 'flex',
@@ -78,12 +77,13 @@ export function autoplanGate(route: RouteInput): 'noDuration' | 'shortRide' | 'r
 }
 
 /**
- * Whether a second run has something of the rider's to destroy.
+ * Whether a second run has something of the rider's to destroy — drives the pre-flight modal's
+ * inline "this replaces your plan" note, not a separate confirmation step.
  *
  * The stops from the last run count too — they are the part he is likeliest to have kept, being
- * real stops on his map, and the cleanup checkbox under the confirm is pre-ticked. Read only the
- * fills and foods and a rider who cleared those by hand gets no dialog, no checkbox, and loses his
- * stops without being asked. His own stops raise no question: nothing ever removes those.
+ * real stops on his map. Read only the fills and foods and a rider who cleared those by hand gets
+ * no note and loses his stops without being told. His own stops raise no question: nothing ever
+ * removes those on their account.
  */
 export function needsReplaceConfirm(plan: {
   fills: unknown[];
@@ -103,34 +103,33 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
+  const gear = useAppStore((s) => s.gear);
   const stops = useAppStore((s) => s.stops);
   const applyAutoplan = useAppStore((s) => s.applyAutoplan);
+  const autoplanPreference = useAppStore((s) => s.ui.autoplanPreference);
+  const setAutoplanPreference = useAppStore((s) => s.setAutoplanPreference);
+  const openPanel = useAppStore((s) => s.openPanel);
+  const setTab = useAppStore((s) => s.setTab);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
-  // A stop is knowledge, not output: the rider may have checked that this is the only stop for the
-  // next 40km, and that survives a replanned bottle schedule. So the plan is replaced and the stops
-  // are kept unless he says otherwise — and a kept stop is not clutter, since the next run snaps
-  // its own boundaries onto stops it can already see.
-  const [keepPreviousAutoStops, setKeepPreviousAutoStops] = useState(true);
-  const hasPreviousAutoStops = stops.some((sh) => sh.autoCreated);
   const gate = autoplanGate(route);
 
-  function proceedAfterConfirm() {
+  function handleTrigger() {
     if (gate === 'shortRide') {
-      applyAutoplan([], hasPreviousAutoStops && !keepPreviousAutoStops);
+      // Nothing here to ask about: carbs never enter a plan this short (autoplanGate), so the
+      // pre-flight screen would only cover blocks that don't apply. A previous run's own stops
+      // are always replaced — see autoplanOptions.ts — the rider's own stops are never touched.
+      applyAutoplan([], true);
       setPhase('appliedNote');
       return;
     }
-    setPhase('foodSelect');
+    setPhase('preflight');
   }
 
-  function handleTrigger() {
-    if (needsReplaceConfirm({ fills, foods, stops })) {
-      setKeepPreviousAutoStops(true);
-      setPhase('confirmReplace');
-      return;
-    }
-    proceedAfterConfirm();
+  function openGear() {
+    setPhase('idle');
+    if (variant === 'desktop') openPanel('gear');
+    else setTab('gear');
   }
 
   return (
@@ -154,49 +153,22 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
         {strings.autoplanButton}
       </button>
 
-      {phase === 'confirmReplace' && (
-        <ConfirmDialog
-          title={strings.autoplanConfirmReplaceTitle}
-          body={strings.autoplanConfirmReplaceBody}
-          cancelLabel={strings.autoplanConfirmReplaceCancel}
-          confirmLabel={strings.autoplanConfirmReplaceConfirm}
-          onCancel={() => setPhase('idle')}
-          onConfirm={proceedAfterConfirm}
-        >
-          {hasPreviousAutoStops && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: 12.5,
-                  color: 'var(--ink-soft)',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={keepPreviousAutoStops}
-                  onChange={(e) => setKeepPreviousAutoStops(e.target.checked)}
-                />
-                {strings.autoplanKeepPrevStopsLabel}
-              </label>
-              <span style={{ fontSize: 11.5, color: 'var(--muted-2)', paddingLeft: 24 }}>
-                {strings.autoplanKeepPrevStopsHint}
-              </span>
-            </div>
-          )}
-        </ConfirmDialog>
-      )}
-
-      {phase === 'foodSelect' && (
-        <AutoplanFoodDialog
+      {phase === 'preflight' && (
+        <AutoplanPreflightModal
+          route={route}
+          gear={gear}
+          stops={stops}
           foodLib={foodLib}
           lang={lang}
+          preference={autoplanPreference}
+          onPreferenceChange={setAutoplanPreference}
+          showReplaceNote={needsReplaceConfirm({ fills, foods, stops })}
+          onOpenGear={openGear}
           onCancel={() => setPhase('idle')}
-          onConfirm={(selection) => {
-            applyAutoplan(selection, hasPreviousAutoStops && !keepPreviousAutoStops);
+          onConfirm={(selection, options) => {
+            // Previous-run stops are always replaced now — re-running is what that means (see
+            // autoplanOptions.ts). Only the rider's own stops are governed by options.stopsMode.
+            applyAutoplan(selection, true, options);
             setPhase('appliedNote');
           }}
         />
