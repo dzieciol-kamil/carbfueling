@@ -28,7 +28,7 @@ const MAX_LATTICE_NODES = 120;
  * not `HYDRATION_TARGET_PCT` — §1.1 is explicit the two must never be unified even though they
  * currently share a value; one is the line's shape, the other is the badge.
  */
-const FLUID_FLOOR_FRACTION = 0.85;
+export const FLUID_FLOOR_FRACTION = 0.85;
 
 /** §3.3 starting weight — discount applied to a rider-placed stop's `stopCost`. Calibrated in L3. */
 const RIDER_DISCOUNT = 0.35;

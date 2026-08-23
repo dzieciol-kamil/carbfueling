@@ -9,9 +9,11 @@ import type { Service } from './types';
  *
  * The mapping is a direct span copy: each service becomes exactly one fill, so two services on the
  * same vessel separated by a gap (relay, C4) produce two distinct fills rather than being merged or
- * having one dropped — that's the whole point of the rewrite. `volumeMl`/`carbsG`/`filledAtStop`
- * have no home on `Fill` (which has always assumed a fill delivers a vessel's full capacity over its
- * span, see `volOf`/`carbsFill` in `fuel.ts`) and are intentionally dropped here.
+ * having one dropped — that's the whole point of the rewrite. `Service` carries no volume/carbs
+ * field to begin with (§2.1: `Fill` has always assumed a fill delivers a vessel's full capacity over
+ * its span, see `volOf`/`carbsFill` in `fuel.ts`, so an authored volume would be a second, possibly
+ * disagreeing source of truth). `filledAtStop` has no home on `Fill` either and is intentionally
+ * dropped here.
  *
  * `gear` is used only to drop services referencing a vessel that no longer exists — referential
  * integrity, not planning.

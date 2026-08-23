@@ -14,8 +14,6 @@ export interface Service {
   fromKm: number;
   toKm: number;
   content: Content;
-  volumeMl: number;
-  carbsG: number; // 0 for water
   filledAtStop: number | null; // index into Skeleton.stops; null = left home with it (S4)
 }
 

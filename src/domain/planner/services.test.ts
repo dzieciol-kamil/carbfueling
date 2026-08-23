@@ -31,8 +31,6 @@ function service(overrides: Partial<Service>): Service {
     fromKm: 0,
     toKm: 50,
     content: 'water',
-    volumeMl: 500,
-    carbsG: 0,
     filledAtStop: null,
     ...overrides,
   };
@@ -48,16 +46,8 @@ function asFills(drafts: DraftFill[]): Fill[] {
 describe('servicesToFills', () => {
   test('relay: two services on one vessel separated by a gap produce two distinct fills', () => {
     const services: Service[] = [
-      service({ vesselId: 'g1', fromKm: 0, toKm: 48, content: 'izo', volumeMl: 500, carbsG: 40 }),
-      service({
-        vesselId: 'g1',
-        fromKm: 101,
-        toKm: 150,
-        content: 'izo',
-        volumeMl: 500,
-        carbsG: 40,
-        filledAtStop: 1,
-      }),
+      service({ vesselId: 'g1', fromKm: 0, toKm: 48, content: 'izo' }),
+      service({ vesselId: 'g1', fromKm: 101, toKm: 150, content: 'izo', filledAtStop: 1 }),
     ];
 
     const fills = servicesToFills(services, gear);
@@ -83,16 +73,8 @@ describe('servicesToFills', () => {
 
   test('one vessel carries different contents at different times: izo, then water once spent', () => {
     const services: Service[] = [
-      service({ vesselId: 'g1', fromKm: 0, toKm: 60, content: 'izo', volumeMl: 500, carbsG: 40 }),
-      service({
-        vesselId: 'g1',
-        fromKm: 60,
-        toKm: 150,
-        content: 'water',
-        volumeMl: 500,
-        carbsG: 0,
-        filledAtStop: 0,
-      }),
+      service({ vesselId: 'g1', fromKm: 0, toKm: 60, content: 'izo' }),
+      service({ vesselId: 'g1', fromKm: 60, toKm: 150, content: 'water', filledAtStop: 0 }),
     ];
 
     const fills = servicesToFills(services, gear);
@@ -104,39 +86,33 @@ describe('servicesToFills', () => {
     expect(fills[0].content).not.toBe(fills[1].content);
   });
 
-  test('round trip: total volume and carbs across produced fills equal the sum over services', () => {
+  test("§2.1: a fill's volume is always its vessel's full capacity, never shrunk by a short span", () => {
     const services: Service[] = [
-      service({ vesselId: 'g1', fromKm: 0, toKm: 48, content: 'izo', volumeMl: 500, carbsG: 40 }),
-      service({
-        vesselId: 'g1',
-        fromKm: 101,
-        toKm: 150,
-        content: 'izo',
-        volumeMl: 500,
-        carbsG: 40,
-        filledAtStop: 1,
-      }),
-      service({ vesselId: 'g2', fromKm: 0, toKm: 90, content: 'gel', volumeMl: 250, carbsG: 150 }),
-      service({
-        vesselId: 'g2',
-        fromKm: 90,
-        toKm: 150,
-        content: 'water',
-        volumeMl: 250,
-        carbsG: 0,
-        filledAtStop: 0,
-      }),
+      service({ vesselId: 'g1', fromKm: 0, toKm: 5, content: 'izo' }), // 5km span
+      service({ vesselId: 'g2', fromKm: 0, toKm: 150, content: 'gel' }), // 150km span
     ];
-    const wantVolumeMl = services.reduce((a, s) => a + s.volumeMl, 0);
-    const wantCarbsG = services.reduce((a, s) => a + s.carbsG, 0);
 
     const fills = asFills(servicesToFills(services, gear));
 
-    const gotVolumeMl = fills.reduce((a, f) => a + volOf(f, gear), 0);
+    // Same two vessels (500ml, 250ml), wildly different spans — volOf ignores span entirely.
+    expect(volOf(fills[0], gear)).toBe(500);
+    expect(volOf(fills[1], gear)).toBe(250);
+  });
+
+  test('carbs total across relay services with mixed contents matches gear/mix, not an authored figure', () => {
+    const services: Service[] = [
+      service({ vesselId: 'g1', fromKm: 0, toKm: 48, content: 'izo' }),
+      service({ vesselId: 'g1', fromKm: 101, toKm: 150, content: 'izo', filledAtStop: 1 }),
+      service({ vesselId: 'g2', fromKm: 0, toKm: 90, content: 'gel' }),
+      service({ vesselId: 'g2', fromKm: 90, toKm: 150, content: 'water', filledAtStop: 0 }),
+    ];
+
+    const fills = asFills(servicesToFills(services, gear));
     const gotCarbsG = fills.reduce((a, f) => a + carbsFill(f, gear, mix), 0);
 
-    expect(gotVolumeMl).toBe(wantVolumeMl);
-    expect(gotCarbsG).toBe(wantCarbsG);
+    // g1 (500ml) izo twice at mix.conc=8: 2 * (500/100*8) = 80. g2 (250ml) gel once at
+    // mix.gelConc=60: 250/100*60 = 150. g2 water: 0. Total 230.
+    expect(gotCarbsG).toBe(230);
   });
 
   test('drops a service whose vessel is no longer in gear', () => {
