@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function PacePowerAbsorptionEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="pace-power-absorption">
       <h1 style={articleH1Style}>Does your pace or power affect how much you can absorb?</h1>
       <p style={articleTextStyle}>
         It's easy to mix up two different things: how many carbs your effort burns, and how many
@@ -16,7 +17,7 @@ export default function PacePowerAbsorptionEn() {
         it estimates how many carbs a given route burns per hour based on how hard you're riding.
         But that number is only half the picture. The other half is your gut's absorption ceiling —
         a largely separate limit set by the transport proteins in your intestinal wall, explained in{' '}
-        <a href="/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
           why you can't absorb more than about 90g of carbs per hour
         </a>
         .
@@ -45,7 +46,7 @@ export default function PacePowerAbsorptionEn() {
       </p>
       <p style={articleTextStyle}>
         This is one reason{' '}
-        <a href="/faq/gut-training-carb-tolerance/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
           gut training
         </a>{' '}
         should include some practice at race-relevant hard efforts, not only easy rides. How well
@@ -60,7 +61,7 @@ export default function PacePowerAbsorptionEn() {
         can deliver.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           See your demand and your ceiling together →
         </a>
       </p>

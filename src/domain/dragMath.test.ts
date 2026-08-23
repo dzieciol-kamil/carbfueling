@@ -56,7 +56,7 @@ describe('moveFill', () => {
   test('clamps against a left neighbour', () => {
     const f = fill({ fid: 1, from: 30, to: 50 });
     const left = fill({ fid: 2, from: 0, to: 20 });
-    expect(moveFill(f, [f, left], 100, -100)).toEqual({ from: 20, to: 40 });
+    expect(moveFill(f, [f, left], 100, -15)).toEqual({ from: 20, to: 40 });
   });
 
   test('clamps against a right neighbour', () => {
@@ -83,6 +83,71 @@ describe('moveFill', () => {
     const right = fill({ fid: 3, from: 41.5, to: 100 }); // gap of 0.5, min is max(2, round(100*0.01))=2
     const result = moveFill(f, [f, left, right], 100, 45);
     expect(result).toEqual({ from: f.from, to: f.to });
+  });
+});
+
+describe('moveFill — swapping with a neighbour', () => {
+  test('swaps with the right neighbour once dragged past its midpoint', () => {
+    // f is 40 wide, neighbour [40,60] is 20 wide (midpoint 50). f's leading edge
+    // reaches 50 at want=10, so a delta of 10 tips it over.
+    const f = fill({ fid: 1, from: 0, to: 40 });
+    const right = fill({ fid: 2, from: 40, to: 60 });
+    expect(moveFill(f, [f, right], 100, 10)).toEqual({
+      from: 20,
+      to: 60,
+      swap: { fid: 2, from: 0, to: 20 },
+    });
+  });
+
+  test('stays put just short of the right neighbour’s midpoint', () => {
+    const f = fill({ fid: 1, from: 0, to: 40 });
+    const right = fill({ fid: 2, from: 40, to: 60 });
+    expect(moveFill(f, [f, right], 100, 9)).toEqual({ from: 0, to: 40 });
+  });
+
+  test('swaps with the left neighbour once dragged past its midpoint', () => {
+    // neighbour [10,30] has midpoint 20; f's leading (left) edge reaches it at want=20.
+    const f = fill({ fid: 1, from: 40, to: 70 });
+    const left = fill({ fid: 2, from: 10, to: 30 });
+    expect(moveFill(f, [f, left], 100, -20)).toEqual({
+      from: 10,
+      to: 40,
+      swap: { fid: 2, from: 50, to: 70 },
+    });
+  });
+
+  test('stays put just short of the left neighbour’s midpoint', () => {
+    const f = fill({ fid: 1, from: 40, to: 70 });
+    const left = fill({ fid: 2, from: 10, to: 30 });
+    expect(moveFill(f, [f, left], 100, -19)).toEqual({ from: 30, to: 60 });
+  });
+
+  test('keeps both widths, the gap between them and the outer span', () => {
+    const f = fill({ fid: 1, from: 10, to: 40 });
+    const right = fill({ fid: 2, from: 50, to: 70 });
+    const result = moveFill(f, [f, right], 100, 30);
+    expect(result).toEqual({ from: 40, to: 70, swap: { fid: 2, from: 10, to: 30 } });
+    // widths unchanged, 10 km gap unchanged, block still spans [10,70]
+    expect(result.to - result.from).toBe(30);
+    expect(result.swap!.to - result.swap!.from).toBe(20);
+    expect(result.from - result.swap!.to).toBe(10);
+  });
+
+  test('swaps only with the nearest neighbour when several are lined up', () => {
+    const f = fill({ fid: 1, from: 0, to: 20 });
+    const mid = fill({ fid: 2, from: 20, to: 40 });
+    const far = fill({ fid: 3, from: 40, to: 60 });
+    expect(moveFill(f, [f, mid, far], 100, 100)).toEqual({
+      from: 20,
+      to: 40,
+      swap: { fid: 2, from: 0, to: 20 },
+    });
+  });
+
+  test('does not swap when there is no neighbour in the drag direction', () => {
+    const f = fill({ fid: 1, from: 40, to: 60 });
+    const left = fill({ fid: 2, from: 0, to: 20 });
+    expect(moveFill(f, [f, left], 100, 100)).toEqual({ from: 80, to: 100 });
   });
 });
 
@@ -134,6 +199,19 @@ describe('gaps', () => {
   test('empty when fills cover the whole distance', () => {
     const fills: Fill[] = [fill({ fid: 1, from: 0, to: 100 })];
     expect(gaps(fills, 100)).toEqual([]);
+  });
+
+  test('reads lane positions, not array order', () => {
+    const fills: Fill[] = [
+      fill({ fid: 1, from: 0, to: 25 }),
+      fill({ fid: 2, from: 60, to: 85 }),
+      fill({ fid: 3, from: 30, to: 55 }),
+    ];
+    expect(gaps(fills, 90)).toEqual([
+      [25, 30],
+      [55, 60],
+      [85, 90],
+    ]);
   });
 });
 

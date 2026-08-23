@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react';
-import { dist, planSummary, prof } from '../../domain/fuel';
+import { dist, prof } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
 import type { XUnit } from '../../domain/types';
 import { FoodLibraryChips } from '../FoodLibraryChips';
 import { LanesSection } from '../lanes/LanesSection';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { StopMarkers } from './StopMarkers';
 import { TimelineSection } from '../timeline/TimelineSection';
 import { Chart } from './Chart';
@@ -15,28 +16,6 @@ const CHART_HEIGHT = 300;
 const CHART_PB = 22;
 const ELEVATION_SHARE = 0.62;
 
-function segButton(on: boolean, small = false): CSSProperties {
-  return {
-    border: 'none',
-    borderRadius: 6,
-    padding: small ? '4px 8px' : '5px 10px',
-    fontSize: small ? 10 : 11,
-    fontWeight: 700,
-    fontFamily: "'JetBrains Mono', monospace",
-    cursor: 'pointer',
-    background: on ? '#fff' : 'transparent',
-    color: on ? 'var(--ink)' : 'var(--muted)',
-    boxShadow: on ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-  };
-}
-
-const segGroupStyle: CSSProperties = {
-  display: 'flex',
-  background: 'var(--track)',
-  borderRadius: 8,
-  padding: 3,
-  gap: 2,
-};
 const legendItemStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -47,12 +26,6 @@ const legendItemStyle: CSSProperties = {
 
 export function ChartCard() {
   const route = useAppStore((s) => s.route);
-  const mix = useAppStore((s) => s.mix);
-  const gear = useAppStore((s) => s.gear);
-  const fills = useAppStore((s) => s.fills);
-  const foods = useAppStore((s) => s.foods);
-  const foodLib = useAppStore((s) => s.foodLib);
-  const stops = useAppStore((s) => s.stops);
   const lang = useAppStore((s) => s.ui.lang);
   const yMode = useAppStore((s) => s.ui.yMode);
   const xUnit = useAppStore((s) => s.ui.xUnit);
@@ -62,10 +35,6 @@ export function ChartCard() {
   const openChartHelp = useAppStore((s) => s.openChartHelp);
   const strings = t(lang);
 
-  const planState = { route, mix, gear, fills, foods, foodLib, stops };
-  const summary = planSummary(planState);
-
-  const showEaten = yMode === 'sum' && summary.totalCarbs - summary.absorbedTotal > 5;
   const showGutLane = yMode !== 'fluid';
   const showUnits = route.mode !== 'time';
   const legMain = yMode === 'fluid' ? strings.legFluid : strings.absorbed;
@@ -74,12 +43,10 @@ export function ChartCard() {
     yMode === 'fluid'
       ? 'var(--water)'
       : `linear-gradient(90deg, ${CHART_COLORS.neutralLine}, ${CHART_COLORS.carb}, ${CHART_COLORS.water}, ${CHART_COLORS.gel}, ${CHART_COLORS.food})`;
-  const showCapLeg = yMode !== 'sum';
 
   const yModeOptions: { value: YMode; label: string }[] = [
     { value: 'rate', label: strings.carbMode },
     { value: 'fluid', label: strings.fluidMode },
-    { value: 'sum', label: strings.sumMode },
   ];
   const xUnitOptions: { value: XUnit; label: string }[] = [
     { value: 'km', label: 'km' },
@@ -131,57 +98,39 @@ export function ChartCard() {
             <span style={{ width: 14, height: 3, borderRadius: 2, background: legMainColor }} />
             {legMain}
           </span>
-          {showEaten && (
-            <span style={legendItemStyle}>
-              <span style={{ width: 14, height: 0, borderTop: '2px dotted var(--carb)' }} />
-              {strings.intake}
-            </span>
-          )}
           <span style={legendItemStyle}>
             <span style={{ width: 14, height: 0, borderTop: '2px dashed #A8AEA9' }} />
             {legNeed}
           </span>
-          {showCapLeg && (
-            <span style={legendItemStyle}>
-              <span
-                style={{
-                  width: 14,
-                  height: 0,
-                  borderTop: '2px dotted ' + (yMode === 'fluid' ? 'var(--water)' : 'var(--carb)'),
-                }}
-              />
-              {strings.legCap}
-            </span>
-          )}
+          <span style={legendItemStyle}>
+            <span
+              style={{
+                width: 14,
+                height: 0,
+                borderTop: '2px dotted ' + (yMode === 'fluid' ? 'var(--water)' : 'var(--carb)'),
+              }}
+            />
+            {strings.legCap}
+          </span>
           {showGutLane && (
             <span style={legendItemStyle}>
               <span style={{ width: 14, height: 8, borderRadius: 2, background: '#DCC98A' }} />
               {strings.gutLane}
             </span>
           )}
-          <div style={segGroupStyle}>
-            {yModeOptions.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setYMode(opt.value)}
-                style={segButton(yMode === opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={yModeOptions}
+            value={yMode}
+            onChange={setYMode}
+            fullWidth={false}
+          />
           {showUnits && (
-            <div style={segGroupStyle}>
-              {xUnitOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setXUnit(opt.value)}
-                  style={segButton(xUnit === opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={xUnitOptions}
+              value={xUnit}
+              onChange={setXUnit}
+              fullWidth={false}
+            />
           )}
         </div>
       </div>
@@ -192,11 +141,6 @@ export function ChartCard() {
             {showGutLane && (
               <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
                 {strings.gutHint}
-              </span>
-            )}
-            {yMode === 'sum' && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
-                {strings.curveHintSum}
               </span>
             )}
             {yMode === 'rate' && (

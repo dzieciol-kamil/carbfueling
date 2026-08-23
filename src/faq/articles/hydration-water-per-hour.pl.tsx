@@ -1,8 +1,9 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HydrationWaterPerHourPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="hydration-water-per-hour">
       <h1 style={articleH1Style}>Ile wody na godzinę? Nawodnienie, temperatura i tempo pocenia</h1>
       <p style={articleTextStyle}>
         Nie ma jednej uniwersalnej liczby "pij X ml na godzinę", która pasuje do każdego rowerzysty.
@@ -48,7 +49,7 @@ export default function HydrationWaterPerHourPl() {
         więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zaplanuj płyny i węglowodany razem →
         </a>
       </p>

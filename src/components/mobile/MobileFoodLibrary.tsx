@@ -76,6 +76,9 @@ export function MobileFoodLibrary() {
       <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
         {strings.foodSectionHint}
       </p>
+      <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
+        {strings.foodContHint}
+      </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {foodLib.map((entry) => {

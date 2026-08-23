@@ -3,43 +3,157 @@ import type {
   Content,
   Fill,
   FoodItem,
+  Intensity,
   MixSettings,
   PlanState,
   RatioPreset,
   RouteInput,
+  Sport,
   Vessel,
   XUnit,
 } from './types';
 
-const FLUID_ABSORPTION_CAP_ML_H = 750;
+const FLUID_ABSORPTION_CAP_ML_H = 900;
 
 /**
  * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
  * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
- * giving carbs a head start instead of demanding fresh intake from km 0. Deliberately below the
+ * giving carbs a head start instead of demanding fresh intake from km 0. Same value (weight_kg ×
+ * 15) is imported directly by autoplan.ts's short-ride hydration gate ("should we even plan
+ * water"), so the two stay coupled automatically — no hand-sync needed. Deliberately below the
  * ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
- * NOTE: `autoplan.ts`'s short-ride water gate is still the old `totalHours(route) < 1` check, not
- * this threshold — see project_autoplan_water_refill_rule memory; the two need to be reconciled
- * when autoplan.ts itself is updated to match this design.
  */
 export const HYDRATION_BUFFER_ML_PER_KG = 15;
 
 /**
- * The coverage percentage the UI treats as "good enough" — `SummaryCards.tsx`'s `statusColor`
- * turns the requirement/hydration bars green at this threshold, for both carbs and water. This is
- * a tolerance the *badge* applies on top of the honest 100% target (see `fluidNeed` on `Sample`),
- * not a discount baked into what any chart line asks for — one shared number instead of a
- * duplicated magic literal.
+ * Where the *carb* bar turns green. A tolerance the badge applies on top of the honest 100% target
+ * (see `fluidNeed` on `Sample`), not a discount baked into what any chart line asks for.
+ *
+ * Was 85 while `coverage` over-credited (it divided by an EMA-shrunk denominator; see rateStats).
+ * Fixing that arithmetic made the same plan read a few points lower, so the thresholds moved down
+ * with it to keep "good enough" meaning what it meant to the rider who calibrated it: of the 43
+ * non-empty saved plans in docs/tests, 85/60 reclassified 9 downward — including the rider's own
+ * hand-built izo-6, verified at the time as green — while 80/55 changes exactly one verdict
+ * (mix-5-autoplan at 82%, upward). The number moved so the judgement wouldn't.
  */
-export const COVERAGE_TARGET_PCT = 85;
+export const COVERAGE_TARGET_PCT = 80;
+
+/** Below this, a carb plan isn't "a bit short" any more — it's a different plan. */
+export const COVERAGE_SHORT_PCT = 55;
+
+/** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
+export const GUT_LIMIT = 60;
+
+/**
+ * Where the *hydration* bar turns green — deliberately not the carb number.
+ *
+ * These two were briefly shared. That was wrong for a reason worth recording: only the carb
+ * arithmetic changed, so moving the shared pair recalibrated hydration on carb evidence, and a
+ * plan at 59% of sweat loss silently went red→amber (`food-7`/`food7` in docs/tests) without
+ * anyone deciding it should. Asked and answered by the rider: dehydration is not the same kind of
+ * failure as running low on carbs — bonking hurts, hyperthermia is dangerous — so water keeps the
+ * stricter 85/60 it always had on desktop and does not inherit the carb recalibration.
+ *
+ * `hydrationPct` is unchanged by any of this: still the plain `fluidAbsorbedTotal / sweatLoss`
+ * ratio (capped at the gut's absorption rate — see `samples()` — not the raw volume poured),
+ * reported as 100 below the short-ride gate. Note this is also stricter than the `>= 70` the
+ * *mobile* card used to apply on its own — that number was never calibrated against anything and
+ * disagreed with desktop, which is the whole class of bug this work set out to remove.
+ */
+export const HYDRATION_TARGET_PCT = 85;
+
+/** Amber/red split for water. Same reasoning as `HYDRATION_TARGET_PCT`. */
+export const HYDRATION_SHORT_PCT = 60;
+
+/**
+ * Above roughly 80-90% of max effort — the app's 'high' intensity tier — blood flow shifts
+ * away from the gut, lowering how much carb it can actually absorb. Same effect for both
+ * sports (it is an intensity effect, not a sport one); starting-point trim, not a citation.
+ */
+const HIGH_INTENSITY_ABS_CAP_FACTOR = 0.88;
+
+/**
+ * How much unused absorbed carb `rateStats` lets a rider carry forward, expressed as minutes of
+ * their own hourly requirement. This is the body's tolerance for uneven delivery — gut contents
+ * plus the immediately available glycogen pool — and it is what stops the coverage metric from
+ * grading the model's 90-second sampling seam instead of the plan. See rateStats() for the full
+ * reasoning and the measurements behind this value.
+ */
+const COVERAGE_CARRY_MINUTES = 15;
+
+export type CoverageStatus = 'good' | 'partial' | 'short';
+
+function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus {
+  if (pct >= targetPct) return 'good';
+  if (pct < shortPct) return 'short';
+  return 'partial';
+}
+
+/**
+ * The verdict on the *carb* bar, for both the desktop cards and the mobile plan list. Colours
+ * differ per layout (different palettes, different backgrounds); the *thresholds behind them*
+ * must not, or the same plan reads as fine on one screen and short on the other — which is
+ * exactly the bug this pair of functions exists to prevent. One mechanism, two calibrations:
+ * carbs and water each get their own numbers, but neither layout gets to invent its own.
+ */
+export function coverageStatus(pct: number): CoverageStatus {
+  return tier(pct, COVERAGE_TARGET_PCT, COVERAGE_SHORT_PCT);
+}
+
+/** The verdict on the *hydration* bar — stricter than carbs on purpose, see
+ *  `HYDRATION_TARGET_PCT`. Same three tiers, so both layouts can share one palette. */
+export function hydrationStatus(pct: number): CoverageStatus {
+  return tier(pct, HYDRATION_TARGET_PCT, HYDRATION_SHORT_PCT);
+}
+
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
 const PACE_DOWN_FLOOR = 0.55;
+const RUN_PACE_UP_K = 0.12;
+const RUN_PACE_DOWN_K = 0.02;
+const RUN_PACE_DOWN_FLOOR = 0.85;
+const RUN_EFFORT_MIN = 0.6;
+const RUN_EFFORT_MAX = 1.8;
+const RUN_EFFORT_UP_K = 0.15;
+const RUN_EFFORT_DOWN_K = 0.04;
+const CYCLE_EFFORT_MIN = 0.32;
+const CYCLE_EFFORT_MAX = 2.3;
+const CYCLE_EFFORT_UP_K = 0.19;
+const CYCLE_EFFORT_DOWN_K = 0.11;
 
-export function timeWeight(gradPercent: number): number {
-  if (gradPercent >= 0) return 1 + gradPercent * PACE_UP_K;
-  return Math.max(PACE_DOWN_FLOOR, 1 + gradPercent * PACE_DOWN_K);
+const TIME_WEIGHT_PARAMS: Record<Sport, { upK: number; downK: number; floor: number }> = {
+  cycling: { upK: PACE_UP_K, downK: PACE_DOWN_K, floor: PACE_DOWN_FLOOR },
+  running: { upK: RUN_PACE_UP_K, downK: RUN_PACE_DOWN_K, floor: RUN_PACE_DOWN_FLOOR },
+};
+
+export function timeWeight(gradPercent: number, sport: Sport = 'cycling'): number {
+  const { upK, downK, floor } = TIME_WEIGHT_PARAMS[sport];
+  if (gradPercent >= 0) return 1 + gradPercent * upK;
+  return Math.max(floor, 1 + gradPercent * downK);
+}
+
+const EFFORT_GRAD_PARAMS: Record<Sport, { min: number; max: number; upK: number; downK: number }> =
+  {
+    cycling: {
+      min: CYCLE_EFFORT_MIN,
+      max: CYCLE_EFFORT_MAX,
+      upK: CYCLE_EFFORT_UP_K,
+      downK: CYCLE_EFFORT_DOWN_K,
+    },
+    running: {
+      min: RUN_EFFORT_MIN,
+      max: RUN_EFFORT_MAX,
+      upK: RUN_EFFORT_UP_K,
+      downK: RUN_EFFORT_DOWN_K,
+    },
+  };
+
+/** Per-sample effort multiplier from local grade — steeper climbs cost more, descents cost less,
+ *  clamped to each sport's plausible range. Shared by `prof()`'s per-point effort field. */
+function gradEffort(gradPercent: number, sport: Sport): number {
+  const { min, max, upK, downK } = EFFORT_GRAD_PARAMS[sport];
+  return Math.max(min, Math.min(max, 1 + gradPercent * (gradPercent > 0 ? upK : downK)));
 }
 
 export interface ProfilePoint {
@@ -66,27 +180,37 @@ export interface Sample {
   absorbed: number;
   gut: number;
   ml: number;
+  /** Cumulative fluid that has actually cleared the stomach, capped at
+   *  `FLUID_ABSORPTION_CAP_ML_H` the same way `absorbed` caps carb intake — `ml` is what was
+   *  poured, this is what physiologically got through. Feeds `hydrationPct`/coverage (the *total*
+   *  question: was there enough ride left for it to clear?), not `fluidRate` — see there for why. */
+  mlAbsorbed: number;
   need: number;
   active: ActiveSource;
   rate: number;
   needRate: number;
-  /** Actual fluid delivery rate. Causally smoothed (double-pass EMA, ~6min time constant) so
-   *  fill-boundary transitions ease in as a gentle S-curve instead of an instant cliff, while never
-   *  drifting the line before a change has actually happened (no lookahead, unlike a symmetric
-   *  filter — the value at a boundary reflects only samples up to and including it). */
+  /** Actual fluid delivery rate — causally smoothed (double-pass EMA, ~6min time constant) so
+   *  fill-boundary transitions ease in as a gentle S-curve instead of an instant cliff. Derived
+   *  from raw `ml`, not the capped `mlAbsorbed`: unlike carbs' transporter-limited ceiling, gastric
+   *  emptying is volume-proportional and ~4x individual, so there's no single physiologically
+   *  correct instantaneous rate to clamp to. The chart shows the honest pour rate and colors it
+   *  by how far it sits above `FLUID_ABSORPTION_CAP_ML_H` instead of asserting a hard cutoff. */
   fluidRate: number;
   /** Cumulative fluid the rider should have replaced by this point — the full sweat loss
    *  (`sweatRate × hours`, 0 below the short-ride buffer gate) distributed by effort the same way
    *  `need` is for carbs, so climbs carry more of the requirement than descents. Not discounted by
-   *  `COVERAGE_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
+   *  `HYDRATION_TARGET_PCT` — that's a separate, more lenient tolerance the badge applies on top. */
   fluidNeed: number;
-  /** Instantaneous requirement rate — same causal double-pass smoothing as `fluidRate`. */
+  /** Instantaneous per-step derivative of `fluidNeed` — see `fluidRate`, same reasoning. */
   fluidNeedRate: number;
 }
 
 export interface RateStats {
+  /** Share of the ride's carb requirement actually met *as the ride goes*, 0-100. See rateStats(). */
   coverage: number;
-  dryStretch: { len: number; x: number };
+  /** Grams behind `coverage` — the numerator, so the UI can print "X / target g" without
+   *  reaching for a different quantity than the percentage was computed from. */
+  coveredCarbs: number;
   samples: Sample[];
 }
 
@@ -95,17 +219,59 @@ export function totalHours(route: RouteInput): number {
   return (route.hours || 0) + (route.minutes || 0) / 60;
 }
 
-export function dist(route: RouteInput): number {
-  if (route.mode === 'route') return Math.max(1, route.distance);
-  return Math.max(1, Math.round(totalHours(route) * 10));
+export function speedToPace(speedKmh: number): { min: number; sec: number } {
+  if (speedKmh <= 0) return { min: 0, sec: 0 };
+  const totalSec = Math.round(3600 / speedKmh);
+  return { min: Math.floor(totalSec / 60), sec: totalSec % 60 };
 }
 
+export function paceToSpeed(min: number, sec: number): number {
+  const totalSec = min * 60 + sec;
+  if (totalSec <= 0) return 0;
+  return Math.round((3600 / totalSec) * 1000) / 1000;
+}
+
+/** A sport's baseline pace — also what a sport switch resets `route.speed` to (see appStore's
+ *  `setSport`). Lives here, not appStore.ts, so `dist()` below can share it framework-free. */
+export const SPORT_DEFAULT_SPEED: Record<Sport, number> = { cycling: 28, running: 10.9 };
+
+/**
+ * Relative pace by effort tier, applied to `SPORT_DEFAULT_SPEED` for the 'time' mode's virtual
+ * distance scale — same effect for both sports (a harder effort raises pace by roughly the same
+ * fraction regardless of sport), not a sport-specific number. Same reasoning as
+ * `HIGH_INTENSITY_ABS_CAP_FACTOR` above.
+ */
+const INTENSITY_SPEED_FACTOR: Record<Intensity, number> = { low: 0.85, mid: 1, high: 1.15 };
+
+export function dist(route: RouteInput): number {
+  if (route.mode === 'route') return Math.max(1, route.distance);
+  const speed = SPORT_DEFAULT_SPEED[route.sport] * INTENSITY_SPEED_FACTOR[route.intensity];
+  return Math.max(1, Math.round(totalHours(route) * speed));
+}
+
+type DurationTier = 'short' | 'mid' | 'long';
+
+function durationTier(h: number): DurationTier {
+  if (h < 1) return 'short';
+  if (h <= 2.5) return 'mid';
+  return 'long';
+}
+
+const CPH_TABLE: Record<Sport, Record<DurationTier, Record<Intensity, number>>> = {
+  cycling: {
+    short: { low: 30, mid: 45, high: 60 },
+    mid: { low: 30, mid: 45, high: 60 },
+    long: { low: 60, mid: 75, high: 90 },
+  },
+  running: {
+    short: { low: 20, mid: 30, high: 45 },
+    mid: { low: 30, mid: 45, high: 60 },
+    long: { low: 45, mid: 60, high: 75 },
+  },
+};
+
 export function cph(route: RouteInput): number {
-  const h = totalHours(route);
-  const i = route.intensity;
-  if (h < 1) return i === 'high' ? 60 : i === 'low' ? 30 : 45;
-  if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
-  return i === 'low' ? 60 : i === 'high' ? 90 : 75;
+  return CPH_TABLE[route.sport][durationTier(totalHours(route))][route.intensity];
 }
 
 export function sweat(route: RouteInput): number {
@@ -125,8 +291,18 @@ export function sweat(route: RouteInput): number {
  * absorption note, the mobile "Me" tab, and the mix-editing screen's live preview), rather than
  * pretending to know a real-world split. Call sites that do have fills/gear (samples() below,
  * the desktop/mobile charts) pass the actual carb totals for a true blended figure.
+ *
+ * `intensity` defaults to 'mid' (no change). At 'high', the ceiling is trimmed by
+ * `HIGH_INTENSITY_ABS_CAP_FACTOR` — above roughly 80-90% of max effort, blood flow shifts away
+ * from the gut — then re-floored at 45 so the trim can never push below the same practical
+ * minimum the untrimmed cap already respects.
  */
-export function absCap(mix: MixSettings, izoCarbs = 0, gelCarbs = 0): number {
+export function absCap(
+  mix: MixSettings,
+  izoCarbs = 0,
+  gelCarbs = 0,
+  intensity: Intensity = 'mid',
+): number {
   const rIzo = mix.ratio || 2;
   const rGel = mix.gelRatio || 2;
   const gluIzo = rIzo / (rIzo + 1);
@@ -136,7 +312,8 @@ export function absCap(mix: MixSettings, izoCarbs = 0, gelCarbs = 0): number {
   const wIzo = 1 - wGel;
   const glu = wIzo * gluIzo + wGel * gluGel;
   const fru = 1 - glu;
-  return Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
+  const cap = Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
+  return intensity === 'high' ? Math.max(45, Math.round(cap * HIGH_INTENSITY_ABS_CAP_FACTOR)) : cap;
 }
 
 export function preRideGut(route: RouteInput, cap: number): number {
@@ -196,14 +373,26 @@ function buildProf(route: RouteInput): Profile {
   const D = dist(route);
   const N = PROFILE_SAMPLES;
   const pts: ProfilePoint[] = [];
+  const hasTrackPoints = !!T && T.ele.length > 0;
 
   for (let i = 0; i <= N; i++) {
     const f = i / N;
-    if (T) {
+    if (hasTrackPoints && T) {
       const g = f * (T.ele.length - 1);
       const a = Math.floor(g);
       const b = Math.min(T.ele.length - 1, a + 1);
       pts.push({ x: D * f, ele: T.ele[a] + (T.ele[b] - T.ele[a]) * (g - a), grad: 0, effort: 1 });
+      continue;
+    }
+    // T.ele can end up empty from corrupted/hand-edited persisted state (the zustand `merge`
+    // above applies persisted JSON with no shape validation) or a settings import that predates
+    // the length check in settingsExport.ts. A single point is fine — the interpolation above
+    // resolves it to that one elevation for every sample — but an empty array makes
+    // `f * (T.ele.length - 1)` go negative and index out of bounds, producing NaN. Flat 0 here
+    // avoids that without flashing the synthetic demo terrain (which implies no track at all)
+    // for what is nominally real GPX data.
+    if (T) {
+      pts.push({ x: D * f, ele: 0, grad: 0, effort: 1 });
       continue;
     }
     let j = 1;
@@ -220,9 +409,7 @@ function buildProf(route: RouteInput): Profile {
     const b = pts[Math.min(N, i + 1)];
     const dx = (b.x - a.x) * 1000;
     pts[i].grad = dx > 0 ? ((b.ele - a.ele) / dx) * 100 : 0;
-    pts[i].effort = route.useGpx
-      ? Math.max(0.32, Math.min(2.3, 1 + pts[i].grad * (pts[i].grad > 0 ? 0.19 : 0.11)))
-      : 1;
+    pts[i].effort = route.useGpx ? gradEffort(pts[i].grad, route.sport) : 1;
   }
 
   const cum = [0];
@@ -230,8 +417,8 @@ function buildProf(route: RouteInput): Profile {
 
   const cumTime = [0];
   for (let i = 1; i <= N; i++) {
-    const wA = route.useGpx ? timeWeight(pts[i - 1].grad) : 1;
-    const wB = route.useGpx ? timeWeight(pts[i].grad) : 1;
+    const wA = route.useGpx ? timeWeight(pts[i - 1].grad, route.sport) : 1;
+    const wB = route.useGpx ? timeWeight(pts[i].grad, route.sport) : 1;
     cumTime[i] = cumTime[i - 1] + (pts[i].x - pts[i - 1].x) * ((wA + wB) / 2);
   }
 
@@ -298,7 +485,23 @@ export function presetTagFor(r: number): RatioPreset {
   if (r === 2) return 'iso';
   if (r === 1) return 'sugar';
   if (r === 0.8) return 'honey';
+  if (r === 1.5) return 'ratio15';
   return 'custom';
+}
+
+/**
+ * Which of `presets` (if any) the current ratio/preset pair points at — both must match, since
+ * `preset` disambiguates a numerically-coincidental custom entry from an actual preset pick (see
+ * RatioPreset's doc comment). Returns -1 when neither, meaning the free-entry "custom" slot is
+ * the one selected. Shared by desktop MixPanel.tsx and mobile MobileMix.tsx so their ratio
+ * pickers can't drift apart on which segment lights up.
+ */
+export function ratioPresetIndex(
+  value: number,
+  preset: RatioPreset,
+  presets: readonly number[],
+): number {
+  return presets.findIndex((r) => value === r && preset === presetTagFor(r));
 }
 
 // Honey is roughly 80% carbohydrate by weight — the rest is mostly water, plus trace
@@ -386,6 +589,23 @@ export function citricGramsFromAmount(amount: number, source: CitricSource): num
   return amount * mlPerFruit * yieldPerMl;
 }
 
+/**
+ * The whole-fruit citric source stores/computes in a 0-1 fraction-of-one-fruit unit (see
+ * `citricAmount`/`citricGramsFromAmount` above, which stay in that unit deliberately — the
+ * grams<->fraction math doesn't change here). This pair of helpers is a presentation-layer-only
+ * rescale so settings inputs (desktop's `MixPanel.tsx`, mobile's `MobileMix.tsx`) read and edit
+ * a percentage (0-100+, e.g. "50" for half a fruit) instead of a raw fraction (e.g. "0.5") —
+ * matching the ml-of-juice input's directly usable scale. The 'ml'/'g' units pass through
+ * unchanged.
+ */
+export function citricDisplayAmount(amount: number, unit: CitricAmount['unit']): number {
+  return unit === 'fruit' ? amount * 100 : amount;
+}
+
+export function citricAmountFromDisplay(displayValue: number, unit: CitricAmount['unit']): number {
+  return unit === 'fruit' ? displayValue / 100 : displayValue;
+}
+
 const FRACTION_TEXT: Record<number, string> = { 0.25: '1/4', 0.5: '1/2', 0.75: '3/4' };
 
 /**
@@ -396,9 +616,8 @@ const FRACTION_TEXT: Record<number, string> = { 0.25: '1/4', 0.5: '1/2', 0.75: '
  *
  * This used to render fractional amounts with unicode fraction glyphs (¼ ½ ¾), but those glyphs
  * render nearly invisible/thin in several fonts used by the app, so they're spelled out as plain
- * ASCII text instead. Kept deliberately compact (no percentage) so it still fits the narrow
- * mobile stepper slot (`MobileMix.tsx`) — see `fmtFruitFractionPct` for the recipe-card display
- * that adds a percentage alongside this numeral.
+ * ASCII text instead. Kept deliberately compact (no percentage) — see `fmtFruitFractionPct` for
+ * the recipe-card display that adds a percentage alongside this numeral.
  */
 export function fmtFruitFraction(n: number): string {
   if (n <= 0) return '0';
@@ -466,6 +685,25 @@ export function fracFood(food: FoodItem, x: number, route: RouteInput): number {
   return Math.max(0, Math.min(1, (eff(route, x) - a) / (b - a)));
 }
 
+/**
+ * One step of the stomach-buffer model shared by carbs and fluid: whatever arrived since last
+ * step (`cum - prevCum`) joins the backlog, then at most `capPerStep` of that backlog clears this
+ * step — the rest waits for a later step (or never clears, if the ride ends first). The very
+ * first step only accumulates; nothing has cleared yet for anything to compare against.
+ */
+function stepStomachBuffer(
+  prevBuf: number,
+  prevCum: number,
+  cum: number,
+  capPerStep: number,
+  isFirstStep: boolean,
+): [buf: number, took: number] {
+  const buf = prevBuf + Math.max(0, cum - prevCum);
+  if (isFirstStep) return [buf, 0];
+  const took = Math.min(buf, capPerStep);
+  return [buf - took, took];
+}
+
 export function samples(state: PlanState): Sample[] {
   const { route, mix, gear, fills, foods } = state;
   const D = dist(route);
@@ -479,7 +717,7 @@ export function samples(state: PlanState): Sample[] {
   const gelCarbs = fills
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
-  const cap = absCap(mix, izoCarbs, gelCarbs);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
   // Assumes equal time per equal-distance sample (flat-pace approximation); the chart's
   // time axis is now terrain-aware (see timeAtDistance) but this absorption model is not — a
   // known, deliberate scope boundary, not an oversight.
@@ -488,19 +726,21 @@ export function samples(state: PlanState): Sample[] {
 
   const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
   const sweatLoss = sweatRate * hrs;
-  // Unlike carbs, fluid has no real digestion-lag physiology (the stomach passes water on to the
-  // gut quickly; there's no enzyme-limited absorption cap the way there is for carbs), so a
-  // time-varying "ramp" had no physiological basis. Real hydration guidance is stated as a flat
-  // rate (ml/h) anyway, so the target is one constant rate for the whole ride.
+  // This is about the *target* (need) line, not delivery: unlike carbs, fluid has no
+  // enzyme-limited transporter stage on top of the stomach — the gut buffer added below models
+  // the stomach's own gastric-emptying rate cap (fluid can back up there too), but nothing further
+  // downstream slows it in stages the way carb digestion does, so there's no physiological basis
+  // for a time-varying "ramp" in what's *needed*. Real hydration guidance is stated as a flat rate
+  // (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
   // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
-  // `COVERAGE_TARGET_PCT` (85%) and not sweat loss minus the buffer. The chart's job is to show
-  // the honest physiological target; 85% is a separate, more lenient tolerance the *badge* applies
-  // on top (via `statusColor`) to decide "is this still good enough," not something baked into
-  // what the line itself asks for. An earlier version used the buffer here and made the chart say
-  // "you're above the line" while the badge still said "79%, short" for the same plan — confirmed
-  // on a real reproduction; using the true 100% total instead means falling short of the total
-  // always shows up as the actual line dipping below the target somewhere, honestly.
+  // `HYDRATION_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
+  // honest physiological target; that constant is a separate, more lenient tolerance the *badge*
+  // applies on top (via `hydrationStatus`) to decide "is this still good enough," not something
+  // baked into what the line itself asks for. An earlier version used the buffer here and made
+  // the chart say "you're above the line" while the badge still read 79% and amber for the same
+  // plan — confirmed on a real reproduction; using the true 100% total instead means falling
+  // short of the total always shows up as the actual line dipping below the target, honestly.
   //
   // Below the short-ride gate (sweatLoss < buffer — the same threshold that decides whether
   // autoplan bothers suggesting water stops at all) there's honestly nothing to plan for, so the
@@ -510,6 +750,9 @@ export function samples(state: PlanState): Sample[] {
   let gut = preRideGut(route, cap);
   let absorbed = 0;
   let prevIn = 0;
+  let fluidGut = 0;
+  let mlAbsorbed = 0;
+  let prevMl = 0;
 
   for (let i = 0; i <= N; i++) {
     const x = (D * i) / N;
@@ -542,13 +785,24 @@ export function samples(state: PlanState): Sample[] {
       }
     });
 
-    gut += Math.max(0, intake - prevIn);
+    let took: number;
+    [gut, took] = stepStomachBuffer(gut, prevIn, intake, cap * dt, i === 0);
+    absorbed += took;
     prevIn = intake;
-    if (i) {
-      const take = Math.min(gut, cap * dt);
-      gut -= take;
-      absorbed += take;
-    }
+
+    // Same gut-buffer treatment as carbs above: the stomach can only pass fluid on to the gut at
+    // FLUID_ABSORPTION_CAP_ML_H, so pouring faster than that doesn't get absorbed any faster — it
+    // backs up in the stomach and comes through once the drinking rate drops back below the cap
+    // (or, if the ride ends first, never counts at all).
+    [fluidGut, took] = stepStomachBuffer(
+      fluidGut,
+      prevMl,
+      ml,
+      FLUID_ABSORPTION_CAP_ML_H * dt,
+      i === 0,
+    );
+    mlAbsorbed += took;
+    prevMl = ml;
 
     out.push({
       x,
@@ -556,6 +810,7 @@ export function samples(state: PlanState): Sample[] {
       absorbed,
       gut,
       ml,
+      mlAbsorbed,
       need: target * (eff(route, x) / tot),
       active,
       rate: 0,
@@ -656,29 +911,84 @@ export function samples(state: PlanState): Sample[] {
   return out;
 }
 
+/**
+ * Coverage: of everything the ride demanded, how much did the rider actually have on board *at
+ * the time it was demanded*. Each step credits what arrived (plus whatever recent surplus is
+ * still carried) against what that step required, so carbs that show up when the need is long
+ * past earn nothing — a plan cannot be back-loaded into a good score.
+ *
+ * Two things this deliberately does NOT do, both of which it used to:
+ *
+ * 1. It no longer integrates the EMA-smoothed `rate`/`needRate` pair. Those two exist to draw
+ *    readable *curves*; as the basis for a *total* they were wrong twice over. The need EMA lags
+ *    ~30 min, so its integral fell ~37 g short of a 241 g requirement and quietly shrank the
+ *    denominator by ~18%. And the intake EMA is seeded with the pre-ride meal digesting before
+ *    the start line (see samples()), which leaked into the numerator — an empty plan with an
+ *    80 g pre-ride meal reported 35% covered while carrying literally nothing.
+ * 2. It no longer divides by anything but the honest full requirement, so the result is bounded
+ *    at 100 and can be read as a plain percentage of `target`.
+ *
+ * ## Why the surplus carries forward instead of expiring each step
+ *
+ * A step is `hrs/160` — about 90 seconds. Settling up that often, with no carry, does not measure
+ * the plan at all; it measures the model's own internal seam. `need` is distributed by *effort per
+ * distance* (a climb demands more per km), while this absorption model still assumes uniform time
+ * per distance step (the flat-pace approximation documented in samples()). So on a climb step
+ * `Δneed` alone can exceed what the gut can physically pass in 90 s (`absCap × dt`), and a strict
+ * per-step `min()` burns that difference permanently through no fault of the plan. Measured on a
+ * 100 km route with 4 × ±300 m rollers, that made coverage a constant of the elevation profile
+ * with the plan factored out entirely: 300 g, 600 g and 1200 g of carbs all scored exactly 80%,
+ * so green was unreachable no matter what the rider carried.
+ *
+ * Carrying a bounded surplus fixes that without going soft on timing. The bound is the point: an
+ * *unlimited* carry would collapse to the plain sum ratio (any early surplus could pay for any
+ * later need, and front-loading everything into hour one would score a perfect 100%). Capping it
+ * at `COVERAGE_CARRY_MINUTES` of requirement says what the physiology says — the gut and the
+ * immediately available glycogen pool absorb short-term unevenness, and nothing beyond that.
+ *
+ * The carry *damps* that seam rather than removing it, so the achievable ceiling still depends on
+ * terrain. Measured with 10x the required carbs, so the plan can never be the limiter: flat and
+ * any uniform-gradient climb reach 100, rolling 150-300 m reaches 97-99, a realistic alpine day
+ * 93, two big cols 88. It degrades from there — a single sustained 2500-5000 m climb-and-descent
+ * inside a 4 h ride tops out at 79-75, i.e. green becomes unreachable again. That combination is
+ * physically implausible at the speeds involved, and longer rides recover on their own (the same
+ * 2000 m climb reads 82 over 100 km and 94 over 200 km), so it is logged as a known limit rather
+ * than fixed here. Removing it for real means dropping the flat-pace approximation in samples()
+ * and making `dt` terrain-aware, which changes the chart too.
+ */
 export function rateStats(state: PlanState): RateStats {
   const S = samples(state);
   const hrs = totalHours(state.route);
-  const dt = hrs / (S.length - 1);
-  let fed = 0;
-  let needSum = 0;
-  let dry = { len: 0, x: 0 };
-  let run = 0;
+  const target = hrs * cph(state.route);
+  const carryCap = (cph(state.route) * COVERAGE_CARRY_MINUTES) / 60;
+  let covered = 0;
+  let surplus = 0;
 
-  S.forEach((p) => {
-    fed += Math.min(p.rate, p.needRate) * dt;
-    needSum += p.needRate * dt;
-    if (p.rate < p.needRate * 0.4) {
-      run += dt;
-      if (run > dry.len) dry = { len: run, x: p.x };
-    } else {
-      run = 0;
+  S.forEach((p, i) => {
+    if (i > 0) {
+      const available = p.absorbed - S[i - 1].absorbed + surplus;
+      const credited = Math.min(available, p.need - S[i - 1].need);
+      covered += credited;
+      surplus = Math.min(carryCap, available - credited);
     }
   });
 
   return {
-    coverage: needSum > 0 ? Math.round((fed / needSum) * 100) : 0,
-    dryStretch: dry,
+    // A ride that demands nothing is covered by definition — the same call hydrationPct makes for
+    // zero sweat loss, rather than painting a red 0% on a plan with nothing to cover.
+    //
+    // Note this also covers "no ride entered yet": the store's default route is distance 0 /
+    // speed 0, so a fresh install shows a green 100% here (desktop used to show 0% — mobile
+    // already showed 100%, and unifying had to pick one). Kept deliberately, as the rider's call.
+    //
+    // Worth knowing what does and doesn't soften it, because the two layouts differ: mobile
+    // prints a self-cancelling "0 / 0 g" right under the number, but the desktop card prints
+    // "Requirement 0g" and "Planned 0 g" as two separate figures, alongside a recovery range
+    // computed from body weight — so on desktop the green 100% is the loudest thing on an
+    // otherwise empty plan. That is the weaker of the two cases; if this ever stops feeling
+    // right, desktop is where it will show first.
+    coverage: target > 0 ? Math.round((covered / target) * 100) : 100,
+    coveredCarbs: covered,
     samples: S,
   };
 }
@@ -731,7 +1041,15 @@ export interface PlanSummary {
   sweatLoss: number;
   hydrationPct: number;
   coverage: number;
+  /** Grams counted toward `coverage` — pair this with `target` when showing the ratio in grams.
+   *  Not the same as `absorbedTotal`, which ignores whether a gram arrived when it was needed. */
+  coveredCarbs: number;
   absorbedTotal: number;
+  /** Fluid that actually cleared the stomach over the whole ride, capped at
+   *  `FLUID_ABSORPTION_CAP_ML_H` — what `hydrationPct` is based on. Not the same as `fluidPlanned`,
+   *  which is the raw volume poured and can be higher if it was poured faster than the gut can
+   *  pass it on. */
+  fluidAbsorbedTotal: number;
 }
 
 export function planSummary(state: PlanState): PlanSummary {
@@ -758,12 +1076,12 @@ export function planSummary(state: PlanState): PlanSummary {
   // apply — otherwise a mild/short ride with zero fills showed the chart's target line flat at
   // 0 (satisfied) while this badge showed 0%, red: the same disagreement this whole rework set
   // out to eliminate, just in the opposite direction.
+  const { coverage, coveredCarbs, samples: S } = rateStats(state);
+  const fluidAbsorbedTotal = S[S.length - 1].mlAbsorbed;
   const hydrationPct =
     sweatLoss > 0 && sweatLoss >= route.weight * HYDRATION_BUFFER_ML_PER_KG
-      ? Math.round((fluidPlanned / sweatLoss) * 100)
+      ? Math.round((fluidAbsorbedTotal / sweatLoss) * 100)
       : 100;
-
-  const { coverage, samples: S } = rateStats(state);
 
   return {
     target,
@@ -775,7 +1093,9 @@ export function planSummary(state: PlanState): PlanSummary {
     sweatLoss,
     hydrationPct,
     coverage,
+    coveredCarbs,
     absorbedTotal: S[S.length - 1].absorbed,
+    fluidAbsorbedTotal,
   };
 }
 

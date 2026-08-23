@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function Fueling100kmVs300kmEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="fueling-100km-vs-300km">
       <h1 style={articleH1Style}>
         Fueling a 100 km ride vs. a 300+ km ride: what actually changes
       </h1>
@@ -14,7 +15,7 @@ export default function Fueling100kmVs300kmEn() {
       <p style={articleTextStyle}>
         On a shorter ride — say 2 to 4 hours, roughly what a 100 km ride takes at a moderate pace —
         the main limit is your gut's{' '}
-        <a href="/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
           absorption ceiling
         </a>
         . Your intestine can only take in a certain number of grams of carbohydrate per hour, no
@@ -39,7 +40,7 @@ export default function Fueling100kmVs300kmEn() {
         carry everything in your bottles and pockets from the start and never need to stop. A 300 km
         ride usually cannot work that way: nobody carries 8 or more hours of food and drink from the
         first pedal stroke. Ultra-distance rides depend on planned resupply, so it is worth{' '}
-        <a href="/faq/bottle-refill-planning/" style={articleLinkStyle}>
+        <a href={faqHref('en', 'bottle-refill-planning')} style={articleLinkStyle}>
           mapping out your refill stops
         </a>{' '}
         in advance rather than hoping to improvise at a random shop.
@@ -65,7 +66,7 @@ export default function Fueling100kmVs300kmEn() {
         and let it work out the numbers.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Plan your own ride, short or long →
         </a>
       </p>

@@ -1,0 +1,583 @@
+// src/landing/Landing.en.tsx
+import type { CSSProperties } from 'react';
+import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
+import SiteFooter from './SiteFooter';
+import LangMenu from '../static/LangMenu';
+
+// The header is a fixed 61px bar, so nothing in it may wrap — the phone block already says
+// so, but the rule holds at every width: between 761px and ~778px the desktop bar runs out of
+// room and the wordmark, the tagline and the CTA all break onto a second line at once, which
+// puts the button's arrow on a line of its own. nowrap here, and the tagline drops below.
+const headerWordmark: CSSProperties = {
+  fontSize: 22,
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
+  whiteSpace: 'nowrap',
+};
+const headerTagline: CSSProperties = {
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: 11,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  color: 'var(--muted)',
+};
+const ctaButton: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  border: '1px solid var(--chip-border)',
+  background: '#fff',
+  borderRadius: 999,
+  padding: '9px 16px',
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'var(--ink)',
+  whiteSpace: 'nowrap',
+};
+
+// The page is one scroll container: the document itself. An inner scroller sitting
+// below a sticky header gave the page two scrollbars, pushed every slide's bottom
+// below the fold, and stopped scroll-snap from holding — so the header is fixed and
+// the snapping happens on <html>.
+//
+// Each slide runs the question and the screenshot along a diagonal that converges at
+// the centre, and the diagonal flips slide to slide. The photographs are composed to
+// that flip: the subject always stands on the side the screenshot leaves clear.
+//
+// Sizing works off ONE lever. `.landing-cluster` carries a clamped font-size and every
+// dimension inside it is expressed in `em`, so the whole composition is a single
+// rigid object: above ~1190px it sits at its design size and stops growing, and below
+// that it shrinks as one piece, keeping the question and the screenshot in exactly the
+// same relationship to each other. The `min(..., svh)` term applies the same treatment
+// to short viewports, which is what keeps a squarish screen from overflowing.
+const landingCss = `
+:root { --landing-header-h: 61px; }
+html { scroll-snap-type: y mandatory; scroll-padding-top: var(--landing-header-h); }
+body { padding-top: var(--landing-header-h); }
+
+.landing-header {
+  position: fixed; inset: 0 0 auto 0; z-index: 30; height: var(--landing-header-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; background: var(--bg); border-bottom: 1px solid var(--border);
+}
+
+.landing-slide {
+  position: relative; overflow: hidden; scroll-snap-align: start;
+  display: flex; align-items: center; justify-content: center;
+  padding: 3em 0; background: var(--bg);
+  min-height: calc(100vh - var(--landing-header-h));
+  min-height: calc(100svh - var(--landing-header-h));
+}
+
+/* Decorative. Anchored dead centre so that narrowing the window trims the photograph
+   evenly from both sides instead of sliding its content across the frame. */
+.landing-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center center;
+  opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
+}
+/* The closing photograph is 1376x768, and "cover" fills the height first — so the taller the
+   window, the more of the sides it eats. A 1024px-wide window keeps 81% of the frame, but a
+   768x1024 tablet in portrait keeps 45%: both FINISH pylons and the rider's body fall outside
+   it, leaving a forearm stuck to the left edge. Here the trim comes off two parts right to one
+   part left, which holds the rider in shot. The phone does the same thing more strongly at
+   11.5%.
+
+   The cut-off is the photograph's own 1376/768, and it has to be: any threshold placed while
+   there is still something to trim makes the frame jump as the window crosses it — at 5/4 and
+   a 925px-tall window that was a 59px lurch at exactly 1156px wide. Once the window is wider
+   than the picture, "cover" scales to the width and there is no horizontal trim left to place,
+   so this rule switching off there changes nothing on screen. Wider windows keep the centred
+   frame that was signed off; between the two the shift tapers to zero on its own. */
+@media (min-width: 761px) and (max-aspect-ratio: 1376/768) {
+  .landing-slide[data-slide='4'] .landing-bg { object-position: 33% center; }
+}
+.landing-wash {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 46% 60% at 50% 50%,
+    rgba(239, 240, 236, 0.97) 0%, rgba(239, 240, 236, 0.9) 44%,
+    rgba(239, 240, 236, 0.5) 72%, rgba(239, 240, 236, 0) 100%);
+}
+
+.landing-cluster {
+  position: relative; z-index: 2; width: 68.75em; max-width: 100%;
+  margin: 0 auto; padding: 0 2em;
+  font-size: min(clamp(9px, 1.35vw, 16px), 2.15vh);
+  font-size: min(clamp(9px, 1.35vw, 16px), 2.15svh);
+}
+/* Above the screenshot, so a long question can ride over it rather than slide beneath
+   it and become unreadable. */
+.landing-q {
+  position: relative; z-index: 3; margin: 0; max-width: 56.25em;
+  font-weight: 700; letter-spacing: -0.015em;
+  font-size: 2.1875em; line-height: 1.26;
+  /* Always the height of four lines. The cluster is centred vertically, so a shorter
+     question made a shorter cluster and started lower down the slide — the block
+     appeared to sink whenever the copy lost a line. Reserving the tallest case keeps
+     every slide's question and screenshot at the same height. */
+  min-height: 5.04em;
+}
+.landing-shot {
+  position: relative; z-index: 2; display: flex; flex-direction: column;
+  width: 46.25em; max-width: 100%; margin-top: -4em;
+}
+.landing-shot img {
+  display: block; width: auto; height: auto; max-width: 100%; max-height: 23.5em;
+  border-radius: 0.75em; border: 1px solid var(--border); background: #fff;
+  box-shadow: 0 1.5em 3.5em rgba(22, 25, 28, 0.16);
+}
+.landing-cap br { display: none; }
+/* Each phrase is atomic, so this line can only break at its separators, never
+   mid-phrase. */
+.landing-cap span { white-space: nowrap; }
+.landing-cap {
+  margin: 0 0 0.83em; max-width: 31.6em;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75em; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2);
+}
+
+/* The arrangement mirrors slide to slide, and each photograph was shot to match:
+   its subject always stands on the side the screenshot leaves clear. */
+.landing-slide[data-shot='right'] .landing-q { margin-right: auto; }
+.landing-slide[data-shot='right'] .landing-shot {
+  margin-left: auto; align-items: flex-end; text-align: right;
+}
+.landing-slide[data-shot='left'] .landing-q { margin-left: auto; text-align: right; }
+.landing-slide[data-shot='left'] .landing-shot {
+  margin-right: auto; align-items: flex-start; text-align: left;
+}
+
+/* The language switch is the shared LangMenu (src/static/LangMenu.tsx), styled in
+   renderPage.mjs's ROOT_STYLE alongside the FAQ pages' copy of it. Its entries are plain
+   links because the choice needs no storing — the URL already carries it: /pl/ leads to a
+   CTA pointing at /pl/calculator/, whose static "html lang" then wins over whatever the
+   browser had persisted. */
+.landing-actions { display: flex; align-items: center; gap: 10px; }
+
+/* Sits after the last slide and is only as tall as its own contents, so scrolling
+   past the closing slide reveals it from the bottom rather than handing over a whole
+   further screen. scroll-snap-align: end parks its foot against the foot of the
+   viewport, leaving the closing slide still visible above it. The real site footer
+   (SiteFooter) supplies its own padding/layout below, so this wrapper only carries
+   the snap behaviour and the band's background. */
+.landing-footer {
+  position: relative; z-index: 3; scroll-snap-align: end;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+/* The closing slide holds still while the footer rides up over it, matching how the
+   slides hand over to each other. Two things make that work: the slide sticks, and
+   the footer sits inside the same <main> — a sticky element stops sticking at its
+   parent's edge, so a footer placed after </main> would unstick the slide at exactly
+   the moment it arrived. */
+.landing-slide:last-of-type {
+  position: sticky; top: var(--landing-header-h); z-index: 1;
+}
+
+.site-footer { width: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+  gap: 22px; padding: 22px 32px 26px; }
+.site-footer-columns { display: grid; grid-template-columns: 3fr 2fr; gap: 64px; align-items: start; }
+.site-footer-about { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.site-footer-mark-row { display: flex; align-items: baseline; gap: 9px; }
+.site-footer-mark { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.site-footer-version {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em;
+  color: var(--muted-3);
+}
+.site-footer-about-body { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted-2); }
+.site-footer-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--muted-3); }
+.site-footer-privacy {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted-3);
+}
+.site-footer-contribute { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.site-footer-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.site-footer-links { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.site-footer-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.site-footer-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+  padding: 7px 13px; font-size: 12px; font-weight: 600; color: var(--ink);
+}
+.site-footer-pill-coffee { gap: 9px; padding: 9px 16px; font-size: 13.5px; color: var(--gel); }
+.site-footer-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; box-sizing: border-box;
+  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+  color: var(--ink-soft);
+}
+.site-footer-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.site-footer-disclaimer { display: flex; flex-direction: column; gap: 9px; }
+.site-footer-disclaimer-body { margin: 0; font-size: 11.5px; line-height: 1.65; color: var(--muted); }
+.site-footer-bottom {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  flex-wrap: wrap; border-top: 1px solid #E6E8E2; padding-top: 14px;
+}
+.site-footer-copyright {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+  color: var(--muted-3);
+}
+
+/* Points past the fold. Two rotated borders rather than an SVG: no request, and it
+   inherits the palette. The drift stops for anyone who asked the system to reduce
+   motion. Kept on the closing slide too, since scrolling on from there reaches the
+   footer and its "buy me a coffee" link. */
+/* Bigger, and in the ink colour rather than the pale grey it started in: the cue sits at
+   the foot of the slide, where the wash has nearly run out, so over four different
+   photographs the light chevron kept dissolving into whatever was behind it. The white
+   drop-shadow is what carries it across the dark frames. */
+.landing-cue {
+  position: absolute; left: 50%; bottom: 18px; z-index: 4;
+  width: 17px; height: 17px; margin-left: -9px;
+  border-right: 2.5px solid var(--ink-soft); border-bottom: 2.5px solid var(--ink-soft);
+  filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.6));
+  opacity: 0.75; animation: landing-cue-drift 2.1s ease-in-out infinite;
+}
+@keyframes landing-cue-drift {
+  0%, 100% { transform: rotate(45deg) translate(0, 0); opacity: 0.5; }
+  50% { transform: rotate(45deg) translate(3px, 3px); opacity: 0.95; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-cue { animation: none; transform: rotate(45deg); opacity: 0.85; }
+}
+
+/* Which of the four slides you are on. Fixed inside the clipped slide, so it is
+   clipped along with the photograph and swaps at the same edge. */
+.landing-dots { display: none; }
+.landing-dots {
+  position: fixed; right: 10px; top: 50%; transform: translateY(-50%); z-index: 4;
+  flex-direction: column; gap: 8px;
+}
+.landing-dots i {
+  display: block; width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(22, 25, 28, 0.16);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+.landing-dots i.is-current { background: rgba(22, 25, 28, 0.66); }
+
+/* The band just above the phone breakpoint, where the desktop bar still applies but no longer
+   fits. The wordmark and the CTA hold their line from their own styles; the tagline goes the
+   same way it goes on a phone — the wordmark alone still says what the site is. */
+@media (min-width: 761px) and (max-width: 800px) {
+  .landing-header > div > span + span { display: none; }
+}
+
+@media (max-width: 760px) {
+  html { scroll-snap-type: y mandatory; }
+
+  /* The header is a fixed bar, so nothing in it may wrap. The tagline is the first
+     thing to go — the wordmark alone still says what the site is. */
+  .landing-header { padding: 0 0.8em; }
+  .landing-header > div > span + span { display: none; }
+  .landing-header > div > span { font-size: 15px; white-space: nowrap; }
+  .landing-actions > a {
+    padding: 6px 10px !important; font-size: 11px !important; white-space: nowrap;
+  }
+  .landing-actions { gap: 6px; }
+
+  /* Each slide becomes a window onto its own photograph. "clip-path" makes the slide a
+     containing block for a "position: fixed" child, so the picture is pinned to the
+     viewport and never moves — what travels is the slide's edge, sweeping across it and
+     handing over to the next photograph at the boundary. This is the one technique that
+     survives iOS Safari, where "background-attachment: fixed" does not. */
+  .landing-slide {
+    display: block; position: relative; clip-path: inset(0);
+    padding: 0; scroll-snap-align: start;
+    min-height: calc(100vh - var(--landing-header-h));
+    min-height: calc(100svh - var(--landing-header-h));
+  }
+  /* Only the framing changes here: opacity, the desaturation and the wash are left to
+     inherit, so a phone gets exactly the same softened backdrop the desktop has. */
+  .landing-bg {
+    position: fixed; inset: 0; width: 100vw; height: 100svh;
+    object-fit: cover; object-position: 19.4% center;
+  }
+  /* The desktop veil is an ellipse tuned for a landscape frame; on a portrait one it
+     smears the whole picture. Here it is a vertical fade instead: dense behind the
+     question at the top, gone by the lower third so the road and the rider read. */
+  .landing-wash {
+    background: linear-gradient(to bottom, rgba(239, 240, 236, 0.93) 0%,
+      rgba(239, 240, 236, 0.88) 32%, rgba(239, 240, 236, 0.45) 54%,
+      rgba(239, 240, 236, 0.08) 72%, rgba(239, 240, 236, 0) 100%);
+  }
+
+  .landing-cluster {
+    position: relative; z-index: 2; width: 100%;
+    padding: calc(1.5em + 10svh) 1.1em 0;
+    font-size: 15px;
+  }
+  /* Phones are top-aligned, so nothing sinks and the reservation would only add dead
+     space above a re-wrapped question. */
+  .landing-q {
+    max-width: 92%; margin: 0 !important; text-align: left !important;
+    font-size: clamp(24px, 7vw, 32px); line-height: 1.2; min-height: 0;
+  }
+  /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
+  .landing-q br,
+  .landing-cta-title br { display: none; }
+  .landing-shot {
+    width: 100%; margin: calc(2.2em + 2svh) 0 0 !important;
+    align-items: flex-start !important; text-align: left !important;
+  }
+  /* Sits with the screenshot it labels, over on the right, rather than stranded at the
+     opposite edge. */
+  /* Wide enough that only the explicit break splits it — the 72% cap was clipping the
+     second line into a third. */
+  .landing-cap { max-width: 100%; margin-left: auto; text-align: right; }
+  .landing-cap br { display: inline; }
+  /* Half a screenshot, hung off the right edge and dropped below the question, so the
+     rider along the bottom-left of the photograph stays in view. The transform keeps
+     this purely visual — the caption above it does not move with it. */
+  /* Pinned to the rider rather than to the container, so the gap between them holds
+     as the screen changes. With "object-fit: cover" on a portrait box the picture is
+     scaled to the height, which puts him at (0.18 - 0.194) * 1.79 * vh + 0.194 * vw —
+     the 19.4vw / 2.51vh below. The constant is the gap itself, minus the cluster's own
+     left padding. Widening the screen therefore slides both outward together: more of
+     the screenshot comes into view, and a little more field opens up to his left. */
+  .landing-shot img {
+    /* Sized off the viewport HEIGHT, never the container width. A percentage width
+       grew the picture itself as the window widened — it stretched instead of
+       revealing. Fixed like this, widening only uncovers more of it. */
+    height: 44svh; width: auto; max-width: none; max-height: none;
+    transform: none;
+    margin-left: calc(19.4vw - 2.51vh + 30px);
+  }
+
+
+  /* Slide 1 deliberately has no rule here: it is signed off, and the shared rules above
+     already are its rules. Each photograph below needs its own crop and its own offset,
+     because the subject sits somewhere different in each frame and the frames are not
+     even the same shape. The numbers come from the closed form for a portrait
+     cover-crop: subject_x = (subject - pos) * aspect * vh + pos * vw. */
+
+  /* Runner stands at 80% of run.jpg; this puts him at 84% of the screen, and the
+     screenshot bleeds off the LEFT with its right edge a fixed 46px short of him. */
+  .landing-slide[data-slide='2'] .landing-bg { object-position: 78.6% center; }
+  .landing-slide[data-slide='2'] .landing-q {
+    margin-left: auto !important; text-align: right !important;
+  }
+  .landing-slide[data-slide='2'] .landing-cap {
+    margin-left: 0 !important; margin-right: auto !important; text-align: left !important;
+  }
+  /* mix.jpg is a 3.5:1 banner, so its width is what governs. Sized so the window
+     starts below 48% of the card — "Sugar 1:1" begins at 54% and "Lemon" at 52.5%,
+     and both need to be whole for the slide to make its point. */
+  .landing-slide[data-slide='2'] .landing-shot img {
+    width: 66vh; height: auto;
+    margin-left: calc(78.6vw - 63.49vh - 62.5px);
+  }
+
+  /* Gravel rider stands at 14.9% of the cropped frame, which is a different shape
+     again (1.56 rather than 1.79). */
+  .landing-slide[data-slide='3'] .landing-bg { object-position: 16.56% center; }
+  /* Back on the glue, like slide 1: the chart starts a fixed 46px to the right of the
+     rider, which is what leaves him uncovered. The explanatory column is gone from the
+     file for good now, so there is nothing left to park off the edge. */
+  .landing-slide[data-slide='3'] .landing-shot img {
+    margin-left: calc(16.56vw - 2.59vh + 70.5px);
+  }
+
+  /* No question and no screenshot here, so the only job is keeping the rider and the
+     left-hand FINISH pylon in a frame that only shows about a quarter of the picture. */
+  /* Pinned by its middle rather than hung from the top, so the overflow is split
+     evenly and the frame cannot drift: at 130svh centred, 15svh of sky goes off the
+     top and the rider comes up larger. */
+  .landing-slide[data-slide='4'] .landing-bg {
+    bottom: auto; height: 130svh; top: 50%; transform: translateY(-50%);
+    object-position: 11.5% center;
+  }
+  /* The slide is display:block here, and this block carries an inline max-width — so
+     without auto margins it hugs the left edge and only its contents look centred. */
+  .landing-slide[data-slide='4'] > div {
+    padding-top: 12svh !important; margin-left: auto; margin-right: auto;
+  }
+  /* The headline stays up top; the button and the FAQ link drop into the bike's
+     region further down the photograph. !important because the button carries an
+     inline margin. */
+  .landing-slide[data-slide='4'] > div > a:nth-of-type(1) {
+    margin-top: 30svh !important;
+  }
+
+  .landing-slide[data-slide='4'] .landing-cap {
+    margin: 0 auto !important; text-align: center !important;
+    font-size: 0.66em; letter-spacing: 0.06em;
+  }
+
+  .site-footer { padding: 16px 1.35em 20px; gap: 16px; }
+  .site-footer-columns { grid-template-columns: 1fr; gap: 18px; }
+
+  .landing-cue { bottom: 12px; width: 15px; height: 15px; margin-left: -8px; }
+
+  .landing-dots { display: flex; }
+}
+`;
+
+export default function LandingEn() {
+  return (
+    <div>
+      <style>{landingCss}</style>
+      <header className="landing-header">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+          <span style={headerWordmark}>CARB FUELING</span>
+          <span style={headerTagline}>carbohydrate &amp; hydration planner</span>
+        </div>
+        <div className="landing-actions">
+          <LangMenu lang="en" hrefFor={landingHref} />
+          <a href={calculatorHref('en')} style={ctaButton}>
+            Open the calculator →
+          </a>
+        </div>
+      </header>
+
+      <main>
+        <section className="landing-slide" data-shot="right" data-slide="1">
+          <img className="landing-bg" src={assetHref('/landing/road.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i className="is-current" />
+            <i />
+            <i />
+            <i />
+          </div>
+          <span className="landing-cue" aria-hidden="true" />
+          <div className="landing-cluster">
+            <h1 className="landing-q">
+              Do you ride, run, or do some other <br />
+              sport where you need to <br />
+              fuel mid-effort?
+            </h1>
+            <figure className="landing-shot">
+              <figcaption className="landing-cap">
+                This is what <br />a plan for your route looks like
+              </figcaption>
+              <img
+                src={assetHref('/landing/hero.jpg')}
+                alt="Carb Fueling app: route, coverage cards, and the fueling plan chart"
+              />
+            </figure>
+          </div>
+        </section>
+
+        <section className="landing-slide" data-shot="left" data-slide="2">
+          <img className="landing-bg" src={assetHref('/landing/run.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i />
+            <i className="is-current" />
+            <i />
+            <i />
+          </div>
+          <span className="landing-cue" aria-hidden="true" />
+          <div className="landing-cluster">
+            <h2 className="landing-q">
+              Do gels and isotonic drinks quietly drain <br />
+              your wallet, even though you <br />
+              don't want to give <br />
+              them up?
+            </h2>
+            <figure className="landing-shot">
+              <figcaption className="landing-cap">
+                You probably already have <br />
+                what you need in your kitchen
+              </figcaption>
+              <img
+                src={assetHref('/landing/mix.jpg')}
+                alt="Mix & bottles panel: the isotonic recipe, measured out in sugar, salt and lemon"
+              />
+            </figure>
+          </div>
+        </section>
+
+        <section className="landing-slide" data-shot="right" data-slide="3">
+          <img className="landing-bg" src={assetHref('/landing/gravel.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i className="is-current" />
+            <i />
+          </div>
+          <span className="landing-cue" aria-hidden="true" />
+          <div className="landing-cluster">
+            <h2 className="landing-q">
+              Ever bonked out on a ride or a long run <br />— and wished you'd seen <br />
+              it coming?
+            </h2>
+            <figure className="landing-shot">
+              <figcaption className="landing-cap">See the gap before it turns critical</figcaption>
+              <img
+                src={assetHref('/landing/chart.jpg')}
+                alt="The planning chart, showing the gap between the carbs absorbed and the carbs burned"
+              />
+            </figure>
+          </div>
+        </section>
+
+        <section className="landing-slide" style={{ textAlign: 'center' }} data-slide="4">
+          <img className="landing-bg" src={assetHref('/landing/finish.jpg')} alt="" />
+          <div className="landing-wash" />
+          <div className="landing-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i className="is-current" />
+          </div>
+          <span className="landing-cue" aria-hidden="true" />
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 22,
+              maxWidth: 560,
+              padding: 24,
+            }}
+          >
+            <p
+              className="landing-cap"
+              style={{ margin: 0, maxWidth: 'none', color: 'var(--muted-3)' }}
+            >
+              <span>Free</span> · <span>no account</span> · <span>runs in your browser</span>
+            </p>
+            <h2
+              className="landing-cta-title"
+              style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}
+            >
+              Plan how many carbs and how much fluid to take on your route — and how to spread them
+              out over time.
+            </h2>
+            <a
+              href={calculatorHref('en')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--ink)',
+                color: '#fff',
+                borderRadius: 999,
+                padding: '14px 28px',
+                fontSize: 15,
+                fontWeight: 700,
+                marginTop: 8,
+              }}
+            >
+              Open the calculator →
+            </a>
+            <a
+              href={faqHref('en')}
+              style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted-2)', marginTop: 4 }}
+            >
+              Curious why this works? Read the FAQ →
+            </a>
+          </div>
+        </section>
+        <footer className="landing-footer">
+          <SiteFooter lang="en" />
+        </footer>
+      </main>
+    </div>
+  );
+}

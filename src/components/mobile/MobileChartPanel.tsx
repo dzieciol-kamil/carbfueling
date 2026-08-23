@@ -1,44 +1,14 @@
-import type { CSSProperties } from 'react';
 import { dist, fmtX } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileChart } from './MobileChart';
 import { MobileLaneStrip } from './MobileLaneStrip';
 
-const Y_MODES: { mode: YMode; label?: string }[] = [
+const Y_MODES: { mode: YMode; label: string }[] = [
   { mode: 'rate', label: 'g/h' },
   { mode: 'fluid', label: 'ml/h' },
-  { mode: 'sum' },
 ];
-
-function segBtnStyle(active: boolean): CSSProperties {
-  return {
-    border: 'none',
-    borderRadius: 7,
-    padding: '7px 11px',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 11,
-    fontWeight: 700,
-    cursor: 'pointer',
-    background: active ? '#fff' : 'transparent',
-    color: active ? 'var(--ink)' : 'var(--muted)',
-    boxShadow: active ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-  };
-}
-
-function xBtnStyle(active: boolean): CSSProperties {
-  return {
-    border: '1px solid var(--chip-border)',
-    borderRadius: 8,
-    padding: '6px 9px',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 11,
-    fontWeight: 700,
-    cursor: 'pointer',
-    background: active ? 'var(--ink)' : '#fff',
-    color: active ? '#fff' : 'var(--muted)',
-  };
-}
 
 export function MobileChartPanel() {
   const route = useAppStore((s) => s.route);
@@ -60,9 +30,7 @@ export function MobileChartPanel() {
     ? strings.narrationProfile
     : yMode === 'fluid'
       ? strings.narrationFluid
-      : yMode === 'sum'
-        ? strings.narrationSum
-        : strings.narrationRate;
+      : strings.narrationRate;
 
   const axisPoints = [0, distanceKm / 3, (distanceKm * 2) / 3, distanceKm];
 
@@ -80,26 +48,12 @@ export function MobileChartPanel() {
         <div
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
         >
-          <div
-            style={{
-              display: 'flex',
-              gap: 2,
-              background: 'var(--track)',
-              borderRadius: 9,
-              padding: 3,
-            }}
-          >
-            {Y_MODES.map(({ mode, label }) => (
-              <button
-                key={mode}
-                type="button"
-                style={segBtnStyle(yMode === mode)}
-                onClick={() => setYMode(mode)}
-              >
-                {label ?? strings.sumMode}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={Y_MODES.map(({ mode, label }) => ({ value: mode, label }))}
+            value={yMode}
+            onChange={setYMode}
+            fullWidth={false}
+          />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {showEye && (
               <button
@@ -134,18 +88,15 @@ export function MobileChartPanel() {
                 </svg>
               </button>
             )}
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
-                type="button"
-                style={xBtnStyle(xUnit === 'km')}
-                onClick={() => setXUnit('km')}
-              >
-                km
-              </button>
-              <button type="button" style={xBtnStyle(xUnit === 'h')} onClick={() => setXUnit('h')}>
-                {strings.axisTime}
-              </button>
-            </div>
+            <SegmentedControl
+              options={[
+                { value: 'km' as const, label: 'km' },
+                { value: 'h' as const, label: strings.axisTime },
+              ]}
+              value={xUnit}
+              onChange={setXUnit}
+              fullWidth={false}
+            />
           </div>
         </div>
 

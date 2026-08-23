@@ -1,10 +1,22 @@
 import type { CSSProperties } from 'react';
 import { useRef } from 'react';
-import { prof } from '../../domain/fuel';
+import { paceToSpeed, prof, speedToPace } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
-import { t } from '../../i18n/strings';
+import { t, type StringTable } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { InfoPopover } from '../ui/InfoPopover';
+import { SegmentedControl } from '../ui/SegmentedControl';
+import { SportSwitch } from '../ui/SportSwitch';
 import { MobileStepper } from './MobileStepper';
+
+function routeSheetTitle(sport: RouteInput['sport'], strings: StringTable): string {
+  switch (sport) {
+    case 'running':
+      return strings.routeSheetTitleRunning;
+    default:
+      return strings.routeSheetTitleCycling;
+  }
+}
 
 function elevationGain(route: RouteInput): number {
   const pts = prof(route).pts;
@@ -46,20 +58,6 @@ const sectionTitleStyle: CSSProperties = {
   marginTop: 4,
 };
 
-function chip(active: boolean): CSSProperties {
-  return {
-    flex: 1,
-    padding: '14px 4px',
-    borderRadius: 9,
-    border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
-    background: active ? 'var(--ink)' : '#fff',
-    color: active ? '#fff' : 'var(--muted-2)',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-  };
-}
-
 export function MobileRouteSheet() {
   const open = useAppStore((s) => s.ui.routeSheet);
   const closeRouteSheet = useAppStore((s) => s.closeRouteSheet);
@@ -67,6 +65,7 @@ export function MobileRouteSheet() {
   const lang = useAppStore((s) => s.ui.lang);
   const setDistance = useAppStore((s) => s.setDistance);
   const setSpeed = useAppStore((s) => s.setSpeed);
+  const setSport = useAppStore((s) => s.setSport);
   const setPreMealCarbs = useAppStore((s) => s.setPreMealCarbs);
   const setPreMealMinutes = useAppStore((s) => s.setPreMealMinutes);
   const setIntensity = useAppStore((s) => s.setIntensity);
@@ -84,6 +83,10 @@ export function MobileRouteSheet() {
     { value: 'mid', label: strings.medium },
     { value: 'high', label: strings.high },
   ];
+  const paceSec = (() => {
+    const pace = speedToPace(route.speed);
+    return Math.min(900, Math.max(150, pace.min * 60 + pace.sec));
+  })();
 
   function close() {
     closeRouteSheet();
@@ -119,22 +122,31 @@ export function MobileRouteSheet() {
               letterSpacing: '0.08em',
             }}
           >
-            {strings.routeSheetTitle}
+            {routeSheetTitle(route.sport, strings)}
           </span>
-          <button
-            type="button"
-            onClick={close}
-            style={{
-              width: 34,
-              height: 34,
-              border: '1px solid var(--chip-border)',
-              borderRadius: 10,
-              background: '#fff',
-              cursor: 'pointer',
-            }}
-          >
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <SportSwitch
+              sport={route.sport}
+              onChange={setSport}
+              cyclingLabel={strings.sportCycling}
+              runningLabel={strings.sportRunning}
+              size={44}
+            />
+            <button
+              type="button"
+              onClick={close}
+              style={{
+                width: 34,
+                height: 34,
+                border: '1px solid var(--chip-border)',
+                borderRadius: 10,
+                background: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -147,15 +159,28 @@ export function MobileRouteSheet() {
             bigStep={5}
             onChange={setDistance}
           />
-          <MobileStepper
-            label={strings.speed + ' (km/h)'}
-            value={route.speed}
-            min={8}
-            max={50}
-            smallStep={1}
-            bigStep={5}
-            onChange={setSpeed}
-          />
+          {route.sport === 'running' ? (
+            <MobileStepper
+              label={strings.pace}
+              value={paceSec}
+              min={150}
+              max={900}
+              smallStep={5}
+              bigStep={30}
+              format={(v) => Math.floor(v / 60) + ':' + String(v % 60).padStart(2, '0')}
+              onChange={(totalSec) => setSpeed(paceToSpeed(0, totalSec))}
+            />
+          ) : (
+            <MobileStepper
+              label={strings.speed + ' (km/h)'}
+              value={route.speed}
+              min={8}
+              max={50}
+              smallStep={1}
+              bigStep={5}
+              onChange={setSpeed}
+            />
+          )}
 
           <div style={sectionTitleStyle}>{strings.routeSheetPreStart}</div>
           <MobileStepper
@@ -179,20 +204,21 @@ export function MobileRouteSheet() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>
-              {strings.routeSheetIntensity}
+              {strings.routeSheetIntensity}{' '}
+              <InfoPopover
+                hint={strings.intensityHint}
+                ariaLabel={strings.intensityInfoBtnLabel}
+                popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+              >
+                ⓘ
+              </InfoPopover>
             </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {intensityOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  style={chip(route.intensity === opt.value)}
-                  onClick={() => setIntensity(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={intensityOptions}
+              value={route.intensity}
+              onChange={setIntensity}
+              minHeight={44}
+            />
           </div>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>

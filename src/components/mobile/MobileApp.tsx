@@ -3,6 +3,7 @@ import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
 import { AutoplanFlow } from '../autoplan/AutoplanFlow';
+import { LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
 import { MobileGear } from './MobileGear';
@@ -81,16 +82,18 @@ export function MobileApp() {
             gap: 10,
           }}
         >
-          <span
+          <a
+            href={LANDING_HREF_FROM_CALCULATOR}
             style={{
               fontSize: 16,
               fontWeight: 700,
               letterSpacing: '-0.01em',
-              whiteSpace: 'nowrap',
+              color: 'var(--ink)',
+              textDecoration: 'none',
             }}
           >
             CARB FUELING
-          </span>
+          </a>
           <div
             style={{
               display: 'flex',

@@ -1,8 +1,9 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function GutTrainingCarbToleranceEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="gut-training-carb-tolerance">
       <h1 style={articleH1Style}>Training your gut: how to safely raise your carb tolerance</h1>
       <p style={articleTextStyle}>
         Your gut's ability to absorb carbs during exercise is not fixed. It works a bit like a
@@ -45,10 +46,13 @@ export default function GutTrainingCarbToleranceEn() {
         Once you know your current trained ceiling, plan around it instead of guessing. Carb Fueling
         shows your absorption cap live as you dial in your bottle and gel mix ratio, so you can
         match it to what your gut has actually practiced, then build a fueling schedule that stays
-        under it instead of overshooting on race day.
+        under it instead of overshooting on race day. One caveat: no matter how you dial in your
+        bottle and gel mix ratio, Carb Fueling's absorption cap tops out around 92g/h. That's a
+        deliberate safe default, not a hard physiological wall — a small number of very well-trained
+        guts can push past it — but it's a sensible ceiling for the vast majority of riders.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Check your absorption cap →
         </a>
       </p>

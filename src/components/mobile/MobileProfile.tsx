@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import { absCap } from '../../domain/fuel';
+import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import {
   buildSettingsExport,
   parseSettingsImport,
   serializeSettingsExport,
   settingsExportFileName,
+  type PlanFeedback,
 } from '../../domain/settingsExport';
 import { LANGS, t } from '../../i18n/strings';
 import {
@@ -13,9 +15,11 @@ import {
   useAppStore,
   type ViewMode,
 } from '../../store/appStore';
+import { saveTextFile } from '../../utils/fileSave';
 import { CoffeeIcon, GitHubIcon } from '../Footer';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileStepper } from './MobileStepper';
 
 export function MobileProfile() {
@@ -27,18 +31,19 @@ export function MobileProfile() {
   const autoView = useAppStore((s) => s.ui.autoView);
   const setViewMode = useAppStore((s) => s.setViewMode);
   const mix = useAppStore((s) => s.mix);
+  const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
   const getSettingsExportData = useAppStore((s) => s.getSettingsExportData);
   const importSettings = useAppStore((s) => s.importSettings);
   const strings = t(lang);
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since the "Me" tab isn't tied to a specific plan.
-  const cap = absCap(mix);
+  const cap = absCap(mix, 0, 0, intensity);
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [importFeedback, setImportFeedback] = useState<'error' | 'success' | null>(null);
+  const [planFeedback, setPlanFeedback] = useState<PlanFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleReplay = () => {
@@ -54,17 +59,14 @@ export function MobileProfile() {
     else setViewMode(v);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    setPlanFeedback(null);
     const file = buildSettingsExport(getSettingsExportData());
-    const blob = new Blob([serializeSettingsExport(file)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = settingsExportFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      await saveTextFile(serializeSettingsExport(file), settingsExportFileName());
+    } catch {
+      setPlanFeedback('export-error');
+    }
   };
 
   const handleImportPick = () => fileInputRef.current?.click();
@@ -79,18 +81,18 @@ export function MobileProfile() {
   };
 
   const applyImportedFile = async (file: File) => {
-    setImportFeedback(null);
+    setPlanFeedback(null);
     try {
       const text = await file.text();
       const result = parseSettingsImport(text);
       if (!result.ok) {
-        setImportFeedback('error');
+        setPlanFeedback('import-error');
         return;
       }
       importSettings(result.data);
-      setImportFeedback('success');
+      setPlanFeedback('import-success');
     } catch {
-      setImportFeedback('error');
+      setPlanFeedback('import-error');
     }
   };
 
@@ -150,60 +152,33 @@ export function MobileProfile() {
               ))}
             </select>
           ) : (
-            <div style={{ display: 'flex', gap: 6 }}>
-              {LANGS.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => setLang(code)}
-                  style={{
-                    flex: 1,
-                    padding: '11px 4px',
-                    borderRadius: 9,
-                    border: '1px solid ' + (lang === code ? 'var(--ink)' : 'var(--chip-border)'),
-                    background: lang === code ? 'var(--ink)' : '#fff',
-                    color: lang === code ? '#fff' : 'var(--muted-2)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {t(code).langShort}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={LANGS.map((code) => ({ value: code, label: t(code).langShort }))}
+              value={lang}
+              onChange={setLang}
+              minHeight={44}
+            />
           )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.meView}</span>
-            <div style={{ display: 'flex', gap: 6, flex: 1, minWidth: 160 }}>
-              {(['auto', 'desktop', 'mobile'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => handleViewModePick(v)}
-                  style={{
-                    flex: 1,
-                    padding: '11px 4px',
-                    borderRadius: 9,
-                    border: '1px solid ' + (viewMode === v ? 'var(--ink)' : 'var(--chip-border)'),
-                    background: viewMode === v ? 'var(--ink)' : '#fff',
-                    color: viewMode === v ? '#fff' : 'var(--muted-2)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {v === 'auto'
+            <SegmentedControl
+              options={(['auto', 'desktop', 'mobile'] as const).map((v) => ({
+                value: v,
+                label:
+                  v === 'auto'
                     ? strings.viewAuto
                     : v === 'desktop'
                       ? strings.desktop
-                      : strings.mobile}
-                </button>
-              ))}
-            </div>
+                      : strings.mobile,
+              }))}
+              value={viewMode}
+              onChange={handleViewModePick}
+              minHeight={44}
+              style={{ flex: 1, minWidth: 160 }}
+            />
           </div>
           {viewMode === 'auto' && (
             <span style={{ fontSize: 11, color: 'var(--muted-3)' }}>
@@ -285,16 +260,20 @@ export function MobileProfile() {
             e.target.value = '';
           }}
         />
-        {importFeedback && (
+        {planFeedback && (
           <p
             style={{
               margin: 0,
               fontSize: 12,
               lineHeight: 1.5,
-              color: importFeedback === 'error' ? '#B3402A' : 'var(--muted-2)',
+              color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
             }}
           >
-            {importFeedback === 'error' ? strings.importPlanError : strings.importPlanSuccess}
+            {planFeedback === 'import-error'
+              ? strings.importPlanError
+              : planFeedback === 'import-success'
+                ? strings.importPlanSuccess
+                : strings.exportPlanError}
           </p>
         )}
       </div>
@@ -309,9 +288,18 @@ export function MobileProfile() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <a
+            href={LANDING_HREF_FROM_CALCULATOR}
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+              textDecoration: 'none',
+            }}
+          >
             CARB FUELING
-          </span>
+          </a>
           <span
             style={{
               fontFamily: "'JetBrains Mono', monospace",
@@ -409,7 +397,7 @@ export function MobileProfile() {
             <span>{strings.ftSupport}</span>
           </a>
           <a
-            href={lang === 'pl' ? '/pl/faq/' : '/faq/'}
+            href={FAQ_HREF_FROM_CALCULATOR}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

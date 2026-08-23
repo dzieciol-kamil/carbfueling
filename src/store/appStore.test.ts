@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { hasPlanData, shouldConfirmViewModeChange, useAppStore } from './appStore';
 import type { Fill, RouteInput } from '../domain/types';
 
 function route(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 0,
     speed: 0,
@@ -56,6 +57,25 @@ describe('hasPlanData', () => {
   });
 });
 
+describe('setSport', () => {
+  test('switching sport resets speed to that sport default', () => {
+    useAppStore.setState({ route: route({ sport: 'cycling', speed: 28 }) });
+    useAppStore.getState().setSport('running');
+    expect(useAppStore.getState().route.sport).toBe('running');
+    expect(useAppStore.getState().route.speed).toBe(10.9);
+
+    useAppStore.getState().setSport('cycling');
+    expect(useAppStore.getState().route.sport).toBe('cycling');
+    expect(useAppStore.getState().route.speed).toBe(28);
+  });
+
+  test('clicking the already-active sport is a no-op (does not reset speed)', () => {
+    useAppStore.setState({ route: route({ sport: 'cycling', speed: 32 }) });
+    useAppStore.getState().setSport('cycling');
+    expect(useAppStore.getState().route.speed).toBe(32);
+  });
+});
+
 const initialState = useAppStore.getState();
 
 beforeEach(() => {
@@ -68,8 +88,8 @@ describe('setMode reconciling existing plan items', () => {
       route: route({ mode: 'route', distance: 100, hours: 1, minutes: 0 }),
       fills: [{ fid: 1, gid: 'g1', content: 'water', from: 70, to: 90 }],
     });
-    useAppStore.getState().setMode('time'); // dist() in time mode = round(hours*10) = 10
-    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 0, to: 10 });
+    useAppStore.getState().setMode('time'); // dist() in time mode = round(1h * 28 km/h cycling-mid) = 28
+    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 8, to: 28 });
   });
 });
 
@@ -456,6 +476,76 @@ describe('shouldConfirmViewModeChange', () => {
   });
 });
 
+describe('addFillInGap', () => {
+  function overlaps(fills: Fill[]): boolean {
+    const sorted = fills.slice().sort((a, b) => a.from - b.from);
+    return sorted.some((f, i) => i > 0 && f.from < sorted[i - 1].to);
+  }
+
+  test('shrinks the new fill to a gap narrower than the default width', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [{ fid: 1, gid, content: 'izo', from: 0, to: 78 }],
+      nextFid: 2,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    expect(useAppStore.getState().fills.find((f) => f.fid === 2)).toMatchObject({
+      from: 78,
+      to: 90,
+    });
+  });
+
+  test('keeps finding real gaps after the widest gap put a new fill left of the old ones', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    // The widest gap can sit left of an existing fill, so the appended fill lands ahead
+    // of it on the lane: array order stops matching lane order without any drag at all.
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [
+        { fid: 1, gid, content: 'izo', from: 60, to: 85 },
+        { fid: 2, gid, content: 'izo', from: 0, to: 25 },
+      ],
+      nextFid: 3,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    expect(useAppStore.getState().fills.find((f) => f.fid === 3)).toMatchObject({
+      from: 25,
+      to: 50,
+    });
+    expect(overlaps(useAppStore.getState().fills)).toBe(false);
+  });
+
+  test('does not stack a fill on an existing one when the array is out of lane order', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    // Only the two 5 km slivers are free; array order gives no hint of that.
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [
+        { fid: 1, gid, content: 'izo', from: 0, to: 25 },
+        { fid: 2, gid, content: 'izo', from: 60, to: 85 },
+        { fid: 3, gid, content: 'izo', from: 30, to: 55 },
+      ],
+      nextFid: 4,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    const fills = useAppStore.getState().fills;
+    expect(fills).toHaveLength(4);
+    expect(overlaps(fills)).toBe(false);
+  });
+
+  test('adds nothing when the lane has no gap left', () => {
+    const gid = useAppStore.getState().gear[0].gid;
+    useAppStore.setState({
+      route: route({ mode: 'route', distance: 90, speed: 28 }),
+      fills: [{ fid: 1, gid, content: 'izo', from: 0, to: 90 }],
+      nextFid: 2,
+    });
+    useAppStore.getState().addFillInGap(gid);
+    expect(useAppStore.getState().fills).toHaveLength(1);
+  });
+});
+
 describe('combinedFillIds', () => {
   test('toggleCombinedFill adds then removes a fill id', () => {
     useAppStore.getState().toggleCombinedFill(1);
@@ -756,6 +846,170 @@ describe('migrate: cola needs a stop (v6 -> v7)', () => {
   });
 });
 
+describe('persisted ui merge — the calculator always opens on the plan', () => {
+  test('a panel left open last time does not come back', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, panel: 'settings', tab: 'me' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.panel).toBeNull();
+    expect(merged.ui.tab).toBe('plan');
+  });
+});
+
+describe('persisted ui merge — no overlay survives a reload', () => {
+  // Every field here gates a full-screen overlay, and all of them are persisted (there is no
+  // partialize on the persist config). Backgrounding a phone with the Mix sheet open flushes
+  // it to localStorage on pagehide, so without this reset the next visit — typically the
+  // landing's "open the calculator" link — boots straight into that sheet.
+  test('the sheets and the chart help modal all come back closed', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      {
+        ui: {
+          ...currentState.ui,
+          mixSheet: true,
+          routeSheet: true,
+          stopSheet: { editId: 3 },
+          chartHelp: true,
+        },
+      },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.mixSheet).toBe(false);
+    expect(merged.ui.routeSheet).toBe(false);
+    expect(merged.ui.stopSheet).toBeNull();
+    expect(merged.ui.chartHelp).toBe(false);
+  });
+
+  // Pointer state is the same class: persisted, but meaningless once the pointer is gone. A
+  // drag interrupted by backgrounding the phone stored dragKey, and the bar came back rendered
+  // mid-drag — dimmed and highlighted — with nothing to clear it until the next drag.
+  test('in-flight pointer state does not come back', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, dragKey: 'f3', hoverKey: 'f2', selKey: 'f1', scrubX: 120 } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.dragKey).toBeNull();
+    expect(merged.ui.hoverKey).toBeNull();
+    expect(merged.ui.selKey).toBeNull();
+    expect(merged.ui.scrubX).toBeNull();
+  });
+
+  // tourSeen is the opposite case: it is a genuine preference, and resetting it would replay
+  // the tour on every visit.
+  test('but tourSeen is a preference and is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, tourSeen: true } },
+      { ...currentState, ui: { ...currentState.ui, tourSeen: false } },
+    ) as typeof currentState;
+    expect(merged.ui.tourSeen).toBe(true);
+  });
+
+  // The tour is the one overlay that must survive, and it survives as a pair: startTour sets
+  // tourSeen at step 0, so dropping the step while keeping tourSeen would leave a first-time
+  // visitor who reloaded mid-tour with no tour and no way back to it.
+  test('a tour interrupted mid-way resumes where it was', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, tourStep: 2, tourSeen: true } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.tourStep).toBe(2);
+    expect(merged.ui.tourSeen).toBe(true);
+  });
+});
+
+describe('persisted ui merge — autoView is derived, not remembered', () => {
+  test('a stale autoView from another device loses to the one computed for this viewport', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, autoView: 'desktop', viewMode: 'auto' } },
+      { ...currentState, ui: { ...currentState.ui, autoView: 'mobile' } },
+    ) as typeof currentState;
+    expect(merged.ui.autoView).toBe('mobile');
+    // an explicit user override is a preference and must still survive
+    expect(merged.ui.viewMode).toBe('auto');
+  });
+
+  test('an explicitly forced viewMode is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, viewMode: 'desktop' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.viewMode).toBe('desktop');
+  });
+});
+
+describe('persisted ui merge — HTML-seeded language precedence', () => {
+  // Un-stubbing here rather than at the end of each test: an assertion that fails leaves the
+  // rest of its test body unrun, so a trailing unstubAllGlobals() would leak a fake `document`
+  // into every test after it and turn one honest failure into a cascade of confusing ones.
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test('the HTML-seeded lang wins over a persisted ui.lang; other ui fields survive', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    // xUnit stands in for "an ordinary remembered preference" here. panel and tab used
+    // to serve that purpose, but they are deliberately no longer restored — the
+    // calculator always opens on the plan.
+    const persistedUi = { ...currentState.ui, lang: 'en', viewMode: 'desktop', xUnit: 'h' };
+    const merged = merge({ ui: persistedUi }, currentState) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+    expect(merged.ui.viewMode).toBe('desktop');
+    expect(merged.ui.xUnit).toBe('h');
+  });
+
+  // Chrome's "always translate this page" rewrites <html lang> to the translation's language,
+  // so this attribute is not ours to trust. An unchecked value would be pushed into the URL by
+  // nextLangPath() — /es/calculator/ 404s on reload — and written straight back to localStorage.
+  test('a language we do not ship is ignored, and the persisted one survives', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'es' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, lang: 'pl' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+  });
+
+  test('an empty <html lang> is ignored too', () => {
+    vi.stubGlobal('document', { documentElement: { lang: '' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, lang: 'pl' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+  });
+
+  test('first-ever visit (no persisted state): non-lang ui fields fall back to current defaults, lang is still HTML-seeded', () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'pl' } });
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(undefined, currentState) as typeof currentState;
+    expect(merged.ui.lang).toBe('pl');
+    expect(merged.ui.viewMode).toBe(currentState.ui.viewMode);
+    expect(merged.ui.panel).toBe(currentState.ui.panel);
+  });
+});
+
 describe('migrate: ratioPreset inference (v2 -> v3)', () => {
   test('infers honey from a legacy ratio of 0.8', () => {
     const migrate = useAppStore.persist.getOptions().migrate!;
@@ -790,5 +1044,27 @@ describe('migrate: ratioPreset inference (v2 -> v3)', () => {
   test('does nothing when there is no persisted mix at all', () => {
     const migrate = useAppStore.persist.getOptions().migrate!;
     expect(migrate({}, 2)).toEqual({});
+  });
+});
+
+describe('migrate: 1.5:1 preset re-tagging (v3 -> v4)', () => {
+  test('re-tags a ratio of 1.5 previously stored as custom', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = {
+      mix: { ratio: 1.5, ratioPreset: 'custom', gelRatio: 1.5, gelRatioPreset: 'custom' },
+    };
+    const migrated = migrate(legacy, 3) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.mix.ratioPreset).toBe('ratio15');
+    expect(migrated.mix.gelRatioPreset).toBe('ratio15');
+  });
+
+  test('leaves a genuinely custom ratio (not 1.5) alone', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = {
+      mix: { ratio: 1.3, ratioPreset: 'custom', gelRatio: 2, gelRatioPreset: 'iso' },
+    };
+    const migrated = migrate(legacy, 3) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.mix.ratioPreset).toBe('custom');
+    expect(migrated.mix.gelRatioPreset).toBe('iso');
   });
 });

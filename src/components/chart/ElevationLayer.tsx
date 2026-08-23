@@ -30,7 +30,10 @@ export function elevationTicks(
   bottomPadding: number,
   share: number,
 ): ElevationTick[] {
-  const maxEle = Math.max(...pts.map((p) => p.ele)) * 1.1;
+  // The `, 1` floor keeps this from landing on exactly 0 for a genuinely flat profile (real
+  // sea-level GPX data, or the empty-track fallback in prof()) — dividing by a 0 maxEle in py()
+  // below would turn every y-coordinate into NaN, breaking the whole elevation path/ticks.
+  const maxEle = Math.max(...pts.map((p) => p.ele), 1) * 1.1;
   const top = (height - bottomPadding) * (1 - share);
   const py = (ele: number) =>
     height - bottomPadding - (ele / maxEle) * (height - bottomPadding - top);
@@ -51,7 +54,8 @@ export function ElevationLayer({
 }: ElevationLayerProps) {
   if (!visible) return null;
 
-  const maxEle = Math.max(...pts.map((p) => p.ele)) * 1.1;
+  // See the `, 1` floor comment on elevationTicks' maxEle above.
+  const maxEle = Math.max(...pts.map((p) => p.ele), 1) * 1.1;
   const top = (height - bottomPadding) * (1 - share);
   const px = (x: number) => (x / distanceKm) * width;
   const py = (ele: number) =>

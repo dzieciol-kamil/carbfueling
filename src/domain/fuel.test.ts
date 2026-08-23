@@ -1,9 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import {
+  COVERAGE_SHORT_PCT,
+  COVERAGE_TARGET_PCT,
+  FLUID_ABSORPTION_CAP_ML_H,
+  HYDRATION_SHORT_PCT,
+  HYDRATION_TARGET_PCT,
   absCap,
   carbsFill,
   citricAmount,
   citricGramsFromAmount,
+  coverageStatus,
   cph,
   dist,
   distanceAtTime,
@@ -15,16 +21,20 @@ import {
   fracFill,
   fracFood,
   honeyGramsFromCarbs,
+  hydrationStatus,
   mixSplit,
+  paceToSpeed,
   planExtras,
   planSummary,
   preRideGut,
   presetTagFor,
   prof,
   rangeLabel,
+  ratioPresetIndex,
   rateStats,
   recoveryCarbs,
   samples,
+  speedToPace,
   sweat,
   timeAtDistance,
   timeWeight,
@@ -34,6 +44,7 @@ import type { Fill, FoodItem, MixSettings, PlanState, RouteInput, Vessel } from 
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 100,
     speed: 25,
@@ -103,6 +114,22 @@ describe('timeWeight', () => {
   test('steep downhill (-20%): clamped at the 0.55 floor', () => {
     expect(timeWeight(-20)).toBe(0.55);
   });
+
+  test('running, flat ground: weight 1', () => {
+    expect(timeWeight(0, 'running')).toBe(1);
+  });
+
+  test('running, moderate uphill (5%): steeper penalty than cycling', () => {
+    expect(timeWeight(5, 'running')).toBeCloseTo(1.6, 6);
+  });
+
+  test('running, moderate downhill (-5%): a small gain, much less than cycling', () => {
+    expect(timeWeight(-5, 'running')).toBeCloseTo(0.9, 6);
+  });
+
+  test('running, steep downhill (-20%): clamped at the shallower 0.85 floor', () => {
+    expect(timeWeight(-20, 'running')).toBe(0.85);
+  });
 });
 
 describe('totalHours', () => {
@@ -119,15 +146,53 @@ describe('totalHours', () => {
   });
 });
 
+describe('speedToPace / paceToSpeed', () => {
+  test('speedToPace converts km/h to whole min:sec per km', () => {
+    expect(speedToPace(12)).toEqual({ min: 5, sec: 0 });
+    expect(speedToPace(10.9)).toEqual({ min: 5, sec: 30 });
+  });
+
+  test('speedToPace returns zero pace for zero or negative speed', () => {
+    expect(speedToPace(0)).toEqual({ min: 0, sec: 0 });
+    expect(speedToPace(-5)).toEqual({ min: 0, sec: 0 });
+  });
+
+  test('paceToSpeed converts min:sec per km back to km/h', () => {
+    expect(paceToSpeed(5, 0)).toBe(12);
+    expect(paceToSpeed(5, 30)).toBe(10.909);
+  });
+
+  test('paceToSpeed returns zero speed for zero pace', () => {
+    expect(paceToSpeed(0, 0)).toBe(0);
+  });
+
+  test('round-trips within one second of precision', () => {
+    const pace = speedToPace(9.5);
+    const speed = paceToSpeed(pace.min, pace.sec);
+    expect(speedToPace(speed)).toEqual(pace);
+  });
+
+  test('round-trips at slower (11:00/km) paces that 2-decimal rounding used to lose', () => {
+    const speed = paceToSpeed(11, 0);
+    expect(speedToPace(speed)).toEqual({ min: 11, sec: 0 });
+  });
+});
+
 describe('dist', () => {
   test('route mode: distance clamped to at least 1', () => {
     expect(dist(makeRoute({ mode: 'route', distance: 5 }))).toBe(5);
     expect(dist(makeRoute({ mode: 'route', distance: 0 }))).toBe(1);
   });
 
-  test('time mode: virtual km = round(totalHours * 10)', () => {
-    expect(dist(makeRoute({ mode: 'time', hours: 1, minutes: 0 }))).toBe(10);
-    expect(dist(makeRoute({ mode: 'time', hours: 0, minutes: 6 }))).toBe(1);
+  test('time mode: virtual km scales with sport+intensity nominal speed', () => {
+    expect(dist(makeRoute({ mode: 'time', hours: 1, minutes: 0 }))).toBe(28); // cycling mid: 28 km/h
+    expect(dist(makeRoute({ mode: 'time', hours: 0, minutes: 6 }))).toBe(3); // round(0.1h * 28)
+  });
+
+  test('time mode: intensity and sport shift the nominal pace', () => {
+    expect(dist(makeRoute({ mode: 'time', hours: 1, intensity: 'low' }))).toBe(24); // round(28*0.85)
+    expect(dist(makeRoute({ mode: 'time', hours: 1, intensity: 'high' }))).toBe(32); // round(28*1.15)
+    expect(dist(makeRoute({ mode: 'time', hours: 1, sport: 'running' }))).toBe(11); // round(10.9)
   });
 });
 
@@ -154,6 +219,27 @@ describe('cph', () => {
     expect(cph({ ...h, intensity: 'low' })).toBe(60);
     expect(cph({ ...h, intensity: 'mid' })).toBe(75);
     expect(cph({ ...h, intensity: 'high' })).toBe(90);
+  });
+
+  test('running, under 1 hour', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 10, speed: 20 }); // 0.5h
+    expect(cph({ ...h, intensity: 'low' })).toBe(20);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(30);
+    expect(cph({ ...h, intensity: 'high' })).toBe(45);
+  });
+
+  test('running, between 1 and 2.5 hours inclusive (same as cycling)', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 50, speed: 25 }); // 2h
+    expect(cph({ ...h, intensity: 'low' })).toBe(30);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(45);
+    expect(cph({ ...h, intensity: 'high' })).toBe(60);
+  });
+
+  test('running, over 2.5 hours', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 300, speed: 25 }); // 12h
+    expect(cph({ ...h, intensity: 'low' })).toBe(45);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(60);
+    expect(cph({ ...h, intensity: 'high' })).toBe(75);
   });
 });
 
@@ -218,6 +304,38 @@ describe('absCap', () => {
     expect(blended).toBeGreaterThanOrEqual(gelOnlyCap);
     expect(blended).toBeLessThanOrEqual(izoOnlyCap);
   });
+
+  test('high intensity trims the cap by ~12%, other intensities do not', () => {
+    const mix = makeMix({ ratio: 2, gelRatio: 2 });
+    const baseline = absCap(mix); // no plan mix, defaults to 'mid' -> no trim
+    expect(baseline).toBe(90);
+    expect(absCap(mix, 0, 0, 'low')).toBe(90);
+    expect(absCap(mix, 0, 0, 'mid')).toBe(90);
+    expect(absCap(mix, 0, 0, 'high')).toBe(79);
+  });
+
+  test('high intensity trim never pushes the cap below its own 45 floor', () => {
+    const mix = makeMix({ gelRatio: 0.5 });
+    const cap = absCap(mix, 0, 100, 'high'); // all carbs from the low-ratio gel
+    expect(cap).toBeGreaterThanOrEqual(45);
+  });
+});
+
+describe('cph() vs absCap() interaction at cycling, high intensity, long duration', () => {
+  test('pins the achievable coverage ceiling so a future retune cannot silently move it', () => {
+    const route = makeRoute({
+      sport: 'cycling',
+      mode: 'route',
+      distance: 300,
+      speed: 25,
+      intensity: 'high',
+    });
+    const target = cph(route);
+    const cap = absCap(makeMix(), 0, 0, route.intensity);
+    expect(target).toBe(90);
+    expect(cap).toBe(79);
+    expect(Math.round((cap / target) * 100)).toBe(88);
+  });
 });
 
 describe('preRideGut', () => {
@@ -258,6 +376,12 @@ describe('prof / eff', () => {
     expect(eff(route, 0)).toBe(0);
     expect(eff(route, 50)).toBe(80);
     expect(eff(route, 100)).toBe(160);
+  });
+
+  test('running effort stays within a narrower band than cycling', () => {
+    const route = makeRoute({ sport: 'running', mode: 'route', distance: 100, useGpx: true });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.effort >= 0.6 && p.effort <= 1.8)).toBe(true);
   });
 
   test('synthetic profile (useGpx on, no track) stays within physical bounds', () => {
@@ -304,6 +428,31 @@ describe('prof / eff', () => {
     expect(P.cumTime[0]).toBe(0);
     // First half (the climb) should account for more than half of the raw cumulative time.
     expect(P.cumTime[80]).toBeGreaterThan(P.cumTime[160] / 2);
+  });
+
+  test('a single-point gpxTrack is a valid flat profile at that elevation, not a NaN case', () => {
+    const route = makeRoute({
+      mode: 'route',
+      distance: 100,
+      useGpx: true,
+      gpxTrack: { id: 1, ele: [250] },
+    });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.ele === 250)).toBe(true);
+    expect(P.pts.every((p) => Number.isFinite(p.grad))).toBe(true);
+  });
+
+  test('an empty gpxTrack (corrupted persisted state) falls back to a flat profile instead of NaN', () => {
+    const route = makeRoute({
+      mode: 'route',
+      distance: 100,
+      useGpx: true,
+      gpxTrack: { id: 1, ele: [] },
+    });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.ele === 0)).toBe(true);
+    expect(P.pts.every((p) => Number.isFinite(p.grad))).toBe(true);
+    expect(P.cumTime.every((t) => Number.isFinite(t))).toBe(true);
   });
 });
 
@@ -658,7 +807,7 @@ describe('samples', () => {
       route: makeRoute({ mode: 'time', hours: 2, minutes: 30, intensity: 'mid', useGpx: false }),
     });
     const S = samples(plan);
-    expect(dist(plan.route)).toBe(25);
+    expect(dist(plan.route)).toBe(70); // round(2.5h * 28 km/h cycling-mid nominal)
     expect(S[0].need).toBe(0);
     expect(S[160].need).toBeCloseTo(2.5 * 45, 6); // totalHours=2.5 -> cph mid=45
   });
@@ -722,7 +871,7 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
   // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
   // sweatLoss = 700*4 = 2800ml, well above the buffer (weight*15=1125ml), so totalFluidNeed is
   // the full, undiscounted 2800ml — not reduced by the buffer and not by COVERAGE_TARGET_PCT
-  // (85% is a badge-only tolerance, not part of what the line itself asks for). Distributed by
+  // (that constant is a badge-only tolerance, not part of what the line asks for). Distributed by
   // eff(x)/tot exactly like carbs' `need` — no GPX here, so effort=1 everywhere and eff(x)/tot
   // reduces to x/D (a straight line), matching a flat ml/h target rate.
   const route = makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' });
@@ -731,7 +880,7 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
     const S = samples(makePlan({ route }));
     expect(S[0].fluidNeed).toBe(0);
     expect(S[80].fluidNeed).toBeCloseTo(2800 * 0.5, 3); // midpoint -> half the total
-    expect(S[160].fluidNeed).toBeCloseTo(2800, 3); // the full sweat loss, not an 85%-discounted figure
+    expect(S[160].fluidNeed).toBeCloseTo(2800, 3); // the full sweat loss, not a badge-discounted figure
   });
 
   test('fluidNeed rises immediately from the start (no flat-zero plateau) and monotonically throughout', () => {
@@ -826,17 +975,236 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
       expect(after[i].fluidRate).toBeLessThanOrEqual(after[i - 1].fluidRate + 1e-9);
     }
   });
+
+  test('fluidRate reflects the raw pour rate uncapped, even when a fill outpaces the gut — the UI flags this with color, not by clamping the data', () => {
+    const gear: Vessel[] = [
+      { gid: 'g1', name: 'Bidon', vol: 1000, allowed: ['water'], gelParts: 1 },
+    ];
+    // 1000ml crammed into the last 10km (~0.4h at 25kph) is ~2500ml/h — over 2.5x the 900ml/h cap.
+    // Unlike carbs (a real transporter-limited ceiling), gastric emptying is volume-proportional
+    // and highly individual (~4x range in the literature), so the chart shows the honest pour
+    // rate and lets the rider judge "too fast" visually, rather than asserting an exact cutoff.
+    const fills: Fill[] = [{ fid: 1, gid: 'g1', content: 'water', from: 90, to: 100 }];
+    const S = samples(makePlan({ route, gear, fills }));
+    const peak = Math.max(...S.map((p) => p.fluidRate));
+    expect(peak).toBeGreaterThan(FLUID_ABSORPTION_CAP_ML_H * 2);
+
+    // `mlAbsorbed` (what hydrationPct/coverage are based on) still caps at what the stomach can
+    // physically clear — poured this late, most of it can't clear before the ride ends: only
+    // cap * legDuration (900 * 0.4h = 360ml) of the 1000ml poured counts as absorbed.
+    const last = S[S.length - 1];
+    expect(last.ml).toBeCloseTo(1000, 0);
+    expect(last.mlAbsorbed).toBeCloseTo(360, 0);
+  });
 });
 
-describe('rateStats', () => {
-  test('zero positions in the plan: coverage 0%, dry stretch spans the whole ride', () => {
-    const plan = makePlan({
-      route: makeRoute({ mode: 'time', hours: 0, minutes: 30, intensity: 'mid', useGpx: false }),
+describe('rateStats coverage', () => {
+  // 4h at 75 g/h (mid, >2.5h) = 300 g required, absorption cap 90 g/h — comfortably above the
+  // 75 g/h need rate, so the gut is never the binding constraint in these scenarios and any
+  // shortfall the metric reports is genuinely about *when* the carbs land.
+  const route = makeRoute({ mode: 'route', distance: 100, speed: 25, intensity: 'mid' });
+  const TARGET = 300;
+
+  function withFood(carbs: number, from: number, to: number, r: RouteInput = route): PlanState {
+    return makePlan({
+      route: r,
+      foods: [{ id: 1, key: 'bar', name: 'Bar', carbs, cont: true, from, to }],
     });
-    const { coverage, dryStretch } = rateStats(plan);
-    expect(coverage).toBe(0);
-    expect(dryStretch.len).toBeCloseTo(0.5, 6);
-    expect(dryStretch.x).toBe(5); // dist() for 0.5h in time mode
+  }
+
+  test('an empty plan is 0%, not a phantom few percent from a fully digested pre-ride meal', () => {
+    // Regression: coverage used to integrate the EMA-smoothed `rate`, and that EMA is seeded by
+    // simulating the pre-ride meal's digestion *before the start line*. Those grams leaked into
+    // the ride-window integral, so a plan with literally nothing to eat or drink on the bike
+    // reported 8% covered. Nothing on board must read as nothing covered.
+    //
+    // 50 g eaten 45 min out is fully digested by the start (cap 90 g/h clears 67 g in that time),
+    // so preRideGut() carries nothing over and absorbedTotal is a true zero.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) });
+    expect(planSummary(plan).absorbedTotal).toBe(0);
+    expect(rateStats(plan).coverage).toBe(0);
+  });
+
+  test('a pre-ride meal still being digested at the start line does count toward coverage', () => {
+    // The other side of the line above, and the reason the fix targets the EMA seed rather than
+    // pre-ride carbs as such: 80 g eaten only 30 min out leaves 35 g genuinely undigested in the
+    // gut when the rider clips in. Those grams are real fuel arriving during the ride and must
+    // keep counting — this guards against "fixing" the phantom by zeroing pre-ride carbs entirely.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
+    expect(planSummary(plan).absorbedTotal).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h
+    // All of it counts here: the leftover clears the gut at the 90 g/h cap against a 75 g/h
+    // requirement, and the ~6 g of surplus that runs ahead of the need is well inside the carry
+    // window, so it is spent a few minutes later rather than discarded.
+    expect(rateStats(plan).coveredCarbs).toBeCloseTo(35, 6);
+  });
+
+  test('exactly the required carbs, spread evenly across the ride: ~100%', () => {
+    const plan = withFood(TARGET, 0, 100);
+    expect(rateStats(plan).coverage).toBeGreaterThanOrEqual(99);
+    expect(rateStats(plan).coverage).toBeLessThanOrEqual(100);
+  });
+
+  test('every gram absorbed but front-loaded scores below the same carbs spread evenly', () => {
+    // The case that forces the metric to be time-aware: a plain absorbed/target sum ratio calls
+    // this a perfect plan (all 300 g do get absorbed), but the rider runs the back of the ride on
+    // an empty stomach. Asserted as a *gap against the evenly-spread plan* rather than a fixed
+    // number, so it keeps testing the property (front-loading is worse) rather than the current
+    // value of COVERAGE_CARRY_MINUTES.
+    const front = planSummary(withFood(TARGET, 0, 50));
+    const even = planSummary(withFood(TARGET, 0, 100));
+    expect(Math.round((front.absorbedTotal / front.target) * 100)).toBe(100);
+    expect(even.coverage).toBe(100);
+    expect(front.coverage).toBeLessThan(even.coverage - 5);
+  });
+
+  test('carbs arriving long after the need has passed stay uncredited', () => {
+    // The carry window must not become a back door to the plain sum ratio: 15 minutes of buffer
+    // cannot rescue a plan that only starts feeding at 85 km of 100.
+    expect(rateStats(withFood(TARGET, 85, 100)).coverage).toBeLessThan(25);
+  });
+
+  test('a hilly route still grades the plan, not the elevation profile', () => {
+    // Regression, and the reason coverage carries a bounded surplus at all. `need` is distributed
+    // by effort per distance while the absorption model assumes uniform time per distance step, so
+    // on a climb step Δneed alone can exceed what the gut passes in the ~90 s a step represents.
+    // Settling up per step with no carry burned that difference permanently and made coverage a
+    // constant of the terrain: on this profile 300 g, 600 g and 1200 g every one scored 80%, so
+    // no amount of food could turn the badge green. Coverage must respond to the plan.
+    const ele: number[] = [];
+    for (let i = 0; i <= 400; i++) ele.push(200 + 300 * Math.sin((i / 400) * 4 * 2 * Math.PI));
+    const hilly = makeRoute({ ...route, useGpx: true, gpxTrack: { id: 1, ele } });
+
+    const lean = planSummary(withFood(TARGET / 2, 0, 100, hilly)).coverage;
+    const right = planSummary(withFood(TARGET, 0, 100, hilly)).coverage;
+    const rich = planSummary(withFood(TARGET * 2, 0, 100, hilly)).coverage;
+
+    expect(right).toBeGreaterThan(lean);
+    expect(rich).toBeGreaterThan(right);
+    // ...and an adequate plan on rolling terrain must be able to read as adequate at all.
+    expect(right).toBeGreaterThanOrEqual(90);
+  });
+
+  test('overshooting the requirement is capped at 100%, never above', () => {
+    // Eating double never means "200% fuelled" — surplus carbs past the hourly need are not
+    // coverage, they are just surplus. The mobile card used to render 120% here.
+    expect(rateStats(withFood(TARGET * 2, 0, 100)).coverage).toBe(100);
+  });
+
+  test('the carried surplus can never push coverage out of bounds on any terrain', () => {
+    // `surplus` is never reset and never decays, so the bound has to come from the arithmetic
+    // rather than from luck: credited is min(available, Δneed), so covered can never outrun the
+    // summed need, and Δabsorbed ≥ 0 keeps the carry non-negative. Swept rather than reasoned
+    // about, because this is the invariant the whole badge rests on.
+    const profiles: [string, number[] | null][] = [
+      ['flat', null],
+      [
+        'rollers',
+        Array.from({ length: 401 }, (_, i) => 200 + 300 * Math.sin((i / 400) * 8 * Math.PI)),
+      ],
+      ['alpine', Array.from({ length: 401 }, (_, i) => 200 + 1600 * Math.sin((i / 400) * Math.PI))],
+      ['one long climb', Array.from({ length: 401 }, (_, i) => 200 + (i / 400) * 2000)],
+    ];
+    for (const [label, ele] of profiles) {
+      const r = ele
+        ? makeRoute({ ...route, useGpx: true, gpxTrack: { id: 1, ele } })
+        : makeRoute(route);
+      for (const grams of [0, 1, TARGET / 3, TARGET, TARGET * 5]) {
+        for (const [from, to] of [
+          [0, 100],
+          [0, 20],
+          [80, 100],
+          [40, 60],
+        ]) {
+          const s = planSummary(withFood(grams, from, to, r));
+          const where = `${label} ${grams}g ${from}-${to}km`;
+          expect(s.coverage, where).toBeGreaterThanOrEqual(0);
+          expect(s.coverage, where).toBeLessThanOrEqual(100);
+          expect(Number.isFinite(s.coveredCarbs), where).toBe(true);
+          expect(s.coveredCarbs, where).toBeGreaterThanOrEqual(0);
+          expect(s.coveredCarbs, where).toBeLessThanOrEqual(s.target + 1e-9);
+        }
+      }
+    }
+  });
+
+  test('coveredCarbs is the gram figure the percentage is computed from', () => {
+    // The UI prints "X / Y g" underneath the percentage; if X were absorbedTotal while the
+    // percentage came from coverage, the card would contradict itself in place.
+    const { coverage, coveredCarbs } = rateStats(withFood(180, 0, 100));
+    expect(coveredCarbs).toBeGreaterThan(0);
+    expect(coveredCarbs).toBeLessThanOrEqual(TARGET);
+    expect(coverage).toBe(Math.round((coveredCarbs / TARGET) * 100));
+  });
+
+  test('a zero-duration ride requires nothing, so it reads as fully covered', () => {
+    // Same reasoning as hydrationPct's zero-sweat case: dividing by a zero requirement must not
+    // paint a red 0% on a plan that has nothing to cover.
+    const plan = makePlan({ route: makeRoute({ mode: 'time', hours: 0, minutes: 0 }) });
+    expect(rateStats(plan).coverage).toBe(100);
+  });
+});
+
+describe('coverageStatus', () => {
+  test('at or above the shared target threshold: good', () => {
+    expect(coverageStatus(COVERAGE_TARGET_PCT)).toBe('good');
+    expect(coverageStatus(100)).toBe('good');
+  });
+
+  test('between the short threshold and the target: partial', () => {
+    expect(coverageStatus(COVERAGE_TARGET_PCT - 1)).toBe('partial');
+    expect(coverageStatus(COVERAGE_SHORT_PCT)).toBe('partial');
+  });
+
+  test('below the short threshold: short', () => {
+    expect(coverageStatus(COVERAGE_SHORT_PCT - 1)).toBe('short');
+    expect(coverageStatus(0)).toBe('short');
+  });
+
+  test('the two thresholds stay ordered', () => {
+    expect(COVERAGE_SHORT_PCT).toBeLessThan(COVERAGE_TARGET_PCT);
+  });
+
+  test('the calibrated values themselves, anchored on rider-verified plans', () => {
+    // Everything above is written in terms of the constants, so it passes for ANY pair of ordered
+    // numbers — setting them to 40/10 kept the whole suite green. That made the single most
+    // load-bearing product decision in this metric the least defended thing about it. These are
+    // the literal percentages the calibration was chosen to produce, taken from saved plans in
+    // docs/tests, so moving a threshold has to be a deliberate edit here too.
+    expect(coverageStatus(84)).toBe('good'); // izo-6: the rider's own plan, verified as green
+    expect(coverageStatus(80)).toBe('good'); // food7, landing exactly on the target threshold
+    expect(coverageStatus(56)).toBe('partial'); // mix-4-autoplan, deliberately not red
+    // Boundary probes rather than real plans — these pin the edges either side of the two tiers.
+    expect(coverageStatus(79)).toBe('partial');
+    expect(coverageStatus(54)).toBe('short');
+    expect(COVERAGE_TARGET_PCT).toBe(80);
+    expect(COVERAGE_SHORT_PCT).toBe(55);
+  });
+});
+
+describe('hydrationStatus', () => {
+  test('water is graded more strictly than carbs, on its own thresholds', () => {
+    // These were briefly shared with carbs, which quietly recalibrated hydration on carb evidence.
+    // Water keeps the stricter pair on purpose — see HYDRATION_TARGET_PCT.
+    expect(HYDRATION_TARGET_PCT).toBeGreaterThan(COVERAGE_TARGET_PCT);
+    expect(HYDRATION_SHORT_PCT).toBeGreaterThan(COVERAGE_SHORT_PCT);
+    expect(HYDRATION_SHORT_PCT).toBeLessThan(HYDRATION_TARGET_PCT);
+  });
+
+  test('a plan covering 59% of sweat loss reads red, not amber', () => {
+    // The concrete case that exposed the shared-threshold problem: food-7 / food7 in docs/tests
+    // sit at 59% hydration. Under the shared 80/55 they went amber; the rider's call is that
+    // missing two fifths of your sweat loss is a red-flag plan, not a nearly-there one.
+    expect(hydrationStatus(59)).toBe('short');
+    expect(coverageStatus(59)).toBe('partial'); // ...whereas 59% of your carbs is not red
+  });
+
+  test('the calibrated water values themselves', () => {
+    expect(hydrationStatus(85)).toBe('good');
+    expect(hydrationStatus(84)).toBe('partial'); // would be green on the carb scale
+    expect(hydrationStatus(60)).toBe('partial');
+    expect(hydrationStatus(70)).toBe('partial'); // mobile used to call this green on its own
+    expect(HYDRATION_TARGET_PCT).toBe(85);
+    expect(HYDRATION_SHORT_PCT).toBe(60);
   });
 });
 
@@ -861,8 +1229,8 @@ describe('fmtX', () => {
   });
 
   test('time mode always uses the time axis regardless of xUnit', () => {
-    const route = makeRoute({ mode: 'time', hours: 2, minutes: 0 }); // dist=20, 10 km/h
-    expect(fmtX(10, true, route, 'km')).toBe('1:00 h');
+    const route = makeRoute({ mode: 'time', hours: 2, minutes: 0 }); // dist=56, 28 km/h cycling-mid
+    expect(fmtX(28, true, route, 'km')).toBe('1:00 h');
   });
 
   test('time axis reflects gradient when useGpx is true (climb gets a later label than flat division would)', () => {
@@ -951,6 +1319,27 @@ describe('planSummary', () => {
     const summary = planSummary(mildPlan);
     expect(summary.sweatLoss).toBe(344); // round(430 * 0.8h), under the 85*15=1275ml buffer
     expect(summary.hydrationPct).toBe(100);
+  });
+
+  test('hydrationPct is based on absorbed fluid, not raw poured volume, when a fill outpaces the gut', () => {
+    // Same 1000ml-in-the-last-10km setup as the fluidRate test: physiologically only
+    // 900*0.4h = 360ml of it clears the stomach before the ride ends, even though the rider
+    // carried and drank the full 1000ml.
+    const gear: Vessel[] = [
+      { gid: 'g1', name: 'Bidon', vol: 1000, allowed: ['water'], gelParts: 1 },
+    ];
+    const fills: Fill[] = [{ fid: 1, gid: 'g1', content: 'water', from: 90, to: 100 }];
+    const plan = makePlan({
+      route: makeRoute({ distance: 100, speed: 25, weight: 75, temp: 20, intensity: 'mid' }),
+      gear,
+      fills,
+    });
+    const summary = planSummary(plan);
+    expect(summary.fluidPlanned).toBe(1000); // still reports what was actually poured/carried
+    expect(summary.fluidAbsorbedTotal).toBeCloseTo(360, 0); // but only this much was absorbable
+    // sweatLoss here is 2800ml (see fluidNeed describe block above for the same route/weight/temp).
+    expect(summary.hydrationPct).toBe(Math.round((360 / 2800) * 100));
+    expect(summary.hydrationPct).toBeLessThan(Math.round((1000 / 2800) * 100));
   });
 });
 
@@ -1053,15 +1442,32 @@ describe('mixSplit', () => {
 });
 
 describe('presetTagFor', () => {
-  test('maps the three named presets to their tag', () => {
+  test('maps the four named presets to their tag', () => {
     expect(presetTagFor(2)).toBe('iso');
     expect(presetTagFor(1)).toBe('sugar');
     expect(presetTagFor(0.8)).toBe('honey');
+    expect(presetTagFor(1.5)).toBe('ratio15');
   });
 
-  test('maps any other ratio (including the untagged 1.5 preset button) to custom', () => {
-    expect(presetTagFor(1.5)).toBe('custom');
+  test('maps any other ratio to custom', () => {
     expect(presetTagFor(3)).toBe('custom');
+  });
+});
+
+describe('ratioPresetIndex', () => {
+  const presets = [2, 1.5, 1, 0.8];
+
+  test('finds the preset whose value and tag both match', () => {
+    expect(ratioPresetIndex(1.5, 'ratio15', presets)).toBe(1);
+    expect(ratioPresetIndex(0.8, 'honey', presets)).toBe(3);
+  });
+
+  test('returns -1 when the tag is custom even if the value matches a preset', () => {
+    expect(ratioPresetIndex(1.5, 'custom', presets)).toBe(-1);
+  });
+
+  test('returns -1 for a genuinely custom ratio not in the preset list', () => {
+    expect(ratioPresetIndex(3, 'custom', presets)).toBe(-1);
   });
 });
 

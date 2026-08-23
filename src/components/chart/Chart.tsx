@@ -4,7 +4,9 @@ import {
   carbsFill,
   dist,
   distanceAtTime,
+  FLUID_ABSORPTION_CAP_ML_H,
   fmtX,
+  GUT_LIMIT,
   prof,
   samples,
   totalHours,
@@ -14,22 +16,13 @@ import {
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { ElevationLayer, niceStep } from './ElevationLayer';
-import { CHART_COLORS, sourceColor } from './theme';
+import { CHART_COLORS, FLUID_ZONE, fluidZoneGradientStops, sourceColor } from './theme';
 
-const FLUID_CAP = 750;
-const GUT_LIMIT = 60;
+const FLUID_CAP = FLUID_ABSORPTION_CAP_ML_H;
 const WIDTH = 800;
 
 type NumericSampleKey =
-  | 'intake'
-  | 'absorbed'
-  | 'gut'
-  | 'ml'
-  | 'need'
-  | 'rate'
-  | 'needRate'
-  | 'fluidRate'
-  | 'fluidNeedRate';
+  'absorbed' | 'gut' | 'ml' | 'need' | 'rate' | 'needRate' | 'fluidRate' | 'fluidNeedRate';
 
 function polyline(
   samplesArr: Sample[],
@@ -71,25 +64,22 @@ export function Chart({ height, showAxis }: ChartProps) {
   const P = prof(route);
 
   const fluidMode = yMode === 'fluid';
-  const rateMode = yMode === 'rate' || fluidMode;
-  const yk: NumericSampleKey = fluidMode ? 'fluidRate' : rateMode ? 'rate' : 'absorbed';
-  const nk: NumericSampleKey = fluidMode ? 'fluidNeedRate' : rateMode ? 'needRate' : 'need';
+  const yk: NumericSampleKey = fluidMode ? 'fluidRate' : 'rate';
+  const nk: NumericSampleKey = fluidMode ? 'fluidNeedRate' : 'needRate';
   const izoCarbs = fills
     .filter((f) => f.content === 'izo')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
   const gelCarbs = fills
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
-  const cap = absCap(mix, izoCarbs, gelCarbs);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
   const capY = fluidMode ? FLUID_CAP : cap;
 
   const maxY = fluidMode
     ? Math.max(FLUID_CAP * 1.1, ...S.map((p) => Math.max(p.fluidRate, p.fluidNeedRate))) * 1.1
-    : rateMode
-      ? Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15
-      : Math.max(1, ...S.map((p) => Math.max(p.intake, p.need))) * 1.08;
+    : Math.max(10, cap * 1.05, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15;
 
-  const yUnit = fluidMode ? ' ml/h' : rateMode ? ' g/h' : ' g';
+  const yUnit = fluidMode ? ' ml/h' : ' g/h';
   const yStep = niceStep(maxY, 3);
   const yTicks: number[] = [];
   for (let v = 0; v <= maxY + 0.001; v += yStep) yTicks.push(v);
@@ -106,11 +96,24 @@ export function Chart({ height, showAxis }: ChartProps) {
   const area =
     polyline(S, yk, px, py) + ' L' + WIDTH + ' ' + (height - PB) + ' L0 ' + (height - PB) + ' Z';
 
-  let worst = { d: 0, x: 0 };
-  S.forEach((p) => {
-    const d = p.need - p.absorbed;
-    if (d > worst.d) worst = { d, x: p.x };
-  });
+  // Severity gradient for the fluid-rate line: below the absorption cap it's the plain water
+  // blue; above it, the color eases through yellow/orange/red as the pour rate increasingly
+  // outpaces gastric emptying. A vertical (userSpaceOnUse) gradient keyed to rate value works
+  // because py() is a monotonic value→pixel map — wherever the line's y-coordinate lands, that
+  // pixel is already the right color for that rate, at any x. Deliberately a gradient, not a hard
+  // clamp on the data: unlike carbs' transporter-limited ceiling, gastric emptying rate is
+  // volume-proportional and varies ~4x between riders, so there's no single correct cutoff to
+  // enforce — this flags rising risk instead of asserting an exact one.
+  //
+  // The gradient's own span is anchored to FLUID_ZONE.spanMultiple × the cap, not to `maxY`
+  // (the chart's actual y-scale): maxY shrinks to fit whatever the current plan's peak is, so for
+  // any overpour under 2x the cap, using maxY as the span would push the higher color stops off
+  // the top of the gradient's own range and collapse them together — see FLUID_ZONE's doc comment.
+  const fluidZoneDomainMax = Math.max(maxY, FLUID_CAP * FLUID_ZONE.spanMultiple);
+  const fluidZoneY0 = py(0);
+  const fluidZoneY1 = py(fluidZoneDomainMax);
+  const fluidZoneOffset = (v: number) => (py(v) - fluidZoneY0) / (fluidZoneY1 - fluidZoneY0);
+  const fluidZoneStops = fluidZoneGradientStops(FLUID_CAP, fluidZoneOffset);
 
   const gutOver = S.some((p) => p.gut > GUT_LIMIT);
 
@@ -196,6 +199,22 @@ export function Chart({ height, showAxis }: ChartProps) {
             <stop offset="100%" stopColor={CHART_COLORS.water} stopOpacity={0.02} />
           </linearGradient>
         </defs>
+        {fluidMode && (
+          <defs>
+            <linearGradient
+              id="fluidZone"
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={fluidZoneY0}
+              x2={0}
+              y2={fluidZoneY1}
+            >
+              {fluidZoneStops.map((s, i) => (
+                <stop key={i} offset={s.offset} stopColor={s.color} />
+              ))}
+            </linearGradient>
+          </defs>
+        )}
 
         <ElevationLayer
           pts={prof(route).pts}
@@ -320,47 +339,31 @@ export function Chart({ height, showAxis }: ChartProps) {
 
         <path d={area} fill={fluidMode ? 'url(#fpb)' : 'url(#fpg)'} />
 
-        {rateMode && (
-          <path
-            fill={CHART_COLORS.climb}
-            opacity={0.16}
-            d={
-              polyline(S, nk, px, py) +
-              ' ' +
-              S.slice()
-                .reverse()
-                .map((p) => 'L' + px(p.x).toFixed(1) + ' ' + py(Math.min(p[yk], p[nk])).toFixed(1))
-                .join(' ') +
-              ' Z'
-            }
-          />
-        )}
+        <path
+          fill={CHART_COLORS.climb}
+          opacity={0.16}
+          d={
+            polyline(S, nk, px, py) +
+            ' ' +
+            S.slice()
+              .reverse()
+              .map((p) => 'L' + px(p.x).toFixed(1) + ' ' + py(Math.min(p[yk], p[nk])).toFixed(1))
+              .join(' ') +
+            ' Z'
+          }
+        />
 
-        {rateMode && (
-          <line
-            x1={0}
-            x2={WIDTH}
-            y1={py(capY)}
-            y2={py(capY)}
-            stroke={fluidMode ? CHART_COLORS.water : CHART_COLORS.carb}
-            strokeWidth={1}
-            strokeDasharray="3 5"
-            opacity={0.8}
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
-
-        {!rateMode && (
-          <path
-            d={polyline(S, 'intake', px, py)}
-            fill="none"
-            stroke={CHART_COLORS.carb}
-            strokeWidth={1.2}
-            strokeDasharray="2 4"
-            opacity={0.55}
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
+        <line
+          x1={0}
+          x2={WIDTH}
+          y1={py(capY)}
+          y2={py(capY)}
+          stroke={fluidMode ? CHART_COLORS.water : CHART_COLORS.carb}
+          strokeWidth={1}
+          strokeDasharray="3 5"
+          opacity={0.8}
+          vectorEffect="non-scaling-stroke"
+        />
 
         <path
           d={polyline(S, nk, px, py)}
@@ -375,7 +378,7 @@ export function Chart({ height, showAxis }: ChartProps) {
           <path
             key={'r' + i}
             fill="none"
-            stroke={fluidMode ? CHART_COLORS.water : run.color}
+            stroke={fluidMode ? 'url(#fluidZone)' : run.color}
             strokeWidth={2.6}
             strokeLinejoin="miter"
             strokeLinecap="butt"
@@ -385,19 +388,6 @@ export function Chart({ height, showAxis }: ChartProps) {
               .join(' ')}
           />
         ))}
-
-        {!rateMode && worst.d > 12 && (
-          <line
-            x1={px(worst.x)}
-            x2={px(worst.x)}
-            y1={4}
-            y2={height - PB}
-            stroke={CHART_COLORS.climb}
-            strokeWidth={1.5}
-            strokeDasharray="3 3"
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
 
         {showAxis &&
           yTicks.map((v, i) => (

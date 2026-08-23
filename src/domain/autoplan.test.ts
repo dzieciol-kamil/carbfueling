@@ -26,6 +26,7 @@ import type {
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 100,
     speed: 25,

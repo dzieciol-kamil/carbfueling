@@ -34,16 +34,35 @@ export function createFillDragHandler(fid: number, mode: FillDragMode) {
     if (!f) return;
     const distanceKm = dist(state.route);
     const kpp = trackWidthKmPerPixel(track, distanceKm);
-    const x0 = ev.clientX;
+    let x0 = ev.clientX;
     const from0 = f.from;
     const to0 = f.to;
     const pos0 = f.pos ? f.pos.slice() : undefined;
     const siblings = state.fills.filter((x) => x.gid === f.gid);
+    // Where the dragged fill sits now; a swap re-bases this (and the pointer anchor)
+    // so the bar keeps tracking the cursor from its new slot.
+    let base = { from: f.from, to: f.to };
 
     const move = (e2: PointerEvent) => {
       const d = (e2.clientX - x0) * kpp;
       if (mode === 'move') {
-        const { from, to } = moveFill(f, siblings, distanceKm, d);
+        const live = useAppStore.getState().fills;
+        const { from, to, swap } = moveFill(
+          { ...f, ...base },
+          live.filter((x) => x.gid === f.gid),
+          distanceKm,
+          d,
+        );
+        if (swap) {
+          const other = live.find((x) => x.fid === swap.fid);
+          useAppStore.getState().updateFill(swap.fid, {
+            from: swap.from,
+            to: swap.to,
+            pos: other && rescalePositions(other.pos, other.from, other.to, swap.from, swap.to),
+          });
+          base = { from, to };
+          x0 = e2.clientX;
+        }
         const pos = rescalePositions(pos0, from0, to0, from, to);
         useAppStore.getState().updateFill(fid, { from, to, pos });
         return;

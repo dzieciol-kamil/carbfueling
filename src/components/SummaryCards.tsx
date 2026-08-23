@@ -1,5 +1,11 @@
 import type { CSSProperties } from 'react';
-import { COVERAGE_TARGET_PCT, planSummary, recoveryCarbs } from '../domain/fuel';
+import {
+  coverageStatus,
+  hydrationStatus,
+  planSummary,
+  recoveryCarbs,
+  type CoverageStatus,
+} from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { InfoPopover } from './ui/InfoPopover';
@@ -8,9 +14,12 @@ function fmt(n: number): string {
   return n.toFixed(0);
 }
 
-function statusColor(pct: number, goodColor: string): string {
-  if (pct >= COVERAGE_TARGET_PCT) return goodColor;
-  if (pct < 60) return '#B4552F';
+/** Takes an already-decided status rather than a percentage: which thresholds apply differs
+ *  between carbs and water (see `hydrationStatus`), and that decision belongs in the domain, not
+ *  in a colour helper. Only the palette is this layout's own. */
+function statusColor(status: CoverageStatus, goodColor: string): string {
+  if (status === 'good') return goodColor;
+  if (status === 'short') return '#B4552F';
   return '#D2703F';
 }
 
@@ -72,8 +81,8 @@ export function SummaryCards() {
   const strings = t(lang);
 
   const summary = planSummary({ route, mix, gear, fills, foods, foodLib, stops });
-  const carbColor = statusColor(summary.coverage, 'var(--carb)');
-  const hydColor = statusColor(summary.hydrationPct, 'var(--water)');
+  const carbColor = statusColor(coverageStatus(summary.coverage), 'var(--carb)');
+  const hydColor = statusColor(hydrationStatus(summary.hydrationPct), 'var(--water)');
   const recovery = recoveryCarbs(route.weight);
 
   return (
@@ -165,7 +174,8 @@ export function SummaryCards() {
             {strings.sweatLoss} <b style={footerValueStyle}>{summary.sweatLoss} ml</b>
           </span>
           <span>
-            {strings.planned} <b style={footerValueStyle}>{summary.fluidPlanned} ml</b>
+            {strings.tAbsorbed}{' '}
+            <b style={footerValueStyle}>{Math.round(summary.fluidAbsorbedTotal)} ml</b>
           </span>
         </div>
       </div>

@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 
 if lsof -i ":$PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
   echo "Dev server already running on port $PORT"
-  echo "Local: http://localhost:$PORT/"
+  echo "Local: http://localhost:$PORT/en/calculator/"
   exit 0
 fi
 

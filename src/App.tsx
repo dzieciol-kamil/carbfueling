@@ -4,6 +4,8 @@ import { ChartHelpModal } from './components/chart/ChartHelpModal';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileApp } from './components/mobile/MobileApp';
+import { FoodPanel } from './components/panels/FoodPanel';
+import { GearPanel } from './components/panels/GearPanel';
 import { MixPanel } from './components/panels/MixPanel';
 import { SettingsPanel } from './components/panels/SettingsPanel';
 import { RecipesSection } from './components/recipes/RecipesSection';
@@ -11,6 +13,7 @@ import { RoutePanel } from './components/RoutePanel';
 import { SummaryCards } from './components/SummaryCards';
 import { TourOverlay } from './components/tour/TourOverlay';
 import { DESKTOP_BREAKPOINT, hasPlanData, isDesktopView, useAppStore } from './store/appStore';
+import { nextLangPath } from './urls';
 
 function App() {
   const panel = useAppStore((s) => s.ui.panel);
@@ -20,6 +23,7 @@ function App() {
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
   const setAutoView = useAppStore((s) => s.setAutoView);
+  const setLang = useAppStore((s) => s.setLang);
 
   useEffect(() => {
     if (tourSeen || hasPlanData(useAppStore.getState())) return;
@@ -30,6 +34,26 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  useEffect(() => {
+    const target = nextLangPath(location.pathname, lang);
+    if (target !== location.pathname) {
+      // replaceState, not pushState: switching language is not a navigation. A pushed entry
+      // would combine with the popstate listener below to turn Back into a language toggle —
+      // Back from /pl/calculator/ would land on /en/calculator/ and flip the UI to English
+      // instead of leaving the calculator, and every toggle would add another entry to undo.
+      history.replaceState(null, '', target);
+    }
+  }, [lang]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const match = location.pathname.match(/\/(en|pl)\//);
+      if (match) setLang(match[1] as 'en' | 'pl');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [setLang]);
 
   useEffect(() => {
     const update = () =>
@@ -61,8 +85,10 @@ function App() {
       }}
     >
       <Header />
-      {panel === 'settings' && <SettingsPanel />}
+      {panel === 'gear' && <GearPanel />}
       {panel === 'mix' && <MixPanel />}
+      {panel === 'food' && <FoodPanel />}
+      {panel === 'settings' && <SettingsPanel />}
       <div
         style={{ width: '100%', maxWidth: 1420, display: 'flex', flexDirection: 'column', gap: 16 }}
       >

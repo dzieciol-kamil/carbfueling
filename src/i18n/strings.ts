@@ -1,15 +1,22 @@
-export const LANGS = ['pl', 'en'] as const;
+// Alphabetical by code, and kept that way as languages are added: this array's order is the
+// order every language list renders in — the calculator's dropdown (Header.tsx), the mobile
+// profile, and the static pages' switch (src/static/LangMenu.tsx).
+export const LANGS = ['en', 'pl'] as const;
 export type Lang = (typeof LANGS)[number];
 
 export interface StringTable {
   tagline: string;
   desktop: string;
   mobile: string;
-  route: string;
+  routeCycling: string;
+  routeRunning: string;
   byRoute: string;
   byTime: string;
   distance: string;
   speed: string;
+  sportCycling: string;
+  sportRunning: string;
+  pace: string;
   hours: string;
   minutes: string;
   duration: string;
@@ -17,6 +24,8 @@ export interface StringTable {
   preMealCarbs: string;
   preMealMinutes: string;
   intensity: string;
+  intensityHint: string;
+  intensityInfoBtnLabel: string;
   low: string;
   medium: string;
   high: string;
@@ -34,8 +43,6 @@ export interface StringTable {
   curve: string;
   gutHint: string;
   curveHint: string;
-  curveHintSum: string;
-  intake: string;
   absorbed: string;
   gutLane: string;
   need: string;
@@ -45,7 +52,6 @@ export interface StringTable {
   gutAt: string;
   dry: string;
   dryAt: string;
-  sumMode: string;
   carbMode: string;
   fluidMode: string;
   tDry: string;
@@ -64,6 +70,7 @@ export interface StringTable {
   removeItem?: string;
   addStop: string;
   addFillTo: string;
+  emptyLaneHint: string;
   coverage: string;
   summary: string;
   hydration: string;
@@ -73,17 +80,28 @@ export interface StringTable {
   recipes: string;
   recipesHint: string;
   ratio: string;
+  mixRatioHint: string;
+  mixSugarBlendHeader: string;
+  mixSugarAmountIzo: string;
+  mixSugarAmountGel: string;
+  mixSaltAmount: string;
   ratioLabelSugar: string;
   ratioLabelHoney: string;
   concLabel: string;
   saltLabel: string;
   citricLabel: string;
   citricSourceLabel: string;
+  mixFlavorHeader: string;
+  mixCitricHint: string;
   citricSourceCitric: string;
   citricSourceLemon: string;
   citricSourceLime: string;
   citricSourceLemonJuice: string;
   citricSourceLimeJuice: string;
+  citricFieldLemon: string;
+  citricFieldLime: string;
+  citricFieldLemonJuice: string;
+  citricFieldLimeJuice: string;
   gelConcLabel: string;
   per100: string;
   per100Ml: string;
@@ -151,7 +169,6 @@ export interface StringTable {
   editInSettings: string;
   ratioCustom: string;
   resetDefaults: string;
-  gearMix: string;
   foodSection: string;
   addFoodItem: string;
   newFood: string;
@@ -160,8 +177,18 @@ export interface StringTable {
   fMl: string;
   fCont: string;
   fNeedsStop: string;
+  fContHeader: string;
   foodSectionHint: string;
-  mixHint: string;
+  foodContHint: string;
+  mixHintPre: string;
+  mixHintLink1: string;
+  mixHintMid1: string;
+  mixHintLink2: string;
+  mixHintMid2: string;
+  mixHintLink3: string;
+  mixHintMid3: string;
+  mixHintLink4: string;
+  mixHintPost: string;
   notes: { title: string; body: string }[];
   ftAboutBody: string;
   ftSources2: string;
@@ -208,7 +235,6 @@ export interface StringTable {
   editRoutePrefix: string;
   narrationRate: string;
   narrationFluid: string;
-  narrationSum: string;
   narrationProfile: string;
   scrubHint: string;
   legendGpx: string;
@@ -224,10 +250,8 @@ export interface StringTable {
   chartHelpDeficitLabel: string;
   chartHelpDeficitBody: string;
   chartHelpFluidAbsorbedBody: string;
+  chartHelpFluidCapBody: string;
   chartHelpSweatBody: string;
-  chartHelpSumAbsorbedBody: string;
-  chartHelpSumNeedBody: string;
-  chartHelpSumIntakeBody: string;
   foodSection2: string;
   gearHintMobile: string;
   mixHintMobile: string;
@@ -249,7 +273,8 @@ export interface StringTable {
   mixRowSalt: string;
   mixRowCitric: string;
   mixRowWater: string;
-  routeSheetTitle: string;
+  routeSheetTitleCycling: string;
+  routeSheetTitleRunning: string;
   routeSheetPreStart: string;
   routeSheetIntensity: string;
   routeSheetTemp: string;
@@ -294,6 +319,7 @@ export interface StringTable {
   importPlanConfirmConfirm: string;
   importPlanError: string;
   importPlanSuccess: string;
+  exportPlanError: string;
   recoveryLabel: string;
   recoveryHint: string;
   autoplanButton: string;
@@ -319,11 +345,15 @@ export const STR: Record<Lang, StringTable> = {
     tagline: 'planer węglowodanów i nawodnienia',
     desktop: 'Komputer',
     mobile: 'Telefon',
-    route: 'Trasa',
+    routeCycling: 'Trasa rowerowa',
+    routeRunning: 'Trasa biegowa',
     byRoute: 'Dystans + tempo',
     byTime: 'Czas',
     distance: 'Dystans',
     speed: 'Śr. prędkość',
+    sportCycling: 'Rower',
+    sportRunning: 'Bieg',
+    pace: 'Tempo (min/km)',
     hours: 'Godziny',
     minutes: 'Minuty',
     duration: 'Czas trwania',
@@ -331,6 +361,9 @@ export const STR: Record<Lang, StringTable> = {
     preMealCarbs: 'Węgle przed startem',
     preMealMinutes: 'Czas przed startem',
     intensity: 'Intensywność',
+    intensityHint:
+      'Niska = swobodnie rozmawiasz pełnymi zdaniami. Średnia = rozmawiasz, ale pojedynczymi zdaniami. Wysoka = ledwo mówisz, skupiony na oddechu. Od tego zależy, ile węglowodanów na godzinę zaplanuje Carb Fueling — a przy Wysokiej dodatkowo obniża to, ile Twoje jelito faktycznie jest w stanie wchłonąć.',
+    intensityInfoBtnLabel: 'Wyjaśnij intensywność',
     low: 'Niska',
     medium: 'Średnia',
     high: 'Wysoka',
@@ -352,9 +385,6 @@ export const STR: Record<Lang, StringTable> = {
       'To Twój żołądek: górny pasek pokazuje, co w nim zalega i jak szybko się trawi, aż do górnego limitu pojemności.',
     curveHint:
       'Gruba ciągła linia to tempo, w jakim realnie wchłaniasz węglowodany — rdzawe pola to godziny, w których wchłaniasz mniej, niż potrzebujesz.',
-    curveHintSum:
-      'Gruba ciągła linia to suma węglowodanów, które realnie wchłonąłeś do danej godziny.',
-    intake: 'Zjedzone',
     absorbed: 'Wchłonięte',
     gutLane: 'W żołądku',
     need: 'Zapotrzebowanie',
@@ -364,7 +394,6 @@ export const STR: Record<Lang, StringTable> = {
     gutAt: ' g zalega w żołądku ok. ',
     dry: 'Dziura w tankowaniu: ',
     dryAt: ' bez cukru, ok. ',
-    sumMode: 'Suma',
     carbMode: 'Węglowodany (g/h)',
     fluidMode: 'Nawodnienie (ml/h)',
     tDry: 'Najdłuższa dziura',
@@ -375,7 +404,7 @@ export const STR: Record<Lang, StringTable> = {
     capNote2:
       ' — tyle maksymalnie na godzinę wchłonie Twoje jelito, obojętnie ile zjesz; nadwyżka nie znika, tylko czeka w żołądku. Rośnie, gdy mieszasz glukozę z fruktozą, bo mają osobne drogi wchłaniania (glukoza ok. 60 g/h, fruktoza dokłada do tego ok. 30 g/h) — dlatego liczę go z Twojej proporcji maltodekstryna:fruktoza (Jeukendrup, przegląd 2010–2014).',
     capNoteFluid:
-      'Limit wchłaniania: 750 ml/h — tyle płynu żołądek oddaje do jelita w wysiłku (przerywana linia). Nadwyżka nie wchłania się, tylko zalega. Przy zwiększonej potliwości podczas wysiłku da się deficyt ograniczyć, ale nie wyzerować.',
+      'Limit wchłaniania: ok. 900 ml/h — tyle żołądek średnio oddaje do jelita w wysiłku (przerywana linia); u konkretnej osoby to realnie ±kilkaset ml, zależnie od intensywności i wytrenowania jelita. Powyżej tego tempa linia robi się coraz bardziej żółta, potem pomarańczowa i czerwona — to sygnał rosnącego ryzyka zalegania i dyskomfortu, nie twardy limit. Do sumy nawodnienia i tak liczy się tylko tyle, ile żołądek zdążył przepuścić, zanim trasa się skończyła.',
     tAbsorbed: 'Wchłonięte',
     tCap: 'Limit wchłaniania',
     tGutPeak: 'Max w żołądku',
@@ -387,6 +416,7 @@ export const STR: Record<Lang, StringTable> = {
     removeItem: 'Usuń',
     addStop: 'Dodaj postój',
     addFillTo: 'Dodaj dolewkę do ',
+    emptyLaneHint: 'Kliknij +, żeby dodać dolewkę',
     coverage: 'Pokrycie zapotrzebowania',
     summary: 'Podsumowanie',
     hydration: 'Nawodnienie',
@@ -396,17 +426,29 @@ export const STR: Record<Lang, StringTable> = {
     recipes: 'Skład bidonów',
     recipesHint: 'Gramy do odmierzenia na każde napełnienie — osobno na bidon, flask czy słoiczek.',
     ratio: 'Maltodekstryna : Fruktoza',
+    mixRatioHint:
+      'Maltodekstryna i fruktoza wchłaniają się w jelicie dwoma osobnymi drogami — łącząc je, organizm przyswaja więcej węglowodanów w ciągu godziny niż z samej maltodekstryny. Domyślna proporcja to 2:1, ale ten sam efekt daje zwykły cukier (naturalnie ok. 1:1 glukozy do fruktozy) albo miód (ok. 0,8:1) — to gotowe, naturalne odpowiedniki tej samej mieszanki.',
+    mixSugarBlendHeader: 'Mieszanka cukrów — stosunek Maltodekstryny do Fruktozy',
+    mixSugarAmountIzo: 'Ile cukru (łącznie) ma być w izotoniku',
+    mixSugarAmountGel: 'Ile cukru (łącznie) ma być w żelu',
+    mixSaltAmount: 'Uzupełnienie soli mineralnych: sól',
     ratioLabelSugar: 'Cukier',
     ratioLabelHoney: 'Miód',
     concLabel: 'cukry',
     saltLabel: 'sól',
     citricLabel: 'kwasek',
     citricSourceLabel: 'Kwasek',
+    mixFlavorHeader: 'Dodatek smakowy redukujący słodki smak',
+    mixCitricHint: 'Kwasek to tylko smak — nie wpływa na tempo wchłaniania węglowodanów.',
     citricSourceCitric: 'Kwasek cytrynowy',
     citricSourceLemon: 'Cytryna',
     citricSourceLime: 'Limonka',
     citricSourceLemonJuice: 'Sok z cytryny',
     citricSourceLimeJuice: 'Sok z limonki',
+    citricFieldLemon: 'Świeża cytryna',
+    citricFieldLime: 'Świeża limonka',
+    citricFieldLemonJuice: 'Sok z cytryny w butelce',
+    citricFieldLimeJuice: 'Sok z limonki w butelce',
     gelConcLabel: 'cukry',
     per100: 'g/100 ml',
     per100Ml: 'ml/100 ml',
@@ -475,7 +517,6 @@ export const STR: Record<Lang, StringTable> = {
     editInSettings: 'ustawienia mieszanki',
     ratioCustom: 'własna',
     resetDefaults: 'Przywróć domyślne',
-    gearMix: 'Mieszanka i bidony',
     foodSection: 'Jedzenie i dodatki',
     addFoodItem: 'Dodaj produkt',
     newFood: 'Nowy produkt',
@@ -484,9 +525,21 @@ export const STR: Record<Lang, StringTable> = {
     fMl: 'płyn (ml)',
     fCont: 'stopniowo',
     fNeedsStop: 'na postoju',
+    fContHeader: 'uwalnianie',
     foodSectionHint:
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
-    mixHint: 'Wartości na 100 ml — stąd liczą się gramy dla każdego napełnienia.',
+    foodContHint:
+      'Zaznaczenie „stopniowo” sprawia, że produkt trafia na wykres powoli, rozłożony na kilku kilometrach — banana zjesz od razu, ale żelki podjadasz po drodze.',
+    mixHintPre: 'Tu ustalisz, z czego będzie się składać Twój izotonik i żel — ',
+    mixHintLink1: 'proporcja cukrów',
+    mixHintMid1: ' (możesz też użyć zwykłego ',
+    mixHintLink2: 'cukru albo miodu',
+    mixHintMid2: '), ',
+    mixHintLink3: 'sól',
+    mixHintMid3: ' i ',
+    mixHintLink4: 'dodatek smakowy',
+    mixHintPost:
+      '. Wartości podajesz na 100 ml, więc stąd liczone są gramy dla każdego napełnienia w planie.',
     notes: [
       {
         title: 'Linia na każdy bidon',
@@ -549,7 +602,7 @@ export const STR: Record<Lang, StringTable> = {
       'Ten przycisk otwiera formularz postoju — wpisujesz kilometr i nazwę (np. sklep, źródełko), żeby zaznaczyć, gdzie planujesz uzupełnić jedzenie lub napój.',
     tourClosingTitle: 'To wszystko na start',
     tourClosingBody:
-      'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Ustawienia (waga, ustawienia dostępnych produktów) oraz Mieszanka i bidony (pozwala ustalić proporcje i dostępne bidony) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
+      'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Sprzęt, Mieszankę, Produkty i Ustawienia (waga, tryb widoku) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
     tourClosingBodyMobile:
       'Przepisy na uzupełnianie bidonów znajdziesz pod przyciskiem „Skład bidonów” na liście planu. Ustawienia i język zmienisz w zakładce „Ja”, a proporcje mieszanki i dostępne bidony — w zakładkach „Mix” i „Sprzęt”. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w zakładce „Ja”. Jeśli zechcesz dowiedzieć się więcej, FAQ znajdziesz też w zakładce „Ja”.',
     tourNext: 'Dalej',
@@ -569,8 +622,6 @@ export const STR: Record<Lang, StringTable> = {
       'Ile węgli na godzinę realnie wchłaniasz (linia) wobec zapotrzebowania (przerywana). Kropkowana to limit wchłaniania.',
     narrationFluid:
       'Ile płynu pijesz na godzinę (linia) wobec tego, ile tracisz z potem (przerywana).',
-    narrationSum:
-      'Węgle zsumowane od startu: co wchłoniesz (linia) wobec zapotrzebowania (przerywana).',
     narrationProfile:
       'Profil trasy — wysokość nad poziomem morza. Podjazdy podnoszą zapotrzebowanie.',
     scrubHint: 'przesuń palcem, by odczytać',
@@ -591,10 +642,9 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpDeficitLabel: 'Niedobór',
     chartHelpDeficitBody: 'Tu wchłaniasz mniej, niż potrzebujesz — ryzyko spadku formy.',
     chartHelpFluidAbsorbedBody: 'Ile faktycznie pijesz w tej godzinie.',
+    chartHelpFluidCapBody:
+      'Orientacyjne tempo, z jakim żołądek oddaje płyn do jelita. Powyżej niego linia robi się coraz bardziej żółta, potem pomarańczowa i czerwona — to rosnące ryzyko zalegania, nie twardy limit.',
     chartHelpSweatBody: 'Ile tracisz z potem — Twoje zapotrzebowanie na płyny.',
-    chartHelpSumAbsorbedBody: 'Łącznie wchłonięte węglowodany od startu trasy.',
-    chartHelpSumNeedBody: 'Łącznie ile było Ci potrzeba od startu trasy.',
-    chartHelpSumIntakeBody: 'Ile faktycznie zjadłeś — różnica czeka w żołądku.',
     foodSection2: 'Jedzenie',
     gearHintMobile:
       'Co masz na rowerze. Objętość i dozwolona zawartość decydują o tym, ile węgli wchodzi w jedno napełnienie.',
@@ -618,7 +668,8 @@ export const STR: Record<Lang, StringTable> = {
     mixRowSalt: 'Sól',
     mixRowCitric: 'Kwasek cytrynowy',
     mixRowWater: 'Woda',
-    routeSheetTitle: 'TRASA I WARUNKI',
+    routeSheetTitleCycling: 'TRASA ROWEROWA I WARUNKI',
+    routeSheetTitleRunning: 'TRASA BIEGOWA I WARUNKI',
     routeSheetPreStart: 'PRZED STARTEM',
     routeSheetIntensity: 'Intensywność',
     routeSheetTemp: 'Temperatura',
@@ -670,6 +721,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       'Nie udało się wczytać pliku — sprawdź, czy to poprawny eksport planu z Carb Fueling.',
     importPlanSuccess: 'Plan zaimportowany.',
+    exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
@@ -698,11 +750,15 @@ export const STR: Record<Lang, StringTable> = {
     tagline: 'carbohydrate & hydration planner',
     desktop: 'Desktop',
     mobile: 'Phone',
-    route: 'Route',
+    routeCycling: 'Cycling route',
+    routeRunning: 'Running route',
     byRoute: 'Distance + pace',
     byTime: 'Time',
     distance: 'Distance',
     speed: 'Avg speed',
+    sportCycling: 'Cycling',
+    sportRunning: 'Running',
+    pace: 'Pace (min/km)',
     hours: 'Hours',
     minutes: 'Minutes',
     duration: 'Duration',
@@ -710,6 +766,9 @@ export const STR: Record<Lang, StringTable> = {
     preMealCarbs: 'Carbs before start',
     preMealMinutes: 'Time before start',
     intensity: 'Intensity',
+    intensityHint:
+      'Low = you can chat comfortably in full sentences. Medium = you talk, but in short sentences. High = you can barely speak, focused on breathing. This drives how many carbs per hour the app plans for — and at High, it also lowers how much your gut can actually absorb.',
+    intensityInfoBtnLabel: 'Explain intensity',
     low: 'Low',
     medium: 'Medium',
     high: 'High',
@@ -730,9 +789,6 @@ export const STR: Record<Lang, StringTable> = {
       "This is your stomach: the top strip shows what's sitting in it and how fast it's digesting, up to its capacity limit.",
     curveHint:
       "The thick solid line is the rate you're actually absorbing carbs at — rust areas are the hours you're absorbing less than you need.",
-    curveHintSum:
-      "The thick solid line is the cumulative carbs you've actually absorbed by a given hour.",
-    intake: 'Eaten',
     absorbed: 'Absorbed',
     gutLane: 'In the gut',
     need: 'Requirement',
@@ -742,7 +798,6 @@ export const STR: Record<Lang, StringTable> = {
     gutAt: ' g sitting in the stomach around ',
     dry: 'Fuelling gap: ',
     dryAt: ' with no carbs, around ',
-    sumMode: 'Total',
     carbMode: 'Carbs (g/h)',
     fluidMode: 'Hydration (ml/h)',
     tDry: 'Longest gap',
@@ -753,7 +808,7 @@ export const STR: Record<Lang, StringTable> = {
     capNote2:
       " — that's the most your gut can absorb per hour no matter how much you eat; anything above it doesn't vanish, it just waits in the stomach. It goes up when you mix glucose and fructose, since they're absorbed through separate routes (glucose ~60 g/h, fructose adds ~30 g/h on top) — that's why it's derived from your maltodextrin:fructose ratio (Jeukendrup, 2010–2014 reviews).",
     capNoteFluid:
-      'Absorption limit: 750 ml/h — that is how fast the stomach passes fluid on to the gut under load (dashed line). Anything above it is not absorbed, it just sits there. With a higher sweat rate you can limit the deficit, not erase it.',
+      'Absorption limit: ~900 ml/h — roughly how fast the stomach passes fluid on to the gut under load (dashed line); the real number varies by a few hundred ml either way depending on intensity and gut training. Above that pace the line shifts from yellow to orange to red — a comfort-risk signal, not a hard cutoff. Your hydration total still only counts what the stomach had time to clear before the ride ended.',
     tAbsorbed: 'Absorbed',
     tCap: 'Absorption limit',
     tGutPeak: 'Peak in stomach',
@@ -765,6 +820,7 @@ export const STR: Record<Lang, StringTable> = {
     removeItem: 'Remove',
     addStop: 'Add stop',
     addFillTo: 'Add a fill to ',
+    emptyLaneHint: 'Click + to add a fill',
     coverage: 'Requirement covered',
     summary: 'Summary',
     hydration: 'Hydration',
@@ -774,17 +830,29 @@ export const STR: Record<Lang, StringTable> = {
     recipes: 'Bottle recipes',
     recipesHint: 'Grams to measure out for each fill — per bottle, flask or jar.',
     ratio: 'Maltodextrin : Fructose',
+    mixRatioHint:
+      "Maltodextrin and fructose are absorbed through two separate gut pathways — combining them lets your body take in more carbs per hour than from maltodextrin alone. The default ratio is 2:1, but plain sugar (naturally about 1:1 glucose to fructose) or honey (about 0.8:1) give the same effect — they're ready-made, natural equivalents of the same blend.",
+    mixSugarBlendHeader: 'Sugar blend — Maltodextrin to Fructose ratio',
+    mixSugarAmountIzo: 'How much sugar (total) should be in the isotonic',
+    mixSugarAmountGel: 'How much sugar (total) should be in the gel',
+    mixSaltAmount: 'Mineral salt top-up: salt',
     ratioLabelSugar: 'Sugar',
     ratioLabelHoney: 'Honey',
     concLabel: 'carbs',
     saltLabel: 'salt',
     citricLabel: 'citric',
     citricSourceLabel: 'Acid',
+    mixFlavorHeader: 'Flavor additive to reduce sweetness',
+    mixCitricHint: "Citric is purely about taste — it doesn't affect carb absorption speed.",
     citricSourceCitric: 'Citric acid',
     citricSourceLemon: 'Lemon',
     citricSourceLime: 'Lime',
     citricSourceLemonJuice: 'Lemon juice',
     citricSourceLimeJuice: 'Lime juice',
+    citricFieldLemon: 'Fresh lemon',
+    citricFieldLime: 'Fresh lime',
+    citricFieldLemonJuice: 'Bottled lemon juice',
+    citricFieldLimeJuice: 'Bottled lime juice',
     gelConcLabel: 'carbs',
     per100: 'g/100 ml',
     per100Ml: 'ml/100 ml',
@@ -853,7 +921,6 @@ export const STR: Record<Lang, StringTable> = {
     editInSettings: 'mix settings',
     ratioCustom: 'custom',
     resetDefaults: 'Reset to defaults',
-    gearMix: 'Mix & bottles',
     foodSection: 'Food & extras',
     addFoodItem: 'Add product',
     newFood: 'New product',
@@ -862,9 +929,20 @@ export const STR: Record<Lang, StringTable> = {
     fMl: 'fluid (ml)',
     fCont: 'over time',
     fNeedsStop: 'at a stop',
+    fContHeader: 'release',
     foodSectionHint:
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
-    mixHint: 'Values per 100 ml — per-fill grams are derived from this.',
+    foodContHint:
+      'Turning on "over time" spreads the product on the chart gradually over a few kilometers — you eat a banana right away, but you nibble gummies along the way.',
+    mixHintPre: "Here you'll set the composition of your isotonic drink and gel — ",
+    mixHintLink1: 'sugar ratio',
+    mixHintMid1: ' (plain ',
+    mixHintLink2: 'sugar or honey',
+    mixHintMid2: ' work too), ',
+    mixHintLink3: 'salt',
+    mixHintMid3: ' and a ',
+    mixHintLink4: 'flavor additive',
+    mixHintPost: '. Values are per 100 ml, so per-fill grams in the plan are derived from this.',
     notes: [
       {
         title: 'A lane per bottle',
@@ -927,7 +1005,7 @@ export const STR: Record<Lang, StringTable> = {
       'This button opens a small form for a stop — enter the kilometer and a name (e.g. a shop, a spring) to mark where you plan to restock food or drink.',
     tourClosingTitle: "That's the essentials",
     tourClosingBody:
-      "Recipes for topping up the bottles and fills you've added are under the chart. Settings (weight, available-product settings) and Mix & bottles (set ratios and available bottles) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
+      "Recipes for topping up the bottles and fills you've added are under the chart. Gear, Mix, Products and Settings (weight, view mode) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
     tourClosingBodyMobile:
       'Recipes for topping up bottles are behind the "Bottle recipes" button on the plan list. Change settings and language in the "Me" tab, and mix ratios and available bottles in the "Mix" and "Gear" tabs. Replay this tour any time from the button in the "Me" tab. Want to know more? The FAQ is in the "Me" tab too.',
     tourNext: 'Next',
@@ -947,8 +1025,6 @@ export const STR: Record<Lang, StringTable> = {
       "How many carbs per hour you're actually absorbing (line) vs. requirement (dashed). Dotted is the absorption limit.",
     narrationFluid:
       "How much fluid you're drinking per hour (line) vs. how much you lose to sweat (dashed).",
-    narrationSum:
-      "Carbs summed from the start: what you'll absorb (line) vs. requirement (dashed).",
     narrationProfile: 'Route profile — elevation above sea level. Climbs raise the requirement.',
     scrubHint: 'drag to read',
     legendGpx: 'target',
@@ -967,11 +1043,9 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpDeficitLabel: 'Deficit',
     chartHelpDeficitBody: "Here you're absorbing less than you need — risk of running low.",
     chartHelpFluidAbsorbedBody: "How much you're actually drinking in that hour.",
+    chartHelpFluidCapBody:
+      'Roughly how fast the stomach passes fluid on to the gut. Above it the line shifts from yellow to orange to red — rising risk of it backing up, not a hard cutoff.',
     chartHelpSweatBody: 'How much you lose through sweat — your fluid requirement.',
-    chartHelpSumAbsorbedBody: 'Total carbs absorbed since the start of the route.',
-    chartHelpSumNeedBody: "Total amount you've needed since the start of the route.",
-    chartHelpSumIntakeBody:
-      "How much you've actually eaten — the difference is waiting in your stomach.",
     foodSection2: 'Food',
     gearHintMobile:
       "What's on your bike. Volume and allowed contents decide how many carbs fit in one fill.",
@@ -995,7 +1069,8 @@ export const STR: Record<Lang, StringTable> = {
     mixRowSalt: 'Salt',
     mixRowCitric: 'Citric acid',
     mixRowWater: 'Water',
-    routeSheetTitle: 'ROUTE & CONDITIONS',
+    routeSheetTitleCycling: 'CYCLING ROUTE & CONDITIONS',
+    routeSheetTitleRunning: 'RUNNING ROUTE & CONDITIONS',
     routeSheetPreStart: 'BEFORE THE START',
     routeSheetIntensity: 'Intensity',
     routeSheetTemp: 'Temperature',
@@ -1046,6 +1121,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
+    exportPlanError: 'Could not save the file. Please try again.',
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',

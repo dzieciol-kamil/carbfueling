@@ -1,8 +1,9 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function GutTrainingCarbTolerancePl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="gut-training-carb-tolerance">
       <h1 style={articleH1Style}>
         Trening jelita: jak bezpiecznie zwiększać tolerancję na węglowodany
       </h1>
@@ -51,9 +52,13 @@ export default function GutTrainingCarbTolerancePl() {
         Fueling pokazuje Twój sufit wchłaniania na bieżąco, gdy ustawiasz proporcję miksu w bidonie
         i żelu — dopasuj ją do tego, co faktycznie przećwiczyło Twoje jelito, a potem zbuduj
         harmonogram fuelingu, który mieści się w tym limicie, zamiast przesadzać w dniu startu.
+        Jedno zastrzeżenie: niezależnie od ustawionej proporcji, sufit wchłaniania w Carb Fueling
+        nie przekroczy ok. 92 g/h. To świadomy, bezpieczny domyślny próg, a nie twardy fizjologiczny
+        sufit — nieliczne, bardzo dobrze wytrenowane jelita mogą go przekroczyć — ale dla
+        zdecydowanej większości rowerzystów jest to rozsądna granica.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Sprawdź swój sufit wchłaniania →
         </a>
       </p>

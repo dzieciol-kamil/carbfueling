@@ -1,4 +1,5 @@
 export type Mode = 'route' | 'time';
+export type Sport = 'cycling' | 'running';
 export type Intensity = 'low' | 'mid' | 'high';
 export type XUnit = 'km' | 'h';
 export type Content = 'water' | 'izo' | 'gel';
@@ -10,9 +11,10 @@ export type CitricSource = 'citric' | 'lemon' | 'lemonJuice' | 'lime' | 'limeJui
 /** Which preset produced `ratio`/`gelRatio` — 'custom' whenever the value was typed into the
  *  free-entry field, even if it numerically matches a preset value. Drives whether the bottle-
  *  composition card shows a single Miód/Cukier line or the Malto/Frukto split. */
-export type RatioPreset = 'iso' | 'sugar' | 'honey' | 'custom';
+export type RatioPreset = 'iso' | 'sugar' | 'honey' | 'ratio15' | 'custom';
 
 export interface RouteInput {
+  sport: Sport;
   mode: Mode;
   distance: number;
   speed: number;
@@ -49,6 +51,24 @@ export interface MixSettings {
   citricSource: CitricSource;
   gelCitricSource: CitricSource;
 }
+
+/** The mix a fresh plan (or footer/"Me" tab with no plan in scope) starts from. Lives here,
+ *  not in appStore.ts, so framework-free callers (e.g. the landing's SiteFooter) can read it
+ *  without importing the store. */
+export const DEFAULT_MIX: MixSettings = {
+  conc: 8.4,
+  gelConc: 60,
+  ratio: 2,
+  gelRatio: 2,
+  ratioPreset: 'iso',
+  gelRatioPreset: 'iso',
+  salt: 0.16,
+  citric: 0.2,
+  gelSalt: 0.4,
+  gelCitric: 0.4,
+  citricSource: 'citric',
+  gelCitricSource: 'citric',
+};
 
 export interface Vessel {
   gid: string;

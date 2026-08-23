@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function Fueling100kmVs300kmPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="fueling-100km-vs-300km">
       <h1 style={articleH1Style}>Fueling na 100 km vs. 300 km: co się zmienia w strategii</h1>
       <p style={articleTextStyle}>
         Trasa 300 km to nie jest po prostu "100 km razy trzy". Wraz z liczbą godzin na siodełku
@@ -12,7 +13,7 @@ export default function Fueling100kmVs300kmPl() {
       <p style={articleTextStyle}>
         Na krótszym wyjeździe — 2-4 godziny, czyli mniej więcej tyle, ile zajmuje 100 km w
         umiarkowanym tempie — głównym ograniczeniem jest{' '}
-        <a href="/pl/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           sufit wchłaniania
         </a>{' '}
         jelita. Niezależnie od tego, ile zjesz, jelito przepuści tylko określoną liczbę gramów
@@ -39,7 +40,7 @@ export default function Fueling100kmVs300kmPl() {
         zatrzymywać. Przy 300 km to zwykle się nie uda: nikt nie zabiera ze sobą jedzenia i picia na
         8 i więcej godzin już na pierwszym obrocie pedałów. Jazdy ultra opierają się na zaplanowanym
         zaopatrzeniu, więc warto{' '}
-        <a href="/pl/faq/bottle-refill-planning/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'bottle-refill-planning')} style={articleLinkStyle}>
           rozpisać sobie punkty uzupełniania
         </a>{' '}
         z wyprzedzeniem, zamiast liczyć na przypadkowy sklep po drodze.
@@ -66,7 +67,7 @@ export default function Fueling100kmVs300kmPl() {
         zaplanowanego wysiłku.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zaplanuj swoją trasę, krótką czy długą →
         </a>
       </p>

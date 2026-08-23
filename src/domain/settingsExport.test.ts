@@ -13,6 +13,7 @@ import {
 function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportData {
   return {
     route: {
+      sport: 'cycling',
       mode: 'route',
       distance: 90,
       speed: 28,
@@ -144,6 +145,83 @@ describe('settingsExport', () => {
     }
   });
 
+  test('rejects a route with out-of-range numeric fields', () => {
+    const file = buildSettingsExport(makeData());
+    const badRoutes = [
+      { ...file.data.route, distance: -1 },
+      { ...file.data.route, distance: 2001 },
+      { ...file.data.route, speed: -1 },
+      { ...file.data.route, speed: 101 },
+      { ...file.data.route, weight: 19 },
+      { ...file.data.route, weight: 301 },
+      { ...file.data.route, hours: -1 },
+      { ...file.data.route, hours: 1000 },
+      { ...file.data.route, preMealCarbs: -1 },
+      { ...file.data.route, preMealCarbs: 501 },
+      { ...file.data.route, preMealMinutes: -1 },
+      { ...file.data.route, preMealMinutes: 1441 },
+    ];
+    for (const route of badRoutes) {
+      const result = parseSettingsImport(
+        JSON.stringify({ ...file, data: { ...file.data, route } }),
+      );
+      expect(result.ok).toBe(false);
+    }
+  });
+
+  test('rejects a gpx track elevation array beyond the sane length limit', () => {
+    const file = buildSettingsExport(
+      makeData({
+        route: {
+          ...makeData().route,
+          gpxTrack: { id: 1, ele: Array.from({ length: 501 }, () => 10) },
+        },
+      }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(false);
+  });
+
+  test('rejects an empty gpx track elevation array (prof() would index out of bounds into NaN)', () => {
+    const file = buildSettingsExport(
+      makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele: [] } } }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(false);
+  });
+
+  test('accepts a single-point gpx track elevation array (a valid flat profile, not degenerate)', () => {
+    const file = buildSettingsExport(
+      makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele: [10] } } }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+  });
+
+  test('rejects an import array beyond the sane length limit', () => {
+    const file = buildSettingsExport(makeData());
+    const fills = Array.from({ length: 501 }, (_, i) => ({
+      fid: i,
+      gid: 'g1',
+      content: 'izo' as const,
+      from: 0,
+      to: 1,
+    }));
+    const result = parseSettingsImport(JSON.stringify({ ...file, data: { ...file.data, fills } }));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
+  test('normalizes a legacy "sum" y-mode from an older export to "rate"', () => {
+    const file = buildSettingsExport(makeData());
+    const json = JSON.stringify({
+      ...file,
+      data: { ...file.data, ui: { ...file.data.ui, yMode: 'sum' } },
+    });
+    const result = parseSettingsImport(json);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.ui.yMode).toBe('rate');
+  });
+
   test('accepts an optional gpx track and nullable route strings', () => {
     const data = makeData({
       route: {
@@ -156,5 +234,22 @@ describe('settingsExport', () => {
     const file = buildSettingsExport(data);
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result.ok).toBe(true);
+  });
+
+  test('imports an old export with no sport field, defaulting to cycling', () => {
+    const legacyRoute = { ...makeData().route } as Record<string, unknown>;
+    delete legacyRoute.sport;
+    const data = makeData({ route: legacyRoute as unknown as SettingsExportData['route'] });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.route.sport).toBe('cycling');
+  });
+
+  test('rejects a sport value outside the known set', () => {
+    const data = makeData({ route: { ...makeData().route, sport: 'triathlon' as never } });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
   });
 });

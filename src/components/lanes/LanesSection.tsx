@@ -51,15 +51,29 @@ function trackStyle(tone: string): CSSProperties {
   };
 }
 
-function addButtonStyle(can: boolean): CSSProperties {
+const emptyTrackHintStyle: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  paddingLeft: 8,
+  fontSize: 10,
+  color: 'var(--muted-3)',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  pointerEvents: 'none',
+};
+
+function addButtonStyle(hasGap: boolean): CSSProperties {
   return {
     width: 24,
     height: 24,
     borderRadius: 7,
-    cursor: can ? 'pointer' : 'not-allowed',
-    border: '1px dashed ' + (can ? '#B9C0B7' : '#E6E8E2'),
-    background: can ? '#F7F8F5' : '#FBFCFA',
-    color: can ? 'var(--ink-soft)' : '#C9CEC7',
+    cursor: hasGap ? 'pointer' : 'not-allowed',
+    border: '1px dashed ' + (hasGap ? '#B9C0B7' : '#E6E8E2'),
+    background: hasGap ? '#F7F8F5' : '#FBFCFA',
+    color: hasGap ? 'var(--ink-soft)' : '#C9CEC7',
     fontSize: 13,
     fontWeight: 700,
     lineHeight: 1,
@@ -92,7 +106,7 @@ export function LanesSection() {
         const vesselFills = fills
           .filter((f) => f.gid === vessel.gid)
           .sort((a, b) => a.from - b.from);
-        const can = gaps(vesselFills, distanceKm).length > 0;
+        const hasGap = gaps(vesselFills, distanceKm).length > 0;
         return (
           <div key={vessel.gid} style={rowStyle}>
             <div style={labelColStyle}>
@@ -103,6 +117,9 @@ export function LanesSection() {
               </span>
             </div>
             <div style={trackStyle('#F4F5F2')}>
+              {vesselFills.length === 0 && hasGap && (
+                <span style={emptyTrackHintStyle}>{strings.emptyLaneHint}</span>
+              )}
               {vesselFills.map((f) => (
                 <FillBar key={f.fid} fill={f} vessel={vessel} distanceKm={distanceKm} />
               ))}
@@ -111,9 +128,11 @@ export function LanesSection() {
               <button
                 data-tour={vessel.gid === demoVesselGid ? 'demo-add-fill' : undefined}
                 onClick={() => addFillInGap(vessel.gid)}
-                disabled={!can}
-                title={strings.addFillTo + vessel.name}
-                style={addButtonStyle(can)}
+                disabled={!hasGap}
+                title={
+                  hasGap ? strings.addFillTo + vessel.name : vessel.name + ' · ' + strings.noGap
+                }
+                style={addButtonStyle(hasGap)}
               >
                 +
               </button>

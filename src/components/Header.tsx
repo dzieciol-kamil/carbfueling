@@ -4,10 +4,13 @@ import {
   parseSettingsImport,
   serializeSettingsExport,
   settingsExportFileName,
+  type PlanFeedback,
 } from '../domain/settingsExport';
 import { LANGS, t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { AutoplanFlow } from './autoplan/AutoplanFlow';
+import { LANDING_HREF_FROM_CALCULATOR } from '../urls';
+import { saveTextFile } from '../utils/fileSave';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 
 export function Header() {
@@ -19,27 +22,24 @@ export function Header() {
   const importSettings = useAppStore((s) => s.importSettings);
   const [langOpen, setLangOpen] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [importFeedback, setImportFeedback] = useState<'error' | 'success' | null>(null);
+  const [planFeedback, setPlanFeedback] = useState<PlanFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const strings = t(lang);
 
   useEffect(() => {
-    if (!importFeedback) return;
-    const timer = setTimeout(() => setImportFeedback(null), 4000);
+    if (!planFeedback) return;
+    const timer = setTimeout(() => setPlanFeedback(null), 4000);
     return () => clearTimeout(timer);
-  }, [importFeedback]);
+  }, [planFeedback]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    setPlanFeedback(null);
     const file = buildSettingsExport(getSettingsExportData());
-    const blob = new Blob([serializeSettingsExport(file)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = settingsExportFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      await saveTextFile(serializeSettingsExport(file), settingsExportFileName());
+    } catch {
+      setPlanFeedback('export-error');
+    }
   };
 
   const handleImportPick = () => fileInputRef.current?.click();
@@ -54,18 +54,18 @@ export function Header() {
   };
 
   const applyImportedFile = async (file: File) => {
-    setImportFeedback(null);
+    setPlanFeedback(null);
     try {
       const text = await file.text();
       const result = parseSettingsImport(text);
       if (!result.ok) {
-        setImportFeedback('error');
+        setPlanFeedback('import-error');
         return;
       }
       importSettings(result.data);
-      setImportFeedback('success');
+      setPlanFeedback('import-success');
     } catch {
-      setImportFeedback('error');
+      setPlanFeedback('import-error');
     }
   };
 
@@ -81,7 +81,16 @@ export function Header() {
         flexWrap: 'wrap',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+      <a
+        href={LANDING_HREF_FROM_CALCULATOR}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 12,
+          color: 'var(--ink)',
+          textDecoration: 'none',
+        }}
+      >
         <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
           CARB FUELING
         </span>
@@ -96,7 +105,7 @@ export function Header() {
         >
           {strings.tagline}
         </span>
-      </div>
+      </a>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <AutoplanFlow variant="desktop" />
@@ -123,7 +132,7 @@ export function Header() {
               e.target.value = '';
             }}
           />
-          {importFeedback && (
+          {planFeedback && (
             <div
               style={{
                 position: 'absolute',
@@ -138,11 +147,15 @@ export function Header() {
                 boxShadow: '0 14px 34px rgba(0,0,0,0.14)',
                 fontSize: 12,
                 lineHeight: 1.5,
-                color: importFeedback === 'error' ? '#B3402A' : 'var(--muted-2)',
+                color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
                 zIndex: 60,
               }}
             >
-              {importFeedback === 'error' ? strings.importPlanError : strings.importPlanSuccess}
+              {planFeedback === 'import-error'
+                ? strings.importPlanError
+                : planFeedback === 'import-success'
+                  ? strings.importPlanSuccess
+                  : strings.exportPlanError}
             </div>
           )}
         </div>
@@ -246,29 +259,21 @@ export function Header() {
           </div>
         </div>
 
-        <button onClick={() => openPanel('settings')} style={panelBtnStyle(panel === 'settings')}>
-          <span
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: '50%',
-              border: '2px solid var(--carb)',
-              display: 'block',
-            }}
-          />
-          <span>{strings.settings}</span>
+        <button onClick={() => openPanel('gear')} style={panelBtnStyle(panel === 'gear')}>
+          <GearIcon />
+          <span>{strings.tabGear}</span>
         </button>
         <button onClick={() => openPanel('mix')} style={panelBtnStyle(panel === 'mix')}>
-          <span
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 2,
-              border: '2px solid var(--gel)',
-              display: 'block',
-            }}
-          />
-          <span>{strings.gearMix}</span>
+          <MixIcon />
+          <span>{strings.tabMix}</span>
+        </button>
+        <button onClick={() => openPanel('food')} style={panelBtnStyle(panel === 'food')}>
+          <FoodIcon />
+          <span>{strings.tabFood}</span>
+        </button>
+        <button onClick={() => openPanel('settings')} style={panelBtnStyle(panel === 'settings')}>
+          <SettingsIcon />
+          <span>{strings.settings}</span>
         </button>
       </div>
       {pendingImportFile && (
@@ -337,6 +342,75 @@ function UploadIcon() {
       strokeLinejoin="round"
     >
       <path d="M6 7.6 V1.2 M3.2 3.8 L6 1 L8.8 3.8 M1.5 9.8 H10.5" />
+    </svg>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 7.5 h8 v10.5 a2 2 0 0 1 -2 2 h-4 a2 2 0 0 1 -2 -2 z M9.5 7.5 v-3 h3 v3 M7 12 h8" />
+    </svg>
+  );
+}
+
+function MixIcon() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6.5 5 h9 l-1.1 12.2 a2 2 0 0 1 -2 1.8 h-2.8 a2 2 0 0 1 -2 -1.8 z M7.2 11.5 h7.6" />
+    </svg>
+  );
+}
+
+function FoodIcon() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4.4 6.2 C3.9 14.2 9.6 19.3 18 18.2 C18.9 18.1 19.2 17.1 18.4 16.6 C12.3 14.5 7.6 11.6 7.2 6.4 C7.1 5.6 4.5 5.4 4.4 6.2 Z M5.6 5.9 L5.1 3.6" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4.5 19.5 q0 -5.5 6.5 -5.5 t6.5 5.5" />
+      <circle cx={11} cy={7} r={3.4} fill="currentColor" stroke="none" />
     </svg>
   );
 }

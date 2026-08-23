@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 interface InfoPopoverProps {
-  /** The hint text shown in the popover when triggered. */
-  hint: string;
+  /** The hint content shown in the popover when triggered. */
+  hint: ReactNode;
   /** The trigger content (label + ⓘ glyph, typically). */
   children: ReactNode;
+  /** Accessible name for the trigger — needed when `children` is a bare glyph with no
+   *  descriptive text of its own (unlike e.g. "(Recovery: ~30–60g ⓘ)"). */
+  ariaLabel?: string;
   /** Extra style applied to the clickable trigger span. */
   triggerStyle?: CSSProperties;
   /** Extra style applied to the popover bubble (mainly used for positioning). */
@@ -36,7 +39,13 @@ const basePopoverStyle: CSSProperties = {
  * touch devices. This toggles a popover on click/tap instead, and closes it
  * on an outside click/tap (or a second tap on the trigger).
  */
-export function InfoPopover({ hint, children, triggerStyle, popoverStyle }: InfoPopoverProps) {
+export function InfoPopover({
+  hint,
+  children,
+  ariaLabel,
+  triggerStyle,
+  popoverStyle,
+}: InfoPopoverProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLSpanElement | null>(null);
 
@@ -57,6 +66,7 @@ export function InfoPopover({ hint, children, triggerStyle, popoverStyle }: Info
         role="button"
         tabIndex={0}
         aria-expanded={open}
+        aria-label={ariaLabel}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);

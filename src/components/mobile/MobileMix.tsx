@@ -2,14 +2,18 @@ import { combinedGroups } from '../../domain/combinedRefill';
 import {
   absCap,
   citricAmount,
+  citricAmountFromDisplay,
+  citricDisplayAmount,
   citricGramsFromAmount,
-  fmtFruitFraction,
   presetTagFor,
+  ratioPresetIndex,
   type CitricAmount,
 } from '../../domain/fuel';
 import type { CitricSource, RatioPreset } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { InfoPopover } from '../ui/InfoPopover';
+import { SegmentedControl, SegmentedTrack, segmentItemStyle } from '../ui/SegmentedControl';
 import { MobileStepper } from './MobileStepper';
 
 const RATIO_PRESETS = [2, 1.5, 1, 0.8];
@@ -18,6 +22,7 @@ const CITRIC_SOURCES: CitricSource[] = ['citric', 'lemon', 'lemonJuice', 'lime',
 export function MobileMix() {
   const lang = useAppStore((s) => s.ui.lang);
   const mix = useAppStore((s) => s.mix);
+  const intensity = useAppStore((s) => s.route.intensity);
   const gear = useAppStore((s) => s.gear);
   const fills = useAppStore((s) => s.fills);
   const combinedFillIds = useAppStore((s) => s.combinedFillIds);
@@ -37,7 +42,7 @@ export function MobileMix() {
 
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since this is a live preview of the mix settings themselves, not a plan.
-  const cap = absCap(mix);
+  const cap = absCap(mix, 0, 0, intensity);
   // Same lock condition as MixPanel.tsx's desktop counterpart: gel's ratio/salt/citric/source
   // are inherited from izo whenever there's an active cross-type combine, so those controls
   // become read-only here too. Reads live store state so it tracks the combine selection while
@@ -71,16 +76,19 @@ export function MobileMix() {
     }
   };
 
-  // Same field-label swap as MixPanel.tsx's citricFieldLabel: the powder source keeps the short
-  // "kwasek" label, whole-fruit/juice sources show their own name since the stepper is no longer
-  // showing grams of powder but a practical amount of that ingredient. A parenthetical unit is
-  // appended for the grams/ml units (mirroring the "(g/l)" suffix the salt stepper already uses);
-  // the fruit-fraction unit is dimensionless so the fruit name alone is enough.
+  // The powder source keeps the short "kwasek" label; whole-fruit/juice sources show their own
+  // name (lowercased, unlike the Title-Case source-picker buttons above) since the stepper is no
+  // longer showing grams of powder but a practical amount of that ingredient. Desktop's
+  // MixPanel.tsx now shows wordier per-source strings here (e.g. "Fresh lemon") to disambiguate
+  // squeezed fruit from bottled juice — mobile hasn't picked that up yet, so the two diverge on
+  // purpose for now. The parenthetical unit must be the same per-100-ml basis desktop shows
+  // (`citricSubLabel` there) — this is one value in the store, so a shorter unit here would
+  // silently rescale it for the reader.
   const citricFieldLabel = (src: CitricSource, unit: CitricAmount['unit']) => {
-    const name = src === 'citric' ? strings.citricLabel : citricSourceCaption(src);
-    if (unit === 'ml') return name + ' (ml)';
-    if (unit === 'fruit') return name;
-    return name + ' (g/l)';
+    const name = src === 'citric' ? strings.citricLabel : citricSourceCaption(src).toLowerCase();
+    if (unit === 'ml') return name + ' (' + strings.per100Ml + ')';
+    if (unit === 'fruit') return name + ' (' + strings.per100Fruit + ')';
+    return name + ' (' + strings.per100 + ')';
   };
 
   const izoCitric = citricAmount(mix.citric, mix.citricSource);
@@ -91,38 +99,18 @@ export function MobileMix() {
     onChange: (src: CitricSource) => void,
     disabled = false,
   ) => (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
-      {CITRIC_SOURCES.map((src) => {
-        const isActive = active === src;
-        return (
-          <button
-            key={src}
-            type="button"
-            onClick={() => onChange(src)}
-            disabled={disabled}
-            style={{
-              flex: '1 1 76px',
-              padding: '10px 4px',
-              borderRadius: 9,
-              border: '1px solid ' + (isActive ? 'var(--ink)' : 'var(--chip-border)'),
-              background: isActive ? 'var(--ink)' : '#fff',
-              color: isActive ? '#fff' : 'var(--muted-2)',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {citricSourceCaption(src)}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      options={CITRIC_SOURCES.map((src) => ({ value: src, label: citricSourceCaption(src) }))}
+      value={active}
+      onChange={onChange}
+      disabled={disabled}
+      minHeight={44}
+    />
   );
 
   // Stepper bounds/step/format tuned per displayed unit: fine grams for powder, coarser ml for
-  // juice, quarter-fruit increments (formatted as a compact ASCII fraction, e.g. "3/4") for whole
-  // fruit — deliberately without the percentage `fmtFruitFractionPct` adds for the recipe card,
-  // since this narrow stepper slot doesn't have room for it.
+  // juice, and — matching desktop's `MixPanel.tsx` — a 0-100+ percentage-of-one-fruit scale for
+  // whole fruit, stepped in quarter-fruit (25%) increments with a finer 5% small step.
   const citricStepperProps = (unit: CitricAmount['unit'], gramsMax: number) => {
     if (unit === 'ml') {
       return { min: 0, max: gramsMax * 20, smallStep: 1, bigStep: 5, format: undefined };
@@ -130,10 +118,10 @@ export function MobileMix() {
     if (unit === 'fruit') {
       return {
         min: 0,
-        max: Math.max(2, Math.ceil(gramsMax / 10)),
-        smallStep: 0.25,
-        bigStep: 1,
-        format: fmtFruitFraction,
+        max: Math.max(2, Math.ceil(gramsMax / 10)) * 100,
+        smallStep: 5,
+        bigStep: 25,
+        format: undefined,
       };
     }
     return {
@@ -145,42 +133,65 @@ export function MobileMix() {
     };
   };
 
+  // Desktop's MixPanel.tsx shows "Maltodextrin : Fructose" and "Acid" as plain labels above these
+  // same controls; mobile had no equivalent label at all, so these double as the label mobile was
+  // missing and as the InfoPopover trigger (same content-in-trigger pattern as recoveryHint in
+  // SummaryCards.tsx).
+  const mixRatioLabel = (
+    <InfoPopover
+      hint={strings.mixRatioHint}
+      triggerStyle={{ fontSize: 11, color: 'var(--muted-2)' }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+    >
+      {strings.ratio} ⓘ
+    </InfoPopover>
+  );
+  const mixCitricSourceLabel = (
+    <InfoPopover
+      hint={strings.mixCitricHint}
+      triggerStyle={{ fontSize: 11, color: 'var(--muted-2)' }}
+      popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+    >
+      {strings.citricSourceLabel} ⓘ
+    </InfoPopover>
+  );
+
   const ratioButtons = (
     value: number,
     onChange: (n: number, preset: RatioPreset) => void,
     forGel: boolean,
     disabled = false,
     preset: RatioPreset = 'custom',
-  ) => (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, opacity: disabled ? 0.6 : 1 }}>
-      {RATIO_PRESETS.map((r) => {
-        const caption = presetCaption(r, forGel);
-        const active = value === r && preset === presetTagFor(r);
-        return (
-          <button
-            key={r}
-            type="button"
-            onClick={() => onChange(r, presetTagFor(r))}
-            disabled={disabled}
-            style={{
-              flex: '1 1 76px',
-              padding: '14px 4px',
-              borderRadius: 9,
-              border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
-              background: active ? 'var(--ink)' : '#fff',
-              color: active ? '#fff' : 'var(--muted-2)',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {caption ? caption + ' ' : ''}
-            {r}:1
-          </button>
-        );
-      })}
-    </div>
-  );
+  ) => {
+    const presetIndex = ratioPresetIndex(value, preset, RATIO_PRESETS);
+    return (
+      <SegmentedTrack
+        selectedIndex={disabled ? -1 : presetIndex}
+        style={{ opacity: disabled ? 0.6 : 1 }}
+      >
+        {(registerRef) => (
+          <>
+            {RATIO_PRESETS.map((r, i) => {
+              const caption = presetCaption(r, forGel);
+              return (
+                <button
+                  key={r}
+                  ref={registerRef(i)}
+                  type="button"
+                  onClick={() => onChange(r, presetTagFor(r))}
+                  disabled={disabled}
+                  style={segmentItemStyle(i === presetIndex, { disabled, minHeight: 44 })}
+                >
+                  {caption ? caption + ' ' : ''}
+                  {r}:1
+                </button>
+              );
+            })}
+          </>
+        )}
+      </SegmentedTrack>
+    );
+  };
 
   return (
     <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -211,7 +222,9 @@ export function MobileMix() {
         >
           {strings.mixIzo}
         </div>
+        {mixRatioLabel}
         {ratioButtons(mix.ratio, setRatio, false, false, mix.ratioPreset)}
+        {mixCitricSourceLabel}
         {citricSourceButtons(mix.citricSource, setCitricSource)}
         <MobileStepper
           label={strings.concLabel + ' (' + strings.per100 + ')'}
@@ -224,7 +237,7 @@ export function MobileMix() {
           stackedLabel
         />
         <MobileStepper
-          label={strings.saltLabel + ' (g/l)'}
+          label={strings.saltLabel + ' (' + strings.per100 + ')'}
           value={mix.salt}
           min={0}
           max={4}
@@ -236,9 +249,13 @@ export function MobileMix() {
         />
         <MobileStepper
           label={citricFieldLabel(mix.citricSource, izoCitric.unit)}
-          value={izoCitric.amount}
+          value={citricDisplayAmount(izoCitric.amount, izoCitric.unit)}
           {...citricStepperProps(izoCitric.unit, 6)}
-          onChange={(v) => setCitric(citricGramsFromAmount(v, mix.citricSource))}
+          onChange={(v) =>
+            setCitric(
+              citricGramsFromAmount(citricAmountFromDisplay(v, izoCitric.unit), mix.citricSource),
+            )
+          }
           stackedLabel
         />
       </div>
@@ -298,7 +315,9 @@ export function MobileMix() {
             {strings.gelLockedNote}
           </p>
         )}
+        {mixRatioLabel}
         {ratioButtons(mix.gelRatio, setGelRatio, true, gelLocked, mix.gelRatioPreset)}
+        {mixCitricSourceLabel}
         {citricSourceButtons(mix.gelCitricSource, setGelCitricSource, gelLocked)}
         <MobileStepper
           label={strings.gelConcLabel + ' (' + strings.per100 + ')'}
@@ -311,7 +330,7 @@ export function MobileMix() {
           stackedLabel
         />
         <MobileStepper
-          label={strings.saltLabel + ' (g/l)'}
+          label={strings.saltLabel + ' (' + strings.per100 + ')'}
           value={mix.gelSalt}
           min={0}
           max={6}
@@ -324,9 +343,16 @@ export function MobileMix() {
         />
         <MobileStepper
           label={citricFieldLabel(mix.gelCitricSource, gelCitricAmt.unit)}
-          value={gelCitricAmt.amount}
+          value={citricDisplayAmount(gelCitricAmt.amount, gelCitricAmt.unit)}
           {...citricStepperProps(gelCitricAmt.unit, 8)}
-          onChange={(v) => setGelCitric(citricGramsFromAmount(v, mix.gelCitricSource))}
+          onChange={(v) =>
+            setGelCitric(
+              citricGramsFromAmount(
+                citricAmountFromDisplay(v, gelCitricAmt.unit),
+                mix.gelCitricSource,
+              ),
+            )
+          }
           disabled={gelLocked}
           stackedLabel
         />

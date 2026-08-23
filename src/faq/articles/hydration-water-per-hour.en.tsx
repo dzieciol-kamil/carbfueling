@@ -1,8 +1,9 @@
+import { calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function HydrationWaterPerHourEn() {
   return (
-    <FaqLayout lang="en">
+    <FaqLayout lang="en" slug="hydration-water-per-hour">
       <h1 style={articleH1Style}>How much water per hour? Hydration, heat, and sweat rate</h1>
       <p style={articleTextStyle}>
         There is no single "drink X ml per hour" number that works for every rider. Sweat rate
@@ -46,7 +47,7 @@ export default function HydrationWaterPerHourEn() {
         to guess or run your own weigh-in test mid-ride.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('en')} style={articleLinkStyle}>
           Plan your fluid and carb targets together →
         </a>
       </p>

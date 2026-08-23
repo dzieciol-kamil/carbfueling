@@ -4,6 +4,7 @@ import type { Fill, FoodItem, RouteInput, Stop } from '../../domain/types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 0,
     speed: 0,

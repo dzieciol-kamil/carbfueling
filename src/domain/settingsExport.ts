@@ -6,6 +6,7 @@ import type {
   FoodLibEntry,
   MixSettings,
   RouteInput,
+  Sport,
   Stop,
   Vessel,
 } from './types';
@@ -20,16 +21,24 @@ export const SETTINGS_EXPORT_APP_ID = 'carb-fueling-settings';
 // still a backup of his plan, so v1 files are read and renamed on the way in.
 export const SETTINGS_EXPORT_SCHEMA_VERSION = 2;
 
+// Upper bound on imported list lengths, so a crafted file with e.g. hundreds
+// of thousands of synthetic `fills` entries can't freeze the importing tab
+// rendering all of it (chart, Schedule list, recipe cards).
+const MAX_IMPORT_ARRAY_LENGTH = 500;
+
+// Default for `sport` on old exports (added after `sport` became part of `RouteInput`).
+const DEFAULT_SPORT: Sport = 'cycling';
+
 // Durable UI preferences worth carrying across devices. Deliberately excludes
 // transient UI state (open panels/sheets, hover/drag/selection, tour progress,
 // scrub position) — none of that is "settings" and importing it would just
 // leave the app in a weird mid-interaction state.
 export type SettingsExportViewMode = 'auto' | 'desktop' | 'mobile';
-export type SettingsExportYMode = 'rate' | 'fluid' | 'sum';
+export type SettingsExportYMode = 'rate' | 'fluid';
 export type SettingsExportXUnit = 'km' | 'h';
 
 const VIEW_MODES: SettingsExportViewMode[] = ['auto', 'desktop', 'mobile'];
-const Y_MODES: SettingsExportYMode[] = ['rate', 'fluid', 'sum'];
+const Y_MODES: SettingsExportYMode[] = ['rate', 'fluid'];
 const X_UNITS: SettingsExportXUnit[] = ['km', 'h'];
 const CONTENTS: Content[] = ['water', 'izo', 'gel'];
 
@@ -62,6 +71,9 @@ export interface SettingsExportFile {
   exportedAt: string;
   data: SettingsExportData;
 }
+
+/** Import/export outcome shown in the Header (desktop) and MobileProfile (mobile) feedback banner. */
+export type PlanFeedback = 'import-error' | 'import-success' | 'export-error';
 
 export function buildSettingsExport(
   data: SettingsExportData,
@@ -101,17 +113,22 @@ function isNullableString(v: unknown): v is string | null {
   return v === null || typeof v === 'string';
 }
 
+function isInRange(v: unknown, min: number, max: number): boolean {
+  return isFiniteNumber(v) && v >= min && v <= max;
+}
+
 function isValidRoute(v: unknown): v is RouteInput {
   if (!isRecord(v)) return false;
   if (v.mode !== 'route' && v.mode !== 'time') return false;
+  if (v.sport !== undefined && v.sport !== 'cycling' && v.sport !== 'running') return false;
   if (
-    !isFiniteNumber(v.distance) ||
-    !isFiniteNumber(v.speed) ||
-    !isFiniteNumber(v.hours) ||
+    !isInRange(v.distance, 0, 2000) ||
+    !isInRange(v.speed, 0, 100) ||
+    !isInRange(v.weight, 20, 300) ||
+    !isInRange(v.hours, 0, 999) ||
     !isFiniteNumber(v.minutes) ||
-    !isFiniteNumber(v.weight) ||
-    !isFiniteNumber(v.preMealCarbs) ||
-    !isFiniteNumber(v.preMealMinutes) ||
+    !isInRange(v.preMealCarbs, 0, 500) ||
+    !isInRange(v.preMealMinutes, 0, 1440) ||
     !isFiniteNumber(v.temp)
   ) {
     return false;
@@ -122,6 +139,7 @@ function isValidRoute(v: unknown): v is RouteInput {
   if (v.gpxTrack !== null) {
     if (!isRecord(v.gpxTrack)) return false;
     if (!isFiniteNumber(v.gpxTrack.id) || !Array.isArray(v.gpxTrack.ele)) return false;
+    if (!isInRange(v.gpxTrack.ele.length, 1, MAX_IMPORT_ARRAY_LENGTH)) return false;
     if (!v.gpxTrack.ele.every((n) => typeof n === 'number')) return false;
   }
   return true;
@@ -206,14 +224,19 @@ function isValidSettingsExportData(v: unknown): v is SettingsExportData {
     isValidRoute(v.route) &&
     isValidMix(v.mix) &&
     Array.isArray(v.gear) &&
+    v.gear.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.gear.every(isValidVessel) &&
     Array.isArray(v.fills) &&
+    v.fills.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.fills.every(isValidFill) &&
     Array.isArray(v.foods) &&
+    v.foods.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.foods.every(isValidFood) &&
     Array.isArray(v.stops) &&
+    v.stops.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.stops.every(isValidStop) &&
     Array.isArray(v.foodLib) &&
+    v.foodLib.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.foodLib.every(isValidFoodLibEntry) &&
     isValidUi(v.ui) &&
     isFiniteNumber(v.nextGid) &&
@@ -248,6 +271,17 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
     return { ok: false, reason: 'unsupported-version' };
   }
   const data = renameLegacyStops(parsed.data);
+  // A file exported before the chart's "sum" y-mode was removed may still carry it — fall
+  // back to "rate" rather than rejecting an otherwise-valid backup over one stale UI pref.
+  if (isRecord(data) && isRecord(data.ui) && data.ui.yMode === 'sum') {
+    data.ui.yMode = 'rate';
+  }
   if (!isValidSettingsExportData(data)) return { ok: false, reason: 'wrong-shape' };
-  return { ok: true, data };
+  return {
+    ok: true,
+    data: {
+      ...data,
+      route: { ...data.route, sport: data.route.sport ?? DEFAULT_SPORT },
+    },
+  };
 }

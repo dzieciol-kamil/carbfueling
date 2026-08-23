@@ -11,24 +11,26 @@ import {
   nextStopAt,
 } from '../domain/dragMath';
 import { startFillOf } from '../domain/combinedRefill';
-import { dist, presetTagFor } from '../domain/fuel';
+import { dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
 import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
-import { t, type Lang } from '../i18n/strings';
+import { LANGS, t, type Lang } from '../i18n/strings';
 import { createDebouncedLocalStorage } from './persistStorage';
-import type {
-  CitricSource,
-  FoodItem,
-  FoodLibEntry,
-  Intensity,
-  Mode,
-  MixSettings,
-  RatioPreset,
-  RouteInput,
-  Vessel,
-  Fill,
-  Stop,
-  XUnit,
+import {
+  DEFAULT_MIX,
+  type CitricSource,
+  type FoodItem,
+  type FoodLibEntry,
+  type Intensity,
+  type Mode,
+  type MixSettings,
+  type RatioPreset,
+  type RouteInput,
+  type Vessel,
+  type Fill,
+  type Stop,
+  type Sport,
+  type XUnit,
 } from '../domain/types';
 
 function defaultLang(): Lang {
@@ -76,8 +78,8 @@ function normalizeHoursMinutes(route: RouteInput): RouteInput {
 }
 
 export type ViewMode = 'auto' | 'desktop' | 'mobile';
-export type YMode = 'rate' | 'fluid' | 'sum';
-export type PanelId = 'settings' | 'mix' | null;
+export type YMode = 'rate' | 'fluid';
+export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | null;
 export type MobileTab = 'plan' | 'gear' | 'mix' | 'food' | 'me';
 
 interface UiState {
@@ -123,6 +125,7 @@ interface AppState {
   nextStopId: number;
 
   setMode: (mode: Mode) => void;
+  setSport: (sport: Sport) => void;
   setDistance: (n: number) => void;
   setSpeed: (n: number) => void;
   setHours: (n: number) => void;
@@ -210,6 +213,7 @@ interface AppState {
 }
 
 const defaultRoute: RouteInput = {
+  sport: 'cycling',
   mode: 'route',
   distance: 0,
   speed: 0,
@@ -226,20 +230,7 @@ const defaultRoute: RouteInput = {
   gpxError: null,
 };
 
-const defaultMix: MixSettings = {
-  conc: 8.4,
-  gelConc: 60,
-  ratio: 2,
-  gelRatio: 2,
-  ratioPreset: 'iso',
-  gelRatioPreset: 'iso',
-  salt: 0.16,
-  citric: 0.2,
-  gelSalt: 0.4,
-  gelCitric: 0.4,
-  citricSource: 'citric',
-  gelCitricSource: 'citric',
-};
+const defaultMix: MixSettings = DEFAULT_MIX;
 
 const defaultGear: Vessel[] = [
   { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
@@ -307,6 +298,12 @@ export const useAppStore = create<AppState>()(
           const route = { ...s.route, mode };
           return { route, ...reconcileToRoute(route, s.fills, s.foods, s.stops) };
         }),
+      setSport: (sport) =>
+        set((s) =>
+          s.route.sport === sport
+            ? {}
+            : { route: { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] } },
+        ),
       // Distance/hours/minutes are edited through free-typing number fields, which
       // commit a value on every keystroke (for live chart feedback) — reconciling
       // fills/foods/stops right here would clamp them against transient in-progress
@@ -732,16 +729,20 @@ export const useAppStore = create<AppState>()(
       // once from the persisted numeric ratio/gelRatio (same mapping as presetTagFor) so a
       // rider who already had Miód/Cukier selected doesn't silently lose that label after the
       // upgrade — going forward, the tag is only ever set by an explicit preset-button click.
-      // v3 -> v5: `shops`/`nextShopId` became `stops`/`nextStopId`. A marker is wherever the rider
+      // v3 -> v4: the 1.5:1 ratio preset used to have no tag of its own and fell back to
+      // 'custom' (see presetTagFor) — a rider who clicked the "1.5:1" button therefore got
+      // 'custom' persisted. Now that 1.5 has its own 'ratio15' tag, re-derive the tag for
+      // anyone sitting at exactly 1.5 so the segmented control still highlights their choice.
+      // v4 -> v5: the chart's "sum" (cumulative) y-mode was removed — fall a rider who had it
+      // selected back to "rate" instead of leaving a value the type no longer allows.
+      // -> v6: `shops`/`nextShopId` became `stops`/`nextStopId`. A marker is wherever the rider
       // plans to restock — a shop is one of the things it can be, not the name of the thing — but
       // every rider already has the old key in his browser holding places he checked on a map, so
-      // the data moves across under the new name rather than being dropped with the old one.
-      // It costs two version numbers because a dev build stamped 4 before the rename was written:
-      // migrate only runs when the stored version differs, so anything stamped 4 needed a 5 to
-      // come back for it.
-      // v5 -> v6: the same rename applied to the data. Every marker the app created carried
-      // "Sklep"/"Shop" as its name — a label the rider never chose — so those follow the copy to
-      // "Postoj"/"Stop". A name he typed himself is his and is left untouched.
+      // the data moves across under the new name rather than being dropped with the old one (see
+      // the migration step itself for why this part isn't gated on `version`). Every marker the
+      // app created also carried "Sklep"/"Shop" as its name — a label the rider never chose — so
+      // those follow the copy to "Postoj"/"Stop". A name he typed himself is his and is left
+      // untouched.
       // v6 -> v7: `needsStop` marks a product you can only have where you stop for it, and the
       // shipped Cola was always one of those — it just had no way to say so until now. A rider who
       // still has it exactly as the app wrote it gets the flag; the moment he retuned its name,
@@ -772,6 +773,18 @@ export const useAppStore = create<AppState>()(
           if (mix.gelRatioPreset == null && typeof mix.gelRatio === 'number') {
             mix.gelRatioPreset = presetTagFor(mix.gelRatio);
           }
+        }
+        if (version < 4 && s.mix) {
+          const mix = s.mix as Partial<MixSettings>;
+          if (mix.ratio === 1.5 && mix.ratioPreset === 'custom') {
+            mix.ratioPreset = 'ratio15';
+          }
+          if (mix.gelRatio === 1.5 && mix.gelRatioPreset === 'custom') {
+            mix.gelRatioPreset = 'ratio15';
+          }
+        }
+        if (version < 5 && s.ui && (s.ui as { yMode?: string }).yMode === 'sum') {
+          (s.ui as { yMode?: string }).yMode = 'rate';
         }
         // Keyed on the old field being there rather than on the version number: a rider whose
         // stored version was already stamped 4 by a build that renamed the field but not the data
@@ -810,6 +823,15 @@ export const useAppStore = create<AppState>()(
       },
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AppState> | undefined;
+        // The test suite runs with `environment: 'node'` (no DOM), so `document` is
+        // undefined there — this guard mirrors defaultLang()'s own `typeof navigator`
+        // check above rather than requiring every test file to stub a DOM.
+        // The attribute is not ours alone: Chrome's "always translate this page" rewrites it to
+        // the translation's language. Accepting it unchecked would put e.g. `es` into ui.lang,
+        // which nextLangPath() then pushes into the address bar as /es/calculator/ — a URL that
+        // 404s on reload — and merge's result goes straight back to localStorage, so it sticks.
+        const attrLang = typeof document !== 'undefined' ? document.documentElement.lang : '';
+        const htmlLang = LANGS.includes(attrLang as Lang) ? (attrLang as Lang) : undefined;
         return {
           ...currentState,
           ...persisted,
@@ -817,6 +839,51 @@ export const useAppStore = create<AppState>()(
           // Deep-merge mix so fields added after a user's data was already persisted (e.g.
           // citricSource) fall back to the current default instead of coming back undefined.
           mix: { ...currentState.mix, ...persisted?.mix },
+          // Same deep-merge reasoning for ui, plus: the calculator's two HTML entries
+          // (en/calculator/index.html, pl/calculator/index.html) seed the language via a
+          // static `<html lang>` attribute, read here. That HTML-seeded value always wins
+          // over whatever language was previously persisted — otherwise a returning
+          // visitor's stored preference would silently override a shared /pl/calculator/
+          // link, defeating the point of the URL carrying the language at all.
+          ui: {
+            ...currentState.ui,
+            ...persisted?.ui,
+            // autoView is derived from the viewport, not a preference — restoring it
+            // makes the first paint depend on whichever device last used the app, so a
+            // phone opens the desktop layout until the resize effect corrects it.
+            // currentState's value has just been computed by defaultAutoView().
+            autoView: currentState.ui.autoView,
+            // Where someone happened to be looking last time is not a setting either.
+            // Following the landing's "open the calculator" into a settings panel or
+            // the Me tab is never what that link promised, so both start from their
+            // defaults: no panel open, and the plan.
+            panel: currentState.ui.panel,
+            tab: currentState.ui.tab,
+            // The same argument, one step stronger, for everything that gates a full-screen
+            // overlay. All of these are persisted too (there is no partialize), and the
+            // debounced write flushes on pagehide — so backgrounding a phone with the Mix
+            // sheet open stores `mixSheet: true`, and the next visit opens on that sheet
+            // instead of the plan.
+            //
+            // tourStep is deliberately NOT in this list, even though it gates an overlay too.
+            // startTour sets tourSeen at step 0, and tourSeen is a preference that has to
+            // survive — so resetting the step alone would strand a first-time visitor who
+            // reloaded mid-tour: the overlay would go, and App's `if (tourSeen) return` guard
+            // would never bring it back. Leaving the step persisted resumes the tour where it
+            // was, which is what happened before this block existed.
+            mixSheet: currentState.ui.mixSheet,
+            routeSheet: currentState.ui.routeSheet,
+            stopSheet: currentState.ui.stopSheet,
+            chartHelp: currentState.ui.chartHelp,
+            // In-flight pointer state, persisted for the same reason and just as meaningless
+            // once the pointer is gone: a drag interrupted by backgrounding the phone brought
+            // the bar back rendered mid-drag, with nothing to clear it until the next drag.
+            dragKey: currentState.ui.dragKey,
+            hoverKey: currentState.ui.hoverKey,
+            selKey: currentState.ui.selKey,
+            scrubX: currentState.ui.scrubX,
+            ...(htmlLang ? { lang: htmlLang } : {}),
+          },
         };
       },
     },

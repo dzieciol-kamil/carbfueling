@@ -29,6 +29,7 @@ import { KIELCE_MARKI_ELE } from './__fixtures__/kielceMarkiEle';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from './types';
 
 const route: RouteInput = {
+  sport: 'cycling',
   mode: 'route',
   distance: 194,
   speed: 22,

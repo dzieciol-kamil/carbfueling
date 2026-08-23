@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function BottleVsGelPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="bottle-vs-gel">
       <h1 style={articleH1Style}>
         Bidon czy żel? Kiedy opłaca się każda forma dostarczania węglowodanów
       </h1>
@@ -19,7 +20,7 @@ export default function BottleVsGelPl() {
         trakcie jazdy, a gdy się skończy, uzupełnienie wymaga planu — sklepu, punktu wsparcia albo
         wody, którą wieziesz, żeby zmieszać kolejną porcję. Logistykę tego tematu opisujemy osobno w
         artykule o{' '}
-        <a href="/pl/faq/bottle-refill-planning/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'bottle-refill-planning')} style={articleLinkStyle}>
           planowaniu uzupełniania bidonów
         </a>
         .
@@ -55,7 +56,7 @@ export default function BottleVsGelPl() {
         zapotrzebowanie na węglowodany w każdej godzinie — nie tylko w sumie na całą trasę.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zbuduj plan łączący bidon, żel i jedzenie →
         </a>
       </p>

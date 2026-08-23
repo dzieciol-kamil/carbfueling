@@ -1,8 +1,9 @@
+import { faqHref, calculatorHref } from '../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
 
 export default function PacePowerAbsorptionPl() {
   return (
-    <FaqLayout lang="pl">
+    <FaqLayout lang="pl" slug="pace-power-absorption">
       <h1 style={articleH1Style}>Czy tempo lub moc wpływają na to, ile możesz wchłonąć?</h1>
       <p style={articleTextStyle}>
         Łatwo pomylić dwie różne rzeczy: ile węglowodanów spala Twój wysiłek i ile węglowodanów jest
@@ -17,7 +18,7 @@ export default function PacePowerAbsorptionPl() {
         zapotrzebowania — szacuje, ile węglowodanów na godzinę spala dana trasa przy danym tempie.
         To jednak tylko połowa obrazu. Druga połowa to sufit wchłaniania Twojego jelita — osobny
         limit, wyznaczany przez transportery cukru w ścianie jelita, opisany w artykule o tym,{' '}
-        <a href="/pl/faq/carb-transporter-mix/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego nie wchłoniesz więcej niż ok. 90 g węglowodanów na godzinę
         </a>
         .
@@ -49,7 +50,7 @@ export default function PacePowerAbsorptionPl() {
       </p>
       <p style={articleTextStyle}>
         To jeden z powodów, dla których{' '}
-        <a href="/pl/faq/gut-training-carb-tolerance/" style={articleLinkStyle}>
+        <a href={faqHref('pl', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
           trening jelita
         </a>{' '}
         powinien obejmować też trening przy intensywności zbliżonej do wyścigowej, a nie tylko
@@ -64,7 +65,7 @@ export default function PacePowerAbsorptionPl() {
         stanie dostarczyć.
       </p>
       <p>
-        <a href="/" style={articleLinkStyle}>
+        <a href={calculatorHref('pl')} style={articleLinkStyle}>
           Zobacz swoje zapotrzebowanie i sufit razem →
         </a>
       </p>

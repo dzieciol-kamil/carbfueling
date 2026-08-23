@@ -1,10 +1,100 @@
-import type { CSSProperties } from 'react';
-import { useRef } from 'react';
-import { prof } from '../domain/fuel';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { paceToSpeed, prof, speedToPace } from '../domain/fuel';
 import type { Intensity, RouteInput } from '../domain/types';
-import { t } from '../i18n/strings';
+import { t, type StringTable } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { InfoPopover } from './ui/InfoPopover';
 import { NumberInput } from './ui/NumberInput';
+import { SegmentedControl } from './ui/SegmentedControl';
+import { SportSwitch } from './ui/SportSwitch';
+
+function routeTitle(sport: RouteInput['sport'], strings: StringTable): string {
+  switch (sport) {
+    case 'running':
+      return strings.routeRunning;
+    default:
+      return strings.routeCycling;
+  }
+}
+
+function formatPaceText(min: number, sec: number): string {
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
+
+// Keeps only digits and a single ':' while typing, and caps the seconds side to 2 digits — so
+// the field can never drift into something like "5:300" mid-edit that `parsePaceText` would
+// then have to guess how to salvage.
+function sanitizePaceText(raw: string): string {
+  let out = '';
+  let colonSeen = false;
+  let secDigits = 0;
+  for (const ch of raw) {
+    if (ch === ':' && !colonSeen) {
+      out += ':';
+      colonSeen = true;
+    } else if (/[0-9]/.test(ch)) {
+      if (colonSeen) {
+        if (secDigits < 2) {
+          out += ch;
+          secDigits++;
+        }
+      } else {
+        out += ch;
+      }
+    }
+  }
+  return out;
+}
+
+function parsePaceText(text: string): { min: number; sec: number } | null {
+  const m = /^(\d{1,3}):(\d{1,2})$/.exec(text);
+  if (!m) return null;
+  return { min: parseInt(m[1], 10), sec: Math.min(59, parseInt(m[2], 10)) };
+}
+
+/** Free-text "M:SS" pace entry — forces the ':' and caps seconds at 2 digits while typing (see
+ *  `sanitizePaceText`), and reformats to the canonical `min:SS` shape on blur. Replaces two
+ *  separate min/sec NumberInputs, which read as unrelated numbers rather than one pace value. */
+function PaceInput({
+  pace,
+  onChangePace,
+  style,
+}: {
+  pace: { min: number; sec: number };
+  onChangePace: (min: number, sec: number) => void;
+  style?: CSSProperties;
+}) {
+  const [text, setText] = useState(formatPaceText(pace.min, pace.sec));
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setText(formatPaceText(pace.min, pace.sec));
+  }, [pace.min, pace.sec]);
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      style={style}
+      value={text}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={(e) => {
+        const sanitized = sanitizePaceText(e.target.value);
+        setText(sanitized);
+        const parsed = parsePaceText(sanitized);
+        if (parsed) onChangePace(parsed.min, parsed.sec);
+      }}
+      onBlur={() => {
+        focused.current = false;
+        const parsed = parsePaceText(text) ?? pace;
+        setText(formatPaceText(parsed.min, parsed.sec));
+        onChangePace(parsed.min, parsed.sec);
+      }}
+    />
+  );
+}
 
 const inputStyle: CSSProperties = {
   width: '100%',
@@ -26,39 +116,6 @@ const labelStyle: CSSProperties = {
   minWidth: 0,
 };
 
-function seg(on: boolean): CSSProperties {
-  return {
-    flex: '1 1 0',
-    minWidth: 0,
-    whiteSpace: 'nowrap',
-    textAlign: 'center',
-    border: 'none',
-    borderRadius: 7,
-    padding: '8px 6px',
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily: 'Archivo, sans-serif',
-    cursor: 'pointer',
-    background: on ? '#fff' : 'transparent',
-    color: on ? 'var(--ink)' : 'var(--muted)',
-    boxShadow: on ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-  };
-}
-
-function chip(on: boolean): CSSProperties {
-  return {
-    border: '1px solid ' + (on ? 'var(--ink)' : 'var(--chip-border)'),
-    borderRadius: 9,
-    padding: '9px 14px',
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily: 'Archivo, sans-serif',
-    cursor: 'pointer',
-    background: on ? 'var(--ink)' : '#fff',
-    color: on ? '#fff' : 'var(--ink-soft)',
-  };
-}
-
 function elevationGain(routeState: RouteInput): number {
   const pts = prof(routeState).pts;
   let gain = 0;
@@ -75,6 +132,7 @@ export function RoutePanel() {
   const setMode = useAppStore((s) => s.setMode);
   const setDistance = useAppStore((s) => s.setDistance);
   const setSpeed = useAppStore((s) => s.setSpeed);
+  const setSport = useAppStore((s) => s.setSport);
   const setHours = useAppStore((s) => s.setHours);
   const setMinutes = useAppStore((s) => s.setMinutes);
   const reconcilePlan = useAppStore((s) => s.reconcilePlan);
@@ -92,6 +150,7 @@ export function RoutePanel() {
     { value: 'mid', label: strings.medium },
     { value: 'high', label: strings.high },
   ];
+  const pace = speedToPace(route.speed);
 
   return (
     <div
@@ -115,37 +174,34 @@ export function RoutePanel() {
       <div
         style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '0 0 272px', width: 272 }}
       >
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {strings.route}
-        </span>
-
-        <div
-          style={{
-            display: 'flex',
-            alignSelf: 'flex-start',
-            width: 272,
-            maxWidth: '100%',
-            boxSizing: 'border-box',
-            background: 'var(--track)',
-            borderRadius: 9,
-            padding: 3,
-            gap: 2,
-          }}
-        >
-          <button onClick={() => setMode('route')} style={seg(route.mode === 'route')}>
-            {strings.byRoute}
-          </button>
-          <button onClick={() => setMode('time')} style={seg(route.mode === 'time')}>
-            {strings.byTime}
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {routeTitle(route.sport, strings)}
+          </span>
+          <SportSwitch
+            sport={route.sport}
+            onChange={setSport}
+            cyclingLabel={strings.sportCycling}
+            runningLabel={strings.sportRunning}
+          />
         </div>
+
+        <SegmentedControl
+          options={[
+            { value: 'route' as const, label: strings.byRoute },
+            { value: 'time' as const, label: strings.byTime },
+          ]}
+          value={route.mode}
+          onChange={setMode}
+          style={{ alignSelf: 'flex-start', width: 272, maxWidth: '100%' }}
+        />
 
         {route.mode === 'route' ? (
           <div
@@ -167,10 +223,28 @@ export function RoutePanel() {
                 style={inputStyle}
               />
             </label>
-            <label style={labelStyle}>
-              <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.speed} (km/h)</span>
-              <NumberInput value={route.speed} onChange={setSpeed} zeroAsEmpty style={inputStyle} />
-            </label>
+            {route.sport === 'running' ? (
+              <label style={labelStyle}>
+                <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.pace}</span>
+                <PaceInput
+                  pace={pace}
+                  onChangePace={(min, sec) => setSpeed(paceToSpeed(min, sec))}
+                  style={inputStyle}
+                />
+              </label>
+            ) : (
+              <label style={labelStyle}>
+                <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>
+                  {strings.speed} (km/h)
+                </span>
+                <NumberInput
+                  value={route.speed}
+                  onChange={setSpeed}
+                  zeroAsEmpty
+                  style={inputStyle}
+                />
+              </label>
+            )}
           </div>
         ) : (
           <div
@@ -218,18 +292,21 @@ export function RoutePanel() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.intensity}</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {intensityOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setIntensity(opt.value)}
-                  style={chip(route.intensity === opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>
+              {strings.intensity}{' '}
+              <InfoPopover
+                hint={strings.intensityHint}
+                ariaLabel={strings.intensityInfoBtnLabel}
+                popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+              >
+                ⓘ
+              </InfoPopover>
+            </span>
+            <SegmentedControl
+              options={intensityOptions}
+              value={route.intensity}
+              onChange={setIntensity}
+            />
           </div>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>

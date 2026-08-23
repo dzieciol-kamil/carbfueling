@@ -3,6 +3,7 @@ import { absCap } from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { hasPlanData, useAppStore } from '../store/appStore';
 import { TourReplayConfirm } from './tour/TourReplayConfirm';
+import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
 
 export function GitHubIcon() {
   return (
@@ -51,11 +52,12 @@ const replayButtonStyle: CSSProperties = {
 export function Footer() {
   const lang = useAppStore((s) => s.ui.lang);
   const mix = useAppStore((s) => s.mix);
+  const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
   const strings = t(lang);
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since the footer isn't tied to a specific plan.
-  const cap = absCap(mix);
+  const cap = absCap(mix, 0, 0, intensity);
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -204,7 +206,7 @@ export function Footer() {
               <span>{strings.ftSupport}</span>
             </a>
             <a
-              href={lang === 'pl' ? '/pl/faq/' : '/faq/'}
+              href={FAQ_HREF_FROM_CALCULATOR}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
