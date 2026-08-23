@@ -63,7 +63,7 @@ export function MobileChart() {
   const gelCarbs = fills
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
-  const cap = absCap(mix, izoCarbs, gelCarbs);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
 
   const rawMaxY = fluidMode
     ? Math.max(

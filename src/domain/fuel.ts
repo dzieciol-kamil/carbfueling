@@ -3,10 +3,12 @@ import type {
   Content,
   Fill,
   FoodItem,
+  Intensity,
   MixSettings,
   PlanState,
   RatioPreset,
   RouteInput,
+  Sport,
   Vessel,
   XUnit,
 } from './types';
@@ -65,6 +67,13 @@ export const HYDRATION_TARGET_PCT = 85;
 export const HYDRATION_SHORT_PCT = 60;
 
 /**
+ * Above roughly 80-90% of max effort — the app's 'high' intensity tier — blood flow shifts
+ * away from the gut, lowering how much carb it can actually absorb. Same effect for both
+ * sports (it is an intensity effect, not a sport one); starting-point trim, not a citation.
+ */
+const HIGH_INTENSITY_ABS_CAP_FACTOR = 0.88;
+
+/**
  * How much unused absorbed carb `rateStats` lets a rider carry forward, expressed as minutes of
  * their own hourly requirement. This is the body's tolerance for uneven delivery — gut contents
  * plus the immediately available glycogen pool — and it is what stops the coverage metric from
@@ -101,10 +110,20 @@ const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
 const PACE_DOWN_FLOOR = 0.55;
+const RUN_PACE_UP_K = 0.12;
+const RUN_PACE_DOWN_K = 0.02;
+const RUN_PACE_DOWN_FLOOR = 0.85;
+const RUN_EFFORT_MIN = 0.6;
+const RUN_EFFORT_MAX = 1.8;
+const RUN_EFFORT_UP_K = 0.15;
+const RUN_EFFORT_DOWN_K = 0.04;
 
-export function timeWeight(gradPercent: number): number {
-  if (gradPercent >= 0) return 1 + gradPercent * PACE_UP_K;
-  return Math.max(PACE_DOWN_FLOOR, 1 + gradPercent * PACE_DOWN_K);
+export function timeWeight(gradPercent: number, sport: Sport = 'cycling'): number {
+  const upK = sport === 'running' ? RUN_PACE_UP_K : PACE_UP_K;
+  const downK = sport === 'running' ? RUN_PACE_DOWN_K : PACE_DOWN_K;
+  const floor = sport === 'running' ? RUN_PACE_DOWN_FLOOR : PACE_DOWN_FLOOR;
+  if (gradPercent >= 0) return 1 + gradPercent * upK;
+  return Math.max(floor, 1 + gradPercent * downK);
 }
 
 export interface ProfilePoint {
@@ -170,6 +189,18 @@ export function totalHours(route: RouteInput): number {
   return (route.hours || 0) + (route.minutes || 0) / 60;
 }
 
+export function speedToPace(speedKmh: number): { min: number; sec: number } {
+  if (speedKmh <= 0) return { min: 0, sec: 0 };
+  const totalSec = Math.round(3600 / speedKmh);
+  return { min: Math.floor(totalSec / 60), sec: totalSec % 60 };
+}
+
+export function paceToSpeed(min: number, sec: number): number {
+  const totalSec = min * 60 + sec;
+  if (totalSec <= 0) return 0;
+  return Math.round((3600 / totalSec) * 1000) / 1000;
+}
+
 export function dist(route: RouteInput): number {
   if (route.mode === 'route') return Math.max(1, route.distance);
   return Math.max(1, Math.round(totalHours(route) * 10));
@@ -178,6 +209,11 @@ export function dist(route: RouteInput): number {
 export function cph(route: RouteInput): number {
   const h = totalHours(route);
   const i = route.intensity;
+  if (route.sport === 'running') {
+    if (h < 1) return i === 'high' ? 45 : i === 'low' ? 20 : 30;
+    if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
+    return i === 'low' ? 45 : i === 'high' ? 75 : 60;
+  }
   if (h < 1) return i === 'high' ? 60 : i === 'low' ? 30 : 45;
   if (h <= 2.5) return i === 'low' ? 30 : i === 'high' ? 60 : 45;
   return i === 'low' ? 60 : i === 'high' ? 90 : 75;
@@ -200,8 +236,18 @@ export function sweat(route: RouteInput): number {
  * absorption note, the mobile "Me" tab, and the mix-editing screen's live preview), rather than
  * pretending to know a real-world split. Call sites that do have fills/gear (samples() below,
  * the desktop/mobile charts) pass the actual carb totals for a true blended figure.
+ *
+ * `intensity` defaults to 'mid' (no change). At 'high', the ceiling is trimmed by
+ * `HIGH_INTENSITY_ABS_CAP_FACTOR` — above roughly 80-90% of max effort, blood flow shifts away
+ * from the gut — then re-floored at 45 so the trim can never push below the same practical
+ * minimum the untrimmed cap already respects.
  */
-export function absCap(mix: MixSettings, izoCarbs = 0, gelCarbs = 0): number {
+export function absCap(
+  mix: MixSettings,
+  izoCarbs = 0,
+  gelCarbs = 0,
+  intensity: Intensity = 'mid',
+): number {
   const rIzo = mix.ratio || 2;
   const rGel = mix.gelRatio || 2;
   const gluIzo = rIzo / (rIzo + 1);
@@ -211,7 +257,8 @@ export function absCap(mix: MixSettings, izoCarbs = 0, gelCarbs = 0): number {
   const wIzo = 1 - wGel;
   const glu = wIzo * gluIzo + wGel * gluGel;
   const fru = 1 - glu;
-  return Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
+  const cap = Math.round(Math.max(45, Math.min(95, Math.min(60 / glu, 32 / fru))));
+  return intensity === 'high' ? Math.max(45, Math.round(cap * HIGH_INTENSITY_ABS_CAP_FACTOR)) : cap;
 }
 
 export function preRideGut(route: RouteInput, cap: number): number {
@@ -275,7 +322,15 @@ export function prof(route: RouteInput): Profile {
     const dx = (b.x - a.x) * 1000;
     pts[i].grad = dx > 0 ? ((b.ele - a.ele) / dx) * 100 : 0;
     pts[i].effort = route.useGpx
-      ? Math.max(0.32, Math.min(2.3, 1 + pts[i].grad * (pts[i].grad > 0 ? 0.19 : 0.11)))
+      ? route.sport === 'running'
+        ? Math.max(
+            RUN_EFFORT_MIN,
+            Math.min(
+              RUN_EFFORT_MAX,
+              1 + pts[i].grad * (pts[i].grad > 0 ? RUN_EFFORT_UP_K : RUN_EFFORT_DOWN_K),
+            ),
+          )
+        : Math.max(0.32, Math.min(2.3, 1 + pts[i].grad * (pts[i].grad > 0 ? 0.19 : 0.11)))
       : 1;
   }
 
@@ -284,8 +339,8 @@ export function prof(route: RouteInput): Profile {
 
   const cumTime = [0];
   for (let i = 1; i <= N; i++) {
-    const wA = route.useGpx ? timeWeight(pts[i - 1].grad) : 1;
-    const wB = route.useGpx ? timeWeight(pts[i].grad) : 1;
+    const wA = route.useGpx ? timeWeight(pts[i - 1].grad, route.sport) : 1;
+    const wB = route.useGpx ? timeWeight(pts[i].grad, route.sport) : 1;
     cumTime[i] = cumTime[i - 1] + (pts[i].x - pts[i - 1].x) * ((wA + wB) / 2);
   }
 
@@ -584,7 +639,7 @@ export function samples(state: PlanState): Sample[] {
   const gelCarbs = fills
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
-  const cap = absCap(mix, izoCarbs, gelCarbs);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
   // Assumes equal time per equal-distance sample (flat-pace approximation); the chart's
   // time axis is now terrain-aware (see timeAtDistance) but this absorption model is not — a
   // known, deliberate scope boundary, not an oversight.

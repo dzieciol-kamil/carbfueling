@@ -52,11 +52,12 @@ const replayButtonStyle: CSSProperties = {
 export function Footer() {
   const lang = useAppStore((s) => s.ui.lang);
   const mix = useAppStore((s) => s.mix);
+  const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
   const strings = t(lang);
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since the footer isn't tied to a specific plan.
-  const cap = absCap(mix);
+  const cap = absCap(mix, 0, 0, intensity);
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
 

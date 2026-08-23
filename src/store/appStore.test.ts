@@ -4,6 +4,7 @@ import type { Fill, RouteInput } from '../domain/types';
 
 function route(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 0,
     speed: 0,
@@ -53,6 +54,25 @@ describe('hasPlanData', () => {
         shops: [{ id: 1, at: 40, name: 'Shop' }],
       }),
     ).toBe(true);
+  });
+});
+
+describe('setSport', () => {
+  test('switching sport resets speed to that sport default', () => {
+    useAppStore.setState({ route: route({ sport: 'cycling', speed: 28 }) });
+    useAppStore.getState().setSport('running');
+    expect(useAppStore.getState().route.sport).toBe('running');
+    expect(useAppStore.getState().route.speed).toBe(10.9);
+
+    useAppStore.getState().setSport('cycling');
+    expect(useAppStore.getState().route.sport).toBe('cycling');
+    expect(useAppStore.getState().route.speed).toBe(28);
+  });
+
+  test('clicking the already-active sport is a no-op (does not reset speed)', () => {
+    useAppStore.setState({ route: route({ sport: 'cycling', speed: 32 }) });
+    useAppStore.getState().setSport('cycling');
+    expect(useAppStore.getState().route.speed).toBe(32);
   });
 });
 

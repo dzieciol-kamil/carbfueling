@@ -23,6 +23,7 @@ import {
   honeyGramsFromCarbs,
   hydrationStatus,
   mixSplit,
+  paceToSpeed,
   planExtras,
   planSummary,
   preRideGut,
@@ -33,6 +34,7 @@ import {
   rateStats,
   recoveryCarbs,
   samples,
+  speedToPace,
   sweat,
   timeAtDistance,
   timeWeight,
@@ -42,6 +44,7 @@ import type { Fill, FoodItem, MixSettings, PlanState, RouteInput, Vessel } from 
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
+    sport: 'cycling',
     mode: 'route',
     distance: 100,
     speed: 25,
@@ -110,6 +113,22 @@ describe('timeWeight', () => {
   test('steep downhill (-20%): clamped at the 0.55 floor', () => {
     expect(timeWeight(-20)).toBe(0.55);
   });
+
+  test('running, flat ground: weight 1', () => {
+    expect(timeWeight(0, 'running')).toBe(1);
+  });
+
+  test('running, moderate uphill (5%): steeper penalty than cycling', () => {
+    expect(timeWeight(5, 'running')).toBeCloseTo(1.6, 6);
+  });
+
+  test('running, moderate downhill (-5%): a small gain, much less than cycling', () => {
+    expect(timeWeight(-5, 'running')).toBeCloseTo(0.9, 6);
+  });
+
+  test('running, steep downhill (-20%): clamped at the shallower 0.85 floor', () => {
+    expect(timeWeight(-20, 'running')).toBe(0.85);
+  });
 });
 
 describe('totalHours', () => {
@@ -123,6 +142,38 @@ describe('totalHours', () => {
 
   test('time mode: hours + minutes/60', () => {
     expect(totalHours(makeRoute({ mode: 'time', hours: 1, minutes: 30 }))).toBe(1.5);
+  });
+});
+
+describe('speedToPace / paceToSpeed', () => {
+  test('speedToPace converts km/h to whole min:sec per km', () => {
+    expect(speedToPace(12)).toEqual({ min: 5, sec: 0 });
+    expect(speedToPace(10.9)).toEqual({ min: 5, sec: 30 });
+  });
+
+  test('speedToPace returns zero pace for zero or negative speed', () => {
+    expect(speedToPace(0)).toEqual({ min: 0, sec: 0 });
+    expect(speedToPace(-5)).toEqual({ min: 0, sec: 0 });
+  });
+
+  test('paceToSpeed converts min:sec per km back to km/h', () => {
+    expect(paceToSpeed(5, 0)).toBe(12);
+    expect(paceToSpeed(5, 30)).toBe(10.909);
+  });
+
+  test('paceToSpeed returns zero speed for zero pace', () => {
+    expect(paceToSpeed(0, 0)).toBe(0);
+  });
+
+  test('round-trips within one second of precision', () => {
+    const pace = speedToPace(9.5);
+    const speed = paceToSpeed(pace.min, pace.sec);
+    expect(speedToPace(speed)).toEqual(pace);
+  });
+
+  test('round-trips at slower (11:00/km) paces that 2-decimal rounding used to lose', () => {
+    const speed = paceToSpeed(11, 0);
+    expect(speedToPace(speed)).toEqual({ min: 11, sec: 0 });
   });
 });
 
@@ -161,6 +212,27 @@ describe('cph', () => {
     expect(cph({ ...h, intensity: 'low' })).toBe(60);
     expect(cph({ ...h, intensity: 'mid' })).toBe(75);
     expect(cph({ ...h, intensity: 'high' })).toBe(90);
+  });
+
+  test('running, under 1 hour', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 10, speed: 20 }); // 0.5h
+    expect(cph({ ...h, intensity: 'low' })).toBe(20);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(30);
+    expect(cph({ ...h, intensity: 'high' })).toBe(45);
+  });
+
+  test('running, between 1 and 2.5 hours inclusive (same as cycling)', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 50, speed: 25 }); // 2h
+    expect(cph({ ...h, intensity: 'low' })).toBe(30);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(45);
+    expect(cph({ ...h, intensity: 'high' })).toBe(60);
+  });
+
+  test('running, over 2.5 hours', () => {
+    const h = makeRoute({ sport: 'running', mode: 'route', distance: 300, speed: 25 }); // 12h
+    expect(cph({ ...h, intensity: 'low' })).toBe(45);
+    expect(cph({ ...h, intensity: 'mid' })).toBe(60);
+    expect(cph({ ...h, intensity: 'high' })).toBe(75);
   });
 });
 
@@ -225,6 +297,38 @@ describe('absCap', () => {
     expect(blended).toBeGreaterThanOrEqual(gelOnlyCap);
     expect(blended).toBeLessThanOrEqual(izoOnlyCap);
   });
+
+  test('high intensity trims the cap by ~12%, other intensities do not', () => {
+    const mix = makeMix({ ratio: 2, gelRatio: 2 });
+    const baseline = absCap(mix); // no plan mix, defaults to 'mid' -> no trim
+    expect(baseline).toBe(90);
+    expect(absCap(mix, 0, 0, 'low')).toBe(90);
+    expect(absCap(mix, 0, 0, 'mid')).toBe(90);
+    expect(absCap(mix, 0, 0, 'high')).toBe(79);
+  });
+
+  test('high intensity trim never pushes the cap below its own 45 floor', () => {
+    const mix = makeMix({ gelRatio: 0.5 });
+    const cap = absCap(mix, 0, 100, 'high'); // all carbs from the low-ratio gel
+    expect(cap).toBeGreaterThanOrEqual(45);
+  });
+});
+
+describe('cph() vs absCap() interaction at cycling, high intensity, long duration', () => {
+  test('pins the achievable coverage ceiling so a future retune cannot silently move it', () => {
+    const route = makeRoute({
+      sport: 'cycling',
+      mode: 'route',
+      distance: 300,
+      speed: 25,
+      intensity: 'high',
+    });
+    const target = cph(route);
+    const cap = absCap(makeMix(), 0, 0, route.intensity);
+    expect(target).toBe(90);
+    expect(cap).toBe(79);
+    expect(Math.round((cap / target) * 100)).toBe(88);
+  });
 });
 
 describe('preRideGut', () => {
@@ -265,6 +369,12 @@ describe('prof / eff', () => {
     expect(eff(route, 0)).toBe(0);
     expect(eff(route, 50)).toBe(80);
     expect(eff(route, 100)).toBe(160);
+  });
+
+  test('running effort stays within a narrower band than cycling', () => {
+    const route = makeRoute({ sport: 'running', mode: 'route', distance: 100, useGpx: true });
+    const P = prof(route);
+    expect(P.pts.every((p) => p.effort >= 0.6 && p.effort <= 1.8)).toBe(true);
   });
 
   test('synthetic profile (useGpx on, no track) stays within physical bounds', () => {

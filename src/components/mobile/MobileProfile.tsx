@@ -31,13 +31,14 @@ export function MobileProfile() {
   const autoView = useAppStore((s) => s.ui.autoView);
   const setViewMode = useAppStore((s) => s.setViewMode);
   const mix = useAppStore((s) => s.mix);
+  const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
   const getSettingsExportData = useAppStore((s) => s.getSettingsExportData);
   const importSettings = useAppStore((s) => s.importSettings);
   const strings = t(lang);
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since the "Me" tab isn't tied to a specific plan.
-  const cap = absCap(mix);
+  const cap = absCap(mix, 0, 0, intensity);
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);

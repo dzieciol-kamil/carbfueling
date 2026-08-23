@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react';
 import { useRef } from 'react';
-import { prof } from '../../domain/fuel';
+import { paceToSpeed, prof, speedToPace } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { InfoPopover } from '../ui/InfoPopover';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { SportSwitch } from '../ui/SportSwitch';
 import { MobileStepper } from './MobileStepper';
 
 function elevationGain(route: RouteInput): number {
@@ -55,6 +56,7 @@ export function MobileRouteSheet() {
   const lang = useAppStore((s) => s.ui.lang);
   const setDistance = useAppStore((s) => s.setDistance);
   const setSpeed = useAppStore((s) => s.setSpeed);
+  const setSport = useAppStore((s) => s.setSport);
   const setPreMealCarbs = useAppStore((s) => s.setPreMealCarbs);
   const setPreMealMinutes = useAppStore((s) => s.setPreMealMinutes);
   const setIntensity = useAppStore((s) => s.setIntensity);
@@ -72,6 +74,10 @@ export function MobileRouteSheet() {
     { value: 'mid', label: strings.medium },
     { value: 'high', label: strings.high },
   ];
+  const paceSec = (() => {
+    const pace = speedToPace(route.speed);
+    return Math.min(900, Math.max(150, pace.min * 60 + pace.sec));
+  })();
 
   function close() {
     closeRouteSheet();
@@ -109,20 +115,28 @@ export function MobileRouteSheet() {
           >
             {strings.routeSheetTitle}
           </span>
-          <button
-            type="button"
-            onClick={close}
-            style={{
-              width: 34,
-              height: 34,
-              border: '1px solid var(--chip-border)',
-              borderRadius: 10,
-              background: '#fff',
-              cursor: 'pointer',
-            }}
-          >
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <SportSwitch
+              sport={route.sport}
+              onChange={setSport}
+              cyclingLabel={strings.sportCycling}
+              runningLabel={strings.sportRunning}
+            />
+            <button
+              type="button"
+              onClick={close}
+              style={{
+                width: 34,
+                height: 34,
+                border: '1px solid var(--chip-border)',
+                borderRadius: 10,
+                background: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -135,15 +149,28 @@ export function MobileRouteSheet() {
             bigStep={5}
             onChange={setDistance}
           />
-          <MobileStepper
-            label={strings.speed + ' (km/h)'}
-            value={route.speed}
-            min={8}
-            max={50}
-            smallStep={1}
-            bigStep={5}
-            onChange={setSpeed}
-          />
+          {route.sport === 'running' ? (
+            <MobileStepper
+              label={strings.pace}
+              value={paceSec}
+              min={150}
+              max={900}
+              smallStep={5}
+              bigStep={30}
+              format={(v) => Math.floor(v / 60) + ':' + String(v % 60).padStart(2, '0')}
+              onChange={(totalSec) => setSpeed(paceToSpeed(0, totalSec))}
+            />
+          ) : (
+            <MobileStepper
+              label={strings.speed + ' (km/h)'}
+              value={route.speed}
+              min={8}
+              max={50}
+              smallStep={1}
+              bigStep={5}
+              onChange={setSpeed}
+            />
+          )}
 
           <div style={sectionTitleStyle}>{strings.routeSheetPreStart}</div>
           <MobileStepper

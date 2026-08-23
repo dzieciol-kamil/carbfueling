@@ -12,6 +12,7 @@ import {
 function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportData {
   return {
     route: {
+      sport: 'cycling',
       mode: 'route',
       distance: 90,
       speed: 28,
@@ -199,5 +200,22 @@ describe('settingsExport', () => {
     const file = buildSettingsExport(data);
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result.ok).toBe(true);
+  });
+
+  test('imports an old export with no sport field, defaulting to cycling', () => {
+    const legacyRoute = { ...makeData().route } as Record<string, unknown>;
+    delete legacyRoute.sport;
+    const data = makeData({ route: legacyRoute as unknown as SettingsExportData['route'] });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.route.sport).toBe('cycling');
+  });
+
+  test('rejects a sport value outside the known set', () => {
+    const data = makeData({ route: { ...makeData().route, sport: 'triathlon' as never } });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
   });
 });
