@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 Project-specific context for Claude Code sessions in this repo. See `README.md` for stack/dev commands.
+See `MAP.md` for a quick index of what's where — check it before searching the tree.
 
 ## Running locally
 

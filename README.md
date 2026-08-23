@@ -9,7 +9,7 @@ Live app: https://carbfueling.com
 - Vite + React + TypeScript
 - State: local store, persisted to `localStorage` (no backend)
 - Charts: hand-rolled SVG (no charting library)
-- Deployed to GitHub Pages via GitHub Actions on every push to `master`
+- Deployed to GitHub Pages via GitHub Actions
 
 ## Development
 
@@ -23,11 +23,7 @@ npm run build     # production build into dist/
 
 ## Project layout
 
-```
-src/
-  domain/     pure calculation functions (no React), e.g. fuel.ts + tests
-  ...         UI components
-```
+See `MAP.md` for an index of what lives where.
 
 ## License
 
