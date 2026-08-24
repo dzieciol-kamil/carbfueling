@@ -120,4 +120,32 @@ describe('servicesToFills', () => {
 
     expect(servicesToFills(services, gear)).toEqual([]);
   });
+
+  // W5c-2 (2026-08-24): a gel service scattered as discrete doses (Ruling C) carries explicit `pos`
+  // km positions — the envelope's `fromKm`/`toKm` alone can't say where inside it each dose sits.
+  test("W5c-2: a gel service's explicit dose positions (pos) pass through unchanged", () => {
+    const services: Service[] = [
+      service({
+        vesselId: 'g2',
+        fromKm: 10,
+        toKm: 90,
+        content: 'gel',
+        pos: [10, 30, 55, 90],
+      }),
+    ];
+
+    const fills = servicesToFills(services, gear);
+
+    expect(fills).toEqual<DraftFill[]>([
+      { gid: 'g2', content: 'gel', from: 10, to: 90, pos: [10, 30, 55, 90] },
+    ]);
+  });
+
+  test('a service with no pos produces a fill with no pos key at all', () => {
+    const services: Service[] = [service({ vesselId: 'g1', content: 'water' })];
+
+    const fills = servicesToFills(services, gear);
+
+    expect('pos' in fills[0]).toBe(false);
+  });
 });

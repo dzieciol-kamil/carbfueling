@@ -15,6 +15,11 @@ export interface Service {
   toKm: number;
   content: Content;
   filledAtStop: number | null; // index into Skeleton.stops; null = left home with it (S4)
+  /** Explicit per-dose km positions for a multi-part gel service (W5c-2). When present, `fromKm`/
+   *  `toKm` are the envelope `pos[0]`/`pos[n-1]`, not "where I drink" — an izo stretch may sit inside
+   *  it, since nothing is delivered between doses. Mirrors `Fill.pos` (`src/domain/types.ts`), which
+   *  is where this ultimately lands via `servicesToFills`. */
+  pos?: number[];
 }
 
 /** L1 output: where we stop and what each leg demands. */

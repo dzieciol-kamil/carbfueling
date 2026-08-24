@@ -17,10 +17,19 @@ import type { Service } from './types';
  *
  * `gear` is used only to drop services referencing a vessel that no longer exists — referential
  * integrity, not planning.
+ *
+ * `pos` (W5c-2: explicit per-dose km positions for a multi-part gel service) passes through
+ * unchanged when present — `DraftFill`/`Fill` already carry the field, nobody has authored it before.
  */
 export function servicesToFills(services: Service[], gear: Vessel[]): DraftFill[] {
   const knownVesselIds = new Set(gear.map((v) => v.gid));
   return services
     .filter((s) => knownVesselIds.has(s.vesselId))
-    .map((s) => ({ gid: s.vesselId, content: s.content, from: s.fromKm, to: s.toKm }));
+    .map((s) => ({
+      gid: s.vesselId,
+      content: s.content,
+      from: s.fromKm,
+      to: s.toKm,
+      ...(s.pos ? { pos: s.pos } : {}),
+    }));
 }

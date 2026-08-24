@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { carbsFill, cph, distanceAtTime, timeAtDistance } from '../fuel';
+import { carbsFill } from '../fuel';
 import type { FoodSelectionEntry } from '../autoplan';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { assignCarbs } from './assignCarbs';
@@ -228,12 +228,23 @@ describe('assignCarbs — selection sizes the vessel ceiling (C2: real total, no
   });
 });
 
-describe('assignCarbs — gel (one-shot, never relayed)', () => {
-  test('a gel vessel gets exactly one continuous service, sized to its own duration, S4-anchored', () => {
-    const route = makeRoute({ distance: 150, speed: 25, intensity: 'mid' });
-    const bounds = [0, 50, 100, 150];
-    const skeleton = buildHandSkeleton(bounds, [50, 50, 50], [200, 200, 200]);
-    const state = makeState(route, [gelFlask(250, 'flask')]);
+describe("assignCarbs — gel (fixed dose budget, fills izo's gaps — Ruling B/C, W5c-2)", () => {
+  // W5c-2 (2026-08-24): rewritten. The old model treated every gel vessel as ONE continuous stream,
+  // staggered back-to-back from a cursor starting at km 0 — the two tests below encoded exactly that
+  // ("gets exactly one continuous service, sized to its own duration" / "stagger back-to-back").
+  // Ruling B inverts the order (gel now runs after izo, so it can see where izo already reached) and
+  // Ruling C replaces the continuous stream with `n` discrete point doses (n = the vessel's own
+  // `gelParts`) scattered one at a time into whichever leg has the largest remaining deficit. See
+  // `docs/superpowers/specs/2026-08-24-w5c2-measurements.md`.
+
+  test('a multi-part flask scatters its doses by leg deficit, not evenly and not from km 0', () => {
+    // 4 legs of 40km; leg2 needs far more than its siblings (100g vs 10g each) — the greedy exhausts
+    // leg2's deficit before touching anything else, then splits the remaining two doses between
+    // leg0 and leg1 (tied at 10g each; the earliest leg wins ties).
+    const bounds = [0, 40, 80, 120, 160];
+    const skeleton = buildHandSkeleton(bounds, [10, 10, 100, 10], [500, 500, 500, 500]);
+    const route = makeRoute({ distance: 160, speed: 25 });
+    const state = makeState(route, [gelFlask(250, 'flask')]); // 250ml @ gelConc 60 = 150g, 6 doses of 25g each
 
     const services = assignCarbs(skeleton, state, NO_SELECTION);
 
@@ -241,34 +252,80 @@ describe('assignCarbs — gel (one-shot, never relayed)', () => {
     const [s] = services;
     expect(s.vesselId).toBe('flask');
     expect(s.content).toBe('gel');
-    expect(s.fromKm).toBe(0);
-    expect(s.filledAtStop).toBeNull(); // S4: left home with it, no stop implied
+    expect(s.filledAtStop).toBeNull(); // S2: filled at home, never refilled
 
-    // Sized to exactly how long its carbs are meant to last at the ride's own cph — not stretched,
-    // not chopped short.
-    const fillG = carbsFill(
-      { fid: 0, gid: 'flask', content: 'gel', from: 0, to: 0 },
-      state.gear,
-      MIX,
-    );
-    const hours = fillG / cph(route);
-    const expectedToKm = distanceAtTime(route, timeAtDistance(route, 0) + hours);
-    expect(s.toKm).toBeCloseTo(expectedToKm, 6);
+    // Hand-computed dose order: 1-4 exhaust leg2's 100g deficit (25g each, landing it at 0g); dose 5
+    // ties leg0/leg1/leg3 at 10g and picks leg0 (earliest); dose 6 then picks leg1 (still 10g, now
+    // the largest remaining). Position within a leg is `fromKm + span * (seen+1)/(total+1)`, so
+    // leg2's four doses spread evenly across [80,120) and leg0/leg1's single doses land at their own
+    // midpoint — never at the same km as a sibling dose in the same leg.
+    expect(s.pos).toEqual([20, 60, 88, 96, 104, 112]);
+    expect(s.fromKm).toBe(20); // the envelope, pos[0]..pos[n-1] — not "where I drink"
+    expect(s.toKm).toBe(112);
+
+    assertInvariantV1(services, skeleton);
   });
 
-  test('two gel vessels stagger back-to-back — never stacked on top of each other', () => {
-    const route = makeRoute({ distance: 200, speed: 25, intensity: 'mid' });
-    const bounds = [0, 100, 200];
-    // Generous absorbCapG: this test is about staggering, not C1 — that has its own test group.
+  test('gel fills the leg izo left thin — not a restart from km 0', () => {
+    // izo covers leg0 only (its vesselTargetG break fires right after, since the food selection
+    // nets most of the ride's total out of the vessel budget) — leg1 is left with the whole deficit
+    // for gel's 6 doses to find.
+    const bounds = [0, 80, 160];
     const skeleton = buildHandSkeleton(bounds, [80, 80], [500, 500]);
-    const state = makeState(route, [gelFlask(250, 'a'), gelFlask(150, 'b')]);
+    const route = makeRoute({ distance: 160, speed: 25 });
+    const foodLib: FoodLibEntry[] = [{ key: 'meal', pl: '', en: '', carbs: 80 }];
+    const state = makeState(route, [izoBottle(1000, 'v1'), gelFlask(300, 'g')], foodLib);
+    const selection: FoodSelectionEntry[] = [{ key: 'meal', count: 1 }]; // nets vesselTargetG to 80g
+
+    const services = assignCarbs(skeleton, state, selection);
+
+    const izoServices = services.filter((s) => s.content === 'izo');
+    expect(izoServices).toHaveLength(1);
+    expect(izoServices[0]).toMatchObject({ fromKm: 0, toKm: 80 }); // vesselTargetG break after leg0
+
+    const gelServices = services.filter((s) => s.content === 'gel');
+    expect(gelServices).toHaveLength(1);
+    const [gel] = gelServices;
+    expect(gel.pos).toHaveLength(6);
+    const inLeg0 = gel.pos!.filter((x) => x < 80).length;
+    const inLeg1 = gel.pos!.filter((x) => x >= 80).length;
+    // Most doses land in leg1, which izo never reached — not split evenly, and not clustered at km 0
+    // the way the old cursor-from-0 model would have placed them.
+    expect(inLeg1).toBeGreaterThan(inLeg0);
+    expect(inLeg0).toBeGreaterThan(0); // some spillover once leg1's own deficit dips low enough
+
+    assertInvariantV1(services, skeleton);
+  });
+
+  test('a single-part flask keeps the old continuous model (trap: pos is meaningless when gelParts rounds to 1)', () => {
+    // fracFill's n<=1 branch ignores `pos` entirely and delivers continuously over [from, to], so a
+    // zero-width envelope here would just get dropped by tidy's degenerate-span guard. This vessel's
+    // own gelParts is 1, so it must stay on the pre-W5c-2 continuous model — just starting wherever
+    // izo left the largest deficit (Ruling B) instead of always at km 0.
+    const bounds = [0, 60, 120];
+    const skeleton = buildHandSkeleton(bounds, [60, 60], [500, 500]);
+    const route = makeRoute({ distance: 120, speed: 25 });
+    const oneDoseFlask: Vessel = {
+      gid: 'flask',
+      name: 'Flask',
+      vol: 100,
+      allowed: ['gel'],
+      gelParts: 1,
+    };
+    // izoBottle(2000) @ 8.4% = 168g: bigger than leg0's 60g need alone, but the relay's own
+    // vesselTargetG break (120g ride total) stops it from ever reaching leg1.
+    const state = makeState(route, [izoBottle(2000, 'v1'), oneDoseFlask]);
 
     const services = assignCarbs(skeleton, state, NO_SELECTION);
 
-    expect(services).toHaveLength(2);
-    const [first, second] = [...services].sort((x, y) => x.fromKm - y.fromKm);
-    expect(first.fromKm).toBe(0);
-    expect(second.fromKm).toBe(first.toKm); // back-to-back, no overlap
-    expect(second.filledAtStop).toBeNull(); // still S4: each vessel's own first (only) use
+    const gelServices = services.filter((s) => s.content === 'gel');
+    expect(gelServices).toHaveLength(1);
+    const [gel] = gelServices;
+    expect(gel.pos).toBeUndefined(); // n<=1: no envelope, just a continuous span
+    expect(gel.filledAtStop).toBeNull();
+    expect(gel.fromKm).toBe(60); // starts at leg1, which izo never reached
+    expect(gel.toKm).toBeGreaterThan(60);
+
+    assertInvariantV1(services, skeleton);
   });
 });

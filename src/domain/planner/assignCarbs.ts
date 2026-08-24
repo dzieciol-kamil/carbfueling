@@ -6,7 +6,7 @@
  */
 import { bucketVessels } from '../autoplan';
 import type { FoodSelectionEntry } from '../autoplan';
-import { carbsFill, cph, dist, distanceAtTime, timeAtDistance, totalHours } from '../fuel';
+import { carbsFill, cph, dist, distanceAtTime, partsOf, timeAtDistance, totalHours } from '../fuel';
 import type { MixSettings, PlanState, Vessel } from '../types';
 import { assertInvariantV1 } from './assignWater';
 import { deliveredShare } from './deliveredShare';
@@ -39,32 +39,43 @@ function carbsFillOf(
   return carbsFill({ fid: 0, gid: vessel.gid, content, from: 0, to: 0 }, gear, mix);
 }
 
+/** A vessel's fixed physical dose count for gel content. Single source of truth is fuel.ts's
+ *  `partsOf` — also what `fracFill`/`partPos` read downstream — so this never risks drifting from
+ *  what actually gets delivered by re-deriving the rounding rule itself. */
+function dosesOf(vessel: Vessel, gear: Vessel[]): number {
+  return partsOf({ fid: 0, gid: vessel.gid, content: 'gel', from: 0, to: 0 }, gear);
+}
+
 /**
  * Assigns carb `Service`s for izo- and gel-capable vessels. Runs before `assignWater` (§4.1):
  * content never changes what a vessel delivers in volume, so carbs cannot starve water, and this
  * function is free to claim vessels/legs without checking what water will need.
  *
- * **Gel** — one continuous, one-shot service per gel-capable vessel (never relayed: nobody can buy
- * more of a home-mixed concentrate at a stop). Vessels are laid back-to-back from km 0 so two
- * flasks never stack, each drunk at exactly the rate the ride asks for (`cph`).
+ * **Izo runs first** (W5c-2, 2026-08-24) — relayed across legs (C4), draining the heaviest bottle
+ * first (Ruling A: "kolejność opróżniania od największego po prostu" — matches `assignWater`'s own
+ * vessel-set ordering). W5c-1b (2026-08-24): the span is topological, not a formula over `cph` or
+ * sweat rate — "a rider makes a bottle last until he can next refill it." A service runs for exactly
+ * one leg: from where it starts to the next stop (or `carbEndKm`/`D` on the last leg it can reach).
+ * Alternation is round-robin over legs: a vessel's OWN first appearance (wherever it lands) is
+ * unanchored (S4 — left home with it); every later appearance of that same vessel is a genuine
+ * refill, anchored to the stop at its leg's start (V1). **C1 is no longer a placement veto**: a fill
+ * bigger than a leg's `absorbCapG` is still placed, and the excess is wasted rather than the service
+ * being dropped — `coverage()`'s own integral already caps benefit at the need rate.
  *
- * **Izo** — relayed across legs (C4). W5c-1b (2026-08-24): the span is topological, not a formula
- * over `cph` or sweat rate — "a rider makes a bottle last until he can next refill it." A service
- * runs for exactly one leg: from where it starts to the next stop (or `carbEndKm`/`D` on the last
- * leg it can reach). W5c-1's `fillG / cph` duration formula is withdrawn — it fixed izo-4 but broke
- * rides where one bottle has to cover a whole leg (mix-2, izo-5, mix-3), because it under-sized the
- * span relative to what the leg actually needs. Alternation is round-robin over legs: a vessel's
- * OWN first appearance (wherever it lands) is unanchored (S4 — left home with it); every later
- * appearance of that same vessel is a genuine refill, anchored to the stop at its leg's start (V1).
- * **C1 is no longer a placement veto** (that was the real bug in the pre-W5c-1 model, not the
- * per-leg span): a fill bigger than a leg's `absorbCapG` is still placed, and the excess is wasted
- * rather than the service being dropped — `coverage()`'s own integral already caps benefit at the
- * need rate, so the metric absorbs the waste without any help from this function.
+ * **Gel runs second** (Ruling B, W5c-2) — inverted from the pre-W5c-2 order, which ran gel first
+ * from a `cursor` at km 0 and let izo defer to it. A flask is not a stream to drain in turn: nobody
+ * re-buys a home-mixed concentrate at a stop, so its fixed, unreplenishable budget of doses is worth
+ * most wherever izo's relay did NOT reach. `legContribution` (populated by izo above) is what gel's
+ * placement reads. A flask with more than one part (Ruling C) is placed as `n` discrete point doses,
+ * each dropped into whichever leg (before `carbEndKm`) has the largest remaining deficit at the time
+ * — see `pickWorstLeg` below. A single-part flask (`gelParts` rounds to 1) keeps the old continuous
+ * model instead (see the trap noted at its call site).
  *
  * **The ceiling.** C2 rules out a coverage *threshold*, but not the ride's actual total: pouring in
  * more than `hrs * cph(route)` buys nothing (`coverage()`'s own integral caps benefit at the need
  * rate) and wastes stops. That real total, less what `selection`'s own food items already carry, is
- * the only cap this function honours — never a discounted percentage of it.
+ * the only cap `vesselTargetG` enforces — and only izo's loop checks it (a carried-forward, still-
+ * open finding from the W4b review: gel's loop never has, before or after this task).
  */
 export function assignCarbs(
   skeleton: Skeleton,
@@ -75,7 +86,10 @@ export function assignCarbs(
 
   if (totalHours(route) < CARB_MIN_HOURS) return []; // C5
 
-  const { izoVessels, gelVessels } = bucketVessels(gear, mix);
+  const { izoVessels: izoVesselsUnsorted, gelVessels } = bucketVessels(gear, mix);
+  // Ruling A (W5c-2, 2026-08-24): drain the heaviest bottle first — matches `assignWater`'s own
+  // vessel-set ordering, so the engine is consistent about which bottle goes first.
+  const izoVessels = [...izoVesselsUnsorted].sort((a, b) => b.vol - a.vol);
   if (izoVessels.length === 0 && gelVessels.length === 0) return [];
 
   const D = dist(route);
@@ -104,49 +118,13 @@ export function assignCarbs(
   const legContribution = new Array<number>(skeleton.legs.length).fill(0);
   let runningTotal = 0;
 
-  // --- gel: one continuous, one-shot service per vessel, staggered back-to-back -----------------
-  let cursor = 0;
-  for (const vessel of gelVessels) {
-    const fillG = carbsFillOf(vessel, 'gel', gear, mix);
-    const rate = cph(route);
-    if (fillG <= 0 || rate <= 0 || cursor >= carbEndKm - EPS) continue;
-
-    const hours = fillG / rate;
-    const fromKm = cursor;
-    const toKm = Math.min(carbEndKm, distanceAtTime(route, timeAtDistance(route, fromKm) + hours));
-    if (toKm <= fromKm + EPS) continue;
-
-    // Candidate built up front so its delivered share (C1's basis, not elapsed time — see
-    // deliveredShare.ts) can be asked of both the fit check and the contribution update below.
-    const candidate: Service = {
-      vesselId: vessel.gid,
-      fromKm,
-      toKm,
-      content: 'gel',
-      filledAtStop: null,
-    }; // S4
-
-    const fits = skeleton.legs.every((leg, i) => {
-      const share = fillG * deliveredShare(candidate, leg, gear, route);
-      if (share <= 0) return true;
-      return legContribution[i] + share <= leg.absorbCapG + EPS; // C1
-    });
-    if (!fits) continue;
-
-    skeleton.legs.forEach((leg, i) => {
-      const share = fillG * deliveredShare(candidate, leg, gear, route);
-      if (share > 0) legContribution[i] += share;
-    });
-    services.push(candidate);
-    runningTotal += fillG;
-    cursor = toKm;
-  }
-
-  // --- izo: relay across legs (C4), one active vessel per leg (W5c-1b) ----------------------------
-  // Round-robin over `skeleton.legs`: since a vessel's own first appearance is unanchored regardless
-  // of which leg it lands on (S4), the first `izoVessels.length` legs naturally give every vessel its
-  // own first turn before any of them is reused — no separate "phase 1 cursor" is needed to produce
-  // that shape. `usedVessels` is what distinguishes a genuine first use (S4) from a refill (V1).
+  // --- izo: relay across legs (C4), one active vessel per leg (W5c-1b), heaviest bottle first
+  // (Ruling A) — runs BEFORE gel (Ruling B) so gel's placement below can read where izo already
+  // reached. Round-robin over `skeleton.legs`: since a vessel's own first appearance is unanchored
+  // regardless of which leg it lands on (S4), the first `izoVessels.length` legs naturally give every
+  // vessel its own first turn before any of them is reused — no separate "phase 1 cursor" is needed
+  // to produce that shape. `usedVessels` is what distinguishes a genuine first use (S4) from a
+  // refill (V1).
   const usedVessels = new Set<string>();
   let izoIdx = 0;
   for (let i = 0; i < skeleton.legs.length && izoVessels.length > 0; i++) {
@@ -186,6 +164,108 @@ export function assignCarbs(
       izoIdx = (izoIdx + attempt + 1) % izoVessels.length;
       break;
     }
+  }
+
+  // The leg (strictly before `carbEndKm`) with the largest remaining deficit against
+  // `legContribution` — -1 when no leg qualifies at all (route entirely inside C6's gut-drain
+  // buffer). Ties favour the earlier leg, matching the round-robin's own left-to-right bias.
+  function pickWorstLeg(): number {
+    let bestIdx = -1;
+    let bestDeficit = -Infinity;
+    skeleton.legs.forEach((leg, i) => {
+      if (leg.fromKm >= carbEndKm - EPS) return;
+      const deficit = leg.carbNeedG - legContribution[i];
+      if (deficit > bestDeficit) {
+        bestDeficit = deficit;
+        bestIdx = i;
+      }
+    });
+    return bestIdx;
+  }
+
+  // --- gel: fixed dose budgets that fill whatever izo left uncovered (Ruling B/C, W5c-2) -----------
+  for (const vessel of gelVessels) {
+    const fillG = carbsFillOf(vessel, 'gel', gear, mix);
+    if (fillG <= 0) continue;
+
+    const n = dosesOf(vessel, gear);
+
+    if (n <= 1) {
+      // Trap (spec): with a single dose, `fracFill`'s n<=1 branch ignores `pos` entirely and
+      // delivers continuously over [from, to] — an envelope here would be a zero-width span that
+      // `tidy`'s degenerate-span guard deletes outright. Keeps the pre-W5c-2 continuous model, just
+      // starts wherever izo left the largest deficit instead of always at km 0.
+      const rate = cph(route);
+      const startIdx = pickWorstLeg();
+      if (rate <= 0 || startIdx === -1) continue;
+
+      const fromKm = skeleton.legs[startIdx].fromKm;
+      const hours = fillG / rate;
+      const toKm = Math.min(
+        carbEndKm,
+        distanceAtTime(route, timeAtDistance(route, fromKm) + hours),
+      );
+      if (toKm <= fromKm + EPS) continue;
+
+      const candidate: Service = {
+        vesselId: vessel.gid,
+        fromKm,
+        toKm,
+        content: 'gel',
+        filledAtStop: null, // S2/S4: filled at home, never refilled
+      };
+      skeleton.legs.forEach((leg, i) => {
+        const share = fillG * deliveredShare(candidate, leg, gear, route);
+        if (share > 0) legContribution[i] += share;
+      });
+      services.push(candidate);
+      runningTotal += fillG;
+      continue;
+    }
+
+    // n > 1: one dose at a time, each dropped into whichever leg has the largest remaining deficit
+    // right now. `legContribution` is shared with izo above and with earlier gel vessels in this
+    // same loop, so a later flask's own picks already account for everything placed before it.
+    const legIdx: number[] = [];
+    for (let k = 0; k < n; k++) {
+      const idx = pickWorstLeg();
+      if (idx === -1) break; // no leg exists before carbEndKm at all — nothing to place
+      legIdx.push(idx);
+      // Each dose contributes exactly fillG/n to whichever leg its position falls in — `fracFill`'s
+      // n>1 branch is a pure step function of dose count, so this is exact, not an approximation.
+      // Applied directly here (not via `deliveredShare`, which builds its own `Fill` and does not
+      // carry `service.pos` through — verified, not fixed here, see the report) so the placement
+      // just chosen isn't silently undone by a fallback to even spacing across the envelope.
+      legContribution[idx] += fillG / n;
+    }
+    if (legIdx.length === 0) continue;
+
+    // Position within a leg: doses sharing one leg spread evenly across its interior (never at the
+    // exact same km) instead of mechanically always at the midpoint, which would stack every repeat
+    // pick on the same point; a leg picked only once still lands at its natural midpoint.
+    const perLegCount = new Map<number, number>();
+    for (const idx of legIdx) perLegCount.set(idx, (perLegCount.get(idx) ?? 0) + 1);
+    const perLegSeen = new Map<number, number>();
+    const positions = legIdx
+      .map((idx) => {
+        const leg = skeleton.legs[idx];
+        const legTo = Math.min(leg.toKm, carbEndKm);
+        const seen = perLegSeen.get(idx) ?? 0;
+        perLegSeen.set(idx, seen + 1);
+        const total = perLegCount.get(idx)!;
+        return leg.fromKm + (legTo - leg.fromKm) * ((seen + 1) / (total + 1));
+      })
+      .sort((a, b) => a - b);
+
+    services.push({
+      vesselId: vessel.gid,
+      fromKm: positions[0],
+      toKm: positions[positions.length - 1],
+      content: 'gel',
+      filledAtStop: null, // S2: filled at home, never refilled
+      pos: positions,
+    });
+    runningTotal += fillG;
   }
 
   assertInvariantV1(services, skeleton);
