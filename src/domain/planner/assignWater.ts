@@ -3,13 +3,16 @@
  * `docs/superpowers/specs/2026-08-23-autoplan-v2-engine-spec.md` §4 step 1, and §2.1 for why volume
  * is never an authored field.
  */
-import { HYDRATION_BUFFER_ML_PER_KG, sweat, totalHours } from '../fuel';
+import { HYDRATION_BUFFER_ML_PER_KG, sweat, timeAtDistance, totalHours } from '../fuel';
 import type { PlanState } from '../types';
+import { legOverlapHours } from './legOverlap';
 import { FLUID_FLOOR_FRACTION } from './skeleton';
 import type { Service, Skeleton } from './types';
 
 /**
- * Assigns one water `Service` per leg per vessel opened for that leg.
+ * Assigns one water `Service` per leg per vessel opened for that leg — **fills what `carbs` left
+ * over** (§4.1: `assignCarbs` runs first and claims vessels without negotiating; this function never
+ * displaces a carb claim, it only tops up the remainder).
  *
  * **Why one fresh service per leg, not one long service spanning several legs.** §2.1's over-credit
  * trap: every service credits its vessel's *full* capacity regardless of span, so a vessel reused
@@ -19,23 +22,40 @@ import type { Service, Skeleton } from './types';
  * `carryableMl ≥ 0.85 × fluidNeed(i,j)` derivation), so sizing each service to exactly one leg is
  * "sized to the leg's need" in the only sense §2.1 allows: span, not millilitres.
  *
- * **Vessel selection (S4).** Per leg, water-capable vessels are opened largest-first until their
- * summed capacity clears the leg's F1 floor (`0.85 × fluidNeedMl`); vessels beyond that stay
- * unopened. This is also what keeps F7 honest without a separate check: stopping at the floor
- * instead of opening every vessel every leg avoids stacking capacity that can only pour above
- * `FLUID_ABSORPTION_CAP_ML_H` and be wasted, not counted as coverage.
+ * **Credit for what carbs already deliver (§4 step 2, P3).** A vessel carrying izo or gel occupies
+ * that vessel but delivers its vessel's *full* capacity as fluid all the same — content never changes
+ * `volOf()`. So each leg starts from the fluid already provided by `carbs` services overlapping it,
+ * prorated by the share of the *service's own duration* that falls inside the leg (a gel service is
+ * laid out independently of leg boundaries and can span several legs; crediting it whole to each
+ * would triple-count it — the same over-credit trap of §2.1, from the other direction). Only once
+ * that credit is short of the F1 floor does this function open further vessels.
+ *
+ * **A claimed vessel is not touched (§4 step 2).** Any vessel with a `carbs` service overlapping a
+ * leg — even partially — cannot also carry water over that leg: a `Service` is one vessel, one
+ * content, one span, and mid-leg refills without a stop aren't representable. Such vessels are simply
+ * excluded from that leg's candidate list; they may still be opened for water on a *different* leg
+ * where they carry nothing.
+ *
+ * **Vessel selection (S4).** Per leg, water-capable vessels not already claimed by `carbs` are opened
+ * largest-first until the carried-plus-credited total clears the leg's F1 floor
+ * (`0.85 × fluidNeedMl`); vessels beyond that stay unopened. This is also what keeps F7 honest without
+ * a separate check: stopping at the floor instead of opening every vessel every leg avoids stacking
+ * capacity that can only pour above `FLUID_ABSORPTION_CAP_ML_H` and be wasted, not counted as
+ * coverage.
  *
  * **`filledAtStop` (V1).** A leg's `fromKm` is either `0` (the ride start, no stop exists there —
  * S4's "left home with it") or exactly the km of the stop L1 placed before it (skeleton legs and
  * stops are built from the same path in `buildSkeleton`, so this correspondence is exact). So every
  * service opened for leg `i > 0` is anchored to `skeleton.stops[i - 1]`, which is always a stop the
  * plan already makes — F6's "top-up at an existing stop is free and always taken" is therefore not a
- * separate case to implement, it falls out of assigning per-leg.
+ * separate case to implement, it falls out of assigning per-leg. V1 itself is asserted over the
+ * vessel's **combined** `carbs` + water timeline, not over the water services alone — a vessel that
+ * carried gel or izo earlier and takes water later is one vessel with a two-part history.
  *
  * **F4 gate.** Independent of the carb short-ride gate (C5) — this checks only sweat loss against
  * body mass, never `totalHours`.
  */
-export function assignWater(skeleton: Skeleton, state: PlanState): Service[] {
+export function assignWater(skeleton: Skeleton, state: PlanState, carbs: Service[]): Service[] {
   const { route, gear } = state;
 
   const sweatLoss = sweat(route) * totalHours(route);
@@ -44,6 +64,7 @@ export function assignWater(skeleton: Skeleton, state: PlanState): Service[] {
   const waterVessels = [...gear]
     .filter((v) => v.allowed.includes('water'))
     .sort((a, b) => b.vol - a.vol); // largest first — fewest vessels opened to clear the floor
+  const volByGid = new Map(gear.map((v) => [v.gid, v.vol]));
 
   const services: Service[] = [];
 
@@ -51,9 +72,21 @@ export function assignWater(skeleton: Skeleton, state: PlanState): Service[] {
     const floorMl = FLUID_FLOOR_FRACTION * leg.fluidNeedMl; // F1
     const filledAtStop = i === 0 ? null : i - 1; // S4 (leg 0) vs V1 (every later leg)
 
+    // What carbs already deliver on this leg, prorated by overlap share of the service's own
+    // duration (§4 step 2), plus which vessels that claims — those stay untouched this leg.
+    const claimedVesselIds = new Set<string>();
     let carried = 0;
+    for (const c of carbs) {
+      const overlapH = legOverlapHours(route, leg, c.fromKm, c.toKm);
+      if (overlapH <= 0) continue;
+      claimedVesselIds.add(c.vesselId);
+      const serviceH = timeAtDistance(route, c.toKm) - timeAtDistance(route, c.fromKm);
+      if (serviceH > 0) carried += (volByGid.get(c.vesselId) ?? 0) * (overlapH / serviceH);
+    }
+
     for (const v of waterVessels) {
       if (carried >= floorMl) break; // S4: the rest stay unopened for this leg
+      if (claimedVesselIds.has(v.gid)) continue; // already carrying izo/gel over this span
       services.push({
         vesselId: v.gid,
         fromKm: leg.fromKm,
@@ -65,7 +98,7 @@ export function assignWater(skeleton: Skeleton, state: PlanState): Service[] {
     }
   });
 
-  assertInvariantV1(services, skeleton);
+  assertInvariantV1([...carbs, ...services], skeleton); // V1 over the combined timeline
   return services;
 }
 

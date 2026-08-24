@@ -54,6 +54,11 @@ function water(vol: number, gid = 'g1'): Vessel {
   return { gid, name: 'Bidon', vol, allowed: ['water'], gelParts: 1 };
 }
 
+/** A vessel that can carry carbs and water both — used to test the carb/water handoff (§4 step 2). */
+function dualVessel(vol: number, gid: string): Vessel {
+  return { gid, name: 'Bidon', vol, allowed: ['water', 'izo', 'gel'], gelParts: 1 };
+}
+
 function makeState(route: RouteInput, gear: Vessel[]): PlanState {
   return { route, mix: MIX, gear, fills: [], foods: [], foodLib: [], stops: [] };
 }
@@ -93,7 +98,7 @@ describe('assignWater', () => {
       shortfall: null,
     };
 
-    expect(assignWater(skeleton, state)).toEqual([]);
+    expect(assignWater(skeleton, state, [])).toEqual([]);
   });
 
   test('one service per leg, anchored per V1: null at the start, the prior stop everywhere else', () => {
@@ -106,7 +111,7 @@ describe('assignWater', () => {
     });
     expect(skeleton.stops).toHaveLength(2); // reuses the hand-verified skeleton.test.ts #1 scenario
 
-    const services = assignWater(skeleton, state);
+    const services = assignWater(skeleton, state, []);
 
     expect(services).toHaveLength(3);
     services.forEach((s, i) => {
@@ -129,7 +134,7 @@ describe('assignWater', () => {
       weights: BALANCED,
     });
 
-    const services = assignWater(skeleton, state);
+    const services = assignWater(skeleton, state, []);
 
     expect(services.length).toBeGreaterThan(0);
     expect(services.every((s) => s.vesselId === 'big')).toBe(true);
@@ -146,7 +151,7 @@ describe('assignWater', () => {
     const route = makeRoute({ distance: 40, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
     const state = makeState(route, [water(500, 'a'), water(500, 'b')]);
 
-    const services = assignWater(skeleton, state);
+    const services = assignWater(skeleton, state, []);
 
     expect(services).toHaveLength(2);
     expect(services.map((s) => s.vesselId).sort()).toEqual(['a', 'b']);
@@ -170,7 +175,7 @@ describe('assignWater', () => {
     expect(skeleton.shortfall).toBeNull();
     expect(skeleton.stops.length).toBeGreaterThan(6); // physics-driven, not policy-capped
 
-    const services = assignWater(skeleton, state);
+    const services = assignWater(skeleton, state, []);
 
     // Single vessel ⇒ exactly one service per leg, all on that vessel.
     expect(services).toHaveLength(skeleton.legs.length);
@@ -201,7 +206,7 @@ describe('assignWater', () => {
       shortfall: null,
     };
 
-    const services = assignWater(skeleton, state);
+    const services = assignWater(skeleton, state, []);
     expect(services).toHaveLength(1);
 
     const fullState: PlanState = {
@@ -224,7 +229,7 @@ describe('assignWater', () => {
     });
     expect(skeleton.shortfall).toBeNull();
 
-    const services = assignWater(skeleton, state);
+    const services = assignWater(skeleton, state, []);
     const fullState: PlanState = {
       ...state,
       fills: asFills(servicesToFills(services, state.gear)),
@@ -232,6 +237,108 @@ describe('assignWater', () => {
     const worst = worstRawFluidPct(fullState);
 
     expect(worst).toBeGreaterThanOrEqual(FLUID_FLOOR_FRACTION - 1e-6);
+  });
+
+  test('§4 step 2: a leg already cleared by carbs opens no water vessel at all', () => {
+    // floor = 0.85 * 1000 = 850. A single izo service spanning the whole leg delivers its vessel's
+    // full 900ml as fluid (P3) — already past the floor — so water must open nothing here, even
+    // though a water-capable vessel exists and is otherwise unclaimed.
+    const skeleton: Skeleton = {
+      stops: [],
+      legs: [{ fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 }],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 40, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    const state = makeState(route, [dualVessel(900, 'izoVessel'), water(500, 'spare')]);
+    const carbs: Service[] = [
+      { vesselId: 'izoVessel', fromKm: 0, toKm: 40, content: 'izo', filledAtStop: null },
+    ];
+
+    const services = assignWater(skeleton, state, carbs);
+
+    expect(services).toEqual([]);
+  });
+
+  test('§4 step 2: a vessel already claimed by carbs is skipped even as the largest candidate', () => {
+    // floor = 0.85 * 1000 = 850. The claimed vessel (800ml) alone falls 50ml short of the floor, so
+    // water must open a further vessel — but never the claimed one, even though at 800ml it would
+    // otherwise be picked first (largest-first, S4).
+    const skeleton: Skeleton = {
+      stops: [],
+      legs: [{ fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 }],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 40, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    const state = makeState(route, [dualVessel(800, 'izoVessel'), water(100, 'small')]);
+    const carbs: Service[] = [
+      { vesselId: 'izoVessel', fromKm: 0, toKm: 40, content: 'izo', filledAtStop: null },
+    ];
+
+    const services = assignWater(skeleton, state, carbs);
+
+    expect(services).toHaveLength(1);
+    expect(services[0].vesselId).toBe('small');
+    expect(services.some((s) => s.vesselId === 'izoVessel')).toBe(false);
+  });
+
+  test('§4 step 2: a service spanning several legs is credited by duration share, not counted whole on each', () => {
+    // A single izo service covers legs 0 and 1 together (0->80, two 40km/2h legs) — not aligned to
+    // the leg boundary at 40, the same shape a gel service's own back-to-back staggering produces.
+    // Its 900ml vessel is credited proportionally: half the service's duration falls in each leg, so
+    // each leg sees 450ml of credit — short of the 850 floor either way — never the full 900ml
+    // double-counted onto both.
+    const skeleton: Skeleton = {
+      stops: [{ km: 40, origin: 'planned' }],
+      legs: [
+        { fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 },
+        { fromKm: 40, toKm: 80, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 },
+      ],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 80, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    const state = makeState(route, [dualVessel(900, 'span'), water(1000, 'topup')]);
+    const carbs: Service[] = [
+      { vesselId: 'span', fromKm: 0, toKm: 80, content: 'izo', filledAtStop: null },
+    ];
+
+    const services = assignWater(skeleton, state, carbs);
+
+    // Both legs still need a top-up (450 credited < 850 floor on each); the spanning vessel itself
+    // is claimed on both legs (its service overlaps both), so every opened service is 'topup'.
+    expect(services).toHaveLength(2);
+    expect(services.every((s) => s.vesselId === 'topup')).toBe(true);
+  });
+
+  test('§4/V1: a vessel carrying carbs early and water later is anchored correctly across the combined timeline', () => {
+    const skeleton: Skeleton = {
+      stops: [{ km: 60, origin: 'planned' }],
+      legs: [
+        { fromKm: 0, toKm: 60, hours: 2, fluidNeedMl: 100, carbNeedG: 0, absorbCapG: 0 },
+        { fromKm: 60, toKm: 120, hours: 2, fluidNeedMl: 500, carbNeedG: 0, absorbCapG: 0 },
+      ],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 120, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    // 'dual' is the only water-capable vessel, so leg 1 (unclaimed there) must open it for water.
+    const state = makeState(route, [dualVessel(500, 'dual')]);
+    const carbs: Service[] = [
+      { vesselId: 'dual', fromKm: 0, toKm: 60, content: 'gel', filledAtStop: null }, // S4
+    ];
+
+    const services = assignWater(skeleton, state, carbs);
+
+    expect(services).toHaveLength(1);
+    expect(services[0]).toMatchObject({
+      vesselId: 'dual',
+      fromKm: 60,
+      toKm: 120,
+      content: 'water',
+      filledAtStop: 0, // anchored to skeleton.stops[0], km 60 — matches its own fromKm
+    });
+    expect(skeleton.stops[0].km).toBe(services[0].fromKm);
+
+    // Re-asserted directly over the combined timeline, not the water array alone.
+    expect(() => assertInvariantV1([...carbs, ...services], skeleton)).not.toThrow();
   });
 });
 
@@ -262,6 +369,21 @@ describe('assertInvariantV1', () => {
     expect(() => assertInvariantV1(services, skeleton)).not.toThrow();
   });
 
+  test('a wrongly-unanchored water service is missed when checked alone, but caught combined with its carb history', () => {
+    // 'g1' carried gel 0->30 (a real earlier use) before switching to water 30->60. Checked alone,
+    // the water service is index 0 within its own (water-only) array, so the "first service may be
+    // null" rule silently waves it through even though it is actually a reuse. This is exactly why
+    // V1 must be checked over the vessel's combined timeline (§4 step 2), not one source array.
+    const carbs: Service[] = [
+      { vesselId: 'g1', fromKm: 0, toKm: 30, content: 'gel', filledAtStop: null },
+    ];
+    const badWater: Service[] = [
+      { vesselId: 'g1', fromKm: 30, toKm: 60, content: 'water', filledAtStop: null }, // wrong: should be 0
+    ];
+    expect(() => assertInvariantV1(badWater, skeleton)).not.toThrow(); // the gap
+    expect(() => assertInvariantV1([...carbs, ...badWater], skeleton)).toThrow(/V1/); // combined catches it
+  });
+
   test('assignWater itself throws on a malformed skeleton where a leg boundary has no matching stop', () => {
     const route = makeRoute({ distance: 50, speed: 25, intensity: 'mid', temp: 20, weight: 75 });
     const state = makeState(route, [water(1000)]);
@@ -274,6 +396,6 @@ describe('assertInvariantV1', () => {
       shortfall: null,
     };
 
-    expect(() => assignWater(badSkeleton, state)).toThrow(/V1/);
+    expect(() => assignWater(badSkeleton, state, [])).toThrow(/V1/);
   });
 });

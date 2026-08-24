@@ -7,9 +7,10 @@
 import { bucketVessels } from '../autoplan';
 import type { FoodSelectionEntry } from '../autoplan';
 import { carbsFill, cph, dist, distanceAtTime, timeAtDistance, totalHours } from '../fuel';
-import type { MixSettings, PlanState, RouteInput, Vessel } from '../types';
+import type { MixSettings, PlanState, Vessel } from '../types';
 import { assertInvariantV1 } from './assignWater';
-import type { Leg, Service, Skeleton } from './types';
+import { legOverlapHours } from './legOverlap';
+import type { Service, Skeleton } from './types';
 
 /**
  * C5's time-based short-ride skip — a separate gate from F4's sweat-vs-body-mass water gate
@@ -36,15 +37,6 @@ function carbsFillOf(
   mix: MixSettings,
 ): number {
   return carbsFill({ fid: 0, gid: vessel.gid, content, from: 0, to: 0 }, gear, mix);
-}
-
-/** Hours of `[fromKm, toKm)` that fall inside `leg` — used to prorate a span crossing leg
- *  boundaries (gel's one-shot service) onto the skeleton's per-leg absorption ceiling (C1). */
-function legOverlapHours(route: RouteInput, leg: Leg, fromKm: number, toKm: number): number {
-  const a = Math.max(leg.fromKm, fromKm);
-  const b = Math.min(leg.toKm, toKm);
-  if (b <= a) return 0;
-  return timeAtDistance(route, b) - timeAtDistance(route, a);
 }
 
 /**
