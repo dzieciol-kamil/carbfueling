@@ -9,7 +9,7 @@ import type { FoodSelectionEntry } from '../autoplan';
 import { carbsFill, cph, dist, distanceAtTime, timeAtDistance, totalHours } from '../fuel';
 import type { MixSettings, PlanState, Vessel } from '../types';
 import { assertInvariantV1 } from './assignWater';
-import { legOverlapHours } from './legOverlap';
+import { deliveredShare } from './deliveredShare';
 import type { Service, Skeleton } from './types';
 
 /**
@@ -100,19 +100,28 @@ export function assignCarbs(
     const toKm = Math.min(carbEndKm, distanceAtTime(route, timeAtDistance(route, fromKm) + hours));
     if (toKm <= fromKm + EPS) continue;
 
+    // Candidate built up front so its delivered share (C1's basis, not elapsed time — see
+    // deliveredShare.ts) can be asked of both the fit check and the contribution update below.
+    const candidate: Service = {
+      vesselId: vessel.gid,
+      fromKm,
+      toKm,
+      content: 'gel',
+      filledAtStop: null,
+    }; // S4
+
     const fits = skeleton.legs.every((leg, i) => {
-      const overlapH = legOverlapHours(route, leg, fromKm, toKm);
-      if (overlapH <= 0) return true;
-      const share = fillG * (overlapH / hours);
+      const share = fillG * deliveredShare(candidate, leg, gear, route);
+      if (share <= 0) return true;
       return legContribution[i] + share <= leg.absorbCapG + EPS; // C1
     });
     if (!fits) continue;
 
     skeleton.legs.forEach((leg, i) => {
-      const overlapH = legOverlapHours(route, leg, fromKm, toKm);
-      if (overlapH > 0) legContribution[i] += fillG * (overlapH / hours);
+      const share = fillG * deliveredShare(candidate, leg, gear, route);
+      if (share > 0) legContribution[i] += share;
     });
-    services.push({ vesselId: vessel.gid, fromKm, toKm, content: 'gel', filledAtStop: null }); // S4
+    services.push(candidate);
     runningTotal += fillG;
     cursor = toKm;
   }

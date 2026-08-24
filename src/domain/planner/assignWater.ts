@@ -3,9 +3,9 @@
  * `docs/superpowers/specs/2026-08-23-autoplan-v2-engine-spec.md` §4 step 1, and §2.1 for why volume
  * is never an authored field.
  */
-import { HYDRATION_BUFFER_ML_PER_KG, sweat, timeAtDistance, totalHours } from '../fuel';
+import { HYDRATION_BUFFER_ML_PER_KG, sweat, totalHours } from '../fuel';
 import type { PlanState } from '../types';
-import { legOverlapHours } from './legOverlap';
+import { deliveredShare } from './deliveredShare';
 import { FLUID_FLOOR_FRACTION } from './skeleton';
 import type { Service, Skeleton } from './types';
 
@@ -25,10 +25,11 @@ import type { Service, Skeleton } from './types';
  * **Credit for what carbs already deliver (§4 step 2, P3).** A vessel carrying izo or gel occupies
  * that vessel but delivers its vessel's *full* capacity as fluid all the same — content never changes
  * `volOf()`. So each leg starts from the fluid already provided by `carbs` services overlapping it,
- * prorated by the share of the *service's own duration* that falls inside the leg (a gel service is
- * laid out independently of leg boundaries and can span several legs; crediting it whole to each
- * would triple-count it — the same over-credit trap of §2.1, from the other direction). Only once
- * that credit is short of the F1 floor does this function open further vessels.
+ * prorated by `deliveredShare` — the same basis `samples()` itself uses to spread a fill across its
+ * span, not elapsed time (a gel service is laid out independently of leg boundaries and can span
+ * several legs; crediting it whole to each would triple-count it — the same over-credit trap of
+ * §2.1, from the other direction). Only once that credit is short of the F1 floor does this function
+ * open further vessels.
  *
  * **A claimed vessel is not touched (§4 step 2).** Any vessel with a `carbs` service overlapping a
  * leg — even partially — cannot also carry water over that leg: a `Service` is one vessel, one
@@ -72,16 +73,18 @@ export function assignWater(skeleton: Skeleton, state: PlanState, carbs: Service
     const floorMl = FLUID_FLOOR_FRACTION * leg.fluidNeedMl; // F1
     const filledAtStop = i === 0 ? null : i - 1; // S4 (leg 0) vs V1 (every later leg)
 
-    // What carbs already deliver on this leg, prorated by overlap share of the service's own
-    // duration (§4 step 2), plus which vessels that claims — those stay untouched this leg.
+    // What carbs already deliver on this leg, prorated by deliveredShare (§4 step 2) — plus which
+    // vessels that claims, those stay untouched this leg. Claiming is decided by km overlap alone
+    // (a vessel is physically one content over its whole span, regardless of how much of its load
+    // a sparse-dose gel happens to place inside this particular leg), so it's kept separate from the
+    // delivered-share amount, which can legitimately be 0 for a leg between two gel doses.
     const claimedVesselIds = new Set<string>();
     let carried = 0;
     for (const c of carbs) {
-      const overlapH = legOverlapHours(route, leg, c.fromKm, c.toKm);
-      if (overlapH <= 0) continue;
+      const overlaps = Math.min(leg.toKm, c.toKm) > Math.max(leg.fromKm, c.fromKm);
+      if (!overlaps) continue;
       claimedVesselIds.add(c.vesselId);
-      const serviceH = timeAtDistance(route, c.toKm) - timeAtDistance(route, c.fromKm);
-      if (serviceH > 0) carried += (volByGid.get(c.vesselId) ?? 0) * (overlapH / serviceH);
+      carried += (volByGid.get(c.vesselId) ?? 0) * deliveredShare(c, leg, gear, route);
     }
 
     for (const v of waterVessels) {
