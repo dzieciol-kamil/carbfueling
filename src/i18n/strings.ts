@@ -322,6 +322,13 @@ export interface StringTable {
   exportPlanError: string;
   recoveryLabel: string;
   recoveryHint: string;
+  ceilingLabel: string;
+  ceilingHintCarbsPre: string;
+  ceilingHintCarbsLink: string;
+  ceilingHintCarbsPost: string;
+  ceilingHintHydrationPre: string;
+  ceilingHintHydrationLink: string;
+  ceilingHintHydrationPost: string;
   autoplanButton: string;
   autoplanPreflightTitle: string;
   autoplanPreflightReplaceNote: string;
@@ -740,6 +747,15 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po wysiłku, aby uzupełnić glikogen mięśniowy.',
+    ceilingLabel: 'maks.',
+    ceilingHintCarbsPre:
+      'Na trasie o tych parametrach nie da się przyjąć więcej węglowodanów, niezależnie od planu — to fizyczny ',
+    ceilingHintCarbsLink: 'sufit wchłaniania',
+    ceilingHintCarbsPost: ' żołądka.',
+    ceilingHintHydrationPre:
+      'Na trasie o tych parametrach nie da się przyjąć więcej płynów, niezależnie od planu — to fizyczny ',
+    ceilingHintHydrationLink: 'sufit wchłaniania',
+    ceilingHintHydrationPost: ' żołądka.',
     autoplanButton: 'Zaproponuj plan',
     autoplanPreflightTitle: 'Zanim ułożę plan',
     autoplanPreflightReplaceNote:
@@ -1160,6 +1176,15 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates you should consume after exercise to replenish muscle glycogen.',
+    ceilingLabel: 'max.',
+    ceilingHintCarbsPre:
+      "On a route with these parameters you cannot take in more carbs, whatever the plan — it's a physical ",
+    ceilingHintCarbsLink: 'absorption ceiling',
+    ceilingHintCarbsPost: ' of the gut.',
+    ceilingHintHydrationPre:
+      "On a route with these parameters you cannot take in more fluid, whatever the plan — it's a physical ",
+    ceilingHintHydrationLink: 'absorption ceiling',
+    ceilingHintHydrationPost: ' of the gut.',
     autoplanButton: 'Suggest a plan',
     autoplanPreflightTitle: 'Before I build the plan',
     autoplanPreflightReplaceNote:

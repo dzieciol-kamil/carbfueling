@@ -1099,6 +1099,46 @@ export function planSummary(state: PlanState): PlanSummary {
   };
 }
 
+/**
+ * The physical ceiling on `hydrationPct`: even a perfect plan can't clear more fluid than the
+ * stomach can pass on to the gut (`FLUID_ABSORPTION_CAP_ML_H`) over the ride's duration. On most
+ * rides this is far above 100% and never binds; on a short, hot, heavy-sweat ride it can sit well
+ * under 100 — that's the case the "maks./max." marker exists to explain, so the rider doesn't read
+ * a low hydration number as a broken plan.
+ *
+ * Uses the same rounded `sweatLoss` denominator `planSummary` reports/divides by, so this is
+ * directly comparable to `hydrationPct` for "did the plan reach the ceiling". 100 when there's no
+ * fluid loss to speak of (zero duration) — nothing to cap.
+ */
+export function maxHydrationPct(route: RouteInput): number {
+  const hrs = totalHours(route);
+  const sweatLoss = Math.round(sweat(route) * hrs);
+  if (sweatLoss <= 0) return 100;
+  return Math.min(100, Math.round(((FLUID_ABSORPTION_CAP_ML_H * hrs) / sweatLoss) * 100));
+}
+
+/**
+ * The carb equivalent of `maxHydrationPct`: the ceiling on `coverage` set by the gut's `absCap()`
+ * limit for the plan's actual gel/izo blend, integrated over the ride's duration. Mirrors the same
+ * izoCarbs/gelCarbs split `samples()`/`planSummary()` compute from the real fills, so the ceiling
+ * reflects what this plan is actually mixing, not a generic default. 100 when there's no carb
+ * requirement at all (zero duration).
+ */
+export function maxCoveragePct(state: PlanState): number {
+  const { route, mix, gear, fills } = state;
+  const hrs = totalHours(route);
+  const target = hrs * cph(route);
+  if (target <= 0) return 100;
+  const izoCarbs = fills
+    .filter((f) => f.content === 'izo')
+    .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
+  const gelCarbs = fills
+    .filter((f) => f.content === 'gel')
+    .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
+  return Math.min(100, Math.round(((cap * hrs) / target) * 100));
+}
+
 export interface RecoveryCarbs {
   min: number;
   max: number;

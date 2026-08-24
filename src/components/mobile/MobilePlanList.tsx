@@ -1,18 +1,34 @@
-import { useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { gaps } from '../../domain/dragMath';
 import {
   coverageStatus,
   dist,
   hydrationStatus,
+  maxCoveragePct,
+  maxHydrationPct,
   planSummary,
   recoveryCarbs,
   type CoverageStatus,
 } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import { sourceColor } from '../chart/theme';
 import { InfoPopover } from '../ui/InfoPopover';
 import { MobilePlanCard, type PlanCardItem } from './MobilePlanCard';
+
+function FaqLink({ slug, children }: { slug: string; children: ReactNode }) {
+  return (
+    <a
+      href={FAQ_HREF_FROM_CALCULATOR + slug + '/'}
+      target="_blank"
+      rel="noopener"
+      style={{ color: 'inherit', textDecoration: 'underline' }}
+    >
+      {children}
+    </a>
+  );
+}
 
 function selKeyFor(item: PlanCardItem): string {
   return item.kind === 'fill'
@@ -62,7 +78,8 @@ export function MobilePlanList() {
   const openMixSheet = useAppStore((s) => s.openMixSheet);
   const strings = t(lang);
 
-  const summary = planSummary({ route, mix, gear, fills, foods, foodLib, stops });
+  const state = { route, mix, gear, fills, foods, foodLib, stops };
+  const summary = planSummary(state);
   const distanceKm = dist(route);
 
   // Both figures come straight from planSummary — this screen used to divide absorbedTotal by
@@ -77,6 +94,26 @@ export function MobilePlanList() {
   const hydStatus = hydrationStatus(hydPct);
   const hydTint = COVERAGE_TINT[hydStatus];
   const recovery = recoveryCarbs(route.weight);
+
+  // Same "only when it actually binds" rule as the desktop cards — see SummaryCards.tsx.
+  const carbCeiling = maxCoveragePct(state);
+  const atCarbCeiling = carbCeiling < 100 && carbPct === carbCeiling;
+  const hydCeiling = maxHydrationPct(route);
+  const atHydCeiling = hydCeiling < 100 && hydPct === hydCeiling;
+  const carbCeilingHint = (
+    <>
+      {strings.ceilingHintCarbsPre}
+      <FaqLink slug="carb-transporter-mix">{strings.ceilingHintCarbsLink}</FaqLink>
+      {strings.ceilingHintCarbsPost}
+    </>
+  );
+  const hydCeilingHint = (
+    <>
+      {strings.ceilingHintHydrationPre}
+      <FaqLink slug="hydration-water-per-hour">{strings.ceilingHintHydrationLink}</FaqLink>
+      {strings.ceilingHintHydrationPost}
+    </>
+  );
   const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;
 
   const items: PlanCardItem[] = [
@@ -158,6 +195,20 @@ export function MobilePlanList() {
           >
             {carbPct}%
           </div>
+          {atCarbCeiling && (
+            <InfoPopover
+              hint={carbCeilingHint}
+              triggerStyle={{
+                display: 'block',
+                fontSize: 9,
+                color: carbTint.fg,
+                marginTop: 2,
+              }}
+              popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+            >
+              {strings.ceilingLabel} {carbCeiling}% ⓘ
+            </InfoPopover>
+          )}
           <div
             style={{
               height: 4,
@@ -220,6 +271,20 @@ export function MobilePlanList() {
           >
             {hydPct}%
           </div>
+          {atHydCeiling && (
+            <InfoPopover
+              hint={hydCeilingHint}
+              triggerStyle={{
+                display: 'block',
+                fontSize: 9,
+                color: hydTint.fg,
+                marginTop: 2,
+              }}
+              popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+            >
+              {strings.ceilingLabel} {hydCeiling}% ⓘ
+            </InfoPopover>
+          )}
           <div
             style={{
               height: 4,
