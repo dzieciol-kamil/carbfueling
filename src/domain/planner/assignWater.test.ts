@@ -162,6 +162,45 @@ describe('assignWater', () => {
     }
   });
 
+  test('W5b-1: chooseVesselSet ties broken by smallest total volume, then by gid', () => {
+    // floor = 0.85 * 1000 = 850. No single 300/300/700ml vessel clears it alone, so the search moves
+    // to pairs. {x,y} = 600ml is the cheapest pair by volume but stays short of the floor, so it's
+    // rejected even though it's tried first (cardinality 2, smallest volume). The two pairs that
+    // *do* clear it — {x,w} and {y,w}, both 1000ml — tie on volume, so gid breaks the tie: sorted
+    // vessel ids 'w,x' < 'w,y', so {x,w} wins and 'y' is never opened.
+    const skeleton: Skeleton = {
+      stops: [],
+      legs: [{ fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 }],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 40, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    const state = makeState(route, [water(300, 'x'), water(300, 'y'), water(700, 'w')]);
+
+    const services = assignWater(skeleton, state, []);
+
+    expect(services.map((s) => s.vesselId).sort()).toEqual(['w', 'x']);
+    expect(services.some((s) => s.vesselId === 'y')).toBe(false);
+  });
+
+  test('W5b-1: no feasible subset falls back to the full water-capable set rather than inventing a stop', () => {
+    // floor = 0.85 * 1000 = 850. Even both vessels together (300 + 400 = 700) fall short, so no
+    // subset — including the full set — clears it. `chooseVesselSet` falls back to the full set
+    // (both opened) instead of throwing or silently planning less than it can; the caller (L1's own
+    // skeleton, in the real pipeline) is what reports the resulting shortfall — this function's job
+    // ends at "carry everything you have".
+    const skeleton: Skeleton = {
+      stops: [],
+      legs: [{ fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 }],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 40, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    const state = makeState(route, [water(300, 'a'), water(400, 'b')]);
+
+    const services = assignWater(skeleton, state, []);
+
+    expect(services.map((s) => s.vesselId).sort()).toEqual(['a', 'b']);
+  });
+
   test('F3: one small bottle forces several top-ups — no policy cap on stop/service count', () => {
     // Deliberately smaller than the F3 reference bottle (1000ml/4 stops in skeleton.test.ts #2) so
     // the count must climb well past any of the old engine's fixed refill caps.
@@ -239,10 +278,12 @@ describe('assignWater', () => {
     expect(worst).toBeGreaterThanOrEqual(FLUID_FLOOR_FRACTION - 1e-6);
   });
 
-  test('§4 step 2: a leg already cleared by carbs opens no water vessel at all', () => {
-    // floor = 0.85 * 1000 = 850. A single izo service spanning the whole leg delivers its vessel's
-    // full 900ml as fluid (P3) — already past the floor — so water must open nothing here, even
-    // though a water-capable vessel exists and is otherwise unclaimed.
+  test('§4 step 2: a ride the carb credit alone fully covers opens no water vessel at all', () => {
+    // floor = 0.85 * 1000 = 850. A single izo service spanning the whole (only) leg delivers its
+    // vessel's full 900ml as fluid (P3) — already past the floor — so the ride needs zero
+    // water-capable vessels: `chooseVesselSet` (W5b-1) picks the empty set, and an empty set opens
+    // nothing on any leg regardless of Policy A/B (see the next test for where A and B actually
+    // diverge — this one doesn't, on purpose, since it isolates the "needs nothing at all" case).
     const skeleton: Skeleton = {
       stops: [],
       legs: [{ fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 }],
@@ -257,6 +298,44 @@ describe('assignWater', () => {
     const services = assignWater(skeleton, state, carbs);
 
     expect(services).toEqual([]);
+  });
+
+  test('W5b-1/Policy B: a set member still gets topped up on a leg the carb credit alone already clears', () => {
+    // Supersedes the old per-leg reading of §4 step 2 ("a leg already cleared by carbs opens no
+    // water vessel at all", as a blanket rule) — decided 2026-08-24, see
+    // docs/superpowers/specs/2026-08-24-w5b1-measurements.md §5. The ruling ("nalewać do
+    // wszystkich": once a vessel is part of the ride's chosen set, top it up at every stop it isn't
+    // carb-claimed at, not just the legs that individually need it) beat "Policy A" (skip a leg the
+    // carb credit alone clears) in a tie: the two never produced different numbers anywhere in the
+    // measured fixture suite, so the decision came down to which one the ruling's own words
+    // describe — this scenario is the smallest one that tells them apart.
+    //
+    // Leg 0's floor (850) is cleared by 'izoVessel's carb credit (900) alone. Leg 1 (floor 425) has
+    // no carb credit at all, so the ride's chosen set must include 'spare' (500ml, cheaper than
+    // reusing the claimed-elsewhere 'izoVessel' at 900ml) to cover it. Policy B then opens 'spare'
+    // on BOTH legs — including leg 0, which never needed it.
+    const skeleton: Skeleton = {
+      stops: [{ km: 40, origin: 'planned' }],
+      legs: [
+        { fromKm: 0, toKm: 40, hours: 2, fluidNeedMl: 1000, carbNeedG: 0, absorbCapG: 0 },
+        { fromKm: 40, toKm: 80, hours: 2, fluidNeedMl: 500, carbNeedG: 0, absorbCapG: 0 },
+      ],
+      shortfall: null,
+    };
+    const route = makeRoute({ distance: 80, speed: 20, intensity: 'mid', temp: 20, weight: 75 });
+    const state = makeState(route, [dualVessel(900, 'izoVessel'), water(500, 'spare')]);
+    const carbs: Service[] = [
+      { vesselId: 'izoVessel', fromKm: 0, toKm: 40, content: 'izo', filledAtStop: null },
+    ];
+
+    const services = assignWater(skeleton, state, carbs);
+
+    expect(services).toHaveLength(2);
+    expect(services.every((s) => s.vesselId === 'spare')).toBe(true);
+    expect(services.map((s) => [s.fromKm, s.toKm])).toEqual([
+      [0, 40],
+      [40, 80],
+    ]);
   });
 
   test('§4 step 2: a vessel already claimed by carbs is skipped even as the largest candidate', () => {

@@ -19,10 +19,19 @@ import { tidy } from './tidy';
 import type { DraftPlan } from './types';
 
 /**
- * §3.3's "Zrównoważony (default)" starting weights. Not calibrated — §5/W5b's job. `wShort` is the
- * spec's fixed 1000 in every position (a shortfall must always lose to any legal plan).
+ * §3.3's "Zrównoważony (default)" starting weights, calibrated in W5b-1 (2026-08-24) after changes 1
+ * and 2 landed: swept `wStop` × `wLoad` over the whole fixture set (34 scenarios, not one route —
+ * see `docs/superpowers/specs/2026-08-24-w5b1-measurements.md` §4). `wLoad` stays at the spec's
+ * starting value; `wStop` moves from 1.0 to 1.3, the smallest value at which the WHOLE suite settles
+ * onto its physics-driven minimum stop count (a stable plateau shared by every `wStop ≥ 1.3`, not a
+ * knife's-edge fit) — total stops across all 34 fixtures drops from 91 to 84, aggregate hydration
+ * deviation from 100% barely moves (15.6 → 16.8), and the F3 reference scenario (200km/1000ml
+ * bottle) lands on the rider's actual real-world stop count (4) instead of the prior near-tied 5.
+ * Matches the spec's own directional rule: if the default errs, it must err toward fewer stops.
+ * `wShort` stays the spec's fixed 1000 in every position (a shortfall must always lose to any legal
+ * plan).
  */
-export const DEFAULT_WEIGHTS: CostWeights = { wStop: 1.0, wLoad: 1.0, wShort: 1000 };
+export const DEFAULT_WEIGHTS: CostWeights = { wStop: 1.3, wLoad: 1.0, wShort: 1000 };
 
 /**
  * S3/§3.4: how many `needsStop` units the selection carries, expanded by `count` — the floor L1's

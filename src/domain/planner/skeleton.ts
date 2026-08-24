@@ -100,10 +100,17 @@ function precomputeCum(
   return { fluidNeed, carbNeed };
 }
 
-/** Sum of the capacities of vessels that can hold water — what a leg's fluid ride on (§2.1: no
- *  per-service millilitres, but the skeleton's legality test is still a sum of capacities). */
-function carryableWater(gear: Vessel[]): number {
-  return gear.filter((v) => v.allowed.includes('water')).reduce((sum, v) => sum + v.vol, 0);
+/**
+ * Sum of ALL vessels' capacities — what a leg's fluid rides on (§2.1: no per-service millilitres,
+ * but the skeleton's legality test is still a sum of capacities). Deliberately not filtered by
+ * `allowed.includes('water')`: `volOf()` (`fuel.ts`) is completely content-blind — a bidon of izo
+ * delivers exactly as much fluid as the same bidon of water (§4.1 point 1, "content does not change
+ * delivered volume"). An izo-only or gel-only kit is still carrying and delivering fluid the entire
+ * time; filtering it out here made L1 see `carryable ≈ 0` for such kits, which blew up the squared
+ * `wLoad` term and packed in the maximum number of minimum-spaced stops (W5a §6).
+ */
+function carryableFluid(gear: Vessel[]): number {
+  return gear.reduce((sum, v) => sum + v.vol, 0);
 }
 
 interface DPCell {
@@ -243,7 +250,7 @@ export function buildSkeleton(state: PlanState, opts: SkeletonOpts): Skeleton {
   const { route, mix, gear } = state;
   const D = dist(route);
   const K = Math.max(0, Math.floor(opts.minStopsForProducts ?? 0));
-  const carryable = carryableWater(gear);
+  const carryable = carryableFluid(gear);
 
   const nodes = buildNodes(D, opts.riderStops, opts.allowNewStops);
   const nodeKms = nodes.map((node) => node.km);
