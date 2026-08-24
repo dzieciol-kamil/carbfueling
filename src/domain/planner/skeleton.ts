@@ -205,30 +205,34 @@ function summarizeShortfall(path: number[], cumFluid: number[], carryable: numbe
   };
 }
 
-function buildLegs(
+/**
+ * Builds `Leg`s for an arbitrary ascending list of km boundaries — decoupled from `buildSkeleton`'s
+ * own node lattice/path indices, since `precomputeCum`'s fluid/carb formulas are pure per-km
+ * functions with no dependency on what else is in the array. `buildSkeleton` uses this directly
+ * (below); `tidy.ts` calls it again after dropping stops, so there is exactly one implementation of
+ * "how legs are built from boundaries" (spec §4 step 4).
+ */
+export function legsForBoundaries(
   route: RouteInput,
   mix: MixSettings,
-  nodes: PosNode[],
-  cumFluid: number[],
-  cumCarb: number[],
-  path: number[],
+  boundaryKms: number[],
 ): Leg[] {
+  const D = dist(route);
+  const { fluidNeed: cumFluid, carbNeed: cumCarb } = precomputeCum(route, D, boundaryKms);
   // No plan/fills exist yet at L1, so izoCarbs/gelCarbs default to 0 — the same "no split known"
   // call site absCap()'s own doc comment describes. Route intensity is real (C1's ceiling).
   const capPerHour = absCap(mix, 0, 0, route.intensity);
   const legs: Leg[] = [];
-  for (let i = 0; i < path.length - 1; i++) {
-    const a = path[i];
-    const b = path[i + 1];
-    const fromKm = nodes[a].km;
-    const toKm = nodes[b].km;
+  for (let i = 0; i < boundaryKms.length - 1; i++) {
+    const fromKm = boundaryKms[i];
+    const toKm = boundaryKms[i + 1];
     const hours = timeAtDistance(route, toKm) - timeAtDistance(route, fromKm);
     legs.push({
       fromKm,
       toKm,
       hours,
-      fluidNeedMl: cumFluid[b] - cumFluid[a],
-      carbNeedG: cumCarb[b] - cumCarb[a],
+      fluidNeedMl: cumFluid[i + 1] - cumFluid[i],
+      carbNeedG: cumCarb[i + 1] - cumCarb[i],
       absorbCapG: capPerHour * hours,
     });
   }
@@ -243,7 +247,7 @@ export function buildSkeleton(state: PlanState, opts: SkeletonOpts): Skeleton {
 
   const nodes = buildNodes(D, opts.riderStops, opts.allowNewStops);
   const nodeKms = nodes.map((node) => node.km);
-  const { fluidNeed: cumFluid, carbNeed: cumCarb } = precomputeCum(route, D, nodeKms);
+  const { fluidNeed: cumFluid } = precomputeCum(route, D, nodeKms);
 
   let found = shortestPath(nodes, cumFluid, opts.weights, carryable, K, false);
   let shortfall: Shortfall | null = null;
@@ -260,7 +264,11 @@ export function buildSkeleton(state: PlanState, opts: SkeletonOpts): Skeleton {
     km: nodes[idx].km,
     origin: nodes[idx].rider ? 'rider' : 'planned',
   }));
-  const legs = buildLegs(route, mix, nodes, cumFluid, cumCarb, path);
+  const legs = legsForBoundaries(
+    route,
+    mix,
+    path.map((idx) => nodes[idx].km),
+  );
 
   return { stops, legs, shortfall };
 }
