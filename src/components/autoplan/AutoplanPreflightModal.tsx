@@ -14,6 +14,7 @@ import {
 } from './autoplanOptions';
 
 interface AutoplanPreflightModalProps {
+  variant: 'desktop' | 'mobile';
   route: RouteInput;
   gear: Vessel[];
   stops: Stop[];
@@ -47,22 +48,54 @@ const backdropStyle: CSSProperties = {
   inset: 0,
   background: 'rgba(18,20,18,0.55)',
 };
-const cardStyle: CSSProperties = {
+const cardBaseStyle: CSSProperties = {
   position: 'relative',
+  background: '#fff',
+  display: 'flex',
+  flexDirection: 'column',
+  boxSizing: 'border-box',
+};
+const desktopCardStyle: CSSProperties = {
+  ...cardBaseStyle,
   margin: '32px auto',
   width: 480,
   maxWidth: 'calc(100vw - 28px)',
   maxHeight: 'calc(100vh - 64px)',
   overflowY: 'auto',
-  background: '#fff',
+  overscrollBehavior: 'contain',
+  gap: 16,
   border: '1px solid var(--border)',
   borderRadius: 14,
   padding: '18px 20px',
   boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
+};
+// Mirrors MobileRouteSheet.tsx's sheetStyle: pinned to the bottom of the fixed overlay, full
+// width, rounded top corners only, same shadow. Unlike the desktop card, the card itself isn't
+// the scroll container — see mobileScrollAreaStyle/mobileFooterStyle below — so the "Ułóż plan"
+// row can sit outside the scrolled area instead of needing to stick within it.
+const mobileCardStyle: CSSProperties = {
+  ...cardBaseStyle,
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  bottom: 0,
+  maxHeight: '86%',
+  overflow: 'hidden',
+  borderRadius: '22px 22px 0 0',
+  boxShadow: '0 -12px 40px rgba(0,0,0,0.18)',
+};
+// The scrollable body of the mobile sheet. Same padding as MobileRouteSheet.tsx's sheetStyle;
+// flex/minHeight let it shrink to fill whatever mobileCardStyle's maxHeight leaves after the
+// footer, instead of forcing the card to grow.
+const mobileScrollAreaStyle: CSSProperties = {
+  flex: '1 1 auto',
+  minHeight: 0,
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
+  padding: '8px 18px 24px',
   display: 'flex',
   flexDirection: 'column',
   gap: 16,
-  boxSizing: 'border-box',
 };
 const sectionTitleStyle: CSSProperties = { fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' };
 const hintTextStyle: CSSProperties = {
@@ -71,6 +104,9 @@ const hintTextStyle: CSSProperties = {
   lineHeight: 1.5,
   color: 'var(--ink-soft)',
 };
+// Height reserved for two lines at hintTextStyle's size/line-height, so switching the segmented
+// control's selection never reflows the card.
+const segmentDescriptionStyle: CSSProperties = { ...hintTextStyle, minHeight: 35 };
 const stripStyle: CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
@@ -84,11 +120,16 @@ const statValueStyle: CSSProperties = {
   color: 'var(--ink)',
 };
 const statLabelStyle: CSSProperties = { fontSize: 10, color: 'var(--muted-3)' };
-const radioRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: 8,
-  cursor: 'pointer',
+const buttonRowStyle: CSSProperties = { display: 'flex', justifyContent: 'flex-end', gap: 8 };
+// Footer for the mobile sheet, outside mobileScrollAreaStyle so "Ułóż plan" stays reachable
+// without scrolling the five-block sheet to the bottom — a plain flex sibling below the scroll
+// area rather than a `position: sticky` row inside it, so it can't be scrolled past.
+const mobileFooterStyle: CSSProperties = {
+  ...buttonRowStyle,
+  flexShrink: 0,
+  padding: '12px 18px 24px',
+  background: '#fff',
+  borderTop: '1px solid var(--border-soft)',
 };
 const gearRowStyle: CSSProperties = {
   display: 'flex',
@@ -120,28 +161,6 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RadioOption({
-  checked,
-  onChange,
-  label,
-  hint,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-  hint?: string;
-}) {
-  return (
-    <label style={radioRowStyle}>
-      <input type="radio" checked={checked} onChange={onChange} style={{ marginTop: 2 }} />
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600 }}>{label}</span>
-        {hint && <span style={hintTextStyle}>{hint}</span>}
-      </span>
-    </label>
-  );
-}
-
 function contentLabel(content: Content, lang: Lang): string {
   const strings = t(lang);
   return content === 'water' ? strings.water : content === 'gel' ? strings.gel : strings.izo;
@@ -152,6 +171,7 @@ function Section({ children }: { children: ReactNode }) {
 }
 
 export function AutoplanPreflightModal({
+  variant,
   route,
   gear,
   stops,
@@ -187,6 +207,24 @@ export function AutoplanPreflightModal({
     { value: 'balanced' as const, label: strings.autoplanPreferenceBalanced },
     { value: 'lighter' as const, label: strings.autoplanPreferenceLighter },
   ];
+  const preferenceHints: Record<AutoplanPreference, string> = {
+    fewerStops: strings.autoplanPreferenceFewerStopsHint,
+    balanced: strings.autoplanPreferenceBalancedHint,
+    lighter: strings.autoplanPreferenceLighterHint,
+  };
+
+  const stopsModeOptions = [
+    { value: 'keepAndAdd' as const, label: strings.autoplanStopsKeepAndAdd },
+    { value: 'keepOnly' as const, label: strings.autoplanStopsKeepOnly },
+    { value: 'clear' as const, label: strings.autoplanStopsClear },
+  ];
+  const stopsModeHints: Record<StopsMode, string> = {
+    keepAndAdd: strings.autoplanStopsKeepAndAddHint,
+    keepOnly: strings.autoplanStopsKeepOnlyHint,
+    clear: strings.autoplanStopsClearHint,
+  };
+
+  const cardStyle = variant === 'mobile' ? mobileCardStyle : desktopCardStyle;
 
   function handleConfirm() {
     const allCarried = gear.every((v) => carried[v.gid] ?? true);
@@ -199,206 +237,205 @@ export function AutoplanPreflightModal({
     );
   }
 
+  const sections = (
+    <>
+      <span style={{ fontSize: 15, fontWeight: 700 }}>{strings.autoplanPreflightTitle}</span>
+      {showReplaceNote && <p style={hintTextStyle}>{strings.autoplanPreflightReplaceNote}</p>}
+
+      <Section>
+        <span style={sectionTitleStyle}>{strings.autoplanRouteTitle}</span>
+        <div style={stripStyle}>
+          <Stat label={strings.distance} value={Math.round(dist(route)) + ' km'} />
+          <Stat label={strings.autoplanElevationLabel} value={'+' + elevationGain(route) + ' m'} />
+          <Stat label={strings.temp} value={route.temp + ' °C'} />
+          <Stat label={strings.weight} value={route.weight + ' kg'} />
+          <Stat
+            label={strings.intensity}
+            value={
+              route.intensity === 'low'
+                ? strings.low
+                : route.intensity === 'high'
+                  ? strings.high
+                  : strings.medium
+            }
+          />
+          <Stat label={strings.duration} value={fmtHM(totalHours(route))} />
+        </div>
+      </Section>
+
+      {hasOwnStops && (
+        <Section>
+          <span style={sectionTitleStyle}>{strings.autoplanStopsTitle}</span>
+          <SegmentedControl options={stopsModeOptions} value={stopsMode} onChange={setStopsMode} />
+          <p style={segmentDescriptionStyle}>{stopsModeHints[stopsMode]}</p>
+        </Section>
+      )}
+
+      <Section>
+        <span style={sectionTitleStyle}>{strings.autoplanPreferenceTitle}</span>
+        <SegmentedControl
+          options={preferenceOptions}
+          value={preference}
+          onChange={onPreferenceChange}
+        />
+        <p style={segmentDescriptionStyle}>{preferenceHints[preference]}</p>
+      </Section>
+
+      <Section>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={sectionTitleStyle}>{strings.autoplanGearTitle}</span>
+          <button
+            type="button"
+            onClick={onOpenGear}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--ink-soft)',
+              textDecoration: 'underline',
+              fontSize: 11.5,
+              fontWeight: 600,
+              fontFamily: 'Archivo, sans-serif',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            {strings.autoplanGearEditLink}
+          </button>
+        </div>
+        <p style={hintTextStyle}>{strings.autoplanGearHint}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {gear.map((v) => (
+            <label key={v.gid} style={gearRowStyle}>
+              <input
+                type="checkbox"
+                checked={carried[v.gid] ?? true}
+                onChange={(e) => setCarried((c) => ({ ...c, [v.gid]: e.target.checked }))}
+              />
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{v.name}</span>
+              <span style={{ fontSize: 11, color: 'var(--muted-3)' }}>{v.vol} ml</span>
+              <span style={{ display: 'flex', gap: 4 }}>
+                {(v.allowed || []).map((c) => (
+                  <span key={c} style={chipStyle(sourceColor(c))}>
+                    {contentLabel(c, lang)}
+                  </span>
+                ))}
+              </span>
+            </label>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <span style={sectionTitleStyle}>{strings.autoplanFoodTitle}</span>
+        <p style={hintTextStyle}>{strings.autoplanDialogHint}</p>
+        <div data-food-list style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {orderedFood.map((entry) => (
+            <div
+              key={entry.key}
+              data-food-key={entry.key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                border: '1px solid var(--chip-border)',
+                borderRadius: 12,
+                padding: '9px 10px',
+                background: dragKey === entry.key ? '#F2F5EF' : '#fff',
+              }}
+            >
+              <span
+                onPointerDown={createFoodReorderHandler(entry.key, setOrder, setDragKey)}
+                style={{
+                  cursor: 'grab',
+                  color: 'var(--muted-3)',
+                  fontSize: 14,
+                  touchAction: 'none',
+                }}
+              >
+                ⠿
+              </span>
+              <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600 }}>
+                {entry[lang] || entry.en}
+              </span>
+              <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
+                {strings.autoplanDialogCountLabel}
+              </span>
+              <NumberInput
+                min={0}
+                step={1}
+                parser="int"
+                value={counts[entry.key] ?? 0}
+                onChange={(n) => setCounts((c) => ({ ...c, [entry.key]: Math.max(0, n) }))}
+                style={{
+                  width: 44,
+                  border: '1px solid var(--chip-border)',
+                  borderRadius: 8,
+                  padding: '6px 4px',
+                  textAlign: 'center',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </Section>
+    </>
+  );
+
+  const buttons = (
+    <>
+      <button
+        onClick={onCancel}
+        style={{
+          border: '1px solid var(--chip-border)',
+          background: '#fff',
+          color: 'var(--ink-soft)',
+          borderRadius: 8,
+          padding: '8px 14px',
+          fontSize: 12,
+          fontWeight: 600,
+          fontFamily: 'Archivo, sans-serif',
+          cursor: 'pointer',
+        }}
+      >
+        {strings.autoplanDialogCancel}
+      </button>
+      <button
+        onClick={handleConfirm}
+        style={{
+          border: '1px solid var(--ink)',
+          background: 'var(--ink)',
+          color: '#fff',
+          borderRadius: 8,
+          padding: '8px 16px',
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: 'Archivo, sans-serif',
+          cursor: 'pointer',
+        }}
+      >
+        {strings.autoplanPreflightConfirm}
+      </button>
+    </>
+  );
+
   return (
     <div style={overlayStyle}>
       <div style={backdropStyle} onClick={onCancel} />
       <div style={cardStyle}>
-        <span style={{ fontSize: 15, fontWeight: 700 }}>{strings.autoplanPreflightTitle}</span>
-        {showReplaceNote && <p style={hintTextStyle}>{strings.autoplanPreflightReplaceNote}</p>}
-
-        <Section>
-          <span style={sectionTitleStyle}>{strings.autoplanRouteTitle}</span>
-          <div style={stripStyle}>
-            <Stat label={strings.distance} value={Math.round(dist(route)) + ' km'} />
-            <Stat
-              label={strings.autoplanElevationLabel}
-              value={'+' + elevationGain(route) + ' m'}
-            />
-            <Stat label={strings.temp} value={route.temp + ' °C'} />
-            <Stat label={strings.weight} value={route.weight + ' kg'} />
-            <Stat
-              label={strings.intensity}
-              value={
-                route.intensity === 'low'
-                  ? strings.low
-                  : route.intensity === 'high'
-                    ? strings.high
-                    : strings.medium
-              }
-            />
-            <Stat label={strings.duration} value={fmtHM(totalHours(route))} />
-          </div>
-        </Section>
-
-        {hasOwnStops && (
-          <Section>
-            <span style={sectionTitleStyle}>{strings.autoplanStopsTitle}</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <RadioOption
-                checked={stopsMode === 'keepAndAdd'}
-                onChange={() => setStopsMode('keepAndAdd')}
-                label={strings.autoplanStopsKeepAndAdd}
-                hint={strings.autoplanStopsKeepAndAddHint}
-              />
-              <RadioOption
-                checked={stopsMode === 'keepOnly'}
-                onChange={() => setStopsMode('keepOnly')}
-                label={strings.autoplanStopsKeepOnly}
-                hint={strings.autoplanStopsKeepOnlyHint}
-              />
-              <RadioOption
-                checked={stopsMode === 'clear'}
-                onChange={() => setStopsMode('clear')}
-                label={strings.autoplanStopsClear}
-              />
-            </div>
-          </Section>
+        {variant === 'mobile' ? (
+          <>
+            <div style={mobileScrollAreaStyle}>{sections}</div>
+            <div style={mobileFooterStyle}>{buttons}</div>
+          </>
+        ) : (
+          <>
+            {sections}
+            <div style={buttonRowStyle}>{buttons}</div>
+          </>
         )}
-
-        <Section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={sectionTitleStyle}>{strings.autoplanGearTitle}</span>
-            <button
-              type="button"
-              onClick={onOpenGear}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--ink-soft)',
-                textDecoration: 'underline',
-                fontSize: 11.5,
-                fontWeight: 600,
-                fontFamily: 'Archivo, sans-serif',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              {strings.autoplanGearEditLink}
-            </button>
-          </div>
-          <p style={hintTextStyle}>{strings.autoplanGearHint}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {gear.map((v) => (
-              <label key={v.gid} style={gearRowStyle}>
-                <input
-                  type="checkbox"
-                  checked={carried[v.gid] ?? true}
-                  onChange={(e) => setCarried((c) => ({ ...c, [v.gid]: e.target.checked }))}
-                />
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{v.name}</span>
-                <span style={{ fontSize: 11, color: 'var(--muted-3)' }}>{v.vol} ml</span>
-                <span style={{ display: 'flex', gap: 4 }}>
-                  {(v.allowed || []).map((c) => (
-                    <span key={c} style={chipStyle(sourceColor(c))}>
-                      {contentLabel(c, lang)}
-                    </span>
-                  ))}
-                </span>
-              </label>
-            ))}
-          </div>
-        </Section>
-
-        <Section>
-          <span style={sectionTitleStyle}>{strings.autoplanFoodTitle}</span>
-          <p style={hintTextStyle}>{strings.autoplanDialogHint}</p>
-          <div data-food-list style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {orderedFood.map((entry) => (
-              <div
-                key={entry.key}
-                data-food-key={entry.key}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  border: '1px solid var(--chip-border)',
-                  borderRadius: 12,
-                  padding: '9px 10px',
-                  background: dragKey === entry.key ? '#F2F5EF' : '#fff',
-                }}
-              >
-                <span
-                  onPointerDown={createFoodReorderHandler(entry.key, setOrder, setDragKey)}
-                  style={{
-                    cursor: 'grab',
-                    color: 'var(--muted-3)',
-                    fontSize: 14,
-                    touchAction: 'none',
-                  }}
-                >
-                  ⠿
-                </span>
-                <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600 }}>
-                  {entry[lang] || entry.en}
-                </span>
-                <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
-                  {strings.autoplanDialogCountLabel}
-                </span>
-                <NumberInput
-                  min={0}
-                  step={1}
-                  parser="int"
-                  value={counts[entry.key] ?? 0}
-                  onChange={(n) => setCounts((c) => ({ ...c, [entry.key]: Math.max(0, n) }))}
-                  style={{
-                    width: 44,
-                    border: '1px solid var(--chip-border)',
-                    borderRadius: 8,
-                    padding: '6px 4px',
-                    textAlign: 'center',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section>
-          <span style={sectionTitleStyle}>{strings.autoplanPreferenceTitle}</span>
-          <SegmentedControl
-            options={preferenceOptions}
-            value={preference}
-            onChange={onPreferenceChange}
-          />
-        </Section>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button
-            onClick={onCancel}
-            style={{
-              border: '1px solid var(--chip-border)',
-              background: '#fff',
-              color: 'var(--ink-soft)',
-              borderRadius: 8,
-              padding: '8px 14px',
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: 'Archivo, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
-            {strings.autoplanDialogCancel}
-          </button>
-          <button
-            onClick={handleConfirm}
-            style={{
-              border: '1px solid var(--ink)',
-              background: 'var(--ink)',
-              color: '#fff',
-              borderRadius: 8,
-              padding: '8px 16px',
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: 'Archivo, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
-            {strings.autoplanPreflightConfirm}
-          </button>
-        </div>
       </div>
     </div>
   );

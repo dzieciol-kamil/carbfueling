@@ -155,6 +155,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
 
       {phase === 'preflight' && (
         <AutoplanPreflightModal
+          variant={variant}
           route={route}
           gear={gear}
           stops={stops}

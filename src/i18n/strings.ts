@@ -334,6 +334,7 @@ export interface StringTable {
   autoplanStopsKeepOnly: string;
   autoplanStopsKeepOnlyHint: string;
   autoplanStopsClear: string;
+  autoplanStopsClearHint: string;
   autoplanGearTitle: string;
   autoplanGearHint: string;
   autoplanGearEditLink: string;
@@ -343,8 +344,11 @@ export interface StringTable {
   autoplanDialogCancel: string;
   autoplanPreferenceTitle: string;
   autoplanPreferenceFewerStops: string;
+  autoplanPreferenceFewerStopsHint: string;
   autoplanPreferenceBalanced: string;
+  autoplanPreferenceBalancedHint: string;
   autoplanPreferenceLighter: string;
+  autoplanPreferenceLighterHint: string;
   autoplanShortRideNote: string;
   autoplanNeedsDuration: string;
   autoplanAppliedNote: string;
@@ -744,13 +748,15 @@ export const STR: Record<Lang, StringTable> = {
     autoplanRouteTitle: 'Trasa i warunki',
     autoplanElevationLabel: 'Przewyższenie',
     autoplanStopsTitle: 'Twoje stopy',
-    autoplanStopsKeepAndAdd: 'Zostaw moje i dołóż, jeśli trzeba',
+    autoplanStopsKeepAndAdd: 'Dołóż',
     autoplanStopsKeepAndAddHint:
       'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
-    autoplanStopsKeepOnly: 'Zostaw tylko moje, nic nie dokładaj',
+    autoplanStopsKeepOnly: 'Tylko moje',
     autoplanStopsKeepOnlyHint:
       'Sprawdzimy, czy dasz radę na stopach, które już znasz — jeśli nie, zobaczysz brakującą ilość zamiast nowego stopu.',
-    autoplanStopsClear: 'Wyczyść moje i zaplanuj od nowa',
+    autoplanStopsClear: 'Od nowa',
+    autoplanStopsClearHint:
+      'Usuniemy Twoje stopy i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
     autoplanGearTitle: 'Sprzęt, który zabierasz',
     autoplanGearHint:
       'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
@@ -762,8 +768,13 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogCancel: 'Anuluj',
     autoplanPreferenceTitle: 'Co wolisz',
     autoplanPreferenceFewerStops: 'Mniej stopów',
+    autoplanPreferenceFewerStopsHint:
+      'Wolisz rzadziej się zatrzymywać, nawet jeśli oznacza to więcej do niesienia między stopami.',
     autoplanPreferenceBalanced: 'Zrównoważony',
+    autoplanPreferenceBalancedHint:
+      'Równowaga między liczbą stopów a tym, ile niesiesz — bez skrajności w żadną stronę.',
     autoplanPreferenceLighter: 'Mniej bagażu',
+    autoplanPreferenceLighterHint: 'Wolisz nieść mniej, nawet jeśli oznacza to częstsze stopy.',
     autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
     autoplanShortRideNote:
       'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
@@ -1157,13 +1168,15 @@ export const STR: Record<Lang, StringTable> = {
     autoplanRouteTitle: 'Route & conditions',
     autoplanElevationLabel: 'Elevation',
     autoplanStopsTitle: 'Your stops',
-    autoplanStopsKeepAndAdd: 'Keep mine, add more if needed',
+    autoplanStopsKeepAndAdd: 'Add more',
     autoplanStopsKeepAndAddHint:
       'Your stops stay, and new ones only appear where the ride genuinely needs them.',
-    autoplanStopsKeepOnly: "Keep only mine, don't add any",
+    autoplanStopsKeepOnly: 'Only mine',
     autoplanStopsKeepOnlyHint:
       "We'll check whether you can fuel the ride on the stops you already know — if not, you'll see the shortfall instead of a new stop.",
-    autoplanStopsClear: 'Clear mine and start over',
+    autoplanStopsClear: 'From scratch',
+    autoplanStopsClearHint:
+      "We'll clear your stops and plan the route from zero, as if none existed.",
     autoplanGearTitle: "Gear you're taking",
     autoplanGearHint:
       "Uncheck anything you're not carrying today — for this plan only, it won't change your saved gear.",
@@ -1175,8 +1188,13 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogCancel: 'Cancel',
     autoplanPreferenceTitle: 'What you prefer',
     autoplanPreferenceFewerStops: 'Fewer stops',
+    autoplanPreferenceFewerStopsHint:
+      "You'd rather stop less often, even if it means carrying more between stops.",
     autoplanPreferenceBalanced: 'Balanced',
+    autoplanPreferenceBalancedHint:
+      'A balance between how often you stop and how much you carry — no extreme either way.',
     autoplanPreferenceLighter: 'Less to carry',
+    autoplanPreferenceLighterHint: "You'd rather carry less, even if it means stopping more often.",
     autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
     autoplanShortRideNote:
       "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",
