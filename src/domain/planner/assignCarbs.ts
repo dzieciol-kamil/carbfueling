@@ -77,7 +77,14 @@ export function assignCarbs(
   const totalNeedG = skeleton.legs.reduce((a, l) => a + l.carbNeedG, 0);
   const selectionCarbsG = selection.reduce((a, entry) => {
     const lib = foodLib.find((f) => f.key === entry.key);
-    return a + (lib ? lib.carbs * entry.count : 0);
+    if (!lib) return a;
+    // (b): when no stop exists anywhere on the route, assignFood has nowhere legal to pin a
+    // needsStop unit (S3) and drops it outright — don't also net its carbs out of the vessel
+    // target, or the rider silently loses them twice. Only fires in the "route too short for any
+    // legal stop" edge case; with minStopsForProducts set from this same selection, a skeleton
+    // normally has exactly enough stops to host every needsStop unit.
+    if (lib.needsStop && skeleton.stops.length === 0) return a;
+    return a + lib.carbs * entry.count;
   }, 0);
   // No threshold (C2): this is the ride's honest total, not a discounted badge target. It is still
   // the physical ceiling past which more vessel-carbs buy nothing — and `selection`'s own carbs
@@ -127,7 +134,6 @@ export function assignCarbs(
   }
 
   // --- izo: relay across legs (C4) ----------------------------------------------------------------
-  const usedBefore = new Set<string>();
   let izoIdx = 0;
   for (let i = 0; i < skeleton.legs.length && izoVessels.length > 0; i++) {
     const leg = skeleton.legs[i];
@@ -147,7 +153,12 @@ export function assignCarbs(
       if (fillG <= 0) continue;
       if (legContribution[i] + fillG > effectiveCapG + EPS) continue; // C1's hard ceiling
 
-      const filledAtStop = usedBefore.has(vessel.gid) ? i - 1 : null; // S4 (first use) / V1 (reuse)
+      // S4 (leg 0 = left home with it) / V1 (every later leg) — same rule as assignWater's, and it
+      // has to be: a vessel's *carbs-only* usage history can't tell whether this is truly its
+      // global first service, since assignWater (which runs after this) may yet claim an earlier
+      // leg for the same vessel as water. Anchoring every non-leg-0 service to the stop it starts
+      // at is always a true statement (the plan already stops there), so it's the safe choice.
+      const filledAtStop = i === 0 ? null : i - 1;
       services.push({
         vesselId: vessel.gid,
         fromKm: leg.fromKm,
@@ -157,7 +168,6 @@ export function assignCarbs(
       });
       legContribution[i] += fillG;
       runningTotal += fillG;
-      usedBefore.add(vessel.gid);
       izoIdx = (izoIdx + attempt + 1) % izoVessels.length;
       break;
     }
