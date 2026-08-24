@@ -4,6 +4,7 @@ import type { FoodSelectionEntry } from '../autoplan';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { assignCarbs } from './assignCarbs';
 import { assertInvariantV1 } from './assignWater';
+import { deliveredShare } from './deliveredShare';
 import type { Leg, Skeleton, StopNode } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -77,31 +78,48 @@ function buildHandSkeleton(bounds: number[], carbNeedG: number[], absorbCapG: nu
 const NO_SELECTION: FoodSelectionEntry[] = [];
 
 describe('assignCarbs — izo relay (C4)', () => {
-  test('two izo vessels alternate leg by leg; neither is drained early and carried empty', () => {
-    // D=180km, 6 equal 30km legs, 5 stops at 30/60/90/120/150. Two 300ml/8.4% bottles
-    // (carbsFillOf = 25.2g each). carbNeedG/absorbCapG set generously so relay is never blocked or
-    // cut short by C1 or by the total-need ceiling (6 * 25.2 = 151.2g, well under the 300g budget).
-    const bounds = [0, 30, 60, 90, 120, 150, 180];
+  // W5c-1 (2026-08-24): both tests below rewritten for the duration-sized span model — a service
+  // now spans as long as its fill lasts at the ride's rate (`fillG / cph`), not "one vessel per leg,
+  // clipped to that leg's span" (the old, all-or-nothing model this task replaces). See
+  // `docs/superpowers/specs/2026-08-23-autoplan-v2-subagent-prompts.md` "W5c-1".
+  test('relay spans are sized by duration, not clipped to one leg; neither vessel is drained early and carried empty', () => {
+    // D=180km, 18 equal 10km legs/stops — dense enough that the relay's own duration-sized turns
+    // (well under 10km each, see below) always find a legal next stop before running dry, so this
+    // fixture still exercises the autoplanPacing.test.ts shape ("no vessel's last service ends
+    // before 80% of D") that the old, leg-clipped model satisfied for free by construction. Generous
+    // carbNeedG/absorbCapG so relay is never blocked by C1 or cut short by the total-need ceiling.
+    const bounds: number[] = [];
+    for (let km = 0; km <= 180; km += 10) bounds.push(km);
     const skeleton = buildHandSkeleton(
       bounds,
-      new Array(6).fill(50), // carbNeedG per leg -> total 300g
-      new Array(6).fill(100), // absorbCapG per leg, plenty of headroom
+      new Array(bounds.length - 1).fill(50),
+      new Array(bounds.length - 1).fill(100),
     );
     const route = makeRoute({ distance: 180, speed: 25 });
     const state = makeState(route, [izoBottle(300, 'v1'), izoBottle(300, 'v2')]);
 
     const services = assignCarbs(skeleton, state, NO_SELECTION);
 
-    expect(services).toHaveLength(6); // every leg gets a carb service (budget never runs out)
     expect(services.every((s) => s.content === 'izo')).toBe(true);
 
-    // Alternation: v1 on legs 0/2/4, v2 on legs 1/3/5.
-    expect(services.map((s) => s.vesselId)).toEqual(['v1', 'v2', 'v1', 'v2', 'v1', 'v2']);
+    // Every span is sized by duration (fillG / cph at the ride's own speed), independent of the
+    // 10km leg width — the exact bug this task fixes (every service used to be exactly one leg
+    // wide). The very first service is the clean case (nothing to clip it); later ones match it too,
+    // except the very last, which C6 trims short of `carbEndKm` same as any other.
+    const fillG = carbsFill({ fid: 0, gid: 'v1', content: 'izo', from: 0, to: 0 }, state.gear, MIX);
+    const hours = fillG / cph(route);
+    const expectedSpanKm = distanceAtTime(route, timeAtDistance(route, 0) + hours);
+    expect(services[0].toKm - services[0].fromKm).toBeCloseTo(expectedSpanKm, 6);
+    for (const s of services) {
+      expect(s.toKm - s.fromKm).toBeLessThanOrEqual(expectedSpanKm + 1e-6);
+      expect(s.toKm - s.fromKm).toBeLessThan(10); // never a whole leg (finding 2's old shape)
+    }
 
-    // Relay, not sequential-cursor: each vessel is reused, not spent once and abandoned.
+    // Relay alternation still holds: v1/v2 trade off, back-to-back at first (S4), then reused.
+    expect(services).toHaveLength(18);
+    services.forEach((s, i) => expect(s.vesselId).toBe(i % 2 === 0 ? 'v1' : 'v2'));
     for (const gid of ['v1', 'v2']) {
-      const mine = services.filter((s) => s.vesselId === gid);
-      expect(mine.length).toBeGreaterThan(1);
+      expect(services.filter((s) => s.vesselId === gid).length).toBeGreaterThan(1);
     }
 
     // The exact failing autoplanPacing.test.ts shape: no vessel's last service ends before 80% of D.
@@ -112,15 +130,15 @@ describe('assignCarbs — izo relay (C4)', () => {
       expect(last).toBeGreaterThan(D * 0.8);
     }
 
-    // C6: the very last service stops short of D itself (2% gut-drain buffer), not stretched to it.
-    const finalService = services[services.length - 1];
-    expect(finalService.toKm).toBeLessThan(D);
-    expect(finalService.toKm).toBeCloseTo(D * 0.98, 6);
+    // C6: no service ever reaches all the way to D (2% gut-drain buffer respected throughout).
+    for (const s of services) {
+      expect(s.toKm).toBeLessThanOrEqual(D * 0.98 + 1e-6);
+    }
 
     assertInvariantV1(services, skeleton);
   });
 
-  test('V1 holds on the relay output: every reused service is anchored to the stop at its fromKm', () => {
+  test("V1 holds on the relay output: each vessel's own first fill is unanchored (S4); every reuse is anchored to the stop at its fromKm", () => {
     const bounds = [0, 40, 80, 120];
     const skeleton = buildHandSkeleton(bounds, [40, 40, 40], [80, 80, 80]);
     const route = makeRoute({ distance: 120, speed: 25 });
@@ -129,49 +147,64 @@ describe('assignCarbs — izo relay (C4)', () => {
     const services = assignCarbs(skeleton, state, NO_SELECTION);
 
     expect(() => assertInvariantV1(services, skeleton)).not.toThrow();
-    // Concretely: v1's second service (leg index 2) is anchored to skeleton.stops[1].
-    const v1Second = services
-      .filter((s) => s.vesselId === 'v1')
-      .sort((a, b) => a.fromKm - b.fromKm)[1];
-    expect(v1Second.filledAtStop).toBe(1);
-    expect(skeleton.stops[1].km).toBe(v1Second.fromKm);
+
+    const byVessel = (gid: string) =>
+      services.filter((s) => s.vesselId === gid).sort((a, b) => a.fromKm - b.fromKm);
+
+    // Phase 1 (S4): both vessels' own first fill are laid back-to-back from km 0, unanchored — v2's
+    // first turn starts mid-route (not km 0) but is still unanchored, since S4 means "this vessel's
+    // own first use", not "whichever service happens to start at km 0".
+    expect(byVessel('v1')[0].filledAtStop).toBeNull();
+    expect(byVessel('v2')[0].filledAtStop).toBeNull();
+    expect(byVessel('v2')[0].fromKm).toBeGreaterThan(0);
+
+    // Phase 2: each vessel's second service is anchored to the stop sitting exactly at its fromKm.
+    const v1Second = byVessel('v1')[1];
+    expect(v1Second.filledAtStop).toBe(0);
+    expect(skeleton.stops[0].km).toBe(v1Second.fromKm);
+
+    const v2Second = byVessel('v2')[1];
+    expect(v2Second.filledAtStop).toBe(1);
+    expect(skeleton.stops[1].km).toBe(v2Second.fromKm);
   });
 });
 
 describe('assignCarbs — C1 hard ceiling', () => {
-  test('a leg whose absorbCapG is below the vessel load is skipped, never overfilled', () => {
-    // 3 legs; the middle one's absorbCapG (10g) is far below the vessel's carbsFillOf (25.2g), the
-    // outer two (100g) have plenty of room.
-    const bounds = [0, 50, 100, 150];
-    const skeleton = buildHandSkeleton(bounds, [50, 50, 50], [100, 10, 100]);
-    const route = makeRoute({ distance: 150, speed: 25 });
-    const state = makeState(route, [izoBottle(300, 'v1')]); // single vessel, 25.2g/fill
+  // W5c-1 (2026-08-24): rewritten. The old test proved a fill exceeding ONE leg's absorbCapG got
+  // skipped outright ("clipped to a leg" — izo-4's real-world 0% bug: 97.5g > 72g on every leg, so
+  // nothing was ever placed). The fix prorates a service's delivered share per leg (deliveredShare,
+  // same mechanism the gel branch already used), so this test now proves the opposite: a fill bigger
+  // than any single leg's cap still gets placed, spanning every leg it needs to, as long as each
+  // leg's own *prorated share* stays under that leg's absorbCapG.
+  test("a fill bigger than any single leg's absorbCapG still gets placed, prorated across every leg it spans (kills finding 2)", () => {
+    // 3 legs of 20km each, absorbCapG=60g on every leg — deliberately below the vessel's own fill.
+    const bounds = [0, 20, 40, 60];
+    const skeleton = buildHandSkeleton(bounds, [50, 50, 50], [60, 60, 60]);
+    const route = makeRoute({ distance: 60, speed: 25 });
+    const state = makeState(route, [izoBottle(1050, 'v1')]); // 1050ml @ 8.4% = 88.2g
+
+    const fillG = carbsFill({ fid: 0, gid: 'v1', content: 'izo', from: 0, to: 0 }, state.gear, MIX);
+    expect(fillG).toBeGreaterThan(60); // bigger than every leg's own absorbCapG
 
     const services = assignCarbs(skeleton, state, NO_SELECTION);
 
-    // Legs 0 and 2 get a service; the too-tight middle leg (index 1) does not. Leg 2's own service
-    // stops at D*0.98=147, not 150 — C6's gut-drain buffer, incidental to this test but still real.
-    expect(services).toHaveLength(2);
-    expect(services.map((s) => [s.fromKm, s.toKm])).toEqual([
-      [0, 50],
-      [100, 147],
-    ]);
+    expect(services).toHaveLength(1);
+    const [s] = services;
+    expect(s.content).toBe('izo');
+    expect(s.fromKm).toBe(0);
+    expect(s.filledAtStop).toBeNull(); // S4: this vessel's own first service
 
-    // Never crosses the ceiling on any leg, including the one that had to be skipped.
-    const fillG = carbsFill({ fid: 0, gid: 'v1', content: 'izo', from: 0, to: 0 }, state.gear, MIX);
-    skeleton.legs.forEach((leg, i) => {
-      const legFrom = bounds[i];
-      const legTo = bounds[i + 1];
-      const delivered = services
-        .filter((s) => s.fromKm >= legFrom && s.toKm <= legTo)
-        .reduce((a) => a + fillG, 0);
-      expect(delivered).toBeLessThanOrEqual(leg.absorbCapG + 1e-6);
+    // Sized by duration, not clipped to one leg — crosses both interior stops (20, 40).
+    const hours = fillG / cph(route);
+    const expectedToKm = distanceAtTime(route, timeAtDistance(route, 0) + hours);
+    expect(s.toKm).toBeCloseTo(expectedToKm, 6);
+    expect(s.toKm).toBeGreaterThan(40);
+
+    // C1 still holds: every leg's prorated share — not the whole 88.2g — stays under its own cap.
+    skeleton.legs.forEach((leg) => {
+      const share = fillG * deliveredShare(s, leg, state.gear, route);
+      expect(share).toBeLessThanOrEqual(leg.absorbCapG + 1e-6);
     });
-
-    // Reused on leg 2, correctly anchored to the stop at km 100 (index 1).
-    const second = services[1];
-    expect(second.filledAtStop).toBe(1);
-    expect(skeleton.stops[1].km).toBe(100);
 
     assertInvariantV1(services, skeleton);
   });

@@ -48,9 +48,13 @@ function carbsFillOf(
  * more of a home-mixed concentrate at a stop). Vessels are laid back-to-back from km 0 so two
  * flasks never stack, each drunk at exactly the rate the ride asks for (`cph`).
  *
- * **Izo** — relayed across legs (C4): izo-capable vessels alternate leg by leg so a vessel that
- * empties is refilled at the next stop and used again, instead of drained once and carried empty.
- * Every leg's combined izo+gel load is hard-capped at that leg's share of `Leg.absorbCapG` (C1).
+ * **Izo** — relayed across legs (C4), sized by duration, not clipped to one leg (W5c-1,
+ * 2026-08-24): a service spans as long as its fill lasts at the ride's rate (`fillG / cph`),
+ * crossing whatever leg boundaries it crosses — exactly like the gel branch above. A vessel's own
+ * first service (S4) is unanchored, laid back-to-back with the other vessels' own first services
+ * from km 0; every later reuse must be anchored to a stop (V1), so once every vessel has had its
+ * first turn the cursor snaps forward to the next stop before relaying again. Every leg's combined
+ * izo+gel load is still hard-capped at that leg's share of `Leg.absorbCapG` (C1).
  *
  * **The ceiling.** C2 rules out a coverage *threshold*, but not the ride's actual total: pouring in
  * more than `hrs * cph(route)` buys nothing (`coverage()`'s own integral caps benefit at the need
@@ -133,44 +137,84 @@ export function assignCarbs(
     cursor = toKm;
   }
 
-  // --- izo: relay across legs (C4) ----------------------------------------------------------------
+  // --- izo: relay across legs (C4), spans sized by duration (W5c-1) ------------------------------
+  // §2.1: a service is one full vessel-load drunk at the ride's rate — "sized to the leg" means
+  // span, not millilitres. Mirrors the gel branch's `fits` check exactly; the only new part is the
+  // cursor/anchoring rule below (S4's unanchored first turn per vessel, V1's stop-anchored reuse).
+  const izoRate = cph(route);
+
+  /** Builds, C1-fit-checks and — on success — commits one izo service starting at `fromKm`. Returns
+   *  the service's `toKm`, or `null` if nothing was placed (fill non-positive, doesn't fit, or the
+   *  vessel target is already met) — mirrors the gel loop's `fits` block above verbatim. */
+  function tryIzoService(
+    vessel: Vessel,
+    fromKm: number,
+    filledAtStop: number | null,
+  ): number | null {
+    const fillG = carbsFillOf(vessel, 'izo', gear, mix);
+    if (fillG <= 0 || izoRate <= 0 || runningTotal >= vesselTargetG) return null;
+
+    const hours = fillG / izoRate;
+    const toKm = Math.min(carbEndKm, distanceAtTime(route, timeAtDistance(route, fromKm) + hours));
+    if (toKm <= fromKm + EPS) return null;
+
+    const candidate: Service = { vesselId: vessel.gid, fromKm, toKm, content: 'izo', filledAtStop };
+    const fits = skeleton.legs.every((leg, i) => {
+      const share = fillG * deliveredShare(candidate, leg, gear, route);
+      if (share <= 0) return true;
+      return legContribution[i] + share <= leg.absorbCapG + EPS; // C1
+    });
+    if (!fits) return null;
+
+    skeleton.legs.forEach((leg, i) => {
+      const share = fillG * deliveredShare(candidate, leg, gear, route);
+      if (share > 0) legContribution[i] += share;
+    });
+    services.push(candidate);
+    runningTotal += fillG;
+    return toKm;
+  }
+
+  let izoCursor = 0;
+
+  // Phase 1 (S4): each vessel's own first fill, laid back-to-back from km 0, unanchored — "N
+  // bottles pre-filled at home cover the first N stretches, no stop needed between them." One
+  // attempt per vessel, in order, same as the gel loop — a vessel that doesn't fit here simply
+  // forfeits its turn (cursor doesn't move) rather than being retried later.
+  for (const vessel of izoVessels) {
+    if (izoCursor >= carbEndKm - EPS) break;
+    const toKm = tryIzoService(vessel, izoCursor, null);
+    if (toKm !== null) izoCursor = toKm;
+  }
+
+  // Phase 2: relay reuse. Every later service must be anchored to a stop (V1), so the cursor snaps
+  // forward to the first stop at or after it. If no vessel fits there, that stop is skipped (try the
+  // next one) rather than giving up outright; placement only stops once no legal stop remains before
+  // the gut-drain buffer — a gap left there is a real dry stretch, not stretched over. `stopPtr`
+  // (not a km comparison) drives the "try the next stop" fallback so a rejected stop is skipped for
+  // good rather than being re-selected forever.
   let izoIdx = 0;
-  for (let i = 0; i < skeleton.legs.length && izoVessels.length > 0; i++) {
-    const leg = skeleton.legs[i];
-    if (leg.toKm <= leg.fromKm + EPS) continue; // degenerate, shouldn't happen but guard anyway
-    if (leg.fromKm >= carbEndKm - EPS) continue; // C6: past the gut-drain buffer
+  let stopPtr = 0;
+  while (runningTotal < vesselTargetG) {
+    while (stopPtr < skeleton.stops.length && skeleton.stops[stopPtr].km < izoCursor - EPS) {
+      stopPtr++;
+    }
+    if (stopPtr >= skeleton.stops.length) break;
+    const stopKm = skeleton.stops[stopPtr].km;
+    if (stopKm >= carbEndKm - EPS) break;
 
-    const toKm = Math.min(leg.toKm, carbEndKm);
-    if (toKm <= leg.fromKm + EPS) continue;
-    const trim = (toKm - leg.fromKm) / (leg.toKm - leg.fromKm);
-    const effectiveCapG = leg.absorbCapG * trim;
-
-    if (runningTotal >= vesselTargetG) break; // the ride's real total is already met
-
+    let placed = false;
     for (let attempt = 0; attempt < izoVessels.length; attempt++) {
       const vessel = izoVessels[(izoIdx + attempt) % izoVessels.length];
-      const fillG = carbsFillOf(vessel, 'izo', gear, mix);
-      if (fillG <= 0) continue;
-      if (legContribution[i] + fillG > effectiveCapG + EPS) continue; // C1's hard ceiling
-
-      // S4 (leg 0 = left home with it) / V1 (every later leg) — same rule as assignWater's, and it
-      // has to be: a vessel's *carbs-only* usage history can't tell whether this is truly its
-      // global first service, since assignWater (which runs after this) may yet claim an earlier
-      // leg for the same vessel as water. Anchoring every non-leg-0 service to the stop it starts
-      // at is always a true statement (the plan already stops there), so it's the safe choice.
-      const filledAtStop = i === 0 ? null : i - 1;
-      services.push({
-        vesselId: vessel.gid,
-        fromKm: leg.fromKm,
-        toKm,
-        content: 'izo',
-        filledAtStop,
-      });
-      legContribution[i] += fillG;
-      runningTotal += fillG;
-      izoIdx = (izoIdx + attempt + 1) % izoVessels.length;
-      break;
+      const toKm = tryIzoService(vessel, stopKm, stopPtr);
+      if (toKm !== null) {
+        izoIdx = (izoIdx + attempt + 1) % izoVessels.length;
+        izoCursor = toKm;
+        placed = true;
+        break;
+      }
     }
+    if (!placed) stopPtr++; // nothing fits at this stop — try the next one
   }
 
   assertInvariantV1(services, skeleton);
