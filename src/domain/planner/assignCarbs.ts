@@ -6,7 +6,16 @@
  */
 import { bucketVessels } from '../autoplan';
 import type { FoodSelectionEntry } from '../autoplan';
-import { carbsFill, cph, dist, distanceAtTime, partsOf, timeAtDistance, totalHours } from '../fuel';
+import {
+  COVERAGE_TARGET_PCT,
+  carbsFill,
+  cph,
+  dist,
+  distanceAtTime,
+  partsOf,
+  timeAtDistance,
+  totalHours,
+} from '../fuel';
 import type { MixSettings, PlanState, Vessel } from '../types';
 import { assertInvariantV1 } from './assignWater';
 import { deliveredShare } from './deliveredShare';
@@ -124,24 +133,33 @@ export function assignCarbs(
     (a, v) => a + Math.max(0, carbsFillOf(v, 'gel', gear, mix)),
     0,
   );
-  // No threshold (C2): this is the ride's honest total, not a discounted badge target. It is still
-  // the physical ceiling past which more vessel-carbs buy nothing — and `selection`'s own carbs and
-  // gel's own reserved budget already claim part of it.
+  // The ride's honest total is still the physical ceiling past which more vessel-carbs buy nothing —
+  // `selection`'s own carbs and gel's own reserved budget already claim part of it.
   const afterSelectionG = Math.max(0, totalNeedG - selectionCarbsG);
-  const afterGelReservationG = Math.max(0, afterSelectionG - gelBudgetG);
-  // The reservation is optimistic (spec's own caveat): a flask's raw dose budget can outweigh the
-  // WHOLE remaining need on its own (assignCarbs.test.ts's "gel fills the leg izo left thin" — a
-  // 180g flask against an 80g remaining need), and subtracting it whole would zero izo out even
-  // though izo would still be the better home for its own first, natural load — gel's placement
-  // reads `legContribution` precisely so it can spread into whatever izo genuinely doesn't reach,
-  // not so izo pre-emptively hands over legs it was never going to need to. So the reservation never
-  // takes izo below one load of its own heaviest vessel (capped at what was left after selection, so
-  // it still yields to a selection that already covers the ride outright).
+  // Task 1 (W13, 2026-08-25): the owner ruled that carbs anywhere in the
+  // [COVERAGE_TARGET_PCT, 100]% band are equally good, and that pouring past 100% is worse, not
+  // better — it's powder paid for, carried and never absorbed. So izo no longer relays toward the
+  // full 100% of the leftover need (that was W12's `afterGelReservationG`); it stops as soon as the
+  // planned total — izo-so-far plus gel's reserved budget plus what `selection` already carries — is
+  // projected to land inside the band. `izoBandTargetG` is izo's own share of that floor: the floor
+  // in ride-total grams, less what gel and the selection already contribute.
+  const izoBandTargetG = Math.max(
+    0,
+    (COVERAGE_TARGET_PCT / 100) * totalNeedG - gelBudgetG - selectionCarbsG,
+  );
+  // The floor is optimistic (spec's own caveat, carried over from W12): a flask's raw dose budget can
+  // outweigh the WHOLE remaining need on its own (assignCarbs.test.ts's "gel fills the leg izo left
+  // thin" — a 180g flask against an 80g remaining need), and subtracting it whole would zero izo out
+  // even though izo would still be the better home for its own first, natural load — gel's placement
+  // reads `legContribution` precisely so it can spread into whatever izo genuinely doesn't reach, not
+  // so izo pre-emptively hands over legs it was never going to need to. So the target never takes izo
+  // below one load of its own heaviest vessel (capped at what was left after selection, so it still
+  // yields to a selection that already covers the ride outright).
   const izoOneLoadG =
     izoVessels.length > 0
       ? Math.min(carbsFillOf(izoVessels[0], 'izo', gear, mix), afterSelectionG)
       : 0;
-  const vesselTargetG = Math.max(afterGelReservationG, izoOneLoadG);
+  const vesselTargetG = Math.max(izoBandTargetG, izoOneLoadG);
 
   // Task G (W12, 2026-08-25): the target above is a *rationing* device — it only makes sense to stop
   // early when something else (gel, or the leg's own water fallback) can pick up the legs izo leaves
@@ -212,18 +230,33 @@ export function assignCarbs(
   // The leg (strictly before `carbEndKm`) with the largest remaining deficit against
   // `legContribution` — -1 when no leg qualifies at all (route entirely inside C6's gut-drain
   // buffer). Ties favour the earlier leg, matching the round-robin's own left-to-right bias.
-  function pickWorstLeg(): number {
-    let bestIdx = -1;
-    let bestDeficit = -Infinity;
-    skeleton.legs.forEach((leg, i) => {
-      if (leg.fromKm >= carbEndKm - EPS) return;
-      const deficit = leg.carbNeedG - legContribution[i];
-      if (deficit > bestDeficit) {
-        bestDeficit = deficit;
-        bestIdx = i;
-      }
-    });
-    return bestIdx;
+  //
+  // Task 2 (W13, 2026-08-25): `requireFollowingStop` skips the one leg with no stop after it (the
+  // tail leg, index `stops.length`) — tidy's S7 piggyback (`addSpentGelWater`) can only start a
+  // water service at a real stop at/after this vessel's last dose, so dropping a dose into the tail
+  // leg strands the vessel there for good (no stop exists downstream to refill it at). Callers pass
+  // this only for water-capable vessels, where S7 applies. If restricting leaves nothing to pick —
+  // every eligible leg *is* the tail leg, e.g. a route with no real stops at all — falls back to the
+  // unrestricted scan rather than dropping the dose: the piggyback was never going to happen anyway,
+  // and C1 already treats a placed-but-unclaimed dose as waste, not harm.
+  function pickWorstLeg(requireFollowingStop: boolean): number {
+    const scan = (restrict: boolean): number => {
+      let bestIdx = -1;
+      let bestDeficit = -Infinity;
+      skeleton.legs.forEach((leg, i) => {
+        if (leg.fromKm >= carbEndKm - EPS) return;
+        if (restrict && i >= skeleton.stops.length) return;
+        const deficit = leg.carbNeedG - legContribution[i];
+        if (deficit > bestDeficit) {
+          bestDeficit = deficit;
+          bestIdx = i;
+        }
+      });
+      return bestIdx;
+    };
+    if (!requireFollowingStop) return scan(false);
+    const restricted = scan(true);
+    return restricted !== -1 ? restricted : scan(false);
   }
 
   // --- gel: fixed dose budgets that fill whatever izo left uncovered (Ruling B/C, W5c-2) -----------
@@ -232,6 +265,7 @@ export function assignCarbs(
     if (fillG <= 0) continue;
 
     const n = dosesOf(vessel, gear);
+    const waterCapable = vessel.allowed.includes('water'); // Task 2: S7 only piggybacks water here
 
     if (n <= 1) {
       // Trap (spec): with a single dose, `fracFill`'s n<=1 branch ignores `pos` entirely and
@@ -239,7 +273,7 @@ export function assignCarbs(
       // `tidy`'s degenerate-span guard deletes outright. Keeps the pre-W5c-2 continuous model, just
       // starts wherever izo left the largest deficit instead of always at km 0.
       const rate = cph(route);
-      const startIdx = pickWorstLeg();
+      const startIdx = pickWorstLeg(waterCapable);
       if (rate <= 0 || startIdx === -1) continue;
 
       const fromKm = skeleton.legs[startIdx].fromKm;
@@ -271,7 +305,7 @@ export function assignCarbs(
     // same loop, so a later flask's own picks already account for everything placed before it.
     const legIdx: number[] = [];
     for (let k = 0; k < n; k++) {
-      const idx = pickWorstLeg();
+      const idx = pickWorstLeg(waterCapable);
       if (idx === -1) break; // no leg exists before carbEndKm at all — nothing to place
       legIdx.push(idx);
       // Each dose contributes exactly fillG/n to whichever leg its position falls in — `fracFill`'s
