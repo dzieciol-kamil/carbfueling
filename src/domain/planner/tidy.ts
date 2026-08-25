@@ -17,7 +17,7 @@
 import type { DraftFood } from '../autoplan';
 import { minStopX } from '../autoplan';
 import type { MixSettings, PlanState, RouteInput, Vessel } from '../types';
-import { assertInvariantV1 } from './assignWater';
+import { assertInvariantV1, computeCarbDoneAtKm, isEligible } from './assignWater';
 import { deliveredShare } from './deliveredShare';
 import { FLUID_FLOOR_FRACTION, legsForBoundaries } from './skeleton';
 import type { Leg, Service, Skeleton, StopNode } from './types';
@@ -92,9 +92,10 @@ function deliveredMl(leg: Leg, services: Service[], gear: Vessel[], route: Route
 
 /**
  * C. F6: at each stop the plan already makes, if the leg that follows it is under the F1 floor and
- * some water-capable vessel is idle (no service overlapping that leg at all) across it, open that
- * vessel for the leg — free, since the stop is already being made. Narrow by construction: a leg
- * where every water-capable vessel is already busy is a genuine shortfall, left for W5's repair pass.
+ * some water-capable vessel is idle (no service overlapping that leg at all, and no carb duty still
+ * pending on it) across it, open that vessel for the leg — free, since the stop is already being
+ * made. Narrow by construction: a leg where every water-capable vessel is already busy is a genuine
+ * shortfall, left for W5's repair pass.
  */
 function freeTopUps(
   skeleton: Skeleton,
@@ -107,6 +108,12 @@ function freeTopUps(
   const waterVessels = [...gear]
     .filter((v) => v.allowed.includes('water'))
     .sort((a, b) => b.vol - a.vol);
+  // Carbs (izo/gel) don't change across A/B/C, so this is computed once from the input, not per
+  // leg — mirrors `assignWater.ts`'s own `computeCarbDoneAtKm`/`isEligible` (the mid-flight
+  // ruling, generalizing S7 to izo/gel): a vessel with a carb turn still ahead of it — even one
+  // currently sitting in the gap *before* that turn starts — is reserved from km 0 and must not
+  // take water first.
+  const carbDoneAtKm = computeCarbDoneAtKm(services.filter((s) => s.content !== 'water'));
 
   for (let j = 1; j < skeleton.legs.length; j++) {
     const leg = skeleton.legs[j];
@@ -115,13 +122,23 @@ function freeTopUps(
     if (delivered >= floorMl) continue; // already flat — nothing to do
 
     const stopIdx = j - 1; // the stop this leg follows
+    // "Idle" means no km-range overlap at all, not "delivers zero share here": a gel service
+    // doses at discrete points (deliveredShare can be 0 on a leg it merely passes through) but
+    // still occupies its vessel continuously across its whole fromKm–toKm span — that vessel
+    // cannot also take water in the gap. Using deliveredShare>0 here previously let a "gap" leg
+    // inside a live gel span get a fabricated water service, double-booking the vessel and
+    // producing a service that starts before the gel service's own km, which broke V1 by
+    // demoting the gel service out of first-by-fromKm position.
     const busyVesselIds = new Set(
-      combined.filter((s) => deliveredShare(s, leg, gear, route) > 0).map((s) => s.vesselId),
+      combined
+        .filter((s) => Math.min(leg.toKm, s.toKm) > Math.max(leg.fromKm, s.fromKm))
+        .map((s) => s.vesselId),
     );
 
     for (const v of waterVessels) {
       if (delivered >= floorMl) break;
       if (busyVesselIds.has(v.gid)) continue; // not idle across this leg
+      if (!isEligible(v.gid, leg, carbDoneAtKm)) continue; // carb duty still pending ahead
 
       const service: Service = {
         vesselId: v.gid,

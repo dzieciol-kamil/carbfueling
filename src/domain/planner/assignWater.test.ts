@@ -86,7 +86,7 @@ function worstRawFluidPct(state: PlanState): number {
 }
 
 describe('assignWater', () => {
-  test('F4 gate: below the sweat-vs-body-mass threshold, no water services are assigned at all', () => {
+  test("F4 gate: below the sweat-vs-body-mass threshold, no refills are planned but S4's base load still ships", () => {
     // temp=10 (no heat bonus), intensity='low' (iB=0): sweat = round(380/10)*10 = 380 ml/h.
     // distance=5, speed=25 ⇒ hours=0.2 ⇒ sweatLoss=76ml, well under weight(75)*15=1125.
     const route = makeRoute({ distance: 5, speed: 25, intensity: 'low', temp: 10, weight: 75 });
@@ -98,7 +98,11 @@ describe('assignWater', () => {
       shortfall: null,
     };
 
-    expect(assignWater(skeleton, state, [])).toEqual([]);
+    // F4 gates *refill planning*, not the rider's starting bottle (S4) — a single unanchored
+    // service carrying it the whole way, no stop.
+    expect(assignWater(skeleton, state, [])).toEqual([
+      { vesselId: 'g1', fromKm: 0, toKm: 5, content: 'water', filledAtStop: null },
+    ]);
   });
 
   test('one service per leg, anchored per V1: null at the start, the prior stop everywhere else', () => {

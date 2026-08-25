@@ -101,16 +101,41 @@ function precomputeCum(
 }
 
 /**
- * Sum of ALL vessels' capacities — what a leg's fluid rides on (§2.1: no per-service millilitres,
- * but the skeleton's legality test is still a sum of capacities). Deliberately not filtered by
- * `allowed.includes('water')`: `volOf()` (`fuel.ts`) is completely content-blind — a bidon of izo
- * delivers exactly as much fluid as the same bidon of water (§4.1 point 1, "content does not change
- * delivered volume"). An izo-only or gel-only kit is still carrying and delivering fluid the entire
- * time; filtering it out here made L1 see `carryable ≈ 0` for such kits, which blew up the squared
- * `wLoad` term and packed in the maximum number of minimum-spaced stops (W5a §6).
+ * C5's carb time gate, mirrored from `assignCarbs.ts`'s own (unexported) `CARB_MIN_HOURS`, itself
+ * mirroring `autoplan.ts`'s. Below it, `assignCarbs` plans no carbs at all (returns `[]`), so no
+ * vessel is ever committed to gel — every vessel is a fully refillable water/izo bottle as far as
+ * `carryableFluid` is concerned.
  */
-function carryableFluid(gear: Vessel[]): number {
-  return gear.reduce((sum, v) => sum + v.vol, 0);
+const CARB_MIN_HOURS = 1;
+
+/**
+ * Sum of the vessels' capacities L1 can actually count on being refilled leg after leg (§2.1: no
+ * per-service millilitres, but the skeleton's legality test is still a sum of capacities).
+ * Deliberately not filtered by `allowed.includes('water')`: `volOf()` (`fuel.ts`) is completely
+ * content-blind — a bidon of izo delivers exactly as much fluid as the same bidon of water (§4.1
+ * point 1, "content does not change delivered volume"). An izo-only or gel-only kit is still
+ * carrying and delivering fluid the entire time; filtering it out here made L1 see `carryable ≈ 0`
+ * for such kits, which blew up the squared `wLoad` term and packed in the maximum number of
+ * minimum-spaced stops (W5a §6).
+ *
+ * Task C, 2026-08-25: a gel-allowed vessel is not like the others, though. `bucketVessels`
+ * (`autoplan.ts`) always pulls it out of the izo/water pool the moment there is any carb planning
+ * to do (`assignCarbs.ts`), and its one-shot gel dose is never refilled (S2/S4) — it only becomes
+ * water-eligible again after that dose is spent, and only at a stop the plan happens to already
+ * make there (S7, never guaranteed). Counting its full volume as available on EVERY leg, as if it
+ * refilled like the izo bottle does, let L1 under-count how many stops a real ride needs (measured:
+ * golden path, 100km/default gear, landed on 2 stops / 70% hydration where the physics wants 3 /
+ * ~91%, see `docs/superpowers/specs/2026-08-25-w11-measurements.md`). So a gel-allowed vessel's
+ * volume is left out of the leg-by-leg budget — unless it is the only vessel gear has at all, in
+ * which case there is nothing else to carry the ride's fluid and it must still count (the W5a
+ * regression above), or the ride is short enough that C5 means no vessel is ever gel-committed.
+ */
+function carryableFluid(gear: Vessel[], route: RouteInput): number {
+  const nonGel = gear.filter((v) => !v.allowed.includes('gel'));
+  if (nonGel.length === 0 || totalHours(route) < CARB_MIN_HOURS) {
+    return gear.reduce((sum, v) => sum + v.vol, 0);
+  }
+  return nonGel.reduce((sum, v) => sum + v.vol, 0);
 }
 
 interface DPCell {
@@ -250,7 +275,7 @@ export function buildSkeleton(state: PlanState, opts: SkeletonOpts): Skeleton {
   const { route, mix, gear } = state;
   const D = dist(route);
   const K = Math.max(0, Math.floor(opts.minStopsForProducts ?? 0));
-  const carryable = carryableFluid(gear);
+  const carryable = carryableFluid(gear, route);
 
   const nodes = buildNodes(D, opts.riderStops, opts.allowNewStops);
   const nodeKms = nodes.map((node) => node.km);

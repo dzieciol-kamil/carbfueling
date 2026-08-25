@@ -47,7 +47,7 @@ const MAX_SUBSET_VESSELS = 10;
  * point past which it holds no more pending carb duty. A vessel absent from the map never had carb
  * duty and is water-eligible everywhere.
  */
-function computeCarbDoneAtKm(carbs: Service[]): Map<string, number> {
+export function computeCarbDoneAtKm(carbs: Service[]): Map<string, number> {
   const doneAt = new Map<string, number>();
   for (const c of carbs) {
     const cur = doneAt.get(c.vesselId);
@@ -62,7 +62,7 @@ function computeCarbDoneAtKm(carbs: Service[]): Map<string, number> {
  * one currently sitting in a gap between two of its own turns — is not eligible (the mid-flight
  * ruling above); one whose carb duty is entirely in the past is, which is S7 generalized to izo.
  */
-function isEligible(vesselId: string, leg: Leg, carbDoneAtKm: Map<string, number>): boolean {
+export function isEligible(vesselId: string, leg: Leg, carbDoneAtKm: Map<string, number>): boolean {
   const doneAt = carbDoneAtKm.get(vesselId);
   return doneAt === undefined || leg.fromKm >= doneAt - EPS;
 }
@@ -213,16 +213,31 @@ function chooseVesselSet(
  * carried gel or izo earlier and takes water later is one vessel with a two-part history.
  *
  * **F4 gate.** Independent of the carb short-ride gate (C5) — this checks only sweat loss against
- * body mass, never `totalHours`.
+ * body mass, never `totalHours`. Gates *refill planning* only — S4's base load is unconditional: a
+ * rider always leaves home with whatever his water-capable vessels hold, gate or no gate. Below the
+ * gate we skip straight to that single carried-the-whole-way service per vessel instead of running
+ * the per-leg search (whose own floor would come out at zero anyway, since `buildSkeleton` zeroes
+ * the same `sweatLoss`-derived need for a gated ride — so `chooseVesselSet` would otherwise choose
+ * the empty set and silently produce no fill at all, contradicting S4).
  */
 export function assignWater(skeleton: Skeleton, state: PlanState, carbs: Service[]): Service[] {
   const { route, gear } = state;
 
-  const sweatLoss = sweat(route) * totalHours(route);
-  if (sweatLoss < route.weight * HYDRATION_BUFFER_ML_PER_KG) return []; // F4
-
   const waterVessels = [...gear].filter((v) => v.allowed.includes('water'));
   const carbDoneAtKm = computeCarbDoneAtKm(carbs);
+
+  const sweatLoss = sweat(route) * totalHours(route);
+  if (sweatLoss < route.weight * HYDRATION_BUFFER_ML_PER_KG) {
+    // F4 — no refill planning, but every water-capable vessel not committed to carb duty still
+    // leaves home full and carries it the whole way (S4), unanchored (no stop).
+    const D = skeleton.legs[skeleton.legs.length - 1].toKm;
+    const firstLeg = skeleton.legs[0];
+    const services: Service[] = waterVessels
+      .filter((v) => isEligible(v.gid, firstLeg, carbDoneAtKm))
+      .map((v) => ({ vesselId: v.gid, fromKm: 0, toKm: D, content: 'water', filledAtStop: null }));
+    assertInvariantV1([...carbs, ...services], skeleton);
+    return services;
+  }
   const legInfo = computeLegInfo(skeleton, carbs, gear, route);
   const chosenSet = chooseVesselSet(waterVessels, skeleton.legs, legInfo, carbDoneAtKm);
   // Emission order only matters for determinism here (every eligible member is opened regardless of
