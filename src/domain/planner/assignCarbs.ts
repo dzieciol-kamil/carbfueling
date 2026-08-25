@@ -73,9 +73,14 @@ function dosesOf(vessel: Vessel, gear: Vessel[]): number {
  *
  * **The ceiling.** C2 rules out a coverage *threshold*, but not the ride's actual total: pouring in
  * more than `hrs * cph(route)` buys nothing (`coverage()`'s own integral caps benefit at the need
- * rate) and wastes stops. That real total, less what `selection`'s own food items already carry, is
- * the only cap `vesselTargetG` enforces — and only izo's loop checks it (a carried-forward, still-
- * open finding from the W4b review: gel's loop never has, before or after this task).
+ * rate) and wastes stops. That real total, less what `selection`'s own food items already carry and
+ * less gel's own reserved dose budget (Task F, W12 — gel runs second but its budget is known up
+ * front, so izo can reserve room for it instead of spending it), is the cap `vesselTargetG` enforces
+ * — and only izo's loop checks it (gel's loop never has, before or after this task, a carried-forward
+ * still-open finding from the W4b review). That cap is itself only honoured when something else can
+ * still reach the legs it leaves behind (Task G, W12 — see `hasWaterVessel` at the loop below): an
+ * izo-only kit with no water-capable vessel has no fallback, so it keeps relaying past the cap rather
+ * than stranding the tail of the route with neither carbs nor fluid.
  */
 export function assignCarbs(
   skeleton: Skeleton,
@@ -109,10 +114,45 @@ export function assignCarbs(
     if (lib.needsStop && skeleton.stops.length === 0) return a;
     return a + lib.carbs * entry.count;
   }, 0);
+  // Task F (W12, 2026-08-25): reserve gel's own fixed dose budget before izo ever gets a target to
+  // race against. Without this, izo (which runs first, Ruling B) has no idea gel is coming and
+  // spends the WHOLE ride total on itself — gel then adds its full budget on top, and the ride is
+  // over-poured by roughly gel's own share while every leg gel could have owned gets double-filled
+  // instead of a leg izo never reached getting freed for water (§4.1 point 4: the tail carbs don't
+  // claim becomes water's territory for free — that only works if izo actually stops claiming).
+  const gelBudgetG = gelVessels.reduce(
+    (a, v) => a + Math.max(0, carbsFillOf(v, 'gel', gear, mix)),
+    0,
+  );
   // No threshold (C2): this is the ride's honest total, not a discounted badge target. It is still
-  // the physical ceiling past which more vessel-carbs buy nothing — and `selection`'s own carbs
-  // already claim part of it.
-  const vesselTargetG = Math.max(0, totalNeedG - selectionCarbsG);
+  // the physical ceiling past which more vessel-carbs buy nothing — and `selection`'s own carbs and
+  // gel's own reserved budget already claim part of it.
+  const afterSelectionG = Math.max(0, totalNeedG - selectionCarbsG);
+  const afterGelReservationG = Math.max(0, afterSelectionG - gelBudgetG);
+  // The reservation is optimistic (spec's own caveat): a flask's raw dose budget can outweigh the
+  // WHOLE remaining need on its own (assignCarbs.test.ts's "gel fills the leg izo left thin" — a
+  // 180g flask against an 80g remaining need), and subtracting it whole would zero izo out even
+  // though izo would still be the better home for its own first, natural load — gel's placement
+  // reads `legContribution` precisely so it can spread into whatever izo genuinely doesn't reach,
+  // not so izo pre-emptively hands over legs it was never going to need to. So the reservation never
+  // takes izo below one load of its own heaviest vessel (capped at what was left after selection, so
+  // it still yields to a selection that already covers the ride outright).
+  const izoOneLoadG =
+    izoVessels.length > 0
+      ? Math.min(carbsFillOf(izoVessels[0], 'izo', gear, mix), afterSelectionG)
+      : 0;
+  const vesselTargetG = Math.max(afterGelReservationG, izoOneLoadG);
+
+  // Task G (W12, 2026-08-25): the target above is a *rationing* device — it only makes sense to stop
+  // early when something else (gel, or the leg's own water fallback) can pick up the legs izo leaves
+  // behind. An izo-only kit with no water-capable vessel anywhere has no fallback at all: breaking on
+  // `vesselTargetG` there doesn't free a leg for water, it stops the ONLY thing that can ever deliver
+  // fluid to that leg from delivering anything (measured: izo-1, a lone izo-only 650ml bidon on
+  // 60km/8.4% scored 77% coverage because the third leg got zero carbs AND zero water — the vessel
+  // was the sole possible source of both and the target-break silenced it). Over-pouring izo when
+  // there is no fallback is still bounded by C1's own coverage()-caps-benefit rule (waste, not harm),
+  // so it is strictly better than leaving a leg untouched.
+  const hasWaterVessel = gear.some((v) => v.allowed.includes('water'));
 
   const services: Service[] = [];
   const legContribution = new Array<number>(skeleton.legs.length).fill(0);
@@ -130,7 +170,10 @@ export function assignCarbs(
   for (let i = 0; i < skeleton.legs.length && izoVessels.length > 0; i++) {
     const leg = skeleton.legs[i];
     if (leg.fromKm >= carbEndKm - EPS) break; // C6: past the gut-drain buffer
-    if (runningTotal >= vesselTargetG) break; // the ride's real total is already met
+    // the ride's real total is already met — but only a reason to stop if something else can still
+    // reach this leg (Task G above); an izo-only kit keeps relaying past the target instead of
+    // stranding the tail of the route.
+    if (hasWaterVessel && runningTotal >= vesselTargetG) break;
 
     const toKm = Math.min(leg.toKm, carbEndKm);
     if (toKm <= leg.fromKm + EPS) break;
