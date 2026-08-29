@@ -39,7 +39,7 @@ export function MobileChart() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
-  const shops = useAppStore((s) => s.shops);
+  const stops = useAppStore((s) => s.stops);
   const yMode = useAppStore((s) => s.ui.yMode);
   const xUnit = useAppStore((s) => s.ui.xUnit);
   const gpxPeek = useAppStore((s) => s.ui.gpxPeek);
@@ -49,7 +49,7 @@ export function MobileChart() {
   const strings = t(lang);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const planState = { route, mix, gear, fills, foods, foodLib };
+  const planState = { route, mix, gear, fills, foods, foodLib, stops };
   const S = samples(planState);
   const D = dist(route);
   const P = prof(route);
@@ -76,11 +76,11 @@ export function MobileChart() {
   // never puts a non-finite number into an SVG attribute.
   const maxY = Number.isFinite(rawMaxY) && rawMaxY > 0 ? rawMaxY : 10;
 
-  // Shop-stop name chips (foreignObject below) sit at y=2..20 — only reserve
+  // Stop-stop name chips (foreignObject below) sit at y=2..20 — only reserve
   // room for them above the gut lane when a route actually has a stop.
-  const hasShops = shops.length > 0;
-  const GT = hasShops ? 48 : 30;
-  const GUT_TOP = hasShops ? 22 : 4;
+  const hasStops = stops.length > 0;
+  const GT = hasStops ? 48 : 30;
+  const GUT_TOP = hasStops ? 22 : 4;
   const gutPeak = Math.max(GUT_LIMIT * 1.25, ...S.map((p) => p.gut)) * 1.05;
 
   const px = (x: number) => (x / D) * WIDTH;
@@ -300,13 +300,13 @@ export function MobileChart() {
           </>
         )}
 
-        {shops.map((shop) => {
-          const flip = D > 0 && shop.at / D > 0.78;
+        {stops.map((stop) => {
+          const flip = D > 0 && stop.at / D > 0.78;
           return (
-            <g key={'sh' + shop.id}>
+            <g key={'sh' + stop.id}>
               <line
-                x1={px(shop.at)}
-                x2={px(shop.at)}
+                x1={px(stop.at)}
+                x2={px(stop.at)}
                 y1={0}
                 y2={HEIGHT}
                 stroke="#9AA09B"
@@ -314,7 +314,7 @@ export function MobileChart() {
                 vectorEffect="non-scaling-stroke"
               />
               <foreignObject
-                x={flip ? px(shop.at) - 90 : px(shop.at) + 4}
+                x={flip ? px(stop.at) - 90 : px(stop.at) + 4}
                 y={2}
                 width={90}
                 height={18}
@@ -333,7 +333,7 @@ export function MobileChart() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {shop.name}
+                  {stop.name}
                 </div>
               </foreignObject>
             </g>

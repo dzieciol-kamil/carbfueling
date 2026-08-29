@@ -68,7 +68,7 @@ export interface StringTable {
   dragHint: string;
   addFuel: string;
   removeItem?: string;
-  addShopStop: string;
+  addStop: string;
   addFillTo: string;
   emptyLaneHint: string;
   coverage: string;
@@ -176,6 +176,7 @@ export interface StringTable {
   fCarbs: string;
   fMl: string;
   fCont: string;
+  fNeedsStop: string;
   fContHeader: string;
   foodSectionHint: string;
   foodContHint: string;
@@ -214,9 +215,9 @@ export interface StringTable {
   tourAddFillTitle: string;
   tourAddFillBody: string;
   tourAddFillBodyMobile: string;
-  tourAddShopTitle: string;
-  tourAddShopBody: string;
-  tourAddShopBodyMobile: string;
+  tourAddStopTitle: string;
+  tourAddStopBody: string;
+  tourAddStopBodyMobile: string;
   tourClosingTitle: string;
   tourClosingBody: string;
   tourClosingBodyMobile: string;
@@ -257,6 +258,7 @@ export interface StringTable {
   absCapNoteMobile: string;
   gelPartsStepper: string;
   foodStepwise: string;
+  foodNeedsStop: string;
   foodAddProduct: string;
   meWeight: string;
   meApp: string;
@@ -280,11 +282,11 @@ export interface StringTable {
   routeSheetGpxNote: string;
   routeSheetLoadFile: string;
   routeSheetDone: string;
-  shopSheetTitle: string;
-  shopSheetKm: string;
-  shopSheetName: string;
-  shopSheetAdd: string;
-  shopDefaultName: string;
+  stopSheetTitle: string;
+  stopSheetKm: string;
+  stopSheetName: string;
+  stopSheetAdd: string;
+  stopDefaultName: string;
   combineFillCheckbox: string;
   combineSectionTitle: string;
   combineSectionHint: string;
@@ -318,8 +320,51 @@ export interface StringTable {
   importPlanError: string;
   importPlanSuccess: string;
   exportPlanError: string;
+  clearPlanButton: string;
+  clearPlanConfirmTitle: string;
+  clearPlanConfirmBody: string;
+  clearPlanConfirmCancel: string;
+  clearPlanConfirmConfirm: string;
   recoveryLabel: string;
   recoveryHint: string;
+  ceilingLabel: string;
+  ceilingHintCarbsPre: string;
+  ceilingHintCarbsLink: string;
+  ceilingHintCarbsPost: string;
+  ceilingHintHydrationPre: string;
+  ceilingHintHydrationLink: string;
+  ceilingHintHydrationPost: string;
+  autoplanButton: string;
+  autoplanPreflightTitle: string;
+  autoplanPreflightReplaceNote: string;
+  autoplanPreflightConfirm: string;
+  autoplanRouteTitle: string;
+  autoplanElevationLabel: string;
+  autoplanStopsTitle: string;
+  autoplanStopsKeepAndAdd: string;
+  autoplanStopsKeepAndAddHint: string;
+  autoplanStopsKeepOnly: string;
+  autoplanStopsKeepOnlyHint: string;
+  autoplanStopsClear: string;
+  autoplanStopsClearHint: string;
+  autoplanGearTitle: string;
+  autoplanGearHint: string;
+  autoplanGearEditLink: string;
+  autoplanFoodTitle: string;
+  autoplanDialogHint: string;
+  autoplanDialogCountLabel: string;
+  autoplanDialogCancel: string;
+  autoplanPreferenceTitle: string;
+  autoplanPreferenceFewerStops: string;
+  autoplanPreferenceFewerStopsHint: string;
+  autoplanPreferenceBalanced: string;
+  autoplanPreferenceBalancedHint: string;
+  autoplanPreferenceLighter: string;
+  autoplanPreferenceLighterHint: string;
+  autoplanShortRideNote: string;
+  autoplanNeedsDuration: string;
+  autoplanAppliedNote: string;
+  autoplanAppliedDismiss: string;
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -396,7 +441,7 @@ export const STR: Record<Lang, StringTable> = {
       'Paski nie nachodzą na siebie — w ciasnej luce przeciągany pasek się skraca. Kreski porcji żelu przesuwasz osobno.',
     addFuel: 'Dodaj jedzenie:',
     removeItem: 'Usuń',
-    addShopStop: 'Dodaj sklep',
+    addStop: 'Dodaj postój',
     addFillTo: 'Dodaj dolewkę do ',
     emptyLaneHint: 'Kliknij +, żeby dodać dolewkę',
     coverage: 'Pokrycie zapotrzebowania',
@@ -506,6 +551,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'cukry (g)',
     fMl: 'płyn (ml)',
     fCont: 'stopniowo',
+    fNeedsStop: 'na postoju',
     fContHeader: 'uwalnianie',
     foodSectionHint:
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
@@ -576,11 +622,11 @@ export const STR: Record<Lang, StringTable> = {
       'Ten przycisk „+” wstawia kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów pod wykresem dodają kolejne pozycje jednym kliknięciem.',
     tourAddFillBodyMobile:
       'Ten przycisk dodaje kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów niżej dodają kolejne pozycje jednym stuknięciem.',
-    tourAddShopTitle: 'Punkty zaopatrzenia',
-    tourAddShopBody:
-      'Ten „+” dodaje na wykresie znacznik punktu zaopatrzenia (np. sklepu) — możesz przeciągnąć go w dowolne miejsce trasy, żeby zaznaczyć, na którym kilometrze planujesz dokupić jedzenie lub napój.',
-    tourAddShopBodyMobile:
-      'Ten przycisk otwiera formularz punktu zaopatrzenia — wpisujesz kilometr i nazwę (np. sklep), żeby zaznaczyć, gdzie planujesz dokupić jedzenie lub napój.',
+    tourAddStopTitle: 'Postoje na trasie',
+    tourAddStopBody:
+      'Ten „+” dodaje na wykresie znacznik postoju — sklep, źródełko, kran u kumpla — możesz przeciągnąć go w dowolne miejsce trasy, żeby zaznaczyć, na którym kilometrze planujesz uzupełnić jedzenie lub napój.',
+    tourAddStopBodyMobile:
+      'Ten przycisk otwiera formularz postoju — wpisujesz kilometr i nazwę (np. sklep, źródełko), żeby zaznaczyć, gdzie planujesz uzupełnić jedzenie lub napój.',
     tourClosingTitle: 'To wszystko na start',
     tourClosingBody:
       'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Sprzęt, Mieszankę, Produkty i Ustawienia (waga, tryb widoku) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
@@ -634,6 +680,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'Przy tej proporcji limit to {cap} g/h — kropkowana linia na wykresie.',
     gelPartsStepper: 'Liczba porcji żelu',
     foodStepwise: 'stopniowo',
+    foodNeedsStop: 'na postoju',
     foodAddProduct: '+ Dodaj produkt',
     meWeight: 'Waga',
     meApp: 'Aplikacja',
@@ -658,11 +705,11 @@ export const STR: Record<Lang, StringTable> = {
       'Włączony profil zmienia zapotrzebowanie na podjazdach. Ikona oka nad wykresem pokazuje sam profil.',
     routeSheetLoadFile: 'Wczytaj plik',
     routeSheetDone: 'Gotowe',
-    shopSheetTitle: 'PUNKT ORIENTACYJNY',
-    shopSheetKm: 'Kilometr',
-    shopSheetName: 'Nazwa',
-    shopSheetAdd: 'Dodaj',
-    shopDefaultName: 'Sklep',
+    stopSheetTitle: 'POSTÓJ',
+    stopSheetKm: 'Kilometr',
+    stopSheetName: 'Nazwa',
+    stopSheetAdd: 'Dodaj',
+    stopDefaultName: 'Postój',
     combineFillCheckbox: 'Przygotuj razem',
     combineSectionTitle: 'Wspólna porcja',
     combineSectionHint:
@@ -690,21 +737,76 @@ export const STR: Record<Lang, StringTable> = {
     inPlanSuffix: '× w planie',
     planDataSection: 'Dane planu',
     planDataHint:
-      'Zapisz cały plan (trasę, sprzęt, mieszankę, produkty, sklepy) do pliku albo wczytaj wcześniejszą kopię na innym urządzeniu.',
+      'Zapisz cały plan (trasę, sprzęt, mieszankę, produkty, postoje) do pliku albo wczytaj wcześniejszą kopię na innym urządzeniu.',
     exportPlanButton: 'Pobierz plan',
     importPlanButton: 'Załaduj plan',
     importPlanConfirmTitle: 'Zastąpić bieżący plan?',
     importPlanConfirmBody:
-      'Import nadpisze Twoją aktualną trasę, sprzęt, mieszankę, produkty i sklepy danymi z pliku. Tej zmiany nie da się cofnąć.',
+      'Import nadpisze Twoją aktualną trasę, sprzęt, mieszankę, produkty i postoje danymi z pliku. Tej zmiany nie da się cofnąć.',
     importPlanConfirmCancel: 'Anuluj',
     importPlanConfirmConfirm: 'Importuj',
     importPlanError:
       'Nie udało się wczytać pliku — sprawdź, czy to poprawny eksport planu z Carb Fueling.',
     importPlanSuccess: 'Plan zaimportowany.',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
+    clearPlanButton: 'Od nowa',
+    clearPlanConfirmTitle: 'Zacząć od nowa?',
+    clearPlanConfirmBody:
+      'Usunie napełnienia, produkty i postoje z trasy. Trasa, sprzęt i mieszanka zostają bez zmian. Tej zmiany nie da się cofnąć.',
+    clearPlanConfirmCancel: 'Anuluj',
+    clearPlanConfirmConfirm: 'Zacznij od nowa',
     recoveryLabel: 'Regeneracja',
     recoveryHint:
-      'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
+      'Ilość węglowodanów, którą należy spożyć po wysiłku, aby uzupełnić glikogen mięśniowy.',
+    ceilingLabel: 'maks.',
+    ceilingHintCarbsPre:
+      'Na trasie o tych parametrach nie da się przyjąć więcej węglowodanów, niezależnie od planu — to fizyczny ',
+    ceilingHintCarbsLink: 'sufit wchłaniania',
+    ceilingHintCarbsPost: ' żołądka.',
+    ceilingHintHydrationPre:
+      'Na trasie o tych parametrach nie da się przyjąć więcej płynów, niezależnie od planu — to fizyczny ',
+    ceilingHintHydrationLink: 'sufit wchłaniania',
+    ceilingHintHydrationPost: ' żołądka.',
+    autoplanButton: 'Zaproponuj plan',
+    autoplanPreflightTitle: 'Zanim ułożę plan',
+    autoplanPreflightReplaceNote:
+      'To nadpisze obecne napełnienia i produkty na trasie nową propozycją.',
+    autoplanPreflightConfirm: 'Ułóż plan',
+    autoplanRouteTitle: 'Trasa i warunki',
+    autoplanElevationLabel: 'Przewyższenie',
+    autoplanStopsTitle: 'Twoje stopy',
+    autoplanStopsKeepAndAdd: 'Dołóż',
+    autoplanStopsKeepAndAddHint:
+      'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
+    autoplanStopsKeepOnly: 'Tylko moje',
+    autoplanStopsKeepOnlyHint:
+      'Sprawdzimy, czy dasz radę na stopach, które już znasz — jeśli nie, zobaczysz brakującą ilość zamiast nowego stopu.',
+    autoplanStopsClear: 'Od nowa',
+    autoplanStopsClearHint:
+      'Usuniemy Twoje stopy i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
+    autoplanGearTitle: 'Sprzęt, który zabierasz',
+    autoplanGearHint:
+      'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
+    autoplanGearEditLink: 'Edytuj sprzęt',
+    autoplanFoodTitle: 'Produkty',
+    autoplanDialogHint:
+      'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
+    autoplanDialogCountLabel: 'Ile sztuk',
+    autoplanDialogCancel: 'Anuluj',
+    autoplanPreferenceTitle: 'Co wolisz',
+    autoplanPreferenceFewerStops: 'Mniej stopów',
+    autoplanPreferenceFewerStopsHint:
+      'Wolisz rzadziej się zatrzymywać, nawet jeśli oznacza to więcej do niesienia między stopami.',
+    autoplanPreferenceBalanced: 'Zrównoważony',
+    autoplanPreferenceBalancedHint:
+      'Równowaga między liczbą stopów a tym, ile niesiesz — bez skrajności w żadną stronę.',
+    autoplanPreferenceLighter: 'Mniej bagażu',
+    autoplanPreferenceLighterHint: 'Wolisz nieść mniej, nawet jeśli oznacza to częstsze stopy.',
+    autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
+    autoplanShortRideNote:
+      'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
+    autoplanAppliedNote: 'To propozycja bazowa — dostosuj do własnych doświadczeń i preferencji.',
+    autoplanAppliedDismiss: 'OK',
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -778,7 +880,7 @@ export const STR: Record<Lang, StringTable> = {
       'Bars never overlap — a dragged bar shortens to fit a tight gap. Gel portion marks drag on their own.',
     addFuel: 'Add food:',
     removeItem: 'Remove',
-    addShopStop: 'Add shop stop',
+    addStop: 'Add stop',
     addFillTo: 'Add a fill to ',
     emptyLaneHint: 'Click + to add a fill',
     coverage: 'Requirement covered',
@@ -888,6 +990,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'carbs (g)',
     fMl: 'fluid (ml)',
     fCont: 'over time',
+    fNeedsStop: 'at a stop',
     fContHeader: 'release',
     foodSectionHint:
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
@@ -957,11 +1060,11 @@ export const STR: Record<Lang, StringTable> = {
       'This "+" button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same idea applies to food: the product buttons under the chart add another item with one click.',
     tourAddFillBodyMobile:
       'This button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same applies to food: the product buttons further down add another item with one tap.',
-    tourAddShopTitle: 'Resupply points',
-    tourAddShopBody:
-      'This "+" adds a resupply marker on the chart (e.g. a shop) — drag it anywhere on the route to mark which kilometer you plan to buy more food or drink at.',
-    tourAddShopBodyMobile:
-      'This button opens a small form for a resupply point — enter the kilometer and a name (e.g. a shop) to mark where you plan to buy more food or drink.',
+    tourAddStopTitle: 'Stops along the route',
+    tourAddStopBody:
+      'This "+" adds a stop marker on the chart — a shop, a spring, a friend with a hose — drag it anywhere on the route to mark which kilometer you plan to restock food or drink at.',
+    tourAddStopBodyMobile:
+      'This button opens a small form for a stop — enter the kilometer and a name (e.g. a shop, a spring) to mark where you plan to restock food or drink.',
     tourClosingTitle: "That's the essentials",
     tourClosingBody:
       "Recipes for topping up the bottles and fills you've added are under the chart. Gear, Mix, Products and Settings (weight, view mode) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
@@ -1013,6 +1116,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'At this ratio the limit is {cap} g/h — the dotted line on the chart.',
     gelPartsStepper: 'Gel portions per fill',
     foodStepwise: 'over time',
+    foodNeedsStop: 'at a stop',
     foodAddProduct: '+ Add product',
     meWeight: 'Weight',
     meApp: 'App',
@@ -1037,11 +1141,11 @@ export const STR: Record<Lang, StringTable> = {
       'An enabled profile changes the requirement on climbs. The eye icon above the chart shows the profile itself.',
     routeSheetLoadFile: 'Load file',
     routeSheetDone: 'Done',
-    shopSheetTitle: 'LANDMARK',
-    shopSheetKm: 'Kilometer',
-    shopSheetName: 'Name',
-    shopSheetAdd: 'Add',
-    shopDefaultName: 'Shop',
+    stopSheetTitle: 'STOP',
+    stopSheetKm: 'Kilometer',
+    stopSheetName: 'Name',
+    stopSheetAdd: 'Add',
+    stopDefaultName: 'Stop',
     combineFillCheckbox: 'Prepare together',
     combineSectionTitle: 'Combined batch',
     combineSectionHint:
@@ -1069,20 +1173,76 @@ export const STR: Record<Lang, StringTable> = {
     inPlanSuffix: '× in plan',
     planDataSection: 'Plan data',
     planDataHint:
-      'Save your whole plan (route, gear, mix, products, shops) to a file, or load a backup on another device.',
+      'Save your whole plan (route, gear, mix, products, stops) to a file, or load a backup on another device.',
     exportPlanButton: 'Download plan',
     importPlanButton: 'Load plan',
     importPlanConfirmTitle: 'Replace your current plan?',
     importPlanConfirmBody:
-      "Importing will overwrite your current route, gear, mix, products and shops with the file's data. This can't be undone.",
+      "Importing will overwrite your current route, gear, mix, products and stops with the file's data. This can't be undone.",
     importPlanConfirmCancel: 'Cancel',
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
     exportPlanError: 'Could not save the file. Please try again.',
+    clearPlanButton: 'Start over',
+    clearPlanConfirmTitle: 'Start over?',
+    clearPlanConfirmBody:
+      "This removes fills, food and stops from your route. Your route, gear and mix stay as they are. This can't be undone.",
+    clearPlanConfirmCancel: 'Cancel',
+    clearPlanConfirmConfirm: 'Start over',
     recoveryLabel: 'Recovery',
     recoveryHint:
-      'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
+      'The amount of carbohydrates you should consume after exercise to replenish muscle glycogen.',
+    ceilingLabel: 'max.',
+    ceilingHintCarbsPre:
+      "On a route with these parameters you cannot take in more carbs, whatever the plan — it's a physical ",
+    ceilingHintCarbsLink: 'absorption ceiling',
+    ceilingHintCarbsPost: ' of the gut.',
+    ceilingHintHydrationPre:
+      "On a route with these parameters you cannot take in more fluid, whatever the plan — it's a physical ",
+    ceilingHintHydrationLink: 'absorption ceiling',
+    ceilingHintHydrationPost: ' of the gut.',
+    autoplanButton: 'Suggest a plan',
+    autoplanPreflightTitle: 'Before I build the plan',
+    autoplanPreflightReplaceNote:
+      'This will overwrite your current fills and food with a new suggestion.',
+    autoplanPreflightConfirm: 'Build the plan',
+    autoplanRouteTitle: 'Route & conditions',
+    autoplanElevationLabel: 'Elevation',
+    autoplanStopsTitle: 'Your stops',
+    autoplanStopsKeepAndAdd: 'Add more',
+    autoplanStopsKeepAndAddHint:
+      'Your stops stay, and new ones only appear where the ride genuinely needs them.',
+    autoplanStopsKeepOnly: 'Only mine',
+    autoplanStopsKeepOnlyHint:
+      "We'll check whether you can fuel the ride on the stops you already know — if not, you'll see the shortfall instead of a new stop.",
+    autoplanStopsClear: 'From scratch',
+    autoplanStopsClearHint:
+      "We'll clear your stops and plan the route from zero, as if none existed.",
+    autoplanGearTitle: "Gear you're taking",
+    autoplanGearHint:
+      "Uncheck anything you're not carrying today — for this plan only, it won't change your saved gear.",
+    autoplanGearEditLink: 'Edit gear',
+    autoplanFoodTitle: 'Food',
+    autoplanDialogHint:
+      "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
+    autoplanDialogCountLabel: 'Count',
+    autoplanDialogCancel: 'Cancel',
+    autoplanPreferenceTitle: 'What you prefer',
+    autoplanPreferenceFewerStops: 'Fewer stops',
+    autoplanPreferenceFewerStopsHint:
+      "You'd rather stop less often, even if it means carrying more between stops.",
+    autoplanPreferenceBalanced: 'Balanced',
+    autoplanPreferenceBalancedHint:
+      'A balance between how often you stop and how much you carry — no extreme either way.',
+    autoplanPreferenceLighter: 'Less to carry',
+    autoplanPreferenceLighterHint: "You'd rather carry less, even if it means stopping more often.",
+    autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
+    autoplanShortRideNote:
+      "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",
+    autoplanAppliedNote:
+      'This is a starting suggestion — adjust it to your own experience and preferences.',
+    autoplanAppliedDismiss: 'OK',
   },
 };
 

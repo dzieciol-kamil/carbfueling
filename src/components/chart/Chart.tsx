@@ -47,6 +47,7 @@ export function Chart({ height, showAxis }: ChartProps) {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
+  const stops = useAppStore((s) => s.stops);
   const yMode = useAppStore((s) => s.ui.yMode);
   const xUnit = useAppStore((s) => s.ui.xUnit);
   const hoverKey = useAppStore((s) => s.ui.hoverKey);
@@ -57,7 +58,7 @@ export function Chart({ height, showAxis }: ChartProps) {
   const strings = t(lang);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const planState = { route, mix, gear, fills, foods, foodLib };
+  const planState = { route, mix, gear, fills, foods, foodLib, stops };
   const S = samples(planState);
   const D = dist(route);
   const P = prof(route);

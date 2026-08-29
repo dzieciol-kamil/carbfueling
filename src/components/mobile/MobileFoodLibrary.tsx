@@ -26,6 +26,23 @@ const fieldBoxStyle: CSSProperties = {
   background: '#fff',
   height: 44,
 };
+// The two per-product switches sit on their own row: at phone width there is no room for them
+// beside the number fields without squeezing those down to a couple of digits.
+function toggleStyle(active: boolean): CSSProperties {
+  return {
+    flex: '1 1 0',
+    height: 40,
+    padding: '0 8px',
+    borderRadius: 10,
+    border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
+    background: active ? 'var(--ink)' : '#fff',
+    color: active ? '#fff' : 'var(--muted-2)',
+    fontFamily: 'Archivo, sans-serif',
+    fontSize: 10,
+    fontWeight: 700,
+    cursor: 'pointer',
+  };
+}
 const numberInputStyle: CSSProperties = {
   width: '100%',
   border: 'none',
@@ -143,26 +160,6 @@ export function MobileFoodLibrary() {
                 </label>
                 <button
                   type="button"
-                  onClick={() =>
-                    updateFoodLibEntry(entry.key, { cont: !entry.cont, span: entry.span || 18 })
-                  }
-                  style={{
-                    flex: '0 0 auto',
-                    height: 44,
-                    padding: '0 10px',
-                    borderRadius: 10,
-                    border: '1px solid ' + (entry.cont ? 'var(--ink)' : 'var(--chip-border)'),
-                    background: entry.cont ? 'var(--ink)' : '#fff',
-                    color: entry.cont ? '#fff' : 'var(--muted-2)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {strings.foodStepwise}
-                </button>
-                <button
-                  type="button"
                   onClick={() => removeFoodLibEntry(entry.key)}
                   style={{
                     flex: '0 0 34px',
@@ -176,6 +173,24 @@ export function MobileFoodLibrary() {
                   }}
                 >
                   ✕
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateFoodLibEntry(entry.key, { cont: !entry.cont, span: entry.span || 18 })
+                  }
+                  style={toggleStyle(!!entry.cont)}
+                >
+                  {strings.foodStepwise}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateFoodLibEntry(entry.key, { needsStop: !entry.needsStop })}
+                  style={toggleStyle(!!entry.needsStop)}
+                >
+                  {strings.foodNeedsStop}
                 </button>
               </div>
             </div>

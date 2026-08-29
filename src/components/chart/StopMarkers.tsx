@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { createShopDragHandler, stopPointerDown } from '../lanes/dragHandlers';
+import { createStopDragHandler, stopPointerDown } from '../lanes/dragHandlers';
 import { fmtX } from '../../domain/fuel';
 import type { RouteInput, XUnit } from '../../domain/types';
 import { t } from '../../i18n/strings';
@@ -9,7 +9,7 @@ import { CHART_COLORS } from './theme';
 const PIN_W = 16;
 const PIN_H = 18;
 
-interface ShopMarkersProps {
+interface StopMarkersProps {
   distanceKm: number;
   height: number;
   bottomPadding: number;
@@ -74,7 +74,7 @@ function nameInputStyle(show: boolean): CSSProperties {
 // While dragging, the current km/time reading is shown beside the pin's round head, not above
 // it — an above position would sit right on top of the chart's legend row (Wchłonięte /
 // Zapotrzebowanie / Limit wchłaniania), obscuring it. Flips to the left near the end of the
-// route so the label doesn't run off the chart's right edge, mirroring MobileChart.tsx's shop
+// route so the label doesn't run off the chart's right edge, mirroring MobileChart.tsx's stop
 // label, which already does the same beside-not-above placement.
 function dragLabelStyle(flip: boolean): CSSProperties {
   return {
@@ -116,29 +116,29 @@ function removeButtonStyle(show: boolean): CSSProperties {
   };
 }
 
-export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }: ShopMarkersProps) {
-  const shops = useAppStore((s) => s.shops);
+export function StopMarkers({ distanceKm, height, bottomPadding, route, xUnit }: StopMarkersProps) {
+  const stops = useAppStore((s) => s.stops);
   const hoverKey = useAppStore((s) => s.ui.hoverKey);
   const dragKey = useAppStore((s) => s.ui.dragKey);
   const lang = useAppStore((s) => s.ui.lang);
   const setHoverKey = useAppStore((s) => s.setHoverKey);
-  const removeShop = useAppStore((s) => s.removeShop);
-  const updateShop = useAppStore((s) => s.updateShop);
+  const removeStop = useAppStore((s) => s.removeStop);
+  const updateStop = useAppStore((s) => s.updateStop);
   const strings = t(lang);
 
   return (
     <>
-      {shops.map((shop) => {
-        const key = 's' + shop.id;
+      {stops.map((stop) => {
+        const key = 's' + stop.id;
         const on = hoverKey === key;
         const dragging = dragKey === key;
-        const leftPct = (shop.at / distanceKm) * 100;
+        const leftPct = (stop.at / distanceKm) * 100;
         const flip = leftPct > 82;
         return (
-          <div key={shop.id} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <div key={stop.id} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
             <div style={lineStyle(leftPct, height, bottomPadding, on || dragging)} />
             <div
-              onPointerDown={createShopDragHandler(shop.id)}
+              onPointerDown={createStopDragHandler(stop.id)}
               onPointerEnter={() => setHoverKey(key)}
               onPointerLeave={() => setHoverKey(null)}
               style={pinButtonStyle(leftPct)}
@@ -156,7 +156,7 @@ export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }:
                 />
               </svg>
               <button
-                onClick={() => removeShop(shop.id)}
+                onClick={() => removeStop(stop.id)}
                 onPointerDown={stopPointerDown}
                 title={strings.removeItem}
                 style={removeButtonStyle(on && !dragging)}
@@ -165,11 +165,11 @@ export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }:
               </button>
               <input
                 type="text"
-                value={shop.name}
+                value={stop.name}
                 maxLength={10}
-                aria-label={strings.shopSheetName}
-                placeholder={strings.shopDefaultName}
-                onChange={(e) => updateShop(shop.id, { name: e.target.value })}
+                aria-label={strings.stopSheetName}
+                placeholder={strings.stopDefaultName}
+                onChange={(e) => updateStop(stop.id, { name: e.target.value })}
                 onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
@@ -177,7 +177,7 @@ export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }:
                 style={nameInputStyle(on && !dragging)}
               />
               {dragging && (
-                <span style={dragLabelStyle(flip)}>{fmtX(shop.at, true, route, xUnit)}</span>
+                <span style={dragLabelStyle(flip)}>{fmtX(stop.at, true, route, xUnit)}</span>
               )}
             </div>
           </div>

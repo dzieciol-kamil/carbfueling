@@ -24,12 +24,12 @@ function route(overrides: Partial<RouteInput> = {}): RouteInput {
 }
 
 describe('hasPlanData', () => {
-  test('false when route, fills, foods and shops are all default/empty', () => {
-    expect(hasPlanData({ route: route(), fills: [], foods: [], shops: [] })).toBe(false);
+  test('false when route, fills, foods and stops are all default/empty', () => {
+    expect(hasPlanData({ route: route(), fills: [], foods: [], stops: [] })).toBe(false);
   });
 
   test('true once the route has a distance', () => {
-    expect(hasPlanData({ route: route({ distance: 50 }), fills: [], foods: [], shops: [] })).toBe(
+    expect(hasPlanData({ route: route({ distance: 50 }), fills: [], foods: [], stops: [] })).toBe(
       true,
     );
   });
@@ -40,18 +40,18 @@ describe('hasPlanData', () => {
         route: route(),
         fills: [{ fid: 1, gid: 'g1', content: 'izo', from: 0, to: 10 }],
         foods: [],
-        shops: [],
+        stops: [],
       }),
     ).toBe(true);
   });
 
-  test('true once a shop stop exists', () => {
+  test('true once a stop stop exists', () => {
     expect(
       hasPlanData({
         route: route(),
         fills: [],
         foods: [],
-        shops: [{ id: 1, at: 40, name: 'Shop' }],
+        stops: [{ id: 1, at: 40, name: 'Stop' }],
       }),
     ).toBe(true);
   });
@@ -114,18 +114,18 @@ describe('setDistance (live typing) vs reconcilePlan (commit)', () => {
     expect(useAppStore.getState().fills[0]).toMatchObject({ from: 30, to: 50 });
   });
 
-  test('reconcilePlan pulls a food marker and a shop stop back too', () => {
+  test('reconcilePlan pulls a food marker and a stop stop back too', () => {
     useAppStore.setState({
       route: route({ distance: 100 }),
       foods: [{ id: 1, key: 'gel', name: 'Gel', carbs: 25, from: 80, to: 80 }],
-      shops: [{ id: 1, at: 95, name: 'Shop' }],
+      stops: [{ id: 1, at: 95, name: 'Stop' }],
     });
     useAppStore.getState().setDistance(50);
     useAppStore.getState().reconcilePlan();
     const s = useAppStore.getState();
     expect(s.foods[0].from).toBeLessThanOrEqual(50);
     expect(s.foods[0].to).toBeLessThanOrEqual(50);
-    expect(s.shops[0].at).toBeLessThanOrEqual(50);
+    expect(s.stops[0].at).toBeLessThanOrEqual(50);
   });
 
   test('reconcilePlan leaves items untouched when the distance still fits them', () => {
@@ -191,12 +191,262 @@ describe('loadTourDemoData', () => {
     expect(s.fills[0].fid).toBe(s.ui.tourDemoFid);
   });
 
-  test('clears pre-existing foods and shops, not just fills', () => {
-    useAppStore.getState().addShop();
+  test('clears pre-existing foods and stops, not just fills', () => {
+    useAppStore.getState().addStop();
     useAppStore.getState().loadTourDemoData();
     const s = useAppStore.getState();
-    expect(s.shops).toHaveLength(0);
+    expect(s.stops).toHaveLength(0);
     expect(s.foods).toHaveLength(0);
+  });
+});
+
+describe('applyAutoplan', () => {
+  test('replaces fills/foods, appends new stops, and advances the fid/stop id counters', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [{ fid: 999, gid: 'g1', content: 'water', from: 0, to: 10 }],
+      foods: [],
+      stops: [{ id: 1, at: 5, name: 'Existing' }],
+    });
+    const before = useAppStore.getState();
+    const beforeFid = before.nextFid;
+    const beforeStopId = before.nextStopId;
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    const after = useAppStore.getState();
+    expect(after.fills.every((f) => f.fid >= beforeFid)).toBe(true);
+    expect(after.fills.some((f) => f.fid === 999)).toBe(false); // old fill replaced
+    expect(after.stops.some((s) => s.id === 1 && s.name === 'Existing')).toBe(true); // preserved
+    expect(after.nextFid).toBeGreaterThan(beforeFid);
+    if (after.stops.length > before.stops.length) {
+      expect(after.nextStopId).toBeGreaterThan(beforeStopId);
+    }
+  });
+
+  /**
+   * Every fill in the plan is replaced, so anything pointing at a fill by id is pointing at
+   * nothing. `combinedFillIds` is the rider's "I'll prepare these two together" batch in Recipes:
+   * left behind, it resolves to zero fills and the block disappears from the page without a word,
+   * while the dead ids sit in localStorage forever. The transient hover/drag/selection keys are
+   * the same story — they name a fill that no longer exists.
+   */
+  test('drops the pointers into the plan it just replaced', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [
+        { fid: 901, gid: 'g1', content: 'izo', from: 0, to: 50 },
+        { fid: 902, gid: 'g2', content: 'water', from: 0, to: 50 },
+      ],
+      foods: [],
+      stops: [],
+      combinedFillIds: [901, 902],
+      ui: { ...useAppStore.getState().ui, selKey: 'f901', hoverKey: 'f902', dragKey: 'f901' },
+    });
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    const after = useAppStore.getState();
+    expect(after.combinedFillIds).toEqual([]);
+    expect(after.ui.selKey).toBeNull();
+    expect(after.ui.hoverKey).toBeNull();
+    expect(after.ui.dragKey).toBeNull();
+  });
+
+  /**
+   * On a phone the button lives in the shared header, so it fires from Gear, Mix, Food or Me just
+   * as readily as from the plan. The rider then gets a toast telling him a plan was made, on a
+   * screen showing none of it.
+   */
+  test('brings the rider to the plan it just made', () => {
+    useAppStore.setState({
+      route: route({ distance: 120, speed: 25 }),
+      fills: [],
+      foods: [],
+      stops: [],
+      ui: { ...useAppStore.getState().ui, tab: 'gear' },
+    });
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    expect(useAppStore.getState().ui.tab).toBe('plan');
+  });
+
+  test('resolves food names from foodLib in the current UI language and advances nextFoodId', () => {
+    useAppStore.setState({
+      route: route({ distance: 100, speed: 25 }),
+      gear: [], // no vessels => no bottle carbs, forcing the whole target onto food
+      foods: [],
+      ui: { ...useAppStore.getState().ui, lang: 'pl' },
+    });
+    const beforeFoodId = useAppStore.getState().nextFoodId;
+
+    useAppStore.getState().applyAutoplan([{ key: 'gel', count: 5 }], false);
+
+    const after = useAppStore.getState();
+    expect(after.foods.length).toBeGreaterThan(0);
+    expect(after.foods.every((f) => f.name === 'Żel energetyczny')).toBe(true);
+    expect(after.foods.every((f) => f.id >= beforeFoodId)).toBe(true);
+    expect(after.nextFoodId).toBeGreaterThan(beforeFoodId);
+  });
+
+  test('tags newly created stops as autoCreated', () => {
+    useAppStore.setState({
+      route: route({ distance: 300, speed: 25 }),
+      fills: [],
+      foods: [],
+      stops: [],
+    });
+
+    useAppStore.getState().applyAutoplan([], false);
+
+    const after = useAppStore.getState();
+    expect(after.stops.length).toBeGreaterThan(0);
+    expect(after.stops.every((s) => s.autoCreated === true)).toBe(true);
+  });
+
+  describe('removePreviousAutoStops toggle', () => {
+    // A manual stop id far outside the auto-assigned range (which starts at nextStopId, here
+    // 501) so it can never collide with an id the store hands out to an autoplan-created stop.
+    function setupWithAutoStopsAndOneManualStop() {
+      useAppStore.setState({
+        route: route({ distance: 300, speed: 25 }),
+        fills: [],
+        foods: [],
+        stops: [{ id: 1, at: 40, name: 'Manual stop' }],
+        nextStopId: 501,
+      });
+      // First run creates at least one autoCreated stop to build on top of.
+      useAppStore.getState().applyAutoplan([], false);
+      const s = useAppStore.getState();
+      expect(s.stops.some((sh) => sh.autoCreated)).toBe(true);
+      expect(s.stops.some((sh) => sh.id === 1 && sh.name === 'Manual stop')).toBe(true);
+    }
+
+    test('false: a second run keeps prior autoplan stops and adds the new ones', () => {
+      setupWithAutoStopsAndOneManualStop();
+      const before = useAppStore.getState();
+      const priorAutoStopIds = before.stops.filter((sh) => sh.autoCreated).map((sh) => sh.id);
+
+      // Grow the route so the second run needs refill points beyond what the first run's
+      // stops already cover — otherwise planIzoRefills would legitimately reuse the existing
+      // stops and add none, which wouldn't exercise the "adds new ones" half of this test.
+      useAppStore.setState({ route: route({ distance: 600, speed: 25 }) });
+      useAppStore.getState().applyAutoplan([], false);
+
+      const after = useAppStore.getState();
+      expect(after.stops.some((sh) => sh.id === 1 && sh.name === 'Manual stop')).toBe(true);
+      for (const id of priorAutoStopIds) {
+        expect(after.stops.some((sh) => sh.id === id)).toBe(true);
+      }
+      expect(after.stops.filter((sh) => sh.autoCreated).length).toBeGreaterThan(
+        priorAutoStopIds.length,
+      );
+    });
+
+    test('true: a second run removes prior autoplan stops but never a manually-added one', () => {
+      setupWithAutoStopsAndOneManualStop();
+      const before = useAppStore.getState();
+      const priorAutoStopIds = before.stops.filter((sh) => sh.autoCreated).map((sh) => sh.id);
+      expect(priorAutoStopIds.length).toBeGreaterThan(0);
+
+      useAppStore.getState().applyAutoplan([], true);
+
+      const after = useAppStore.getState();
+      expect(after.stops.some((sh) => sh.id === 1 && sh.name === 'Manual stop')).toBe(true);
+      for (const id of priorAutoStopIds) {
+        expect(after.stops.some((sh) => sh.id === id)).toBe(false);
+      }
+      // The new run still needs stops at the same route positions, so it recreates them
+      // (fresh ids) rather than leaving the rider with none.
+      expect(after.stops.some((sh) => sh.autoCreated)).toBe(true);
+    });
+
+    /**
+     * A suggestion the rider edits stops being a suggestion.
+     *
+     * Autoplan guesses a kilometre; the rider drags it onto the shop he knows is there and types
+     * its name. From then on it is his, and the cleanup that clears "previously suggested stops"
+     * — pre-ticked in the dialog — has no business deleting it.
+     */
+    test('a stop the rider renames or moves stops counting as autoplan’s', () => {
+      useAppStore.setState({
+        stops: [
+          { id: 1, at: 40, name: 'Postój', autoCreated: true },
+          { id: 2, at: 80, name: 'Postój', autoCreated: true },
+        ],
+      });
+
+      useAppStore.getState().updateStop(1, { name: 'Żabka za mostem' });
+      useAppStore.getState().updateStop(2, { at: 83 });
+
+      const after = useAppStore.getState();
+      expect(after.stops.find((sh) => sh.id === 1)?.autoCreated).toBeFalsy();
+      expect(after.stops.find((sh) => sh.id === 2)?.autoCreated).toBeFalsy();
+    });
+
+    test('an adopted stop survives the cleanup that wipes the rest', () => {
+      setupWithAutoStopsAndOneManualStop();
+      const adopted = useAppStore.getState().stops.find((sh) => sh.autoCreated)!;
+      useAppStore.getState().updateStop(adopted.id, { name: 'Źródełko' });
+
+      useAppStore.getState().applyAutoplan([], true);
+
+      const after = useAppStore.getState();
+      expect(after.stops.some((sh) => sh.id === adopted.id && sh.name === 'Źródełko')).toBe(true);
+    });
+  });
+
+  /**
+   * `options` (autoplanOptions.ts) is what the pre-flight modal collects. Every call above omits
+   * it and still gets today's behavior via the default parameter — these cover the two things it
+   * newly lets the caller do: drop the rider's own stops too, and leave a vessel home for the run.
+   */
+  describe('options', () => {
+    test("stopsMode 'clear' drops the rider's own stops, not just autoplan's prior guesses", () => {
+      useAppStore.setState({
+        route: route({ distance: 300, speed: 25 }),
+        fills: [],
+        foods: [],
+        // An id far outside the auto-assigned range (which starts at nextStopId, here 501) so a
+        // freshly created stop can never collide with it by coincidence.
+        stops: [{ id: 1, at: 40, name: 'Manual stop' }],
+        nextStopId: 501,
+      });
+
+      useAppStore.getState().applyAutoplan([], true, {
+        stopsMode: 'clear',
+        carriedVesselGids: null,
+        preference: 'balanced',
+      });
+
+      const after = useAppStore.getState();
+      expect(after.stops.some((sh) => sh.id === 1 || sh.name === 'Manual stop')).toBe(false);
+    });
+
+    test('carriedVesselGids keeps an unchecked vessel out of the run without touching saved gear', () => {
+      useAppStore.setState({
+        route: route({ distance: 200, speed: 25 }),
+        gear: [
+          { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
+          { gid: 'g2', name: 'Flask', vol: 250, allowed: ['izo', 'water', 'gel'], gelParts: 4 },
+        ],
+        fills: [],
+        foods: [],
+        stops: [],
+      });
+
+      useAppStore.getState().applyAutoplan([], true, {
+        stopsMode: 'keepAndAdd',
+        carriedVesselGids: ['g1'],
+        preference: 'balanced',
+      });
+
+      const after = useAppStore.getState();
+      expect(after.fills.every((f) => f.gid !== 'g2')).toBe(true);
+      // Left home for this run only — the saved gear list itself is untouched.
+      expect(after.gear.map((g) => g.gid)).toEqual(['g1', 'g2']);
+    });
   });
 });
 
@@ -233,13 +483,13 @@ describe('mobile ui state', () => {
     expect(useAppStore.getState().ui.routeSheet).toBe(false);
   });
 
-  test('shop sheet opens with an edit target and closes to null', () => {
-    useAppStore.getState().openShopSheet(7);
-    expect(useAppStore.getState().ui.shopSheet).toEqual({ editId: 7 });
-    useAppStore.getState().openShopSheet(null);
-    expect(useAppStore.getState().ui.shopSheet).toEqual({ editId: null });
-    useAppStore.getState().closeShopSheet();
-    expect(useAppStore.getState().ui.shopSheet).toBeNull();
+  test('stop sheet opens with an edit target and closes to null', () => {
+    useAppStore.getState().openStopSheet(7);
+    expect(useAppStore.getState().ui.stopSheet).toEqual({ editId: 7 });
+    useAppStore.getState().openStopSheet(null);
+    expect(useAppStore.getState().ui.stopSheet).toEqual({ editId: null });
+    useAppStore.getState().closeStopSheet();
+    expect(useAppStore.getState().ui.stopSheet).toBeNull();
   });
 });
 
@@ -507,6 +757,147 @@ describe('persisted mix merge', () => {
   });
 });
 
+/**
+ * The word changed; the rider's data must not.
+ *
+ * A marker on the route is a stop — a shop is only one thing it can be — so the field is `stops`
+ * now. Every rider already has one called `shops` in his browser, holding the places he checked on
+ * a map, and a rename that quietly drops them would be the worst possible way to fix a name.
+ */
+describe('migrate: shops -> stops (v3 -> v4)', () => {
+  test("carries the rider's stops and the id counter over to the new names", () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = {
+      shops: [{ id: 7, at: 42, name: 'Żabka' }],
+      nextShopId: 8,
+    };
+    const migrated = migrate(legacy, 3) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops).toEqual([{ id: 7, at: 42, name: 'Żabka' }]);
+    expect(migrated.nextStopId).toBe(8);
+    expect((migrated as unknown as { shops?: unknown }).shops).toBeUndefined();
+  });
+
+  test('a rider who never placed one is left alone — the store default fills in', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    expect(migrate({}, 3)).toEqual({});
+  });
+
+  test('rescues stops even from state already stamped with the new version', () => {
+    // What a rider ends up with if a build renames the field before the migration lands.
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const stranded = { stops: [], shops: [{ id: 4, at: 101, name: 'Żabka' }], nextShopId: 5 };
+    const migrated = migrate(stranded, 4) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops).toEqual([{ id: 4, at: 101, name: 'Żabka' }]);
+    expect(migrated.nextStopId).toBe(5);
+  });
+
+  test('leaves state that already speaks the new name alone', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const current = { stops: [{ id: 1, at: 10, name: 'Postój' }], nextStopId: 2 };
+    const migrated = migrate(current, 4) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops).toEqual([{ id: 1, at: 10, name: 'Postój' }]);
+    expect(migrated.nextStopId).toBe(2);
+  });
+});
+
+/**
+ * The stops a rider never named still carry the old default as their name.
+ *
+ * "Sklep"/"Shop" was what the app wrote into every auto-created marker, so it sits in stored data
+ * as a label the rider never chose. A stop he *did* name — "Żabka", "źródełko za mostem" — is his
+ * words and is left exactly as it is.
+ */
+describe('migrate: the old default stop name (v5 -> v6)', () => {
+  test('an unnamed stop picks up the new default, in the stored language', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = { stops: [{ id: 4, at: 101, name: 'Sklep' }], ui: { lang: 'pl' } };
+    const migrated = migrate(legacy, 5) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops[0].name).toBe('Postój');
+    expect(migrated.stops[0].at).toBe(101);
+  });
+
+  test('the English default moves too', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = { stops: [{ id: 1, at: 20, name: 'Shop' }], ui: { lang: 'en' } };
+    const migrated = migrate(legacy, 5) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops[0].name).toBe('Stop');
+  });
+
+  test('a name the rider typed himself is his', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const legacy = { stops: [{ id: 1, at: 20, name: 'Żabka za mostem' }], ui: { lang: 'pl' } };
+    const migrated = migrate(legacy, 5) as ReturnType<typeof useAppStore.getState>;
+    expect(migrated.stops[0].name).toBe('Żabka za mostem');
+  });
+});
+
+/**
+ * Cola was always something you stop for; the flag saying so came later.
+ *
+ * Until `needsStop` existed the planner treated the shipped Cola like a bar in a jersey pocket and
+ * put it wherever the carbs were due. Riders who already have it stored keep that entry forever, so
+ * the flag has to reach them too — but only where the entry is still exactly what the app shipped.
+ * A Cola the rider retuned is his product, and a stop he never asked for is not a fix.
+ */
+describe('the shipped food library', () => {
+  test('marks Cola as something you stop for', () => {
+    const cola = useAppStore.getState().foodLib.find((f) => f.key === 'cola');
+    expect(cola?.needsStop).toBe(true);
+  });
+
+  test('leaves the pocketable products carried', () => {
+    const lib = useAppStore.getState().foodLib;
+    for (const key of ['gel', 'chew', 'banana']) {
+      expect(lib.find((f) => f.key === key)?.needsStop).toBeUndefined();
+    }
+  });
+});
+
+describe('migrate: cola needs a stop (v6 -> v7)', () => {
+  const stockCola = { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 };
+
+  function migrateFoodLib(foodLib: unknown[], version = 6) {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const migrated = migrate({ foodLib }, version) as ReturnType<typeof useAppStore.getState>;
+    return migrated.foodLib;
+  }
+
+  test('the untouched shipped Cola picks up the flag', () => {
+    expect(migrateFoodLib([stockCola])[0].needsStop).toBe(true);
+  });
+
+  test('leaves every other product alone', () => {
+    const gel = { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 };
+    const lib = migrateFoodLib([gel, stockCola]);
+    expect(lib[0]).toEqual(gel);
+    expect(lib[1].needsStop).toBe(true);
+  });
+
+  test('a Cola the rider renamed is his own product', () => {
+    const lib = migrateFoodLib([{ ...stockCola, pl: 'Cola zero', en: 'Cola zero' }]);
+    expect(lib[0].needsStop).toBeUndefined();
+  });
+
+  test('a Cola whose carbs or fluid he retuned is his own too', () => {
+    expect(migrateFoodLib([{ ...stockCola, carbs: 39 }])[0].needsStop).toBeUndefined();
+    expect(migrateFoodLib([{ ...stockCola, ml: 500 }])[0].needsStop).toBeUndefined();
+    expect(migrateFoodLib([{ ...stockCola, cont: true, span: 18 }])[0].needsStop).toBeUndefined();
+  });
+
+  test('a flag he already set himself is not overwritten', () => {
+    expect(migrateFoodLib([{ ...stockCola, needsStop: false }])[0].needsStop).toBe(false);
+  });
+
+  test('a rider already on the new version is left alone', () => {
+    expect(migrateFoodLib([stockCola], 7)[0].needsStop).toBeUndefined();
+  });
+
+  test('does nothing when there is no persisted library at all', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    expect(migrate({}, 6)).toEqual({});
+  });
+});
+
 describe('persisted ui merge — the calculator always opens on the plan', () => {
   test('a panel left open last time does not come back', () => {
     const merge = useAppStore.persist.getOptions().merge!;
@@ -534,7 +925,7 @@ describe('persisted ui merge — no overlay survives a reload', () => {
           ...currentState.ui,
           mixSheet: true,
           routeSheet: true,
-          shopSheet: { editId: 3 },
+          stopSheet: { editId: 3 },
           chartHelp: true,
         },
       },
@@ -542,7 +933,7 @@ describe('persisted ui merge — no overlay survives a reload', () => {
     ) as typeof currentState;
     expect(merged.ui.mixSheet).toBe(false);
     expect(merged.ui.routeSheet).toBe(false);
-    expect(merged.ui.shopSheet).toBeNull();
+    expect(merged.ui.stopSheet).toBeNull();
     expect(merged.ui.chartHelp).toBe(false);
   });
 

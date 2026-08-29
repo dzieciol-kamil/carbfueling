@@ -6,8 +6,8 @@ import type {
   FoodLibEntry,
   MixSettings,
   RouteInput,
-  ShopStop,
   Sport,
+  Stop,
   Vessel,
 } from './types';
 
@@ -17,7 +17,9 @@ import type {
 // download link and a file input.
 
 export const SETTINGS_EXPORT_APP_ID = 'carb-fueling-settings';
-export const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
+// v1 -> v2: `shops`/`nextShopId` became `stops`/`nextStopId`. A file the rider saved before that is
+// still a backup of his plan, so v1 files are read and renamed on the way in.
+export const SETTINGS_EXPORT_SCHEMA_VERSION = 2;
 
 // Upper bound on imported list lengths, so a crafted file with e.g. hundreds
 // of thousands of synthetic `fills` entries can't freeze the importing tab
@@ -53,14 +55,14 @@ export interface SettingsExportData {
   gear: Vessel[];
   fills: Fill[];
   foods: FoodItem[];
-  shops: ShopStop[];
+  stops: Stop[];
   foodLib: FoodLibEntry[];
   ui: SettingsExportUi;
   nextGid: number;
   nextFid: number;
   nextFoodId: number;
   nextFoodKey: number;
-  nextShopId: number;
+  nextStopId: number;
 }
 
 export interface SettingsExportFile {
@@ -191,7 +193,7 @@ function isValidFood(v: unknown): v is FoodItem {
   );
 }
 
-function isValidShop(v: unknown): v is ShopStop {
+function isValidStop(v: unknown): v is Stop {
   if (!isRecord(v)) return false;
   return isFiniteNumber(v.id) && isFiniteNumber(v.at) && typeof v.name === 'string';
 }
@@ -230,9 +232,9 @@ function isValidSettingsExportData(v: unknown): v is SettingsExportData {
     Array.isArray(v.foods) &&
     v.foods.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.foods.every(isValidFood) &&
-    Array.isArray(v.shops) &&
-    v.shops.length <= MAX_IMPORT_ARRAY_LENGTH &&
-    v.shops.every(isValidShop) &&
+    Array.isArray(v.stops) &&
+    v.stops.length <= MAX_IMPORT_ARRAY_LENGTH &&
+    v.stops.every(isValidStop) &&
     Array.isArray(v.foodLib) &&
     v.foodLib.length <= MAX_IMPORT_ARRAY_LENGTH &&
     v.foodLib.every(isValidFoodLibEntry) &&
@@ -241,8 +243,16 @@ function isValidSettingsExportData(v: unknown): v is SettingsExportData {
     isFiniteNumber(v.nextFid) &&
     isFiniteNumber(v.nextFoodId) &&
     isFiniteNumber(v.nextFoodKey) &&
-    isFiniteNumber(v.nextShopId)
+    isFiniteNumber(v.nextStopId)
   );
+}
+
+/** A v1 file calls the route's markers `shops`; everything downstream of here calls them `stops`. */
+function renameLegacyStops(data: unknown): unknown {
+  if (!isRecord(data) || data.stops !== undefined) return data;
+  const { shops, nextShopId, ...rest } = data;
+  if (shops === undefined) return data;
+  return { ...rest, stops: shops, nextStopId: nextShopId };
 }
 
 export function parseSettingsImport(raw: string): ParseSettingsResult {
@@ -260,17 +270,18 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
   ) {
     return { ok: false, reason: 'unsupported-version' };
   }
+  const data = renameLegacyStops(parsed.data);
   // A file exported before the chart's "sum" y-mode was removed may still carry it — fall
   // back to "rate" rather than rejecting an otherwise-valid backup over one stale UI pref.
-  if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.yMode === 'sum') {
-    parsed.data.ui.yMode = 'rate';
+  if (isRecord(data) && isRecord(data.ui) && data.ui.yMode === 'sum') {
+    data.ui.yMode = 'rate';
   }
-  if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
+  if (!isValidSettingsExportData(data)) return { ok: false, reason: 'wrong-shape' };
   return {
     ok: true,
     data: {
-      ...parsed.data,
-      route: { ...parsed.data.route, sport: parsed.data.route.sport ?? DEFAULT_SPORT },
+      ...data,
+      route: { ...data.route, sport: data.route.sport ?? DEFAULT_SPORT },
     },
   };
 }

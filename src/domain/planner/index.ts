@@ -1,0 +1,137 @@
+/**
+ * v2 planner pipeline. See
+ * `docs/superpowers/specs/2026-08-23-autoplan-v2-engine-spec.md` §4.1 for the settled stage order:
+ * buildSkeleton → assignCarbs → assignWater → assignFood → tidy → prune.
+ *
+ * W5a built this pipeline through `tidy`. W15 (2026-08-29) adds `prune`: L3's first narrow
+ * application, a post-fact pass that tries removing placed products one at a time and keeps only
+ * the removals that leave the real `planSummary()` still green — see `prune.ts`'s module doc.
+ */
+import { dist } from '../fuel';
+import type { FoodLibEntry, PlanState } from '../types';
+import { assignCarbs } from './assignCarbs';
+import { assignFood, placedSelection } from './assignFood';
+import { assignWater } from './assignWater';
+import { pruneUnneededFood } from './prune';
+import { buildNodes, buildSkeleton } from './skeleton';
+import type { CostWeights } from './skeleton';
+import { tidy } from './tidy';
+import {
+  isPlannerTraceOn,
+  traceAssignCarbs,
+  traceAssignFood,
+  traceAssignWater,
+  traceInput,
+  tracePruneEnd,
+  tracePruneStart,
+  traceResult,
+  traceSkeleton,
+  traceTidy,
+} from './trace';
+import type { DraftPlan, DraftStop, FoodSelectionEntry } from './types';
+
+/**
+ * §3.3's "Zrównoważony (default)" starting weights, calibrated in W5b-1 (2026-08-24) after changes 1
+ * and 2 landed: swept `wStop` × `wLoad` over the whole fixture set (34 scenarios, not one route —
+ * see `docs/superpowers/specs/2026-08-24-w5b1-measurements.md` §4). `wLoad` stays at the spec's
+ * starting value; `wStop` moves from 1.0 to 1.3, the smallest value at which the WHOLE suite settles
+ * onto its physics-driven minimum stop count (a stable plateau shared by every `wStop ≥ 1.3`, not a
+ * knife's-edge fit) — total stops across all 34 fixtures drops from 91 to 84, aggregate hydration
+ * deviation from 100% barely moves (15.6 → 16.8), and the F3 reference scenario (200km/1000ml
+ * bottle) lands on the rider's actual real-world stop count (4) instead of the prior near-tied 5.
+ * Matches the spec's own directional rule: if the default errs, it must err toward fewer stops.
+ * `wShort` stays the spec's fixed 1000 in every position (a shortfall must always lose to any legal
+ * plan).
+ */
+export const DEFAULT_WEIGHTS: CostWeights = { wStop: 1.3, wLoad: 1.0, wShort: 1000 };
+
+/**
+ * S3/§3.4: how many `needsStop` units the selection carries, expanded by `count` — the floor L1's
+ * DP dimension enforces. Raw count, not a discounted one: the rider's own ruling on mix-7 is "4
+ * colas → 4 stops", i.e. one stop per unit, not per product type.
+ */
+function countNeedsStop(selection: FoodSelectionEntry[], foodLib: FoodLibEntry[]): number {
+  let n = 0;
+  for (const entry of selection) {
+    const lib = foodLib.find((f) => f.key === entry.key);
+    if (lib?.needsStop) n += entry.count;
+  }
+  return n;
+}
+
+/**
+ * F2: the "carried products" fluid credit for L1's capacity test (`SkeletonOpts.carriedFluidMl`) —
+ * the `ml` off every non-`needsStop` unit `assignFood` will actually place (`placedSelection`, the
+ * same cap `assignCarbs.ts`'s `selectionCarbsG` already nets against). A `needsStop` unit is bought
+ * and drunk at a stop L1 already counts as a fresh refill, so it adds nothing to what the bottles
+ * must carry *between* stops — only carried items do.
+ */
+function carriedFluidMl(
+  route: PlanState['route'],
+  foodLib: FoodLibEntry[],
+  selection: FoodSelectionEntry[],
+): number {
+  return placedSelection(route, foodLib, selection).reduce(
+    (a, lib) => (lib.needsStop ? a : a + (lib.ml ?? 0)),
+    0,
+  );
+}
+
+/**
+ * Runs the deterministic v2 pipeline end to end. `state.stops` that the rider placed by hand
+ * (`!autoCreated`) are offered to L1 as cheap nodes (S6); a previous run's own auto-generated stops
+ * are not — they get no discount over any other lattice point.
+ *
+ * The short-ride gates (§3, F4/C5) need no extra handling here: `assignWater` and `assignCarbs` each
+ * own their gate already, and `buildSkeleton` independently zeroes the fluid need under the same F4
+ * buffer (`HYDRATION_BUFFER_ML_PER_KG`), so it never forces a capacity-driven stop on a short ride
+ * either — see the report for the trace.
+ */
+export function plan(state: PlanState, selection: FoodSelectionEntry[]): DraftPlan {
+  traceInput(state, selection);
+
+  const riderStops = state.stops.filter((s) => !s.autoCreated).map((s) => s.at);
+
+  const skeleton = buildSkeleton(state, {
+    riderStops,
+    allowNewStops: true,
+    weights: DEFAULT_WEIGHTS,
+    minStopsForProducts: countNeedsStop(selection, state.foodLib),
+    carriedFluidMl: carriedFluidMl(state.route, state.foodLib, selection),
+  });
+  // Recomputes the same lattice `buildSkeleton` already searched over, purely to report its size —
+  // guarded so the trace is truly free when off, not just silent.
+  if (isPlannerTraceOn()) {
+    traceSkeleton(skeleton, buildNodes(dist(state.route), riderStops, true).length);
+  }
+
+  const carbs = assignCarbs(skeleton, state, selection);
+  traceAssignCarbs(carbs);
+  const water = assignWater(skeleton, state, carbs);
+  traceAssignWater(water);
+  const services = [...carbs, ...water];
+  const foods = assignFood(skeleton, services, state, selection);
+  traceAssignFood(foods, selection);
+
+  const tidied = tidy(skeleton, services, foods, state);
+  traceTidy(
+    { stops: skeleton.stops.length, services: services.length },
+    { stops: tidied.skeleton.stops.length, services: tidied.services.length },
+  );
+
+  tracePruneStart();
+  const prunedFoods = pruneUnneededFood(state, tidied.services, tidied.foods, selection);
+  tracePruneEnd(
+    tidied.foods.filter((f) => !prunedFoods.includes(f)),
+    prunedFoods,
+  );
+
+  const stops: DraftStop[] = tidied.skeleton.stops.map((s) => ({
+    at: s.km,
+    autoCreated: s.origin === 'planned',
+  }));
+
+  traceResult(state, tidied.services, prunedFoods, stops.length);
+
+  return { services: tidied.services, foods: prunedFoods, stops };
+}

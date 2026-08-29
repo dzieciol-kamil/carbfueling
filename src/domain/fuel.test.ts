@@ -22,6 +22,8 @@ import {
   fracFood,
   honeyGramsFromCarbs,
   hydrationStatus,
+  maxCoveragePct,
+  maxHydrationPct,
   mixSplit,
   paceToSpeed,
   planExtras,
@@ -89,6 +91,7 @@ function makePlan(overrides: Partial<PlanState> = {}): PlanState {
     fills: [],
     foods: [],
     foodLib: [],
+    stops: [],
     ...overrides,
   };
 }
@@ -1339,6 +1342,60 @@ describe('planSummary', () => {
     // sweatLoss here is 2800ml (see fluidNeed describe block above for the same route/weight/temp).
     expect(summary.hydrationPct).toBe(Math.round((360 / 2800) * 100));
     expect(summary.hydrationPct).toBeLessThan(Math.round((1000 / 2800) * 100));
+  });
+});
+
+describe('maxHydrationPct', () => {
+  test('the W10 fixture: 24km/30km-h/35°C/75kg/high — capacity was never the limit, absorption is', () => {
+    // Hand-derived (see docs/superpowers/specs/...autoplan-v2-subagent-prompts.md, W10):
+    // duration 24/30 = 0.8h; sweat(route) = 1440 ml/h (base 380 + (35-15)*42 = 1220, +220 high
+    // intensity bump, weight/75 = 1) so sweatLoss = round(1440 * 0.8) = 1152 ml; at most
+    // 900 * 0.8 = 720 ml can physically clear the stomach in that time; 720 / 1152 = 62.5% -> 63.
+    const route = makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35, weight: 75 });
+    expect(maxHydrationPct(route)).toBe(63);
+  });
+
+  test('clamps at 100 when the absorption cap comfortably covers the whole sweat loss', () => {
+    const route = makeRoute({ distance: 100, speed: 25, intensity: 'low', temp: 15, weight: 60 });
+    // sweat(route): base 380 (temp <= 15), +0 (low), * (60/75) = 304 -> rounds to 300 ml/h.
+    // hrs = 4h, sweatLoss = 1200 ml. cap*hrs = 900*4 = 3600 ml, far above the 1200ml need.
+    expect(sweat(route)).toBe(300);
+    expect(maxHydrationPct(route)).toBe(100);
+  });
+
+  test('zero-duration route has zero sweat loss: 100, not NaN or Infinity', () => {
+    const route = makeRoute({ mode: 'time', hours: 0, minutes: 0, weight: 75, temp: 20 });
+    expect(maxHydrationPct(route)).toBe(100);
+  });
+});
+
+describe('maxCoveragePct', () => {
+  test('hand-derived sub-100 ceiling: 200km/25km-h/high intensity, izo-only plan', () => {
+    // hrs = 8 (long tier), cph(cycling, long, high) = 90 g/h -> target = 720 g.
+    const gear: Vessel[] = [{ gid: 'g1', name: 'Bidon', vol: 750, allowed: ['izo'], gelParts: 1 }];
+    const fills: Fill[] = [{ fid: 1, gid: 'g1', content: 'izo', from: 0, to: 100 }];
+    const plan = makePlan({
+      route: makeRoute({ distance: 200, speed: 25, intensity: 'high', weight: 75, temp: 20 }),
+      gear,
+      fills,
+    });
+    // izoCarbs = 750/100 * 11 = 82.5g, gelCarbs = 0 -> ratio comes from the mix's own 2:1 alone.
+    const cap = absCap(plan.mix, 82.5, 0, 'high');
+    expect(cap).toBe(79); // 90 g/h base ceiling, trimmed by the 0.88 high-intensity factor
+    // 79 g/h * 8h = 632g absorbable of a 720g requirement -> 632/720 = 87.78% -> rounds to 88.
+    expect(maxCoveragePct(plan)).toBe(88);
+  });
+
+  test('clamps at 100 when the absorption cap comfortably covers the whole requirement', () => {
+    const plan = makePlan({
+      route: makeRoute({ mode: 'route', distance: 10, speed: 20, intensity: 'mid' }), // hrs = 0.5
+    });
+    expect(maxCoveragePct(plan)).toBe(100);
+  });
+
+  test('zero-duration plan has zero carb requirement: 100, not NaN or Infinity', () => {
+    const plan = makePlan({ route: makeRoute({ mode: 'time', hours: 0, minutes: 0 }) });
+    expect(maxCoveragePct(plan)).toBe(100);
   });
 });
 

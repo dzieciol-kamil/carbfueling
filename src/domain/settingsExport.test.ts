@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+// (v1 backwards-compatibility cases live at the bottom of this file)
 import {
   buildSettingsExport,
   parseSettingsImport,
@@ -45,14 +46,14 @@ function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
     gear: [{ gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 }],
     fills: [{ fid: 1, gid: 'g1', content: 'izo', from: 0, to: 50 }],
     foods: [{ id: 101, key: 'gel', name: 'Energy gel', carbs: 22, from: 10, to: 10 }],
-    shops: [{ id: 1, at: 40, name: 'Shop' }],
+    stops: [{ id: 1, at: 40, name: 'Stop' }],
     foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 }],
     ui: { lang: 'en', viewMode: 'auto', xUnit: 'km', yMode: 'rate' },
     nextGid: 2,
     nextFid: 2,
     nextFoodId: 102,
     nextFoodKey: 1,
-    nextShopId: 2,
+    nextStopId: 2,
     ...overrides,
   };
 }
@@ -67,6 +68,18 @@ describe('settingsExport', () => {
     const result = parseSettingsImport(json);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data).toEqual(data);
+  });
+
+  // A product marked "only at a stop" plans a completely different ride than the same product
+  // carried in a pocket, so the flag has to survive a backup — not silently fall off on the way in.
+  test('keeps a stop-only product marked as one', () => {
+    const data = makeData({
+      foodLib: [{ key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true }],
+    });
+    const json = serializeSettingsExport(buildSettingsExport(data));
+    const result = parseSettingsImport(json);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.foodLib[0].needsStop).toBe(true);
   });
 
   test('filename includes an ISO date', () => {
@@ -108,6 +121,27 @@ describe('settingsExport', () => {
     for (const bad of badFiles) {
       const result = parseSettingsImport(JSON.stringify(bad));
       expect(result.ok).toBe(false);
+    }
+  });
+
+  /**
+   * A file the rider saved last month is a backup, and a backup that stops opening is not one.
+   * v1 wrote `shops`/`nextShopId`; the app now speaks `stops`/`nextStopId` and has to read both.
+   */
+  test('a v1 file with shops still imports, under the new name', () => {
+    const data = makeData();
+    const { stops, nextStopId, ...rest } = data;
+    const v1 = {
+      app: 'carb-fueling-settings',
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      data: { ...rest, shops: stops, nextShopId: nextStopId },
+    };
+    const result = parseSettingsImport(JSON.stringify(v1));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.stops).toEqual(stops);
+      expect(result.data.nextStopId).toBe(nextStopId);
     }
   });
 

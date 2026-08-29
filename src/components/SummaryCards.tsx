@@ -1,17 +1,33 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   coverageStatus,
   hydrationStatus,
+  maxCoveragePct,
+  maxHydrationPct,
   planSummary,
   recoveryCarbs,
   type CoverageStatus,
 } from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
 import { InfoPopover } from './ui/InfoPopover';
 
 function fmt(n: number): string {
   return n.toFixed(0);
+}
+
+function FaqLink({ slug, children }: { slug: string; children: ReactNode }) {
+  return (
+    <a
+      href={FAQ_HREF_FROM_CALCULATOR + slug + '/'}
+      target="_blank"
+      rel="noopener"
+      style={{ color: 'inherit', textDecoration: 'underline' }}
+    >
+      {children}
+    </a>
+  );
 }
 
 /** Takes an already-decided status rather than a percentage: which thresholds apply differs
@@ -76,13 +92,37 @@ export function SummaryCards() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const foodLib = useAppStore((s) => s.foodLib);
+  const stops = useAppStore((s) => s.stops);
   const lang = useAppStore((s) => s.ui.lang);
   const strings = t(lang);
 
-  const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
+  const state = { route, mix, gear, fills, foods, foodLib, stops };
+  const summary = planSummary(state);
   const carbColor = statusColor(coverageStatus(summary.coverage), 'var(--carb)');
   const hydColor = statusColor(hydrationStatus(summary.hydrationPct), 'var(--water)');
   const recovery = recoveryCarbs(route.weight);
+
+  // Shown only when the plan actually lands on the physical ceiling (< 100, so it's a real
+  // constraint) — not on the large majority of rides where the ceiling never binds, and not as a
+  // consolation badge on an ordinary shortfall that's below the ceiling.
+  const carbCeiling = maxCoveragePct(state);
+  const atCarbCeiling = carbCeiling < 100 && summary.coverage === carbCeiling;
+  const hydCeiling = maxHydrationPct(route);
+  const atHydCeiling = hydCeiling < 100 && summary.hydrationPct === hydCeiling;
+  const carbCeilingHint = (
+    <>
+      {strings.ceilingHintCarbsPre}
+      <FaqLink slug="carb-transporter-mix">{strings.ceilingHintCarbsLink}</FaqLink>
+      {strings.ceilingHintCarbsPost}
+    </>
+  );
+  const hydCeilingHint = (
+    <>
+      {strings.ceilingHintHydrationPre}
+      <FaqLink slug="hydration-water-per-hour">{strings.ceilingHintHydrationLink}</FaqLink>
+      {strings.ceilingHintHydrationPost}
+    </>
+  );
 
   return (
     <div
@@ -103,15 +143,26 @@ export function SummaryCards() {
       <div style={cardStyle}>
         <div style={titleRowStyle}>
           <span style={titleStyle}>{strings.coverage}</span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              fontWeight: 700,
-              color: carbColor,
-            }}
-          >
-            {summary.coverage}%
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {atCarbCeiling && (
+              <InfoPopover
+                hint={carbCeilingHint}
+                triggerStyle={{ fontSize: 11, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}
+                popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+              >
+                {strings.ceilingLabel} {carbCeiling}% ⓘ
+              </InfoPopover>
+            )}
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                fontWeight: 700,
+                color: carbColor,
+              }}
+            >
+              {summary.coverage}%
+            </span>
           </span>
         </div>
         <div style={trackStyle}>
@@ -147,15 +198,26 @@ export function SummaryCards() {
       <div style={cardStyle}>
         <div style={titleRowStyle}>
           <span style={titleStyle}>{strings.hydration}</span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              fontWeight: 700,
-              color: hydColor,
-            }}
-          >
-            {summary.hydrationPct}%
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {atHydCeiling && (
+              <InfoPopover
+                hint={hydCeilingHint}
+                triggerStyle={{ fontSize: 11, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}
+                popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+              >
+                {strings.ceilingLabel} {hydCeiling}% ⓘ
+              </InfoPopover>
+            )}
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                fontWeight: 700,
+                color: hydColor,
+              }}
+            >
+              {summary.hydrationPct}%
+            </span>
           </span>
         </div>
         <div style={trackStyle}>

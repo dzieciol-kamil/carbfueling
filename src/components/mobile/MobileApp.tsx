@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
+import { AutoplanFlow } from '../autoplan/AutoplanFlow';
 import { LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
@@ -11,7 +12,7 @@ import { MobileMixSheet } from './MobileMixSheet';
 import { MobilePlanList } from './MobilePlanList';
 import { MobileProfile } from './MobileProfile';
 import { MobileRouteSheet } from './MobileRouteSheet';
-import { MobileShopSheet } from './MobileShopSheet';
+import { MobileStopSheet } from './MobileStopSheet';
 
 const TABS: { tab: MobileTab; icon: ReactNode }[] = [
   { tab: 'plan', icon: <path d="M2 16 L7 9 L11 12 L16 4.5 L20 8" /> },
@@ -74,6 +75,10 @@ export function MobileApp() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            // The wordmark, the route chip and the autoplan button need ~444px of intrinsic width
+            // together, so on a 375px-class phone they have to wrap — without this the wordmark
+            // broke onto two lines and the autoplan button was clipped off the right edge.
+            flexWrap: 'wrap',
             gap: 10,
           }}
         >
@@ -89,24 +94,35 @@ export function MobileApp() {
           >
             CARB FUELING
           </a>
-          <button
-            type="button"
-            data-tour="route-summary"
-            onClick={openRouteSheet}
+          <div
             style={{
-              border: '1px solid var(--chip-border)',
-              borderRadius: 999,
-              padding: '6px 11px',
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: 'var(--muted)',
-              background: '#fff',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap',
+              gap: 8,
             }}
           >
-            {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
-          </button>
+            <button
+              type="button"
+              data-tour="route-summary"
+              onClick={openRouteSheet}
+              style={{
+                border: '1px solid var(--chip-border)',
+                borderRadius: 999,
+                padding: '6px 11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: 'var(--muted)',
+                background: '#fff',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
+            </button>
+            <AutoplanFlow variant="mobile" />
+          </div>
         </div>
 
         {tab === 'plan' && (
@@ -212,7 +228,7 @@ export function MobileApp() {
 
       <MobileMixSheet />
       <MobileRouteSheet />
-      <MobileShopSheet />
+      <MobileStopSheet />
     </div>
   );
 }

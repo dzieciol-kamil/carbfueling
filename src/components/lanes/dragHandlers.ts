@@ -3,7 +3,7 @@ import {
   dragGelPart,
   moveFill,
   moveFood,
-  moveShop,
+  moveStop,
   rescalePositions,
   resizeFillLeft,
   resizeFillRight,
@@ -168,7 +168,7 @@ export function createFoodDragHandler(id: number, mode: FoodDragMode) {
   };
 }
 
-export function createShopDragHandler(id: number) {
+export function createStopDragHandler(id: number) {
   return (ev: ReactPointerEvent) => {
     ev.preventDefault();
     ev.stopPropagation();
@@ -176,17 +176,17 @@ export function createShopDragHandler(id: number) {
     if (!track) return;
 
     const state = useAppStore.getState();
-    const shop = state.shops.find((x) => x.id === id);
-    if (!shop) return;
+    const stop = state.stops.find((x) => x.id === id);
+    if (!stop) return;
     const distanceKm = dist(state.route);
     const kpp = trackWidthKmPerPixel(track, distanceKm);
     const x0 = ev.clientX;
-    const at0 = shop.at;
+    const at0 = stop.at;
 
     const move = (e2: PointerEvent) => {
       const d = (e2.clientX - x0) * kpp;
-      const at = moveShop({ ...shop, at: at0 }, distanceKm, d);
-      useAppStore.getState().updateShop(id, { at });
+      const at = moveStop({ ...stop, at: at0 }, distanceKm, d);
+      useAppStore.getState().updateStop(id, { at });
     };
     const up = () => {
       window.removeEventListener('pointermove', move);

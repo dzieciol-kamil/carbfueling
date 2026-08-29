@@ -19,12 +19,11 @@ const FLUID_ABSORPTION_CAP_ML_H = 900;
  * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
  * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
  * giving carbs a head start instead of demanding fresh intake from km 0. Same value (weight_kg ×
- * 15) is planned for autoplan.ts's short-ride hydration gate ("should we even plan water") — not
- * implemented there yet, so there's no enforced coupling today; keep the two in sync by hand if
- * one changes. Deliberately below the ~2% ACSM danger-limit figure so the app doesn't plan right
- * up to the edge.
+ * 15) is imported directly by the v2 planner's short-ride hydration gate ("should we even plan
+ * water"), so the two stay coupled automatically — no hand-sync needed. Deliberately below the
+ * ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
  */
-const HYDRATION_BUFFER_ML_PER_KG = 15;
+export const HYDRATION_BUFFER_ML_PER_KG = 15;
 
 /**
  * Where the *carb* bar turns green. A tolerance the badge applies on top of the honest 100% target
@@ -106,6 +105,7 @@ export function coverageStatus(pct: number): CoverageStatus {
 export function hydrationStatus(pct: number): CoverageStatus {
   return tier(pct, HYDRATION_TARGET_PCT, HYDRATION_SHORT_PCT);
 }
+
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
 const PACE_DOWN_K = 0.07;
@@ -335,7 +335,40 @@ const SYNTHETIC_ANCHORS: [number, number][] = [
   [1, 140],
 ];
 
+/**
+ * Last profile built per route object, so `eff`/`timeAtDistance`/`distanceAtTime` stop rebuilding
+ * 161 points on every single call — `samples()` alone asks for one three times per fill per sample,
+ * which on a long plan is a few hundred milliseconds of pure repetition.
+ *
+ * Purely a cache: same inputs, same numbers. The signature guards the one case a `WeakMap` keyed on
+ * the object cannot see — a route mutated in place rather than replaced, which the store never does
+ * but a caller could.
+ */
+const profCache = new WeakMap<RouteInput, { sig: string; profile: Profile }>();
+
+function profSig(route: RouteInput): string {
+  return [
+    route.mode,
+    route.distance,
+    route.speed,
+    route.hours,
+    route.minutes,
+    route.useGpx ? 1 : 0,
+    route.gpxTrack ? route.gpxTrack.id : 'none',
+    route.gpxTrack ? route.gpxTrack.ele.length : 0,
+  ].join('|');
+}
+
 export function prof(route: RouteInput): Profile {
+  const sig = profSig(route);
+  const cached = profCache.get(route);
+  if (cached && cached.sig === sig) return cached.profile;
+  const built = buildProf(route);
+  profCache.set(route, { sig, profile: built });
+  return built;
+}
+
+function buildProf(route: RouteInput): Profile {
   const T = route.gpxTrack;
   const D = dist(route);
   const N = PROFILE_SAMPLES;
@@ -1064,6 +1097,46 @@ export function planSummary(state: PlanState): PlanSummary {
     absorbedTotal: S[S.length - 1].absorbed,
     fluidAbsorbedTotal,
   };
+}
+
+/**
+ * The physical ceiling on `hydrationPct`: even a perfect plan can't clear more fluid than the
+ * stomach can pass on to the gut (`FLUID_ABSORPTION_CAP_ML_H`) over the ride's duration. On most
+ * rides this is far above 100% and never binds; on a short, hot, heavy-sweat ride it can sit well
+ * under 100 — that's the case the "maks./max." marker exists to explain, so the rider doesn't read
+ * a low hydration number as a broken plan.
+ *
+ * Uses the same rounded `sweatLoss` denominator `planSummary` reports/divides by, so this is
+ * directly comparable to `hydrationPct` for "did the plan reach the ceiling". 100 when there's no
+ * fluid loss to speak of (zero duration) — nothing to cap.
+ */
+export function maxHydrationPct(route: RouteInput): number {
+  const hrs = totalHours(route);
+  const sweatLoss = Math.round(sweat(route) * hrs);
+  if (sweatLoss <= 0) return 100;
+  return Math.min(100, Math.round(((FLUID_ABSORPTION_CAP_ML_H * hrs) / sweatLoss) * 100));
+}
+
+/**
+ * The carb equivalent of `maxHydrationPct`: the ceiling on `coverage` set by the gut's `absCap()`
+ * limit for the plan's actual gel/izo blend, integrated over the ride's duration. Mirrors the same
+ * izoCarbs/gelCarbs split `samples()`/`planSummary()` compute from the real fills, so the ceiling
+ * reflects what this plan is actually mixing, not a generic default. 100 when there's no carb
+ * requirement at all (zero duration).
+ */
+export function maxCoveragePct(state: PlanState): number {
+  const { route, mix, gear, fills } = state;
+  const hrs = totalHours(route);
+  const target = hrs * cph(route);
+  if (target <= 0) return 100;
+  const izoCarbs = fills
+    .filter((f) => f.content === 'izo')
+    .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
+  const gelCarbs = fills
+    .filter((f) => f.content === 'gel')
+    .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
+  return Math.min(100, Math.round(((cap * hrs) / target) * 100));
 }
 
 export interface RecoveryCarbs {

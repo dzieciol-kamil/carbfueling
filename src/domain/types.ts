@@ -87,10 +87,14 @@ export interface Fill {
   pos?: number[];
 }
 
-export interface ShopStop {
+export interface Stop {
   id: number;
   at: number;
   name: string;
+  /** True when this stop was created by autoplan() itself (as opposed to a rider placing it
+   *  by hand, e.g. via addStop or GPX import). Lets a later autoplan run offer to clean up
+   *  only its own previously-generated stops, never a rider-placed one. */
+  autoCreated?: boolean;
 }
 
 export interface FoodItem {
@@ -112,6 +116,10 @@ export interface FoodLibEntry {
   ml?: number;
   cont?: boolean;
   span?: number;
+  /** True for things nobody carries with them — a cola, an ice cream. Eating one *is* a stop, so
+   *  the planner may only place it at a stop stop (creating one if the item is worth it), and that
+   *  stop doubles as a refill opportunity for every bottle on board. */
+  needsStop?: boolean;
 }
 
 export interface PlanState {
@@ -121,4 +129,5 @@ export interface PlanState {
   fills: Fill[];
   foods: FoodItem[];
   foodLib: FoodLibEntry[];
+  stops: Stop[];
 }
