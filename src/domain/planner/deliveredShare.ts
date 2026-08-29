@@ -34,6 +34,7 @@ export function deliveredShare(
     content: service.content,
     from: service.fromKm,
     to: service.toKm,
+    pos: service.pos,
   };
   return fracFill(fill, b, gear, route) - fracFill(fill, a, gear, route);
 }

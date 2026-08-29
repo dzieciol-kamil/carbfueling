@@ -201,6 +201,51 @@ describe('deliveredShare', () => {
     expect(deliveredShare(service, leg, gear, route)).toBeCloseTo(1 / 6, 12);
   });
 
+  test('a gel service with explicit non-uniform dose positions is prorated against those real positions, not an evenly-spaced fallback', () => {
+    const route = makeRoute({ distance: 100, useGpx: false });
+    const gear = [gelFlask(500, 'flask', 6)]; // 6 doses
+    // 5 of 6 doses bunched in the envelope's first third (3,6,9,12,15 km); the 6th sits at the
+    // envelope's far end (90 km) — mirroring how assignCarbs.ts sets toKm to the last dose's
+    // position. Evenly spacing 6 doses across [0,90] (the fallback deliveredShare used before it
+    // carried `pos` through) would put them at 0,18,36,54,72,90 instead — a materially different
+    // layout, so this fixture actually exercises the fix rather than coincidentally landing on a
+    // layout the fallback would also produce.
+    const pos = [3, 6, 9, 12, 15, 90];
+    const service: Service = {
+      vesselId: 'flask',
+      fromKm: 0,
+      toKm: 90,
+      content: 'gel',
+      filledAtStop: null,
+      pos,
+    };
+    const front: Leg = {
+      fromKm: 0,
+      toKm: 45,
+      hours: 1,
+      fluidNeedMl: 0,
+      carbNeedG: 0,
+      absorbCapG: 0,
+    };
+    const back: Leg = {
+      fromKm: 45,
+      toKm: 90,
+      hours: 1,
+      fluidNeedMl: 0,
+      carbNeedG: 0,
+      absorbCapG: 0,
+    };
+
+    // By hand from `pos`: the front half [0,45) contains doses at 3,6,9,12,15 -> 5/6. The back
+    // half [45,90] contains only the dose at 90 -> 1/6.
+    const frontShare = deliveredShare(service, front, gear, route);
+    const backShare = deliveredShare(service, back, gear, route);
+
+    expect(frontShare).toBeCloseTo(5 / 6, 12);
+    expect(backShare).toBeCloseTo(1 / 6, 12);
+    expect(frontShare + backShare).toBeCloseTo(1, 12);
+  });
+
   test("bug (a), end to end: assignWater's P3 credit uses the fracFill share, not elapsed time, so a leg the old basis would have (wrongly) called covered still gets a top-up", () => {
     const route = makeRoute({ distance: 150, useGpx: true, gpxTrack: HILLY_TRACK });
     const gear = [dualVessel(900, 'carb'), water(500, 'spare')];
