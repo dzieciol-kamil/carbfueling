@@ -70,8 +70,10 @@ interface PosNode {
 }
 
 /** `P = {0} ∪ riderStops ∪ lattice ∪ {D}` (§3.2), or `{0} ∪ riderStops ∪ {D}` when
- *  `allowNewStops` is false (§3.5 — "drop the lattice from the node set"). */
-function buildNodes(D: number, riderStops: number[], allowNewStops: boolean): PosNode[] {
+ *  `allowNewStops` is false (§3.5 — "drop the lattice from the node set"). Exported only so the
+ *  console trace (W16, 2026-08-29) can report the lattice size L1 searched over — `buildSkeleton`
+ *  itself still calls it the same way it always has. */
+export function buildNodes(D: number, riderStops: number[], allowNewStops: boolean): PosNode[] {
   const round = (x: number) => Math.round(x * 1e6) / 1e6;
   const byKm = new Map<number, boolean>();
   byKm.set(round(0), false);

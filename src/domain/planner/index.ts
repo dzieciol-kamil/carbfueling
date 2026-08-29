@@ -9,14 +9,27 @@
  */
 import type { DraftStop } from '../autoplan';
 import type { FoodSelectionEntry } from '../autoplan';
+import { dist } from '../fuel';
 import type { FoodLibEntry, PlanState } from '../types';
 import { assignCarbs } from './assignCarbs';
 import { assignFood, placedSelection } from './assignFood';
 import { assignWater } from './assignWater';
 import { pruneUnneededFood } from './prune';
-import { buildSkeleton } from './skeleton';
+import { buildNodes, buildSkeleton } from './skeleton';
 import type { CostWeights } from './skeleton';
 import { tidy } from './tidy';
+import {
+  isPlannerTraceOn,
+  traceAssignCarbs,
+  traceAssignFood,
+  traceAssignWater,
+  traceInput,
+  tracePruneEnd,
+  tracePruneStart,
+  traceResult,
+  traceSkeleton,
+  traceTidy,
+} from './trace';
 import type { DraftPlan } from './types';
 
 /**
@@ -77,6 +90,8 @@ function carriedFluidMl(
  * either — see the report for the trace.
  */
 export function plan(state: PlanState, selection: FoodSelectionEntry[]): DraftPlan {
+  traceInput(state, selection);
+
   const riderStops = state.stops.filter((s) => !s.autoCreated).map((s) => s.at);
 
   const skeleton = buildSkeleton(state, {
@@ -86,19 +101,39 @@ export function plan(state: PlanState, selection: FoodSelectionEntry[]): DraftPl
     minStopsForProducts: countNeedsStop(selection, state.foodLib),
     carriedFluidMl: carriedFluidMl(state.route, state.foodLib, selection),
   });
+  // Recomputes the same lattice `buildSkeleton` already searched over, purely to report its size —
+  // guarded so the trace is truly free when off, not just silent.
+  if (isPlannerTraceOn()) {
+    traceSkeleton(skeleton, buildNodes(dist(state.route), riderStops, true).length);
+  }
 
   const carbs = assignCarbs(skeleton, state, selection);
+  traceAssignCarbs(carbs);
   const water = assignWater(skeleton, state, carbs);
+  traceAssignWater(water);
   const services = [...carbs, ...water];
   const foods = assignFood(skeleton, services, state, selection);
+  traceAssignFood(foods, selection);
 
   const tidied = tidy(skeleton, services, foods, state);
+  traceTidy(
+    { stops: skeleton.stops.length, services: services.length },
+    { stops: tidied.skeleton.stops.length, services: tidied.services.length },
+  );
+
+  tracePruneStart();
   const prunedFoods = pruneUnneededFood(state, tidied.services, tidied.foods, selection);
+  tracePruneEnd(
+    tidied.foods.filter((f) => !prunedFoods.includes(f)),
+    prunedFoods,
+  );
 
   const stops: DraftStop[] = tidied.skeleton.stops.map((s) => ({
     at: s.km,
     autoCreated: s.origin === 'planned',
   }));
+
+  traceResult(state, tidied.services, prunedFoods, stops.length);
 
   return { services: tidied.services, foods: prunedFoods, stops };
 }

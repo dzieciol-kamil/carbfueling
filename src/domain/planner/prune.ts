@@ -26,6 +26,7 @@ import type { DraftFood, FoodSelectionEntry } from '../autoplan';
 import type { FoodItem, PlanState } from '../types';
 import { expandSelection } from './assignFood';
 import { servicesToFills } from './services';
+import { tracePruneCandidate, tracePruneSkipped } from './trace';
 import type { Service } from './types';
 
 /** Scores a candidate `(services, foods)` pair with the real, shipped `planSummary()`.
@@ -89,8 +90,14 @@ export function pruneUnneededFood(
   if (foods.length === 0) return foods;
 
   const baseline = score(state, services, foods);
-  if (baseline.coverage < COVERAGE_TARGET_PCT) return foods; // rule 3
-  if (baseline.totalCarbs / baseline.target < COVERAGE_TARGET_PCT / 100) return foods; // rule 3, nominal floor
+  if (baseline.coverage < COVERAGE_TARGET_PCT) {
+    tracePruneSkipped(`baseline coverage ${baseline.coverage}% already below target`);
+    return foods; // rule 3
+  }
+  if (baseline.totalCarbs / baseline.target < COVERAGE_TARGET_PCT / 100) {
+    tracePruneSkipped('baseline nominal carb ratio already below target');
+    return foods; // rule 3, nominal floor
+  }
 
   const hydrationStartedGreen = baseline.hydrationPct >= HYDRATION_TARGET_PCT;
   const priority = keyPriority(selection, state.foodLib);
@@ -114,7 +121,9 @@ export function pruneUnneededFood(
       trialScore.hydrationPct >= HYDRATION_TARGET_PCT;
     const nominalOk = trialScore.totalCarbs / trialScore.target >= COVERAGE_TARGET_PCT / 100;
 
-    if (coverageOk && hydrationOk && nominalOk) remaining = trial;
+    const removalOk = coverageOk && hydrationOk && nominalOk;
+    if (removalOk) remaining = trial;
+    tracePruneCandidate(candidate, removalOk, { coverageOk, hydrationOk, nominalOk });
   }
 
   return remaining;
