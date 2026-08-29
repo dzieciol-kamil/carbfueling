@@ -2,8 +2,12 @@
  * L2 step 3 — product placement. See
  * `docs/superpowers/specs/2026-08-23-autoplan-v2-engine-spec.md` §4 step 3 (P1-P3, S3).
  *
- * Deterministic, no search: `needsStop` items are pinned to `skeleton.stops` first (S3), then
- * everything else ("carried" products) is spread by carb share across the gaps between them (P2).
+ * Deterministic, no search: below C5's short-ride gate nothing is placed at all; above it, the
+ * selection is capped to what the ride's raw carb total actually needs, in the selection's own
+ * priority order (`takenBySelectionOrder` — the rider's own ruling on food-4/food-6: the selection
+ * is an offer, not an instruction), then `needsStop` items among what's taken are pinned to
+ * `skeleton.stops` first (S3), and everything else ("carried" products) is spread by carb share
+ * across the gaps between them (P2).
  *
  * **This function never invents a stop.** S3 says a `needsStop` product "may create" a stop, but
  * that capacity lives in L1 (`SkeletonOpts.minStopsForProducts`, spec §3.4) — by the time `skeleton`
@@ -12,10 +16,17 @@
  * getting one each; see the report on this function's caller for what `minStopsForProducts` would
  * need to be for a given selection.
  */
-import { dist } from '../fuel';
+import { cph, dist, totalHours } from '../fuel';
 import type { DraftFood, FoodSelectionEntry } from '../autoplan';
-import type { FoodLibEntry, PlanState } from '../types';
+import type { FoodLibEntry, PlanState, RouteInput } from '../types';
 import type { Service, Skeleton } from './types';
+
+/**
+ * C5's time-based short-ride skip, mirrored from `assignCarbs.ts`'s own (unexported)
+ * `CARB_MIN_HOURS` — a separate gate from F4's water one ("rozdzielamy": two gates, not one).
+ * Below it there is no carb plan at all, so nothing to place a product against.
+ */
+const CARB_MIN_HOURS = 1;
 
 /**
  * Same physiological reasoning as C6's carb-stream gut-drain buffer (spec §1.2), applied to
@@ -38,8 +49,13 @@ const DEFAULT_CONT_SPAN_KM = 18;
 
 /** `selection`'s counts expanded into one `FoodLibEntry` per unit, in selection order — the order
  *  P2's carb-share placement walks. Unknown keys are skipped (a stale selection referencing a
- *  removed library entry), never thrown. */
-function expandSelection(selection: FoodSelectionEntry[], foodLib: FoodLibEntry[]): FoodLibEntry[] {
+ *  removed library entry), never thrown. Exported so `assignCarbs.ts` can net its own budget out
+ *  of exactly what `takenBySelectionOrder` below will place, not the raw selection — see that
+ *  function's doc for why. */
+export function expandSelection(
+  selection: FoodSelectionEntry[],
+  foodLib: FoodLibEntry[],
+): FoodLibEntry[] {
   const items: FoodLibEntry[] = [];
   for (const entry of selection) {
     const lib = foodLib.find((f) => f.key === entry.key);
@@ -47,6 +63,67 @@ function expandSelection(selection: FoodSelectionEntry[], foodLib: FoodLibEntry[
     for (let i = 0; i < entry.count; i++) items.push(lib);
   }
   return items;
+}
+
+/**
+ * Cluster A's placement-cap fraction — how much of the ride's raw carb total the selection must
+ * clear before the rest stays in the pocket. Deliberately its own constant, not a copy of
+ * `COVERAGE_TARGET_PCT`/`HYDRATION_TARGET_PCT` (those score a *finished plan*, this scores an
+ * *unplaced selection* — a different question, same caution as §1.1's "don't unify F1 and F3").
+ * Pinned to the rider's own real exports: `docs/tests/autoplan-scenarios.md`'s food-2 entry records
+ * two independent builds, both landing on 3 gels + 1 banana + 2 chews = 149g against a 165g raw
+ * target — the first running sum past 0.85×165=140.25g, not the literal 100% the doc's own
+ * (rejected) coded model predicted. food-4's 54g target (44g/2 gels misses it, 66g/3 gels clears
+ * it) is consistent with the same fraction — 0.85×54=45.9g falls in the same (44, 66] gap either
+ * way, so food-2's real data is what actually pins the fraction down.
+ */
+const SELECTION_TARGET_FRACTION = 0.85;
+
+/**
+ * The selection is an offer, not an instruction (rider ruling on food-4/food-6): this function
+ * takes `items` in the selection's own priority order (the list P2 already walks) until their
+ * cumulative carbs clear `SELECTION_TARGET_FRACTION` of `rideNeedG` — the ride's raw total carb
+ * need, `totalHours(route) * cph(route)`, the same total `assignCarbs.ts` sums back out of
+ * `skeleton.legs` as `totalNeedG` (mathematically identical: the eff()-weighted per-leg split
+ * telescopes to the same sum) — then leaves the rest in the pocket. The item that crosses the
+ * target is kept, not excluded (food-4: two 22g gels miss it, the third clears it and is placed),
+ * so the placed total can sit somewhat over the target, never meaningfully under it.
+ *
+ * Exported so `assignCarbs.ts`'s `selectionCarbsG` can be netted out of exactly this set — before
+ * this cap existed, `selectionCarbsG` assumed the *whole* selection got placed, which silently
+ * broke the moment this function started leaving some of it in the pocket (izo would then ration
+ * itself against carbs nobody actually put on the route). See the report for which scenarios that
+ * touched.
+ */
+export function takenBySelectionOrder(items: FoodLibEntry[], rideNeedG: number): FoodLibEntry[] {
+  const targetG = SELECTION_TARGET_FRACTION * rideNeedG;
+  const taken: FoodLibEntry[] = [];
+  let cum = 0;
+  for (const item of items) {
+    if (cum >= targetG) break;
+    taken.push(item);
+    cum += item.carbs;
+  }
+  return taken;
+}
+
+/**
+ * What `assignFood` will actually place from `selection` — C5's gate plus Cluster A's cap, in one
+ * place — before S3's per-stop pinning decides *where* (that step can share several units onto one
+ * stop, or drop a `needsStop` unit outright when no stop exists at all, but it never changes
+ * *which* items got taken here). Every caller that needs to know "what does this ride actually
+ * eat" (this module's own `assignFood`, `assignCarbs.ts`'s `selectionCarbsG`, `index.ts`'s L1
+ * carried-fluid budget for F2) reads it from here instead of three independent guesses that could
+ * drift apart.
+ */
+export function placedSelection(
+  route: RouteInput,
+  foodLib: FoodLibEntry[],
+  selection: FoodSelectionEntry[],
+): FoodLibEntry[] {
+  if (totalHours(route) < CARB_MIN_HOURS) return []; // C5
+  const rideNeedG = totalHours(route) * cph(route);
+  return takenBySelectionOrder(expandSelection(selection, foodLib), rideNeedG);
 }
 
 /**
@@ -192,7 +269,7 @@ export function assignFood(
   const D = dist(route);
   const endX = D * (1 - FOOD_FINISH_GAP);
 
-  const items = expandSelection(selection, foodLib);
+  const items = placedSelection(route, foodLib, selection);
   if (items.length === 0) return [];
 
   const stopItems = items.filter((e) => e.needsStop);

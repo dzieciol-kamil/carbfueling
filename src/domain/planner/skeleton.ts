@@ -50,6 +50,18 @@ export interface SkeletonOpts {
    * job) — it only has to guarantee enough of them exist. Defaults to 0 (no constraint).
    */
   minStopsForProducts?: number;
+  /**
+   * F2's "carried products" fluid — the sum of `ml` off every non-`needsStop` selection item L2's
+   * `assignFood` will actually place (`assignFood.ts`'s `placedSelection`), e.g. a pocketed cola.
+   * F2 is explicit this is not a bottle, so it doesn't belong in `carryableFluid`'s per-vessel sum —
+   * but it still relieves what the bottles have to cover, the same way it does in `planSummary()`'s
+   * own `fluidPlanned` (`fuel.ts`). Added flat to every edge's capacity rather than placed at a
+   * specific km: L1 has no placement model (§3.1), and P1 already keeps carried products spread
+   * close to evenly across the route, so a flat credit is the honest level of precision for a
+   * capacity *estimate*, not a lie the way an authored volume/carbs field would be (§2.1). Defaults
+   * to 0 (no selection, or nothing in it carries fluid).
+   */
+  carriedFluidMl?: number;
 }
 
 interface PosNode {
@@ -275,7 +287,7 @@ export function buildSkeleton(state: PlanState, opts: SkeletonOpts): Skeleton {
   const { route, mix, gear } = state;
   const D = dist(route);
   const K = Math.max(0, Math.floor(opts.minStopsForProducts ?? 0));
-  const carryable = carryableFluid(gear, route);
+  const carryable = carryableFluid(gear, route) + (opts.carriedFluidMl ?? 0);
 
   const nodes = buildNodes(D, opts.riderStops, opts.allowNewStops);
   const nodeKms = nodes.map((node) => node.km);

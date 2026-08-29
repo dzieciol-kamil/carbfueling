@@ -18,6 +18,7 @@ import {
 } from '../fuel';
 import type { MixSettings, PlanState, Vessel } from '../types';
 import { assertInvariantV1 } from './assignWater';
+import { placedSelection } from './assignFood';
 import { deliveredShare } from './deliveredShare';
 import type { Service, Skeleton } from './types';
 
@@ -112,16 +113,20 @@ export function assignCarbs(
   // The ride's real total (skeleton.legs already carries this, built by L1 off the same
   // eff()-weighted integral as cph()×hours — summing it back out is cheaper than recomputing it).
   const totalNeedG = skeleton.legs.reduce((a, l) => a + l.carbNeedG, 0);
-  const selectionCarbsG = selection.reduce((a, entry) => {
-    const lib = foodLib.find((f) => f.key === entry.key);
-    if (!lib) return a;
+  // Cluster A fix (W14, 2026-08-25): `assignFood` no longer places the whole selection — it caps
+  // itself to what the ride needs (`assignFood.ts`'s `placedSelection`). Netting the FULL selection
+  // out here, as before, double-counted: it assumed carbs that never actually land on the route, so
+  // izo rationed itself against food nobody ate and the ride came up short. Reusing the exact same
+  // `placedSelection` helper keeps this in sync with what `assignFood` will place, by construction,
+  // instead of two places guessing the same cap independently.
+  const selectionCarbsG = placedSelection(route, foodLib, selection).reduce((a, lib) => {
     // (b): when no stop exists anywhere on the route, assignFood has nowhere legal to pin a
     // needsStop unit (S3) and drops it outright — don't also net its carbs out of the vessel
     // target, or the rider silently loses them twice. Only fires in the "route too short for any
     // legal stop" edge case; with minStopsForProducts set from this same selection, a skeleton
     // normally has exactly enough stops to host every needsStop unit.
     if (lib.needsStop && skeleton.stops.length === 0) return a;
-    return a + lib.carbs * entry.count;
+    return a + lib.carbs;
   }, 0);
   // Task F (W12, 2026-08-25): reserve gel's own fixed dose budget before izo ever gets a target to
   // race against. Without this, izo (which runs first, Ruling B) has no idea gel is coming and
@@ -193,7 +198,21 @@ export function assignCarbs(
     // stranding the tail of the route.
     if (hasWaterVessel && runningTotal >= vesselTargetG) break;
 
-    const toKm = Math.min(leg.toKm, carbEndKm);
+    // C6's trim, with two guards against swallowing a leg it was never meant to erase (measured on
+    // a 400km/250ml-izo relay, autoplan.test.ts's "the finish gap cannot swallow the leg it is
+    // trimmed from"): on a single-leg route (no stops at all) there is nothing else to hand the
+    // trimmed sliver to — no other service, no next leg — so trimming is pure loss and is skipped
+    // outright (same test file's "a load the ride is short of still drinks all the way in": a
+    // single, never-refilled load that already pours under both `cph` and `absCap` leaves no
+    // backlog to drain, so there is nothing C6 is protecting against there either). On a multi-leg
+    // route the trim must never remove more than half of THIS leg's own natural span: a leg already
+    // at `minStopX(D)` (the DP's own minimum) can be far shorter than `CARB_STREAM_FINISH_GAP * D`,
+    // and the flat fraction-of-D buffer would otherwise erase almost all of a short tail leg while
+    // barely denting a long one.
+    const trimmedToKm = Math.min(leg.toKm, carbEndKm);
+    const singleLegRoute = skeleton.legs.length === 1;
+    const swallowsLeg = trimmedToKm - leg.fromKm < 0.5 * (leg.toKm - leg.fromKm);
+    const toKm = singleLegRoute || swallowsLeg ? leg.toKm : trimmedToKm;
     if (toKm <= leg.fromKm + EPS) break;
 
     for (let attempt = 0; attempt < izoVessels.length; attempt++) {

@@ -11,7 +11,7 @@ import type { DraftStop } from '../autoplan';
 import type { FoodSelectionEntry } from '../autoplan';
 import type { FoodLibEntry, PlanState } from '../types';
 import { assignCarbs } from './assignCarbs';
-import { assignFood } from './assignFood';
+import { assignFood, placedSelection } from './assignFood';
 import { assignWater } from './assignWater';
 import { buildSkeleton } from './skeleton';
 import type { CostWeights } from './skeleton';
@@ -48,6 +48,24 @@ function countNeedsStop(selection: FoodSelectionEntry[], foodLib: FoodLibEntry[]
 }
 
 /**
+ * F2: the "carried products" fluid credit for L1's capacity test (`SkeletonOpts.carriedFluidMl`) —
+ * the `ml` off every non-`needsStop` unit `assignFood` will actually place (`placedSelection`, the
+ * same cap `assignCarbs.ts`'s `selectionCarbsG` already nets against). A `needsStop` unit is bought
+ * and drunk at a stop L1 already counts as a fresh refill, so it adds nothing to what the bottles
+ * must carry *between* stops — only carried items do.
+ */
+function carriedFluidMl(
+  route: PlanState['route'],
+  foodLib: FoodLibEntry[],
+  selection: FoodSelectionEntry[],
+): number {
+  return placedSelection(route, foodLib, selection).reduce(
+    (a, lib) => (lib.needsStop ? a : a + (lib.ml ?? 0)),
+    0,
+  );
+}
+
+/**
  * Runs the deterministic v2 pipeline end to end. `state.stops` that the rider placed by hand
  * (`!autoCreated`) are offered to L1 as cheap nodes (S6); a previous run's own auto-generated stops
  * are not — they get no discount over any other lattice point.
@@ -65,6 +83,7 @@ export function plan(state: PlanState, selection: FoodSelectionEntry[]): DraftPl
     allowNewStops: true,
     weights: DEFAULT_WEIGHTS,
     minStopsForProducts: countNeedsStop(selection, state.foodLib),
+    carriedFluidMl: carriedFluidMl(state.route, state.foodLib, selection),
   });
 
   const carbs = assignCarbs(skeleton, state, selection);
