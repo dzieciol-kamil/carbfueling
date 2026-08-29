@@ -127,6 +127,10 @@ export function ChartCard() {
           >
             {strings.curve}
           </div>
+          <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
+            <StartOverIcon />
+            <span>{strings.clearPlanButton}</span>
+          </button>
           <AutoplanFlow variant="desktop" />
           <div style={{ position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -137,10 +141,6 @@ export function ChartCard() {
               <button onClick={handleImportPick} style={planBtnStyle}>
                 <UploadIcon />
                 <span>{strings.importPlanButton}</span>
-              </button>
-              <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
-                <ClearIcon />
-                <span>{strings.clearPlanButton}</span>
               </button>
             </div>
             <input
@@ -412,7 +412,12 @@ function UploadIcon() {
   );
 }
 
-function ClearIcon() {
+// A "poof" burst — six open strokes radiating from a gap at the centre, alternating
+// long/short so it reads as a sparkle rather than a mechanical asterisk. Deliberately not a
+// closed/filled star (that reads as "favourite"), and deliberately not what sits at
+// AutoplanFlow's wand tip (a plain dot) — this button is first in the row, right next to
+// that one, so the two need to read as different marks at a glance.
+function StartOverIcon() {
   return (
     <svg
       width={15}
@@ -422,10 +427,8 @@ function ClearIcon() {
       stroke="currentColor"
       strokeWidth={1.9}
       strokeLinecap="round"
-      strokeLinejoin="round"
     >
-      <path d="M17 3.5 L10 11" />
-      <path d="M10 11 L5 13.5 M10 11 L7 17.5 M10 11 L11.5 17.8 M10 11 L14 14.5" />
+      <path d="M13.5 11 L19 11 M12.3 13.2 L13.8 15.8 M9.8 13.2 L7 17.9 M8.5 11 L5.5 11 M9.8 8.8 L7 4.1 M12.3 8.8 L13.8 6.2" />
     </svg>
   );
 }

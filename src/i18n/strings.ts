@@ -749,12 +749,12 @@ export const STR: Record<Lang, StringTable> = {
       'Nie udało się wczytać pliku — sprawdź, czy to poprawny eksport planu z Carb Fueling.',
     importPlanSuccess: 'Plan zaimportowany.',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
-    clearPlanButton: 'Wyczyść plan',
-    clearPlanConfirmTitle: 'Wyczyścić plan?',
+    clearPlanButton: 'Od nowa',
+    clearPlanConfirmTitle: 'Zacząć od nowa?',
     clearPlanConfirmBody:
       'Usunie napełnienia, produkty i postoje z trasy. Trasa, sprzęt i mieszanka zostają bez zmian. Tej zmiany nie da się cofnąć.',
     clearPlanConfirmCancel: 'Anuluj',
-    clearPlanConfirmConfirm: 'Wyczyść',
+    clearPlanConfirmConfirm: 'Zacznij od nowa',
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po wysiłku, aby uzupełnić glikogen mięśniowy.',
@@ -1184,12 +1184,12 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
     exportPlanError: 'Could not save the file. Please try again.',
-    clearPlanButton: 'Clear plan',
-    clearPlanConfirmTitle: 'Clear your plan?',
+    clearPlanButton: 'Start over',
+    clearPlanConfirmTitle: 'Start over?',
     clearPlanConfirmBody:
       "This removes fills, food and stops from your route. Your route, gear and mix stay as they are. This can't be undone.",
     clearPlanConfirmCancel: 'Cancel',
-    clearPlanConfirmConfirm: 'Clear',
+    clearPlanConfirmConfirm: 'Start over',
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates you should consume after exercise to replenish muscle glycogen.',
