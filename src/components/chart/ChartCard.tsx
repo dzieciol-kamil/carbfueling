@@ -412,11 +412,9 @@ function UploadIcon() {
   );
 }
 
-// A "poof" burst — six open strokes radiating from a gap at the centre, alternating
-// long/short so it reads as a sparkle rather than a mechanical asterisk. Deliberately not a
-// closed/filled star (that reads as "favourite"), and deliberately not what sits at
-// AutoplanFlow's wand tip (a plain dot) — this button is first in the row, right next to
-// that one, so the two need to read as different marks at a glance.
+// A six-ray asterisk/sparkle (✳): three equal-length diameters through a common centre,
+// 60° apart (0°/60°/120°). Open strokes, no fill, no closed outline — deliberately not the
+// closed/filled star this replaced (that read as "favourite", not "fresh start").
 function StartOverIcon() {
   return (
     <svg
@@ -428,7 +426,7 @@ function StartOverIcon() {
       strokeWidth={1.9}
       strokeLinecap="round"
     >
-      <path d="M13.5 11 L19 11 M12.3 13.2 L13.8 15.8 M9.8 13.2 L7 17.9 M8.5 11 L5.5 11 M9.8 8.8 L7 4.1 M12.3 8.8 L13.8 6.2" />
+      <path d="M3.5 11 L18.5 11 M7.3 4.5 L14.8 17.5 M14.8 4.5 L7.3 17.5" />
     </svg>
   );
 }
