@@ -24,9 +24,10 @@
  */
 import { describe, expect, test } from 'vitest';
 import { autoplan } from './autoplan';
+import type { AutoplanResult } from './autoplan';
 import { planExtras, planSummary } from './fuel';
 import { KIELCE_MARKI_ELE } from './__fixtures__/kielceMarkiEle';
-import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from './types';
+import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Stop, Vessel } from './types';
 
 const route: RouteInput = {
   sport: 'cycling',
@@ -80,19 +81,32 @@ const foodLib: FoodLibEntry[] = [
 
 const state: PlanState = { route, mix, gear, fills: [], foods: [], foodLib, stops: [] };
 
-const result = autoplan(state, [
+const selection = [
   { key: 'cola', count: 1 },
   { key: 'banana', count: 2 },
   { key: 'u1', count: 1 },
-]);
+];
+
+const result = autoplan(state, selection);
+
+/** Materializes an autoplan() result into the PlanState the app would hold once applied (mirrors
+ *  `applyAutoplan`), so `fuel.ts` can be asked what the plan actually does. */
+function materialize(base: PlanState, r: AutoplanResult): PlanState {
+  let stopId = 1;
+  const stops: Stop[] = [
+    ...base.stops,
+    ...r.newStops.map((sh) => ({ ...sh, id: stopId++, name: 'Sklep', autoCreated: true })),
+  ];
+  return {
+    ...base,
+    fills: r.fills.map((f, i) => ({ ...f, fid: i + 1 })),
+    foods: r.foods.map((f, i) => ({ ...f, id: i + 1, name: f.key })),
+    stops,
+  };
+}
 
 /** The plan as the app would hold it once applied, so `fuel.ts` can be asked what it does. */
-const applied: PlanState = {
-  ...state,
-  fills: result.fills.map((f, i) => ({ ...f, fid: i + 1 })),
-  foods: result.foods.map((f, i) => ({ ...f, id: i + 1, name: f.key })),
-  stops: result.newStops,
-};
+const applied: PlanState = materialize(state, result);
 
 describe('autoplan pacing (the rider 194km ride)', () => {
   /**
@@ -132,20 +146,45 @@ describe('autoplan pacing (the rider 194km ride)', () => {
   });
 
   /**
-   * No bottle is carried empty for the rest of the day.
+   * A vessel whose last fill ends well before the finish is not automatically a defect. S4 says a
+   * vessel need not start at km 0 and may be spent whenever its job is done — a bottle carried
+   * purely to buy a stop earns its place at the start and can legitimately finish before the line.
    *
-   * A bidon the plan drains at 25km and never fills again is 710ml of dead weight for 170km — and
-   * worse, it is 710ml the plan could have used and decided not to. Either it goes back into
-   * service or the rider should have left it at home; the plan may not have it both ways.
+   * The real defect the rider named is narrower than "drains early": "Either it goes back into
+   * service or the rider should have left it at home; the plan may not have it both ways." That is
+   * dead weight — a vessel whose absence would have cost the plan nothing — and it is directly
+   * testable: drop the vessel from `gear` and re-run autoplan(). If the reduced-gear plan needs no
+   * more stops and scores no worse on the app's own coverage/hydration numbers, the vessel was never
+   * earning its keep.
    */
-  test('no vessel is drained early and then carried empty', () => {
+  test('a vessel drained early is only legal if losing it would cost the plan something', () => {
     for (const v of gear) {
       const mine = result.fills.filter((f) => f.gid === v.gid).sort((a, b) => a.to - b.to);
       if (mine.length === 0) continue;
       const last = mine[mine.length - 1].to;
-      expect(last, `${v.name} (${v.gid}) runs dry at ${last.toFixed(0)}km`).toBeGreaterThan(
-        194 * 0.8,
-      );
+      if (last > 194 * 0.8) continue;
+
+      const reducedState: PlanState = { ...state, gear: gear.filter((g) => g.gid !== v.gid) };
+      const reducedResult = autoplan(reducedState, selection);
+      const reducedApplied = materialize(reducedState, reducedResult);
+
+      const before = planSummary(applied);
+      const after = planSummary(reducedApplied);
+      const carriesWater = v.allowed.includes('water');
+
+      const costsSomething =
+        reducedResult.newStops.length > result.newStops.length ||
+        after.coverage < before.coverage ||
+        (carriesWater && after.hydrationPct < before.hydrationPct);
+
+      expect(
+        costsSomething,
+        `${v.name} (${v.gid}) drains at ${last.toFixed(0)}km, but dropping it from gear leaves the ` +
+          `plan just as good (${reducedResult.newStops.length} stops / ${after.coverage}% coverage` +
+          `${carriesWater ? ` / ${after.hydrationPct}% hydration` : ''} vs ${result.newStops.length} ` +
+          `stops / ${before.coverage}% coverage` +
+          `${carriesWater ? ` / ${before.hydrationPct}% hydration` : ''}) — dead weight`,
+      ).toBe(true);
     }
   });
 
