@@ -39,6 +39,26 @@ const mobileButtonStyle: CSSProperties = {
 /** Nothing to plan yet: the button stays put and says why instead of disappearing on the rider. */
 const disabledStyle: CSSProperties = { opacity: 0.45, cursor: 'default' };
 
+// Matches Header.tsx's GearIcon/MixIcon/FoodIcon/SettingsIcon idiom (viewBox, stroke width,
+// sizing) — desktop-only, so the mobile trigger stays text-only as before.
+function WandIcon() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4.5 17.5 L13 9" />
+      <path d="M16.5 3 v4 M14.5 5 h4" />
+    </svg>
+  );
+}
+
 function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
   return {
     position: 'fixed',
@@ -150,7 +170,8 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
               : mobileButtonStyle
         }
       >
-        {strings.autoplanButton}
+        {variant === 'desktop' && <WandIcon />}
+        <span>{strings.autoplanButton}</span>
       </button>
 
       {phase === 'preflight' && (

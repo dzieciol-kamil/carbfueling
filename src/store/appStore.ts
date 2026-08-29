@@ -223,6 +223,7 @@ interface AppState {
     options?: AutoplanOptions,
   ) => void;
   setAutoplanPreference: (preference: AutoplanPreference) => void;
+  clearPlan: () => void;
 }
 
 const defaultRoute: RouteInput = {
@@ -745,6 +746,22 @@ export const useAppStore = create<AppState>()(
             nextStopId: stopId,
           };
         }),
+
+      // Empties the rider's plan (fills, foods, stops) while leaving his setup — route,
+      // gear, mix, food library — untouched, unlike importSettings/applyAutoplan which
+      // replace those too. combinedFillIds/selKey/hoverKey/dragKey are reset the same way
+      // applyAutoplan resets them for a fills replacement: each names an id this wipes out.
+      // Id counters (nextFid/nextFoodId/nextStopId) are deliberately left untouched — every
+      // other remove* action in this store (removeFill, removeFood, removeStop) never
+      // recycles an id after deletion, so a fresh id after clearing keeps that same guarantee.
+      clearPlan: () =>
+        set((s) => ({
+          fills: [],
+          foods: [],
+          stops: [],
+          combinedFillIds: [],
+          ui: { ...s.ui, selKey: null, hoverKey: null, dragKey: null },
+        })),
     }),
     {
       name: 'carbfueling',
