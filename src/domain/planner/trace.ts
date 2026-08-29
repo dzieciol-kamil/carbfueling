@@ -5,10 +5,10 @@
  * wired to anything else (no `globalThis` stash for later consumption, no animation hook). See
  * `index.ts`'s `plan()` for where each stage is called.
  *
- * **Off by default** — silent in the test suite and in production. Two ways to turn it on:
- *   - from code: `setPlannerTrace(true)`.
- *   - from a running app's DevTools console, no rebuild needed:
- *     `window.__AUTOPLAN_TRACE__ = true`
+ * **On by default** — so the owner sees the pipeline just by opening the app, no flag to type.
+ * Silenced in the test suite by a vitest `setupFiles` entry that calls `setPlannerTrace(false)`
+ * before any test runs. To mute it in a running app, from DevTools console, no rebuild needed:
+ *     `window.__AUTOPLAN_TRACE__ = false`
  *     then re-run autoplan. Read via `globalThis` at call time (`isPlannerTraceOn`), so it takes
  *     effect on the very next `plan()` call — no need to touch the module flag at all.
  *
@@ -21,18 +21,20 @@ import type { FoodItem, PlanState } from '../types';
 import { servicesToFills } from './services';
 import type { Service, Skeleton } from './types';
 
-let enabled = false;
+let enabled = true;
 
 /** Programmatic on/off switch. */
 export function setPlannerTrace(on: boolean): void {
   enabled = on;
 }
 
-/** The DevTools escape hatch: `window.__AUTOPLAN_TRACE__ = true` (browser `window` IS
+/** The DevTools escape hatch: `window.__AUTOPLAN_TRACE__ = false` (browser `window` IS
  *  `globalThis`), checked fresh on every call so flipping it takes effect immediately without a
- *  rebuild or reimport. */
+ *  rebuild or reimport. An explicitly-set boolean on `globalThis` wins over the module flag in
+ *  either direction; leaving it unset falls back to the module flag. */
 export function isPlannerTraceOn(): boolean {
-  return enabled || (globalThis as Record<string, unknown>).__AUTOPLAN_TRACE__ === true;
+  const override = (globalThis as Record<string, unknown>).__AUTOPLAN_TRACE__;
+  return typeof override === 'boolean' ? override : enabled;
 }
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
