@@ -177,6 +177,87 @@ describe('pruneUnneededFood — basics', () => {
   });
 });
 
+describe('pruneUnneededFood — nominal carb floor', () => {
+  // All three fixtures below share the default 40 km / 20 km/h route: totalHours = 2, cph (mid
+  // duration, mid intensity) = 45 g/h, so target = 2 × 45 = 90 g exactly (COVERAGE_TARGET_PCT
+  // floor = 0.8 × 90 = 72 g). Every food spreads over the same [2, 38] window on that route, so
+  // with no gpx the route's effort curve is exactly linear in distance, and as long as an item's
+  // average delivery rate over its window stays below the (also constant) need rate, every gram it
+  // delivers lands ahead of its matching need slice and is credited in full — `coverage` and the
+  // nominal ratio agree exactly except for `coverage`'s integer rounding. That means a total placed
+  // of 71.6g — inside [71.55, 72) — rounds `coverage` up to 80 (green) while the raw nominal ratio
+  // (totalCarbs / target) stays strictly below 0.8 — the same rounding gap the real 0.7975 "believable
+  // band" case hits, reproduced here on purpose.
+
+  test('a removal that keeps coverage green is rejected once it would drop the nominal ratio below the floor', () => {
+    const route = makeRoute();
+    const state = makeState(route, [], FOOD_LIB);
+    // banana (71.6g, kept) + gel (4.4g, lowest priority, tried for removal first) = 76g total.
+    const foods: DraftFood[] = [spread('banana', 71.6, 2, 38), spread('gel', 4.4, 2, 38)];
+    const selection: FoodSelectionEntry[] = [
+      { key: 'banana', count: 1 },
+      { key: 'gel', count: 1 },
+    ];
+
+    const baseline = score(state, [], foods);
+    expect(baseline.totalCarbs).toBeCloseTo(76, 6);
+    expect(baseline.target).toBeCloseTo(90, 6);
+    expect(baseline.coverage).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT);
+    expect(baseline.totalCarbs / baseline.target).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT / 100);
+
+    // Without the gel, banana alone (71.6g) is what removing it would leave: coverage still rounds
+    // green, but the nominal ratio is genuinely under the floor.
+    const withoutGel = score(state, [], [foods[0]]);
+    expect(withoutGel.totalCarbs / withoutGel.target).toBeLessThan(COVERAGE_TARGET_PCT / 100);
+    expect(withoutGel.coverage).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT); // the rounding gap
+
+    const result = pruneUnneededFood(state, [], foods, selection);
+    expect(result).toEqual(foods); // gel survives — coverage alone would have let it go
+  });
+
+  test('a removal is still accepted when both coverage and the nominal ratio clear their floors', () => {
+    const route = makeRoute();
+    const state = makeState(route, [], FOOD_LIB);
+    // banana (75g, kept) + gel (20g, lowest priority) = 95g total.
+    const foods: DraftFood[] = [spread('banana', 75, 2, 38), spread('gel', 20, 2, 38)];
+    const selection: FoodSelectionEntry[] = [
+      { key: 'banana', count: 1 },
+      { key: 'gel', count: 1 },
+    ];
+
+    const baseline = score(state, [], foods);
+    expect(baseline.coverage).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT);
+    expect(baseline.totalCarbs / baseline.target).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT / 100);
+
+    // Banana alone (75g) clears both floors comfortably — no rounding edge involved.
+    const withoutGel = score(state, [], [foods[0]]);
+    expect(withoutGel.coverage).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT);
+    expect(withoutGel.totalCarbs / withoutGel.target).toBeGreaterThanOrEqual(
+      COVERAGE_TARGET_PCT / 100,
+    );
+
+    const result = pruneUnneededFood(state, [], foods, selection);
+    expect(result).toEqual([foods[0]]); // gel (lower priority) is still gone, as before this change
+  });
+
+  test('rule 3 analogue: a plan already below the nominal floor (but reading coverage-green) has nothing removed', () => {
+    const route = makeRoute();
+    const state = makeState(route, [], FOOD_LIB);
+    // A single 71.6g item — the exact "trial" state from the first test above, now as the baseline.
+    const foods: DraftFood[] = [spread('banana', 71.6, 2, 38)];
+    const selection: FoodSelectionEntry[] = [{ key: 'banana', count: 1 }];
+
+    const baseline = score(state, [], foods);
+    // The OLD rule 3 (coverage alone) would not have blocked this plan...
+    expect(baseline.coverage).toBeGreaterThanOrEqual(COVERAGE_TARGET_PCT);
+    // ...but the nominal ratio is genuinely under the floor from the start.
+    expect(baseline.totalCarbs / baseline.target).toBeLessThan(COVERAGE_TARGET_PCT / 100);
+
+    const result = pruneUnneededFood(state, [], foods, selection);
+    expect(result).toEqual(foods); // untouched
+  });
+});
+
 const HYDRATION_ROUTE = makeRoute({ distance: 30, temp: 22 });
 
 describe('pruneUnneededFood — needsStop items also protect hydration', () => {

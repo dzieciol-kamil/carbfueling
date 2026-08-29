@@ -72,9 +72,13 @@ function keyPriority(
  *    buys fluid as well as carbs, so removing one can cost hydration, not just carb coverage) — but
  *    only when the plan started hydration-green. A plan that was already hydration-short before
  *    pruning touched anything is not this pass's fault to fix or to be blocked by.
+ *  - ALSO `totalCarbs / target >= COVERAGE_TARGET_PCT / 100` — the plan's *nominal* carb ratio.
+ *    `coverage` is absorption-adjusted and saturates at 100 once the gut ceiling is reached, so past
+ *    that point it stops rewarding extra placed grams and is blind to how much food the plan
+ *    actually tells the rider to carry; the nominal ratio is the number that answers that question.
  *
- * Rule 3 (don't prune a short plan shorter): if `foods` is already below `COVERAGE_TARGET_PCT`
- * before pruning starts, this removes nothing at all.
+ * Rule 3 (don't prune a short plan shorter): if `foods` is already below `COVERAGE_TARGET_PCT`,
+ * or already below the nominal floor, before pruning starts, this removes nothing at all.
  */
 export function pruneUnneededFood(
   state: PlanState,
@@ -86,6 +90,7 @@ export function pruneUnneededFood(
 
   const baseline = score(state, services, foods);
   if (baseline.coverage < COVERAGE_TARGET_PCT) return foods; // rule 3
+  if (baseline.totalCarbs / baseline.target < COVERAGE_TARGET_PCT / 100) return foods; // rule 3, nominal floor
 
   const hydrationStartedGreen = baseline.hydrationPct >= HYDRATION_TARGET_PCT;
   const priority = keyPriority(selection, state.foodLib);
@@ -107,8 +112,9 @@ export function pruneUnneededFood(
       !needsStopKeys.has(candidate.key) ||
       !hydrationStartedGreen ||
       trialScore.hydrationPct >= HYDRATION_TARGET_PCT;
+    const nominalOk = trialScore.totalCarbs / trialScore.target >= COVERAGE_TARGET_PCT / 100;
 
-    if (coverageOk && hydrationOk) remaining = trial;
+    if (coverageOk && hydrationOk && nominalOk) remaining = trial;
   }
 
   return remaining;
