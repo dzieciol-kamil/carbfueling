@@ -4,8 +4,6 @@
  * never authored, and the over-credit trap), and §4.1 (why carbs go first, before water — this
  * function claims vessels without negotiating with anyone, and never reserves capacity for water).
  */
-import { bucketVessels } from '../autoplan';
-import type { FoodSelectionEntry } from '../autoplan';
 import {
   COVERAGE_TARGET_PCT,
   carbsFill,
@@ -16,27 +14,71 @@ import {
   timeAtDistance,
   totalHours,
 } from '../fuel';
-import type { MixSettings, PlanState, Vessel } from '../types';
+import type { Content, MixSettings, PlanState, Vessel } from '../types';
 import { assertInvariantV1 } from './assignWater';
 import { placedSelection } from './assignFood';
 import { deliveredShare } from './deliveredShare';
-import type { Service, Skeleton } from './types';
+import type { FoodSelectionEntry, Service, Skeleton } from './types';
 
 /**
  * C5's time-based short-ride skip — a separate gate from F4's sweat-vs-body-mass water gate
- * ("rozdzielamy": two gates, not one). Mirrors autoplan.ts's own (unexported) `CARB_MIN_HOURS`.
+ * ("rozdzielamy": two gates, not one).
  */
 const CARB_MIN_HOURS = 1;
 
 /**
  * C6's gut-drain buffer, as a share of `D`. Spec §1.2/§8 leaves the exact size open ("presumably
- * remaining gut ÷ absCap"); this mirrors autoplan.ts's own (unexported) `CARB_STREAM_FINISH_GAP` —
- * the same 2% the rider's real builds already support — so a carb service is never authored to
- * stretch all the way to the line, where it would never finish absorbing.
+ * remaining gut ÷ absCap") — the same 2% the rider's real builds already support — so a carb
+ * service is never authored to stretch all the way to the line, where it would never finish
+ * absorbing.
  */
 const CARB_STREAM_FINISH_GAP = 0.02;
 
 const EPS = 1e-6;
+
+const CONCENTRATED_MIX_THRESHOLD_G_PER_100ML = 15;
+
+function isAllowed(v: Vessel, content: Content): boolean {
+  return (v.allowed || []).includes(content);
+}
+
+export function bucketVessels(
+  gear: Vessel[],
+  mix: MixSettings,
+): {
+  gelVessels: Vessel[];
+  izoVessels: Vessel[];
+  waterOnly: Vessel[];
+  /**
+   * The bottle held back to ride alongside a concentrated mix with plain water in it. Nothing reads
+   * this: the reservation *is* the removal from `izoVessels`, after which `build` finds the vessel
+   * carrying no carbs and lays it out as a water bottle like any other. It is returned because a
+   * bottle silently missing from a pool is the kind of thing that needs a name to be checkable.
+   */
+  reservedWaterVessel: Vessel | null;
+} {
+  const gelVessels = gear.filter((v) => isAllowed(v, 'gel'));
+  const gelGids = new Set(gelVessels.map((v) => v.gid));
+  const nonGel = gear.filter((v) => !gelGids.has(v.gid));
+
+  const izoCandidates = nonGel.filter((v) => isAllowed(v, 'izo'));
+  const waterOnly = nonGel.filter((v) => !isAllowed(v, 'izo'));
+
+  // A syrup-strength mix is drunk with water on the side, so the biggest bottle is held back to
+  // carry it — but only a bottle the rider allows water in can do that job. Reserving one that can
+  // hold nothing but izo takes it out of the izo pool and hands it to a water side that then
+  // refuses it, and the largest bottle on the bike rides the whole day empty. Where no izo bottle
+  // may hold water, there is nothing to reserve and every one of them stays on izo.
+  const waterCapable = izoCandidates.filter((v) => isAllowed(v, 'water'));
+  let reservedWaterVessel: Vessel | null = null;
+  let izoVessels = izoCandidates;
+  if (mix.conc > CONCENTRATED_MIX_THRESHOLD_G_PER_100ML && waterCapable.length > 0) {
+    reservedWaterVessel = waterCapable.reduce((a, b) => (b.vol > a.vol ? b : a));
+    izoVessels = izoCandidates.filter((v) => v.gid !== reservedWaterVessel!.gid);
+  }
+
+  return { gelVessels, izoVessels, waterOnly, reservedWaterVessel };
+}
 
 /** A vessel's fixed per-fill carbs for `content` — independent of span (§2.1: `carbsFill` only
  *  reads `content`/`gid` off the `Fill` shape it's handed). */
@@ -199,7 +241,7 @@ export function assignCarbs(
     if (hasWaterVessel && runningTotal >= vesselTargetG) break;
 
     // C6's trim, with two guards against swallowing a leg it was never meant to erase (measured on
-    // a 400km/250ml-izo relay, autoplan.test.ts's "the finish gap cannot swallow the leg it is
+    // a 400km/250ml-izo relay, facade.test.ts's "the finish gap cannot swallow the leg it is
     // trimmed from"): on a single-leg route (no stops at all) there is nothing else to hand the
     // trimmed sliver to — no other service, no next leg — so trimming is pure loss and is skipped
     // outright (same test file's "a load the ride is short of still drinks all the way in": a

@@ -4,8 +4,16 @@
  * contract this file follows field-for-field.
  */
 
-import type { Content } from '../types';
-import type { DraftFood, DraftStop } from '../autoplan';
+import type { Content, Fill, FoodItem, Stop } from '../types';
+
+export type DraftFill = Omit<Fill, 'fid'>;
+export type DraftFood = Omit<FoodItem, 'id' | 'name'>;
+export type DraftStop = Omit<Stop, 'id' | 'name'>;
+
+export interface FoodSelectionEntry {
+  key: string;
+  count: number;
+}
 
 /** One continuous use of one vessel. A vessel has many, with gaps. This is what makes relay
  *  expressible — the single thing the old model could not do (C4). */
@@ -53,4 +61,10 @@ export interface DraftPlan {
   services: Service[];
   foods: DraftFood[];
   stops: DraftStop[];
+}
+
+export interface AutoplanResult {
+  fills: DraftFill[];
+  foods: DraftFood[];
+  newStops: DraftStop[];
 }

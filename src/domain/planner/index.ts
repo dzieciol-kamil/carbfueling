@@ -7,8 +7,6 @@
  * application, a post-fact pass that tries removing placed products one at a time and keeps only
  * the removals that leave the real `planSummary()` still green — see `prune.ts`'s module doc.
  */
-import type { DraftStop } from '../autoplan';
-import type { FoodSelectionEntry } from '../autoplan';
 import { dist } from '../fuel';
 import type { FoodLibEntry, PlanState } from '../types';
 import { assignCarbs } from './assignCarbs';
@@ -30,7 +28,7 @@ import {
   traceSkeleton,
   traceTidy,
 } from './trace';
-import type { DraftPlan } from './types';
+import type { DraftPlan, DraftStop, FoodSelectionEntry } from './types';
 
 /**
  * §3.3's "Zrównoważony (default)" starting weights, calibrated in W5b-1 (2026-08-24) after changes 1

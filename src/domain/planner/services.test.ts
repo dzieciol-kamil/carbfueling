@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { carbsFill, volOf } from '../fuel';
-import type { DraftFill } from '../autoplan';
 import type { Fill, MixSettings, Vessel } from '../types';
 import { servicesToFills } from './services';
-import type { Service } from './types';
+import type { DraftFill, Service } from './types';
 
 const gear: Vessel[] = [
   { gid: 'g1', name: 'Bidon', vol: 500, allowed: ['water', 'izo'], gelParts: 4 },

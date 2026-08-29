@@ -1,6 +1,5 @@
 import type { Vessel } from '../types';
-import type { DraftFill } from '../autoplan';
-import type { Service } from './types';
+import type { DraftFill, Service } from './types';
 
 /**
  * Converts services into the legacy `Fill` shape the rest of the app (chart, panels, store) still

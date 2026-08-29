@@ -16,10 +16,9 @@
  * off, so call sites in `index.ts`/`prune.ts` never need their own `if` guard.
  */
 import { planSummary } from '../fuel';
-import type { DraftFood, FoodSelectionEntry } from '../autoplan';
 import type { FoodItem, PlanState } from '../types';
 import { servicesToFills } from './services';
-import type { Service, Skeleton } from './types';
+import type { DraftFood, FoodSelectionEntry, Service, Skeleton } from './types';
 
 let enabled = true;
 

@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import type { DraftFood, FoodSelectionEntry } from '../autoplan';
 import { COVERAGE_TARGET_PCT, HYDRATION_TARGET_PCT, planSummary } from '../fuel';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { pruneUnneededFood } from './prune';
 import { servicesToFills } from './services';
-import type { Service } from './types';
+import type { DraftFood, FoodSelectionEntry, Service } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {

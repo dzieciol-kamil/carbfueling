@@ -1,17 +1,15 @@
+/**
+ * End-to-end tests for the public `autoplan()` facade (`facade.ts`) — moved here when the legacy
+ * `src/domain/autoplan.ts` engine it used to live alongside was retired. Every test below drives
+ * the real v2 pipeline (`plan()` + `servicesToFills`) through `autoplan()`, unlike `pipeline.test.ts`
+ * (structural-only assertions on `plan()` itself) or the per-stage unit tests elsewhere in this
+ * directory.
+ */
 import { describe, expect, test } from 'vitest';
-import {
-  STOP_SNAP_KM,
-  autoplan,
-  bucketVessels,
-  findClimbStarts,
-  gridXs,
-  minStopX,
-  pinStopItems,
-  placeItemsEvenly,
-  selectItemsForAmount,
-} from './autoplan';
-import type { FoodSelectionEntry } from './autoplan';
-import { COVERAGE_TARGET_PCT, planSummary, rateStats, samples, sweat, totalHours } from './fuel';
+import { autoplan, STOP_SNAP_KM } from './facade';
+import { minStopX } from './skeleton';
+import type { FoodSelectionEntry } from './types';
+import { COVERAGE_TARGET_PCT, planSummary, rateStats, samples, sweat, totalHours } from '../fuel';
 import type {
   Fill,
   FoodItem,
@@ -22,7 +20,7 @@ import type {
   RouteInput,
   Stop,
   Vessel,
-} from './types';
+} from '../types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
@@ -83,13 +81,6 @@ const bidon: Vessel = {
   allowed: ['water', 'izo'],
   gelParts: 4,
 };
-const bidon2: Vessel = {
-  gid: 'g2',
-  name: 'Bidon 2',
-  vol: 500,
-  allowed: ['water', 'izo'],
-  gelParts: 4,
-};
 const flask: Vessel = {
   gid: 'g3',
   name: 'Flask',
@@ -97,82 +88,8 @@ const flask: Vessel = {
   allowed: ['izo', 'water', 'gel'],
   gelParts: 4,
 };
-const waterBottle: Vessel = { gid: 'g4', name: 'Water', vol: 750, allowed: ['water'], gelParts: 1 };
 
-describe('bucketVessels', () => {
-  test('gel-capable vessel is pulled out of the izo pool even if it also allows izo', () => {
-    const { gelVessels, izoVessels, waterOnly, reservedWaterVessel } = bucketVessels(
-      [bidon, flask, waterBottle],
-      makeMix({ conc: 8.4 }),
-    );
-    expect(gelVessels.map((v) => v.gid)).toEqual(['g3']);
-    expect(izoVessels.map((v) => v.gid)).toEqual(['g1']);
-    expect(waterOnly.map((v) => v.gid)).toEqual(['g4']);
-    expect(reservedWaterVessel).toBeNull();
-  });
-
-  test('concentrated mix reserves the largest izo-capable vessel as parallel water', () => {
-    const { izoVessels, reservedWaterVessel } = bucketVessels(
-      [bidon, bidon2],
-      makeMix({ conc: 20 }),
-    );
-    expect(reservedWaterVessel?.gid).toBe('g1'); // 650ml > 500ml
-    expect(izoVessels.map((v) => v.gid)).toEqual(['g2']);
-  });
-
-  test('standard-strength mix keeps every izo-capable vessel as izo', () => {
-    const { izoVessels, reservedWaterVessel } = bucketVessels(
-      [bidon, bidon2],
-      makeMix({ conc: 8.4 }),
-    );
-    expect(reservedWaterVessel).toBeNull();
-    expect(izoVessels.map((v) => v.gid)).toEqual(['g1', 'g2']);
-  });
-
-  /**
-   * The reservation exists to put plain water alongside a syrupy mix, so it can only fall on a
-   * bottle that may hold water. Reserving one that may not takes it out of the izo pool without
-   * putting it anywhere else — the biggest bottle on the bike then rides the whole day empty.
-   */
-  test('a bottle that cannot hold water is never the one reserved for water', () => {
-    const izoOnly: Vessel = {
-      gid: 'g5',
-      name: 'Izo only',
-      vol: 750,
-      allowed: ['izo'],
-      gelParts: 1,
-    };
-    const { izoVessels, reservedWaterVessel } = bucketVessels(
-      [izoOnly, bidon2],
-      makeMix({ conc: 20 }),
-    );
-    expect(reservedWaterVessel?.gid).toBe('g2');
-    expect(izoVessels.map((v) => v.gid)).toEqual(['g5']);
-  });
-
-  test('nothing is reserved when no izo-capable vessel may hold water', () => {
-    const izoOnly: Vessel = {
-      gid: 'g5',
-      name: 'Izo only',
-      vol: 750,
-      allowed: ['izo'],
-      gelParts: 1,
-    };
-    const izoOnly2: Vessel = {
-      gid: 'g6',
-      name: 'Izo only 2',
-      vol: 500,
-      allowed: ['izo'],
-      gelParts: 1,
-    };
-    const { izoVessels, reservedWaterVessel } = bucketVessels(
-      [izoOnly, izoOnly2],
-      makeMix({ conc: 20 }),
-    );
-    expect(reservedWaterVessel).toBeNull();
-    expect(izoVessels.map((v) => v.gid)).toEqual(['g5', 'g6']);
-  });
-});
+const bananaEntry: FoodLibEntry = { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 };
 
 /**
  * Every bottle the rider straps on has to carry something.
@@ -206,107 +123,6 @@ describe('autoplan (a concentrated mix with an izo-only bottle)', () => {
 
   test('what it carries is izo, since that is all it may hold', () => {
     expect(result.fills.filter((f) => f.gid === 'g5').every((f) => f.content === 'izo')).toBe(true);
-  });
-});
-
-describe('findClimbStarts', () => {
-  test('no GPX track configured on the route: caller is responsible for not calling this — with a flat synthetic-mode elevation profile passed as a real track, a genuine flat track finds nothing', () => {
-    const flatTrack: GpxTrack = { id: 1, ele: new Array(11).fill(100) };
-    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: flatTrack });
-    expect(findClimbStarts(route, 0, 100)).toEqual([]);
-  });
-
-  test('detects a single sustained climb and reports its start x', () => {
-    const ele = [100, 100, 100, 100, 100, 100, 700, 700, 700, 700, 700]; // climb between km 50 and 60
-    const track: GpxTrack = { id: 1, ele };
-    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: track });
-    const starts = findClimbStarts(route, 0, 100);
-    expect(starts).toHaveLength(1);
-    expect(starts[0]).toBeGreaterThan(48);
-    expect(starts[0]).toBeLessThan(56);
-  });
-
-  test('restricts detection to the given [fromX, toX] window', () => {
-    const ele = [100, 100, 100, 100, 100, 100, 700, 700, 700, 700, 700];
-    const track: GpxTrack = { id: 1, ele };
-    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: track });
-    expect(findClimbStarts(route, 0, 45)).toEqual([]);
-  });
-});
-
-const gelEntry: FoodLibEntry = { key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 };
-const bananaEntry: FoodLibEntry = { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 };
-
-describe('selectItemsForAmount', () => {
-  test('walks selection in order, respecting counts, stopping once the amount is reached', () => {
-    const selection: FoodSelectionEntry[] = [
-      { key: 'banana', count: 2 },
-      { key: 'gel', count: 3 },
-    ];
-    const items = selectItemsForAmount(selection, [bananaEntry, gelEntry], 50);
-    // 2 bananas = 46g (not enough), pulls in 1 gel = 68g total, stops
-    expect(items.map((i) => i.key)).toEqual(['banana', 'banana', 'gel']);
-  });
-
-  test('returns fewer items than the full selection when the amount is small', () => {
-    const selection: FoodSelectionEntry[] = [{ key: 'banana', count: 3 }];
-    const items = selectItemsForAmount(selection, [bananaEntry], 20);
-    expect(items).toHaveLength(1);
-  });
-
-  test('stops when selection is exhausted, even if amount is not fully reached', () => {
-    const selection: FoodSelectionEntry[] = [{ key: 'banana', count: 1 }];
-    const items = selectItemsForAmount(selection, [bananaEntry], 200);
-    expect(items).toHaveLength(1);
-  });
-});
-
-describe('placeItemsEvenly', () => {
-  test('spaces items evenly across [startX, D] when no GPX track is present', () => {
-    const route = makeRoute({ distance: 100, speed: 25, useGpx: false });
-    const foods = placeItemsEvenly([bananaEntry, gelEntry], 40, 100, route);
-    expect(foods).toHaveLength(2);
-    expect(foods[0].from).toBeLessThan(foods[1].from);
-    foods.forEach((f) => {
-      expect(f.from).toBeGreaterThanOrEqual(40);
-      expect(f.from).toBeLessThanOrEqual(100);
-    });
-  });
-
-  test('biases a slot to a nearby climb start when a GPX track is present', () => {
-    const ele = [100, 100, 100, 100, 100, 100, 700, 700, 700, 700, 700]; // climb ~50-60
-    const track: GpxTrack = { id: 1, ele };
-    const route = makeRoute({ distance: 100, speed: 25, useGpx: true, gpxTrack: track });
-    const foods = placeItemsEvenly([bananaEntry], 0, 100, route); // single item, even slot center = 50
-    expect(foods[0].from).toBeGreaterThan(48);
-    expect(foods[0].from).toBeLessThan(60);
-  });
-
-  test('empty item list returns no foods', () => {
-    const route = makeRoute();
-    expect(placeItemsEvenly([], 0, 100, route)).toEqual([]);
-  });
-});
-
-describe('pinStopItems', () => {
-  const cola: FoodLibEntry = {
-    key: 'cola',
-    pl: 'Cola',
-    en: 'Cola',
-    carbs: 35,
-    ml: 330,
-    needsStop: true,
-  };
-
-  test('several products bought at one stop are laid out one after another', () => {
-    const pinned = pinStopItems([cola, cola, cola, cola], [30], 100);
-    expect(pinned).toHaveLength(4);
-    expect(new Set(pinned.map((p) => p.from)).size).toBe(4);
-  });
-
-  test('a product goes to each stop when there are stops to go round', () => {
-    const pinned = pinStopItems([cola, cola, cola], [20, 45, 70], 100);
-    expect(pinned.map((p) => p.from)).toEqual([20, 45, 70]);
   });
 });
 
@@ -456,51 +272,13 @@ describe('autoplan (the end of a carb stream)', () => {
 });
 
 /**
- * Snapping a grid point onto the rider's own stop must not turn the grid around.
+ * Keeping the stops from a previous run must not mean planning around a frozen list.
  *
- * Legs are equal slices of time, so on a climb they are a kilometre long or less — shorter than the
- * 3km a stop may pull a boundary forward. Pull one boundary past the next and the "leg" between them
- * runs backwards: a fill that ends before it starts, and stops in the wrong order on the chart.
+ * A rider who keeps them expects the plan to *use* what is already on the route and to speak up
+ * where it needs somewhere new — not to silently make do with too few refills, and not to line
+ * up a second pull-over two kilometres past one he already has.
  */
-describe('autoplan (grid vs. the rider’s stops)', () => {
-  // A wall at km20: 500m of ascent per kilometre, so three grid legs fit inside three kilometres.
-  const wall: number[] = [];
-  for (let i = 0; i <= 60; i++) {
-    if (i < 20) wall.push(100);
-    else if (i < 23) wall.push(100 + (i - 20) * 500);
-    else wall.push(1600 - (i - 23) * 20);
-  }
-  const steep = makeRoute({
-    distance: 60,
-    speed: 22,
-    temp: 30,
-    useGpx: true,
-    gpxTrack: { id: 3, ele: wall },
-  });
-
-  test('a stop past the next boundary is not snapped to', () => {
-    // Natural grid: 0, 11.63, 20.54, 22.48, 32.95, 46.47, 60 — the stop sits beyond the 22.48 leg.
-    const xs = gridXs(steep, 6, [{ id: 1, at: 23.4, name: 'Sklep' }]);
-    xs.forEach((x, i) => {
-      if (i > 0)
-        expect(x, `grid runs backwards: ${xs.map((v) => v.toFixed(2)).join(' ')}`).toBeGreaterThan(
-          xs[i - 1],
-        );
-    });
-  });
-
-  test('a stop that fits between two boundaries still moves the stop onto it', () => {
-    const xs = gridXs(steep, 6, [{ id: 1, at: 12.5, name: 'Sklep' }]);
-    expect(xs).toContain(12.5);
-  });
-
-  /**
-   * Keeping the stops from a previous run must not mean planning around a frozen list.
-   *
-   * A rider who keeps them expects the plan to *use* what is already on the route and to speak up
-   * where it needs somewhere new — not to silently make do with too few refills, and not to line
-   * up a second pull-over two kilometres past one he already has.
-   */
+describe('autoplan (kept stops from a previous run)', () => {
   const long = makeRoute({ distance: 200, speed: 25, temp: 25 });
   const oneBottle: Vessel = { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water'], gelParts: 1 };
 

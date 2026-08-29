@@ -14,7 +14,6 @@ import {
   timeAtDistance,
   totalHours,
 } from '../fuel';
-import { minStopX } from '../autoplan';
 import type { MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import type { Leg, Shortfall, Skeleton, StopNode } from './types';
 
@@ -32,6 +31,20 @@ export const FLUID_FLOOR_FRACTION = 0.85;
 
 /** §3.3 starting weight — discount applied to a rider-placed stop's `stopCost`. Calibrated in L3. */
 const RIDER_DISCOUNT = 0.35;
+
+const MIN_STOP_X_KM = 10;
+
+/**
+ * The sanity floor for a first stop: "stop for a refill at km 1" is never useful advice. It is not
+ * applied as a clamp — stops fall where a load genuinely runs out, and that spacing puts the first
+ * one a full leg into the route on its own — it is instead the minimum spacing `shortestPath`'s DP
+ * enforces between any two nodes on the lattice (S5), so no legal path can ever place a stop closer
+ * to the start (or to any other stop) than this. Scaled down on very short routes so the rule can't
+ * swallow the whole ride.
+ */
+export function minStopX(D: number): number {
+  return Math.min(MIN_STOP_X_KM, D * 0.2);
+}
 
 export interface CostWeights {
   wStop: number;
@@ -115,10 +128,9 @@ function precomputeCum(
 }
 
 /**
- * C5's carb time gate, mirrored from `assignCarbs.ts`'s own (unexported) `CARB_MIN_HOURS`, itself
- * mirroring `autoplan.ts`'s. Below it, `assignCarbs` plans no carbs at all (returns `[]`), so no
- * vessel is ever committed to gel — every vessel is a fully refillable water/izo bottle as far as
- * `carryableFluid` is concerned.
+ * C5's carb time gate, mirrored from `assignCarbs.ts`'s own (unexported) `CARB_MIN_HOURS`. Below
+ * it, `assignCarbs` plans no carbs at all (returns `[]`), so no vessel is ever committed to gel —
+ * every vessel is a fully refillable water/izo bottle as far as `carryableFluid` is concerned.
  */
 const CARB_MIN_HOURS = 1;
 
@@ -133,8 +145,8 @@ const CARB_MIN_HOURS = 1;
  * minimum-spaced stops (W5a §6).
  *
  * Task C, 2026-08-25: a gel-allowed vessel is not like the others, though. `bucketVessels`
- * (`autoplan.ts`) always pulls it out of the izo/water pool the moment there is any carb planning
- * to do (`assignCarbs.ts`), and its one-shot gel dose is never refilled (S2/S4) — it only becomes
+ * (`assignCarbs.ts`) always pulls it out of the izo/water pool the moment there is any carb planning
+ * to do, and its one-shot gel dose is never refilled (S2/S4) — it only becomes
  * water-eligible again after that dose is spent, and only at a stop the plan happens to already
  * make there (S7, never guaranteed). Counting its full volume as available on EVERY leg, as if it
  * refilled like the izo bottle does, let L1 under-count how many stops a real ride needs (measured:

@@ -17,9 +17,8 @@
  * need to be for a given selection.
  */
 import { cph, dist, totalHours } from '../fuel';
-import type { DraftFood, FoodSelectionEntry } from '../autoplan';
 import type { FoodLibEntry, PlanState, RouteInput } from '../types';
-import type { Service, Skeleton } from './types';
+import type { DraftFood, FoodSelectionEntry, Service, Skeleton } from './types';
 
 /**
  * C5's time-based short-ride skip, mirrored from `assignCarbs.ts`'s own (unexported)
@@ -39,12 +38,10 @@ const CARB_MIN_HOURS = 1;
 const FOOD_FINISH_GAP = 0.02;
 
 /** How far into its own slot a point product is eaten — a quarter in, not on the start line, since
- *  absorption lags intake and `coverage()` rewards the gut already working when the need arrives.
- *  Mirrors `autoplan.ts`'s (unexported) `POINT_ITEM_SLOT_FRACTION`. */
+ *  absorption lags intake and `coverage()` rewards the gut already working when the need arrives. */
 const POINT_ITEM_SLOT_FRACTION = 0.25;
 
-/** Fallback span for a `cont` product whose library entry doesn't declare one. Mirrors
- *  `autoplan.ts`'s (unexported) `DEFAULT_CONT_SPAN_KM`. */
+/** Fallback span for a `cont` product whose library entry doesn't declare one. */
 const DEFAULT_CONT_SPAN_KM = 18;
 
 /** `selection`'s counts expanded into one `FoodLibEntry` per unit, in selection order — the order

@@ -14,13 +14,11 @@
  *
  * Pure: never mutates `skeleton`, `services`, `foods`, or `state` — every step returns new arrays.
  */
-import type { DraftFood } from '../autoplan';
-import { minStopX } from '../autoplan';
 import type { MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { assertInvariantV1, computeCarbDoneAtKm, isEligible } from './assignWater';
 import { deliveredShare } from './deliveredShare';
-import { FLUID_FLOOR_FRACTION, legsForBoundaries } from './skeleton';
-import type { Leg, Service, Skeleton, StopNode } from './types';
+import { FLUID_FLOOR_FRACTION, legsForBoundaries, minStopX } from './skeleton';
+import type { DraftFood, Leg, Service, Skeleton, StopNode } from './types';
 
 /**
  * A. Below this span, two km values are the same point by the skeleton's own precision:

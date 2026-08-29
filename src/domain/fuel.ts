@@ -19,7 +19,7 @@ const FLUID_ABSORPTION_CAP_ML_H = 900;
  * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
  * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
  * giving carbs a head start instead of demanding fresh intake from km 0. Same value (weight_kg ×
- * 15) is imported directly by autoplan.ts's short-ride hydration gate ("should we even plan
+ * 15) is imported directly by the v2 planner's short-ride hydration gate ("should we even plan
  * water"), so the two stay coupled automatically — no hand-sync needed. Deliberately below the
  * ~2% ACSM danger-limit figure so the app doesn't plan right up to the edge.
  */

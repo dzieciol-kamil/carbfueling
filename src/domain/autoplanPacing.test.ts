@@ -23,8 +23,8 @@
  * 95g his own meal-plus-cola puts there in one go.
  */
 import { describe, expect, test } from 'vitest';
-import { autoplan } from './autoplan';
-import type { AutoplanResult } from './autoplan';
+import { autoplan } from './planner/facade';
+import type { AutoplanResult } from './planner/types';
 import { planExtras, planSummary } from './fuel';
 import { KIELCE_MARKI_ELE } from './__fixtures__/kielceMarkiEle';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Stop, Vessel } from './types';

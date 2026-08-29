@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import type { FoodSelectionEntry } from '../autoplan';
 import type { FoodLibEntry, PlanState, RouteInput } from '../types';
 import { assignFood } from './assignFood';
-import type { Service, Skeleton, StopNode } from './types';
+import type { FoodSelectionEntry, Service, Skeleton, StopNode } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {

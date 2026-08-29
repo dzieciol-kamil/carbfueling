@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import type { RouteInput, MixSettings, PlanState, Vessel } from '../types';
-import type { DraftFood } from '../autoplan';
 import { FLUID_FLOOR_FRACTION, legsForBoundaries } from './skeleton';
 import { tidy } from './tidy';
-import type { Service, Skeleton } from './types';
+import type { DraftFood, Service, Skeleton } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {

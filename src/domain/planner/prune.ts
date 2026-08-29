@@ -22,12 +22,11 @@
  * each module answerable to one question.
  */
 import { COVERAGE_TARGET_PCT, HYDRATION_TARGET_PCT, planSummary } from '../fuel';
-import type { DraftFood, FoodSelectionEntry } from '../autoplan';
 import type { FoodItem, PlanState } from '../types';
 import { expandSelection } from './assignFood';
 import { servicesToFills } from './services';
 import { tracePruneCandidate, tracePruneSkipped } from './trace';
-import type { Service } from './types';
+import type { DraftFood, FoodSelectionEntry, Service } from './types';
 
 /** Scores a candidate `(services, foods)` pair with the real, shipped `planSummary()`.
  *  `state.fills`/`state.foods` (the rider's CURRENT saved plan) are never read here — only

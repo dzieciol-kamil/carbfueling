@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { carbsFill } from '../fuel';
-import type { FoodSelectionEntry } from '../autoplan';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
-import { assignCarbs } from './assignCarbs';
+import { assignCarbs, bucketVessels } from './assignCarbs';
 import { assertInvariantV1 } from './assignWater';
 import { deliveredShare } from './deliveredShare';
-import type { Leg, Skeleton, StopNode } from './types';
+import type { FoodSelectionEntry, Leg, Skeleton, StopNode } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
@@ -327,5 +326,109 @@ describe("assignCarbs — gel (fixed dose budget, fills izo's gaps — Ruling B/
     expect(gel.toKm).toBeGreaterThan(60);
 
     assertInvariantV1(services, skeleton);
+  });
+});
+
+describe('bucketVessels', () => {
+  const bidon: Vessel = {
+    gid: 'g1',
+    name: 'Bidon',
+    vol: 650,
+    allowed: ['water', 'izo'],
+    gelParts: 4,
+  };
+  const bidon2: Vessel = {
+    gid: 'g2',
+    name: 'Bidon 2',
+    vol: 500,
+    allowed: ['water', 'izo'],
+    gelParts: 4,
+  };
+  const flask: Vessel = {
+    gid: 'g3',
+    name: 'Flask',
+    vol: 250,
+    allowed: ['izo', 'water', 'gel'],
+    gelParts: 4,
+  };
+  const waterBottle: Vessel = {
+    gid: 'g4',
+    name: 'Water',
+    vol: 750,
+    allowed: ['water'],
+    gelParts: 1,
+  };
+
+  test('gel-capable vessel is pulled out of the izo pool even if it also allows izo', () => {
+    const { gelVessels, izoVessels, waterOnly, reservedWaterVessel } = bucketVessels(
+      [bidon, flask, waterBottle],
+      { ...MIX, conc: 8.4 },
+    );
+    expect(gelVessels.map((v) => v.gid)).toEqual(['g3']);
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g1']);
+    expect(waterOnly.map((v) => v.gid)).toEqual(['g4']);
+    expect(reservedWaterVessel).toBeNull();
+  });
+
+  test('concentrated mix reserves the largest izo-capable vessel as parallel water', () => {
+    const { izoVessels, reservedWaterVessel } = bucketVessels([bidon, bidon2], {
+      ...MIX,
+      conc: 20,
+    });
+    expect(reservedWaterVessel?.gid).toBe('g1'); // 650ml > 500ml
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g2']);
+  });
+
+  test('standard-strength mix keeps every izo-capable vessel as izo', () => {
+    const { izoVessels, reservedWaterVessel } = bucketVessels([bidon, bidon2], {
+      ...MIX,
+      conc: 8.4,
+    });
+    expect(reservedWaterVessel).toBeNull();
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g1', 'g2']);
+  });
+
+  /**
+   * The reservation exists to put plain water alongside a syrupy mix, so it can only fall on a
+   * bottle that may hold water. Reserving one that may not takes it out of the izo pool without
+   * putting it anywhere else — the biggest bottle on the bike then rides the whole day empty.
+   */
+  test('a bottle that cannot hold water is never the one reserved for water', () => {
+    const izoOnly: Vessel = {
+      gid: 'g5',
+      name: 'Izo only',
+      vol: 750,
+      allowed: ['izo'],
+      gelParts: 1,
+    };
+    const { izoVessels, reservedWaterVessel } = bucketVessels([izoOnly, bidon2], {
+      ...MIX,
+      conc: 20,
+    });
+    expect(reservedWaterVessel?.gid).toBe('g2');
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g5']);
+  });
+
+  test('nothing is reserved when no izo-capable vessel may hold water', () => {
+    const izoOnly: Vessel = {
+      gid: 'g5',
+      name: 'Izo only',
+      vol: 750,
+      allowed: ['izo'],
+      gelParts: 1,
+    };
+    const izoOnly2: Vessel = {
+      gid: 'g6',
+      name: 'Izo only 2',
+      vol: 500,
+      allowed: ['izo'],
+      gelParts: 1,
+    };
+    const { izoVessels, reservedWaterVessel } = bucketVessels([izoOnly, izoOnly2], {
+      ...MIX,
+      conc: 20,
+    });
+    expect(reservedWaterVessel).toBeNull();
+    expect(izoVessels.map((v) => v.gid)).toEqual(['g5', 'g6']);
   });
 });

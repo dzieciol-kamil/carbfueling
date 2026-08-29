@@ -18,8 +18,8 @@
  * never "must reach N%".
  */
 import { describe, expect, test } from 'vitest';
-import { autoplan, STOP_SNAP_KM } from './autoplan';
-import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
+import { autoplan, STOP_SNAP_KM } from './planner/facade';
+import type { AutoplanResult, FoodSelectionEntry } from './planner/types';
 import {
   cph,
   COVERAGE_TARGET_PCT,

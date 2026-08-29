@@ -9,15 +9,13 @@
  * path.
  */
 import { describe, expect, test } from 'vitest';
-import type { FoodSelectionEntry } from '../autoplan';
-import { minStopX } from '../autoplan';
 import { dist, totalHours } from '../fuel';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { KIELCE_MARKI_ELE } from '../__fixtures__/kielceMarkiEle';
 import { assertInvariantV1 } from './assignWater';
-import { legsForBoundaries } from './skeleton';
+import { legsForBoundaries, minStopX } from './skeleton';
 import { plan } from './index';
-import type { DraftPlan } from './types';
+import type { DraftPlan, FoodSelectionEntry } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {

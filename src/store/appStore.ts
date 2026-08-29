@@ -5,7 +5,8 @@ import {
   type AutoplanOptions,
   type AutoplanPreference,
 } from '../components/autoplan/autoplanOptions';
-import { autoplan, type FoodSelectionEntry } from '../domain/autoplan';
+import { autoplan } from '../domain/planner/facade';
+import type { FoodSelectionEntry } from '../domain/planner/types';
 import {
   bestGapSpan,
   clampFillToDistance,
@@ -677,7 +678,7 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
-      // Wholesale-replaces fills/foods with a freshly computed plan (see domain/autoplan.ts)
+      // Wholesale-replaces fills/foods with a freshly computed plan (see domain/planner/facade.ts)
       // rather than merging, mirroring loadTourDemoData's replace-not-append precedent — an
       // autoplan run is meant to stand in for the current plan, not pile onto it. Stops are
       // the exception: existing stops are preserved and only autoplan's newly-required

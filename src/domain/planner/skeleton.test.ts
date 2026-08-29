@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { minStopX } from '../autoplan';
 import { dist } from '../fuel';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
-import { buildSkeleton } from './skeleton';
+import { buildSkeleton, minStopX } from './skeleton';
 import type { CostWeights } from './skeleton';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {

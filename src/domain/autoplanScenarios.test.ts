@@ -16,8 +16,8 @@
  * the finish should the last leg stop" question is still open.
  */
 import { describe, expect, test } from 'vitest';
-import { autoplan } from './autoplan';
-import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
+import { autoplan } from './planner/facade';
+import type { AutoplanResult, FoodSelectionEntry } from './planner/types';
 import {
   COVERAGE_TARGET_PCT,
   dist,

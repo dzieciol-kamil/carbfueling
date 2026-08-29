@@ -1,12 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { dist, samples, sweat, totalHours } from '../fuel';
-import type { DraftFill } from '../autoplan';
 import type { Fill, MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { assertInvariantV1, assignWater } from './assignWater';
 import { buildSkeleton, FLUID_FLOOR_FRACTION } from './skeleton';
 import type { CostWeights } from './skeleton';
 import { servicesToFills } from './services';
-import type { Service, Skeleton } from './types';
+import type { DraftFill, Service, Skeleton } from './types';
 
 /** `servicesToFills` returns `DraftFill[]` (no `fid`); `samples()` needs a real `Fill[]`. Mirrors
  *  services.test.ts's own helper for the same reason. */
