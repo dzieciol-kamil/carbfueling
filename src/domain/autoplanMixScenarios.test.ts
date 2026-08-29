@@ -21,9 +21,11 @@ import { describe, expect, test } from 'vitest';
 import { autoplan, STOP_SNAP_KM } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
 import {
+  cph,
   COVERAGE_TARGET_PCT,
   dist,
   HYDRATION_TARGET_PCT,
+  maxHydrationPct,
   planSummary,
   samples,
   totalHours,
@@ -451,17 +453,22 @@ describe('autoplan combined scenarios — water + izo', () => {
 
 describe('autoplan combined scenarios — gel vessel reused for water', () => {
   test('mix-4: 90km / 30°C / bidon 650 water + flask 250 gel-or-water', () => {
-    const r = run(
-      makePlan(makeRoute({ distance: 90, temp: 30 }), [
-        vessel('g1', 'Bidon', 650, ['water']),
-        vessel('g2', 'Flaszka', 250, ['gel', 'water']),
-      ]),
-    );
-    // 150g of gel against a 270g target: the carb number is capped by what the rider packed, so
-    // the scenario's point is *where* those 150g land — spread far enough down the route that the
-    // shortfall isn't "eat everything by km 50, then coast" (expectNotWorseThanEvenSpread).
+    const route = makeRoute({ distance: 90, temp: 30 });
+    const mix = makeMix();
+    const flask = vessel('g2', 'Flaszka', 250, ['gel', 'water']);
+    const r = run(makePlan(route, [vessel('g1', 'Bidon', 650, ['water']), flask], mix));
+    // The flask never gets refilled with gel once spent (gel is strictly one-shot), so its full
+    // 250ml × gelConc content is the hard ceiling on this scenario's carbs — against the ride's own
+    // target. `coverage` also applies a timing/carry-window penalty on top of raw supply (see
+    // rateStats), so the achievable number lands at or a little under that nominal ceiling; floor
+    // rather than round states a bar the plan can actually clear instead of one rounded up past it.
+    // The scenario's real point is *where* those grams land — spread far enough down the route that
+    // the shortfall isn't "eat everything by km 50, then coast" (expectNotWorseThanEvenSpread).
+    const gelCeilingGrams = (flask.vol / 100) * mix.gelConc;
+    const target = totalHours(route) * cph(route);
+    const minCarbs = Math.floor((gelCeilingGrams / target) * 100);
     expectThen(r, {
-      minCarbs: 62,
+      minCarbs,
       minHydration: HYDRATION_TARGET_PCT,
       maxStops: 5,
       maxRefills: 8,
@@ -481,7 +488,7 @@ describe('autoplan combined scenarios — gel vessel reused for water', () => {
     // The rider's own build hits 93% with exactly these two gels, just placed better: the search
     // has to exhaust placement before it reaches for a third item from the selection.
     expectThen(r, {
-      minCarbs: 90,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: 100,
       maxStops: 0,
       maxRefills: 0,
@@ -507,7 +514,7 @@ describe('autoplan combined scenarios — products alongside bottles', () => {
     // back half of the route — the whole selection has to be laid out across the ride, not queued
     // up after the izo runs out.
     expectThen(r, {
-      minCarbs: 90,
+      minCarbs: COVERAGE_TARGET_PCT,
       minHydration: HYDRATION_TARGET_PCT,
       maxStops: 3,
       maxRefills: 4,
@@ -527,7 +534,7 @@ describe('autoplan combined scenarios — products alongside bottles', () => {
     // topped up at every one of them, which is why the stop count buys more than the carbs.
     expectThen(r, {
       minCarbs: COVERAGE_TARGET_PCT,
-      minHydration: 90,
+      minHydration: HYDRATION_TARGET_PCT,
       maxStops: 4,
       maxRefills: 4,
       productCounts: { cola: 4, gel: 2 },
@@ -587,17 +594,23 @@ describe('autoplan combined scenarios — the full kit', () => {
   });
 
   test('mix-10: 24km / 35°C / high — carbs gated by the hour rule, water planned anyway', () => {
+    const route = makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35 });
     const r = run(
-      makePlan(makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35 }), [
+      makePlan(route, [
         vessel('g1', 'Bidon', 500, ['water', 'izo']),
         vessel('g2', 'Flaszka', 250, ['gel', 'water']),
       ]),
     );
     // Under an hour, so no carbs at all — but 1152ml of sweat clears the 1125ml buffer, so both
     // vessels are water vessels for this ride, including the one that could have taken izo.
+    //
+    // HYDRATION_TARGET_PCT itself is unreachable here: the gut absorbs at most
+    // FLUID_ABSORPTION_CAP_ML_H, and over this ride's ~0.8h that ceiling sits well under the sweat
+    // loss. `maxHydrationPct` is the same physical-ceiling function the app's own "maks./max. NN%"
+    // UI marker calls (fuel.ts), so this reuses the app's definition rather than re-deriving one.
     expectThen(r, {
       minCarbs: null,
-      minHydration: HYDRATION_TARGET_PCT,
+      minHydration: maxHydrationPct(route),
       maxStops: 1,
       maxRefills: 2,
     });

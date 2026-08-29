@@ -18,7 +18,13 @@
 import { describe, expect, test } from 'vitest';
 import { autoplan } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan';
-import { COVERAGE_TARGET_PCT, dist, HYDRATION_TARGET_PCT, planSummary } from './fuel';
+import {
+  COVERAGE_TARGET_PCT,
+  dist,
+  HYDRATION_TARGET_PCT,
+  maxHydrationPct,
+  planSummary,
+} from './fuel';
 import type {
   Fill,
   FoodItem,
@@ -388,15 +394,17 @@ describe('autoplan scenarios — water only', () => {
   });
 
   test('#10: 24km / 35°C / 75kg — 1152ml clears the gate, so water is planned despite <1h', () => {
-    const r = run(
-      makePlan(makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35, weight: 75 }), [
-        water(500),
-      ]),
-    );
+    const route = makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35, weight: 75 });
+    const r = run(makePlan(route, [water(500)]));
     // The one scenario where the old "<1h means don't bother" rule and the sweat gate disagree.
+    //
+    // HYDRATION_TARGET_PCT itself is unreachable here: the gut absorbs at most
+    // FLUID_ABSORPTION_CAP_ML_H, and over this ride's ~0.8h that ceiling sits well under the sweat
+    // loss. `maxHydrationPct` is the same physical-ceiling function the app's own "maks./max. NN%"
+    // UI marker calls (fuel.ts), so this reuses the app's definition rather than re-deriving one.
     expectThen(r, {
       minCarbs: null,
-      minHydration: HYDRATION_TARGET_PCT,
+      minHydration: maxHydrationPct(route),
       maxStops: loadsNeeded(1152, 500),
       maxRefills: loadsNeeded(1152, 500),
       products: [],
