@@ -1,11 +1,11 @@
 /**
  * v2 planner pipeline. See
  * `docs/superpowers/specs/2026-08-23-autoplan-v2-engine-spec.md` §4.1 for the settled stage order:
- * buildSkeleton → assignCarbs → assignWater → assignFood → tidy.
+ * buildSkeleton → assignCarbs → assignWater → assignFood → tidy → prune.
  *
- * W5a: builds this pipeline and measures it. Deliberately has **no verify/repair pass** — L3 is
- * W5b's job, dispatched only after the measurement in
- * `docs/superpowers/specs/2026-08-24-w5a-measurements.md` is read.
+ * W5a built this pipeline through `tidy`. W15 (2026-08-29) adds `prune`: L3's first narrow
+ * application, a post-fact pass that tries removing placed products one at a time and keeps only
+ * the removals that leave the real `planSummary()` still green — see `prune.ts`'s module doc.
  */
 import type { DraftStop } from '../autoplan';
 import type { FoodSelectionEntry } from '../autoplan';
@@ -13,6 +13,7 @@ import type { FoodLibEntry, PlanState } from '../types';
 import { assignCarbs } from './assignCarbs';
 import { assignFood, placedSelection } from './assignFood';
 import { assignWater } from './assignWater';
+import { pruneUnneededFood } from './prune';
 import { buildSkeleton } from './skeleton';
 import type { CostWeights } from './skeleton';
 import { tidy } from './tidy';
@@ -92,11 +93,12 @@ export function plan(state: PlanState, selection: FoodSelectionEntry[]): DraftPl
   const foods = assignFood(skeleton, services, state, selection);
 
   const tidied = tidy(skeleton, services, foods, state);
+  const prunedFoods = pruneUnneededFood(state, tidied.services, tidied.foods, selection);
 
   const stops: DraftStop[] = tidied.skeleton.stops.map((s) => ({
     at: s.km,
     autoCreated: s.origin === 'planned',
   }));
 
-  return { services: tidied.services, foods: tidied.foods, stops };
+  return { services: tidied.services, foods: prunedFoods, stops };
 }
