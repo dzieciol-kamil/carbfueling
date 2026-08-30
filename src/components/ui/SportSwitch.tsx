@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactElement } from 'react';
+import { useState, type CSSProperties, type ReactElement } from 'react';
 import type { Sport } from '../../domain/types';
 import { SegmentedTrack, segmentItemStyle } from './SegmentedControl';
 
@@ -34,6 +34,7 @@ function RunIcon({ size }: { size: number }) {
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
+      style={{ transform: 'scaleX(-1)' }}
     >
       <circle cx="13.5" cy="4.5" r="1.7" fill="currentColor" />
       <path d="M13.5 4.5 L11 13 L14 16 L12 20" />
@@ -49,9 +50,12 @@ const ICONS: Record<Sport, (props: { size: number }) => ReactElement> = {
 };
 const ORDER: Sport[] = ['cycling', 'running'];
 
-function iconItemStyle(selected: boolean, size: number): CSSProperties {
+function iconItemStyle(selected: boolean, hovered: boolean, size: number): CSSProperties {
+  const base = segmentItemStyle(selected, { fullWidth: false });
   return {
-    ...segmentItemStyle(selected, { fullWidth: false }),
+    ...base,
+    color: !selected && hovered ? 'var(--ink-soft)' : base.color,
+    background: !selected && hovered ? 'rgba(0,0,0,0.06)' : base.background,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -78,6 +82,7 @@ export function SportSwitch({
 }) {
   const labels: Record<Sport, string> = { cycling: cyclingLabel, running: runningLabel };
   const iconSize = Math.round(size * 0.55);
+  const [hovered, setHovered] = useState<Sport | null>(null);
   return (
     <SegmentedTrack selectedIndex={ORDER.indexOf(sport)} fullWidth={false} style={{ gap: 2 }}>
       {(registerRef) =>
@@ -89,9 +94,12 @@ export function SportSwitch({
               ref={registerRef(i)}
               type="button"
               onClick={() => onChange(value)}
+              onMouseEnter={() => setHovered(value)}
+              onMouseLeave={() => setHovered((h) => (h === value ? null : h))}
+              title={labels[value]}
               aria-label={labels[value]}
               aria-pressed={value === sport}
-              style={iconItemStyle(value === sport, size)}
+              style={iconItemStyle(value === sport, value === hovered, size)}
             >
               <Icon size={iconSize} />
             </button>
