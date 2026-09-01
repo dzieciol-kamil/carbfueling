@@ -29,11 +29,10 @@ export default function SodiumElectrolytesCyclingPl() {
       <p style={articleTextStyle}>
         Zaczyna to mieć znaczenie w kilku konkretnych sytuacjach: przy długich wysiłkach w upale, u
         osób, które wiedzą, że mocno lub "słono" się pocą, oraz przy wielogodzinnych czy
-        wielodniowych imprezach. Wtedy straty sodu kumulują się w czasie, a w połączeniu z piciem
-        dużych ilości zwykłej wody mogą prowadzić do skurczów mięśni. W skrajnych przypadkach grozi
-        to poważnym stanem zwanym hiponatremią wysiłkową — niebezpiecznie niskim poziomem sodu we
-        krwi, do którego dochodzi, gdy przez wiele godzin rozcieńcza się go zbyt dużą ilością samej
-        wody.
+        wielodniowych imprezach. Wtedy straty sodu kumulują się w czasie. W skrajnych przypadkach
+        grozi to poważnym stanem zwanym hiponatremią wysiłkową — niebezpiecznie niskim poziomem sodu
+        we krwi, do którego dochodzi, gdy przez wiele godzin rozcieńcza się go zbyt dużą ilością
+        samej wody.
       </p>
       <p style={articleTextStyle}>
         Jeśli należysz do jednej z tych grup podwyższonego ryzyka, nie musisz zgadywać. Osoby, które
@@ -41,8 +40,7 @@ export default function SodiumElectrolytesCyclingPl() {
         elektrolitowe lub trochę soli do bidonu lub diety. Dwa proste sposoby, żeby zorientować się,
         jak to wygląda u Ciebie: sprawdzenie, czy po treningu zostaje nalot soli, albo test wagowy
         tempa pocenia (ważenie się przed i po godzinie jazdy w stałym tempie, opisany w FAQ o
-        nawodnieniu) w połączeniu z obserwacją, czy na dłuższych wyjazdach masz tendencję do
-        skurczów.
+        nawodnieniu).
       </p>
       <p style={articleTextStyle}>
         Wniosek nie brzmi "zawsze dokładaj dodatkowy sód", tylko "poznaj swój profil pocenia i

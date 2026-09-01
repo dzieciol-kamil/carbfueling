@@ -28,18 +28,16 @@ export default function SodiumElectrolytesCyclingEn() {
       <p style={articleTextStyle}>
         It starts to matter more in a few specific situations: long efforts in the heat, riders who
         already know they sweat heavily or saltily, and multi-hour or multi-day events. In these
-        cases, sodium losses add up over time. Combined with drinking a lot of plain water, this can
-        lead to muscle cramping. In extreme cases, it can lead to a serious condition called
-        exercise-associated hyponatremia, where blood sodium drops to a dangerous level because too
-        much plain fluid has diluted it over many hours.
+        cases, sodium losses add up over time. In extreme cases, it can lead to a serious condition
+        called exercise-associated hyponatremia, where blood sodium drops to a dangerous level
+        because too much plain fluid has diluted it over many hours.
       </p>
       <p style={articleTextStyle}>
         If you fall into one of those higher-risk groups, you don't need to guess. Riders who know
         they're heavy or salty sweaters, or who are riding long in hot conditions, can add
         electrolyte tablets or extra salt to their mix or diet. Two simple ways to check where you
         stand: look for salt residue after a ride, or do a sweat-rate weigh-in test (weighing
-        yourself before and after a steady-effort hour, as described in the hydration FAQ) and pay
-        attention to whether you tend to cramp on longer rides.
+        yourself before and after a steady-effort hour, as described in the hydration FAQ).
       </p>
       <p style={articleTextStyle}>
         The takeaway isn't "always add extra sodium." It's "know your own sweat profile and adjust
