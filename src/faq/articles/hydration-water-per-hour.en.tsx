@@ -70,9 +70,8 @@ export default function HydrationWaterPerHourEn() {
       <p style={articleTextStyle}>
         Carb Fueling takes the temperature you set for your route and your riding effort, and uses
         them to estimate your fluid need in ml per hour alongside your carb plan — so you don't have
-        to guess or run your own weigh-in test mid-ride. The figure in brackets next to your sweat
-        loss is that balance: a minus is a shortfall, a plus means the plan has you drinking more
-        than you sweat.
+        to guess or run your own weigh-in test mid-ride. The figure above the hydration bar is that
+        balance: a minus is a shortfall, a plus means the plan has you drinking more than you sweat.
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

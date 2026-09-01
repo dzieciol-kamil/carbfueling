@@ -71,8 +71,8 @@ export default function HydrationWaterPerHourPl() {
       <p style={articleTextStyle}>
         Carb Fueling bierze temperaturę ustawioną dla Twojej trasy oraz intensywność jazdy i na tej
         podstawie szacuje zapotrzebowanie na płyny w ml na godzinę razem z planem węglowodanowym —
-        więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy. Liczba w nawiasie
-        obok strat potu to właśnie ten bilans: minus oznacza niedobór, plus — picie ponad to, co
+        więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy. Liczba nad paskiem
+        nawodnienia to właśnie ten bilans: minus oznacza niedobór, plus — picie ponad to, co
         wypocisz.
       </p>
       <p>

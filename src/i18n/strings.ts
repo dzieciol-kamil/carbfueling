@@ -323,6 +323,7 @@ export interface StringTable {
   waterBalanceHint: string;
   waterBalanceHintLink: string;
   waterBalanceAria: string;
+  waterBalanceUnit: string;
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -712,6 +713,9 @@ export const STR: Record<Lang, StringTable> = {
       'Bilans płynów w % masy ciała — jednostka, w której mówi o ryzyku literatura. Minus to niedobór, plus to picie ponad straty potu. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
     waterBalanceHintLink: 'Jak to czytać →',
     waterBalanceAria: 'Co oznacza bilans płynów',
+    // Not "utraty masy ciała": the number is signed, and a plus means the plan has the rider
+    // gaining water, not losing it.
+    waterBalanceUnit: 'masy ciała',
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -1094,6 +1098,7 @@ export const STR: Record<Lang, StringTable> = {
       'Fluid balance as % of body mass — the unit the research states risk in. Minus is a shortfall, plus is drinking past your sweat loss. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
     waterBalanceHintLink: 'How to read this →',
     waterBalanceAria: 'What the fluid balance means',
+    waterBalanceUnit: 'body mass',
   },
 };
 

@@ -171,6 +171,40 @@ export function SummaryCards() {
       <div style={cardStyle}>
         <div style={titleRowStyle}>
           <span style={titleStyle}>{strings.hydration}</span>
+          {/* The unit is spelled out rather than left as a bare percentage: "+2.6%" of *what* is
+              the whole difference between a number the rider can check against the literature and
+              one only this app uses. */}
+          <span style={{ fontSize: 11, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}>
+            <b
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: 700,
+                color: hydColor,
+              }}
+            >
+              {fmtWaterBalance(summary.waterBalancePct, lang)}
+            </b>{' '}
+            {strings.waterBalanceUnit}{' '}
+            <InfoPopover
+              ariaLabel={strings.waterBalanceAria}
+              hint={
+                <>
+                  {strings.waterBalanceHint}{' '}
+                  <a
+                    href={FAQ_HREF_FROM_CALCULATOR + 'hydration-water-per-hour/'}
+                    target="_blank"
+                    rel="noopener"
+                    style={{ color: 'inherit', textDecoration: 'underline' }}
+                  >
+                    {strings.waterBalanceHintLink}
+                  </a>
+                </>
+              }
+              popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+            >
+              ⓘ
+            </InfoPopover>
+          </span>
         </div>
         <div>
           <div style={balanceTrackStyle}>
@@ -205,29 +239,7 @@ export function SummaryCards() {
         </div>
         <div style={footerRowStyle}>
           <span>
-            {strings.sweatLoss} <b style={footerValueStyle}>{summary.sweatLoss} ml</b>{' '}
-            <b style={{ ...footerValueStyle, color: hydColor }}>
-              ({fmtWaterBalance(summary.waterBalancePct, lang)})
-            </b>{' '}
-            <InfoPopover
-              ariaLabel={strings.waterBalanceAria}
-              hint={
-                <>
-                  {strings.waterBalanceHint}{' '}
-                  <a
-                    href={FAQ_HREF_FROM_CALCULATOR + 'hydration-water-per-hour/'}
-                    target="_blank"
-                    rel="noopener"
-                    style={{ color: 'inherit', textDecoration: 'underline' }}
-                  >
-                    {strings.waterBalanceHintLink}
-                  </a>
-                </>
-              }
-              popoverStyle={{ bottom: 'calc(100% + 6px)', left: 0 }}
-            >
-              ⓘ
-            </InfoPopover>
+            {strings.sweatLoss} <b style={footerValueStyle}>{summary.sweatLoss} ml</b>
           </span>
           <span>
             {strings.tAbsorbed}{' '}
