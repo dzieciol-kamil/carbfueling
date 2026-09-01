@@ -413,9 +413,9 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Gramy do odmierzenia na każde napełnienie — osobno na bidon, flask czy słoiczek.',
     ratio: 'Maltodekstryna : Fruktoza',
     mixRatioHint:
-      'Maltodekstryna i fruktoza wchłaniają się w jelicie dwoma osobnymi drogami — łącząc je, organizm przyswaja więcej węglowodanów w ciągu godziny niż z samej maltodekstryny. Domyślna proporcja to 2:1, ale ten sam efekt daje zwykły cukier (naturalnie ok. 1:1 glukozy do fruktozy) albo miód (ok. 0,8:1) — to gotowe, naturalne odpowiedniki tej samej mieszanki.',
+      'Maltodekstryna i fruktoza wchłaniają się w jelicie dwoma osobnymi drogami — łącząc je, organizm przyswaja więcej węglowodanów w ciągu godziny niż z samej maltodekstryny. Domyślna proporcja to 2:1, ale podobny efekt daje zwykły cukier (naturalnie ok. 1:1 glukozy do fruktozy) albo miód (ok. 0,8:1) — to gotowe, naturalne odpowiedniki tej samej mieszanki.',
     mixSugarBlendHeader: 'Mieszanka cukrów — stosunek Maltodekstryny do Fruktozy',
-    mixSugarAmountIzo: 'Ile cukru (łącznie) ma być w izotoniku',
+    mixSugarAmountIzo: 'Ile cukru (łącznie) ma być w napoju',
     mixSugarAmountGel: 'Ile cukru (łącznie) ma być w żelu',
     mixSaltAmount: 'Uzupełnienie soli mineralnych: sól',
     ratioLabelSugar: 'Cukier',
@@ -439,7 +439,7 @@ export const STR: Record<Lang, StringTable> = {
     per100: 'g/100 ml',
     per100Ml: 'ml/100 ml',
     per100Fruit: '%/100 ml',
-    mixIzo: 'Izotonik',
+    mixIzo: 'Napój',
     mixGel: 'Żel',
     target: 'Cel',
     mobileNotesTitle: 'Zasady wersji mobilnej',
@@ -515,7 +515,7 @@ export const STR: Record<Lang, StringTable> = {
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
     foodContHint:
       'Zaznaczenie „stopniowo” sprawia, że produkt trafia na wykres powoli, rozłożony na kilku kilometrach — banana zjesz od razu, ale żelki podjadasz po drodze.',
-    mixHintPre: 'Tu ustalisz, z czego będzie się składać Twój izotonik i żel — ',
+    mixHintPre: 'Tu ustalisz, z czego będzie się składać Twój napój i żel — ',
     mixHintLink1: 'proporcja cukrów',
     mixHintMid1: ' (możesz też użyć zwykłego ',
     mixHintLink2: 'cukru albo miodu',
@@ -572,9 +572,9 @@ export const STR: Record<Lang, StringTable> = {
       'Ciągła linia to ile węglowodanów na godzinę realnie dostarczasz, przerywana — ile potrzebujesz. Kropkowana pozioma linia to limit wchłaniania: tyle maksymalnie na godzinę wchłonie Twoje jelito, niezależnie od tego, ile zjesz — nadwyżka czeka w żołądku. Górna część wykresu to właśnie ten żołądek: pokazuje, co aktualnie trawi. Przesuń palcem po wykresie, żeby odczytać dokładne wartości w danym miejscu trasy. Dodaliśmy przykładowy bidon, żebyś zobaczył, jak to wygląda w praktyce.',
     tourFillTitle: 'Bidon: przesuwanie, zwężanie, zmiana zawartości',
     tourFillBody:
-      'Ten pasek to właśnie dodany bidon. Środek można chwycić i przesunąć po trasie, a lewą lub prawą krawędź — żeby skrócić lub wydłużyć odcinek, na którym z niego pijesz. Po najechaniu kursorem pojawiają się przyciski zmiany zawartości (woda / izotonik / żel), jeśli bidon obsługuje więcej niż jeden rodzaj. Spróbuj tego po zamknięciu touru.',
+      'Ten pasek to właśnie dodany bidon. Środek można chwycić i przesunąć po trasie, a lewą lub prawą krawędź — żeby skrócić lub wydłużyć odcinek, na którym z niego pijesz. Po najechaniu kursorem pojawiają się przyciski zmiany zawartości (woda / izo / żel), jeśli bidon obsługuje więcej niż jeden rodzaj. Spróbuj tego po zamknięciu touru.',
     tourFillBodyMobile:
-      'To dodany bidon. Stuknij w niego, żeby rozwinąć edycję — przyciskami „od” i „do” przesuniesz go po trasie albo zmienisz długość odcinka, a przyciski obok pozwolą zmienić zawartość (woda / izotonik / żel), jeśli bidon obsługuje więcej niż jeden rodzaj.',
+      'To dodany bidon. Stuknij w niego, żeby rozwinąć edycję — przyciskami „od” i „do” przesuniesz go po trasie albo zmienisz długość odcinka, a przyciski obok pozwolą zmienić zawartość (woda / izo / żel), jeśli bidon obsługuje więcej niż jeden rodzaj.',
     tourAddFillTitle: 'Dodaj kolejną dolewkę',
     tourAddFillBody:
       'Ten przycisk „+” wstawia kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów pod wykresem dodają kolejne pozycje jednym kliknięciem.',
@@ -802,9 +802,9 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Grams to measure out for each fill — per bottle, flask or jar.',
     ratio: 'Maltodextrin : Fructose',
     mixRatioHint:
-      "Maltodextrin and fructose are absorbed through two separate gut pathways — combining them lets your body take in more carbs per hour than from maltodextrin alone. The default ratio is 2:1, but plain sugar (naturally about 1:1 glucose to fructose) or honey (about 0.8:1) give the same effect — they're ready-made, natural equivalents of the same blend.",
+      "Maltodextrin and fructose are absorbed through two separate gut pathways — combining them lets your body take in more carbs per hour than from maltodextrin alone. The default ratio is 2:1, but plain sugar (naturally about 1:1 glucose to fructose) or honey (about 0.8:1) give a similar effect — they're ready-made, natural equivalents of the same blend.",
     mixSugarBlendHeader: 'Sugar blend — Maltodextrin to Fructose ratio',
-    mixSugarAmountIzo: 'How much sugar (total) should be in the isotonic',
+    mixSugarAmountIzo: 'How much sugar (total) should be in the drink',
     mixSugarAmountGel: 'How much sugar (total) should be in the gel',
     mixSaltAmount: 'Mineral salt top-up: salt',
     ratioLabelSugar: 'Sugar',
@@ -828,7 +828,7 @@ export const STR: Record<Lang, StringTable> = {
     per100: 'g/100 ml',
     per100Ml: 'ml/100 ml',
     per100Fruit: '%/100 ml',
-    mixIzo: 'Isotonic',
+    mixIzo: 'Drink',
     mixGel: 'Gel',
     target: 'Target',
     mobileNotesTitle: 'Mobile rules',
@@ -904,7 +904,7 @@ export const STR: Record<Lang, StringTable> = {
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
     foodContHint:
       'Turning on "over time" spreads the product on the chart gradually over a few kilometers — you eat a banana right away, but you nibble gummies along the way.',
-    mixHintPre: "Here you'll set the composition of your isotonic drink and gel — ",
+    mixHintPre: "Here you'll set the composition of your drink and gel — ",
     mixHintLink1: 'sugar ratio',
     mixHintMid1: ' (plain ',
     mixHintLink2: 'sugar or honey',
@@ -960,9 +960,9 @@ export const STR: Record<Lang, StringTable> = {
       "The solid line is how many carbs per hour you're actually delivering, the dashed line is how many you need. The dotted horizontal line is the absorption limit: the most your gut can absorb per hour no matter how much you eat — anything above it waits in the stomach. The top of the chart is that stomach: it shows what it's currently digesting. Drag your finger across the chart to read exact values at any point on the route. We added a sample bottle so you can see how this looks in practice.",
     tourFillTitle: 'A bottle: move it, resize it, change its contents',
     tourFillBody:
-      'This bar is the bottle we just added. You can drag the middle to move it along the route, or either edge to shorten or lengthen the stretch you drink it over. Hovering it reveals buttons to switch its contents (water / isotonic / gel) if the bottle allows more than one. Try it once you close the tour.',
+      'This bar is the bottle we just added. You can drag the middle to move it along the route, or either edge to shorten or lengthen the stretch you drink it over. Hovering it reveals buttons to switch its contents (water / izo / gel) if the bottle allows more than one. Try it once you close the tour.',
     tourFillBodyMobile:
-      'This is the bottle we just added. Tap it to expand its editor — the "from" and "to" buttons move it along the route or change how long the segment is, and the buttons next to them switch its contents (water / isotonic / gel) if the bottle allows more than one.',
+      'This is the bottle we just added. Tap it to expand its editor — the "from" and "to" buttons move it along the route or change how long the segment is, and the buttons next to them switch its contents (water / izo / gel) if the bottle allows more than one.',
     tourAddFillTitle: 'Add another fill',
     tourAddFillBody:
       'This "+" button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same idea applies to food: the product buttons under the chart add another item with one click.',
@@ -1020,7 +1020,7 @@ export const STR: Record<Lang, StringTable> = {
     gearHintMobile:
       "What's on your bike. Volume and allowed contents decide how many carbs fit in one fill.",
     mixHintMobile:
-      'Isotonic and gel composition. Changing it recalculates grams per fill and the absorption limit.',
+      'Izo and gel composition. Changing it recalculates grams per fill and the absorption limit.',
     absCapNoteMobile: 'At this ratio the limit is {cap} g/h — the dotted line on the chart.',
     gelPartsStepper: 'Gel portions per fill',
     foodStepwise: 'over time',
