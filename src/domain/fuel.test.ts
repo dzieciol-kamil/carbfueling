@@ -3,9 +3,8 @@ import {
   COVERAGE_SHORT_PCT,
   COVERAGE_TARGET_PCT,
   FLUID_ABSORPTION_CAP_ML_H,
-  HYDRATION_SHORT_PCT,
-  HYDRATION_TARGET_PCT,
   absCap,
+  allowedDeficitPct,
   carbsFill,
   citricAmount,
   citricGramsFromAmount,
@@ -39,6 +38,7 @@ import {
   timeAtDistance,
   timeWeight,
   totalHours,
+  waterBalancePct,
 } from './fuel';
 import type { Fill, FoodItem, MixSettings, PlanState, RouteInput, Vessel } from './types';
 
@@ -907,9 +907,11 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
     expect(S[160].fluidNeed).toBeCloseTo(2800, 3);
   });
 
-  test('a mild ride where the buffer covers the whole route keeps fluidNeed at a flat 0 throughout', () => {
-    // Mirrors water-scenario #3 (short/mild): sweat*hours never exceeds weight*15, so there is
-    // honestly nothing to actively plan for.
+  test('a mild ride asks for its real sweat loss, small as it is, not a flat 0', () => {
+    // Mirrors water-scenario #3 (short/mild). This used to be pinned at 0 by the weight*15 buffer
+    // gate; the gate is gone, so the chart draws the honest target here too and the tolerance is
+    // applied once, by the badge. 344 ml over 0.8h is a target no one has to act on — but the
+    // line saying so beats a line pretending the ride costs nothing.
     const mildRoute = makeRoute({
       distance: 20,
       speed: 25,
@@ -918,7 +920,8 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
       intensity: 'low',
     });
     const S = samples(makePlan({ route: mildRoute }));
-    S.forEach((p) => expect(p.fluidNeed).toBe(0));
+    expect(S[1].fluidNeed).toBeGreaterThan(0); // S[0] is km 0: nothing lost yet, on any route
+    expect(S[S.length - 1].fluidNeed).toBeCloseTo(344, 0);
   });
 
   test('fluidNeedRate is exactly flat at sweatRate from km 0 (no EMA warm-up curve)', () => {
@@ -1180,40 +1183,113 @@ describe('coverageStatus', () => {
   });
 });
 
+describe('waterBalancePct', () => {
+  test('a shortfall is measured against the fluid that actually cleared the stomach', () => {
+    // 1000 ml short of a 3000 ml loss, on a 75 kg rider: 1.33% of body mass. That unit — not
+    // "67% of sweat loss" — is the one every dehydration study reports its findings in.
+    expect(
+      waterBalancePct({
+        sweatLoss: 3000,
+        fluidAbsorbedTotal: 2000,
+        fluidPlanned: 2000,
+        weight: 75,
+      }),
+    ).toBeCloseTo(-1.333, 2);
+  });
+
+  test('a surplus is measured against what was poured, not what cleared the stomach', () => {
+    // The bug that started this: `mlAbsorbed` is capped at FLUID_ABSORPTION_CAP_ML_H, so once
+    // sweat rate passes 900 ml/h the absorbed/loss ratio physically cannot reach 100% — measured
+    // live at 4900 ml poured, 2855 absorbed, 2893 sweated, badge stuck at 99% and green however
+    // much the rider added. Hyponatraemia comes from what goes in, not from what the stomach
+    // managed to pass on before the finish line, so the surplus side reads the poured volume.
+    expect(
+      waterBalancePct({
+        sweatLoss: 2893,
+        fluidAbsorbedTotal: 2855,
+        fluidPlanned: 4900,
+        weight: 90,
+      }),
+    ).toBeCloseTo(2.23, 2);
+  });
+
+  test('a plan that pours less than it sweats can never read as a surplus', () => {
+    // The two sides use different numerators, so the sign has to come from one of them alone —
+    // absorbed <= poured always, which is what keeps this monotonic rather than a step.
+    expect(
+      waterBalancePct({
+        sweatLoss: 2000,
+        fluidAbsorbedTotal: 1999,
+        fluidPlanned: 2000,
+        weight: 80,
+      }),
+    ).toBeLessThanOrEqual(0);
+  });
+});
+
 describe('hydrationStatus', () => {
-  test('water is graded more strictly than carbs, on its own thresholds', () => {
-    // These were briefly shared with carbs, which quietly recalibrated hydration on carb evidence.
-    // Water keeps the stricter pair on purpose — see HYDRATION_TARGET_PCT.
-    expect(HYDRATION_TARGET_PCT).toBeGreaterThan(COVERAGE_TARGET_PCT);
-    expect(HYDRATION_SHORT_PCT).toBeGreaterThan(COVERAGE_SHORT_PCT);
-    expect(HYDRATION_SHORT_PCT).toBeLessThan(HYDRATION_TARGET_PCT);
+  test('the same deficit is fine in the cold and red in the heat', () => {
+    // Sawka, Cheuvront & Kenefick (2015): the cost of a deficit is negligible until skin
+    // temperature passes ~27 C, then runs ~1.3%/C. The app had the temperature all along and
+    // spent it only on computing the target, never on judging the consequence — which meant a
+    // fixed 85/60 graded every ride as if it were 30 C.
+    expect(hydrationStatus(-2.4, 12)).toBe('good');
+    expect(hydrationStatus(-2.4, 30)).toBe('short');
   });
 
-  test('a plan covering 59% of sweat loss reads red, not amber', () => {
-    // The concrete case that exposed the shared-threshold problem: food-7 / food7 in docs/tests
-    // sit at 59% hydration. Under the shared 80/55 they went amber; the rider's call is that
-    // missing two fifths of your sweat loss is a red-flag plan, not a nearly-there one.
-    expect(hydrationStatus(59)).toBe('short');
-    expect(coverageStatus(59)).toBe('partial'); // ...whereas 59% of your carbs is not red
+  test('the calibrated deficit limits themselves', () => {
+    // Anchors from the audit's §11.2 table, in % of body mass. Everything above is written in
+    // terms of the tiers, so it would pass for any ordered pair; these pin the actual numbers.
+    expect(allowedDeficitPct(12)).toBeCloseTo(2.5, 5); // cold: no reliable cost up to ~2.5%
+    expect(allowedDeficitPct(20)).toBeCloseTo(2.5, 5);
+    expect(allowedDeficitPct(25)).toBeCloseTo(1.85, 5); // interpolated, not a bucket edge
+    expect(allowedDeficitPct(30)).toBeCloseTo(1.2, 5); // heat: 8 of 9 studies show a cost
+    expect(allowedDeficitPct(40)).toBeCloseTo(1.2, 5);
   });
 
-  test('drinking past sweat loss reads as overshoot, not green', () => {
-    // EAH: the one failure mode in this domain with a documented path to a hospital bed. 100% is
-    // still the top of the green band; anything past it is a plan to over-drink.
-    expect(hydrationStatus(100)).toBe('good');
-    expect(hydrationStatus(101)).toBe('over');
-    expect(hydrationStatus(176)).toBe('over');
+  test('amber sits one point of body mass below green, red beyond that', () => {
+    expect(hydrationStatus(-1.2, 30)).toBe('good');
+    expect(hydrationStatus(-1.3, 30)).toBe('partial');
+    expect(hydrationStatus(-2.2, 30)).toBe('partial');
+    expect(hydrationStatus(-2.3, 30)).toBe('short');
+  });
+
+  test('over-drinking is a warning, and it is the poured volume that triggers it', () => {
+    // EAH: the one failure mode in this domain with a documented path to a hospital bed, and the
+    // only one the app used to reward. Replacing sweat exactly is still the top of the green band.
+    expect(hydrationStatus(0, 25)).toBe('good');
+    expect(hydrationStatus(0.5, 25)).toBe('good'); // measurement noise, not a plan to over-drink
+    expect(hydrationStatus(0.6, 25)).toBe('over');
+    expect(hydrationStatus(2.23, 25)).toBe('over'); // the live plan from waterBalancePct above
     // Carbs deliberately keep the old scale — an overshoot there is wasted, not dangerous.
     expect(coverageStatus(176)).toBe('good');
   });
 
-  test('the calibrated water values themselves', () => {
-    expect(hydrationStatus(85)).toBe('good');
-    expect(hydrationStatus(84)).toBe('partial'); // would be green on the carb scale
-    expect(hydrationStatus(60)).toBe('partial');
-    expect(hydrationStatus(70)).toBe('partial'); // mobile used to call this green on its own
-    expect(HYDRATION_TARGET_PCT).toBe(85);
-    expect(HYDRATION_SHORT_PCT).toBe(60);
+  test('the short-ride buffer no longer flips the verdict on one minute of riding', () => {
+    // The old `sweatLoss < weight*15 ? 100 : absorbed/sweatLoss` gate turned 100% and green into
+    // 0% and red between 1h17 and 1h18 of the same ride. Graded on mass deficit there is nothing
+    // to cross: 1.48% and 1.52% of body mass are the same verdict, because they are the same ride.
+    const at = (sweatLoss: number) =>
+      hydrationStatus(
+        waterBalancePct({ sweatLoss, fluidAbsorbedTotal: 0, fluidPlanned: 0, weight: 78 }),
+        24,
+      );
+    expect(at(1155)).toBe('good');
+    expect(at(1170)).toBe('good');
+    expect(at(1185)).toBe('good');
+  });
+});
+
+describe('planSummary hydration', () => {
+  test('a short ride reports what was actually replaced, not a flattering 100%', () => {
+    // 75 kg at 20 C mid sweats 700 ml/h, so an hour with nothing on board replaces none of it.
+    // The badge used to answer 100% here — below the buffer gate the ratio was not computed at
+    // all. It now says 0% and stays green, with the deficit (0.93% of body mass) as the reason.
+    const summary = planSummary(makePlan({ route: makeRoute({ mode: 'time', hours: 1 }) }));
+    expect(summary.sweatLoss).toBe(700);
+    expect(summary.hydrationPct).toBe(0);
+    expect(summary.waterBalancePct).toBeCloseTo(-0.933, 2);
+    expect(hydrationStatus(summary.waterBalancePct, 20)).toBe('good');
   });
 });
 
@@ -1316,18 +1392,18 @@ describe('planSummary', () => {
     expect(planSummary(zeroHrsPlan).hydrationPct).toBe(100);
   });
 
-  test('a mild ride under the short-ride buffer gate reports full hydration coverage, not a raw 0%', () => {
-    // Regression: sweatLoss > 0 but below weight*15 (the same gate that zeroes samples()'s
-    // fluidNeed target) used to divide fluidPlanned by the raw sweatLoss anyway, so a mild ride
-    // with no water fills reported 0%/red even though the chart's target line was flat 0
-    // (nothing to actively cover) — the two disagreed in the exact opposite direction of the
-    // original chart-vs-badge mismatch this rework set out to fix.
+  test('a mild ride states its real coverage and is forgiven by the threshold, not by the metric', () => {
+    // This used to report a flat 100% because sweatLoss sat under the weight*15 buffer gate. The
+    // gate is gone: the number is now honest (nothing on board replaces nothing) and it is the
+    // deficit — 0.4% of body mass, trivial at 10 C — that keeps the badge green.
     const mildPlan = makePlan({
       route: makeRoute({ distance: 20, speed: 25, weight: 85, temp: 10, intensity: 'low' }),
     });
     const summary = planSummary(mildPlan);
-    expect(summary.sweatLoss).toBe(344); // round(430 * 0.8h), under the 85*15=1275ml buffer
-    expect(summary.hydrationPct).toBe(100);
+    expect(summary.sweatLoss).toBe(344); // round(430 * 0.8h)
+    expect(summary.hydrationPct).toBe(0);
+    expect(summary.waterBalancePct).toBeCloseTo(-0.405, 2);
+    expect(hydrationStatus(summary.waterBalancePct, 10)).toBe('good');
   });
 
   test('hydrationPct is based on absorbed fluid, not raw poured volume, when a fill outpaces the gut', () => {

@@ -12,6 +12,7 @@ import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { sourceColor } from '../chart/theme';
 import { InfoPopover } from '../ui/InfoPopover';
+import { fmtWaterBalance } from '../ui/waterBalance';
 import { MobilePlanCard, type PlanCardItem } from './MobilePlanCard';
 
 function selKeyFor(item: PlanCardItem): string {
@@ -74,9 +75,10 @@ export function MobilePlanList() {
   const carbStatus = coverageStatus(carbPct);
   const carbTint = COVERAGE_TINT[carbStatus];
   const hydPct = summary.hydrationPct;
-  // hydrationStatus, not coverageStatus: water is graded on stricter thresholds than carbs, and
-  // this screen used to apply its own uncalibrated `>= 70` on top of that.
-  const hydStatus = hydrationStatus(hydPct);
+  // hydrationStatus, not coverageStatus: water is graded on its own scale entirely — the signed
+  // balance in % of body mass, against a limit that tightens with temperature — and this screen
+  // used to apply its own uncalibrated `>= 70` on top of that.
+  const hydStatus = hydrationStatus(summary.waterBalancePct, route.temp);
   const hydTint = COVERAGE_TINT[hydStatus];
   const recovery = recoveryCarbs(route.weight);
   const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;
@@ -246,7 +248,8 @@ export function MobilePlanList() {
               color: hydTint.fg,
             }}
           >
-            {Math.round(summary.fluidAbsorbedTotal)} / {summary.sweatLoss} ml
+            {Math.round(summary.fluidAbsorbedTotal)} / {summary.sweatLoss} ml (
+            {fmtWaterBalance(summary.waterBalancePct, lang)})
           </div>
         </div>
       </div>

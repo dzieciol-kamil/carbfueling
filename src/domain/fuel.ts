@@ -15,16 +15,14 @@ import type {
 
 const FLUID_ABSORPTION_CAP_ML_H = 900;
 
-/**
- * A rider doesn't start a ride dehydrated — losing fluid up to this fraction of body mass is a
- * tolerable buffer before replacement becomes urgent, same physiological idea as `preRideGut()`
- * giving carbs a head start instead of demanding fresh intake from km 0. Same value (weight_kg ×
- * 15) is planned for autoplan.ts's short-ride hydration gate ("should we even plan water") — not
- * implemented there yet, so there's no enforced coupling today; keep the two in sync by hand if
- * one changes. Deliberately below the ~2% ACSM danger-limit figure so the app doesn't plan right
- * up to the edge.
- */
-const HYDRATION_BUFFER_ML_PER_KG = 15;
+/* A rider doesn't start a ride dehydrated, so a small deficit costs nothing — that idea used to
+ * live here as `HYDRATION_BUFFER_ML_PER_KG = 15`, applied as an on/off gate: below weight × 15 ml
+ * of sweat loss the fluid target was zeroed and hydration reported a flat 100%. Measured, that
+ * turned 1h17 of riding (100%, green) into 1h18 (0%, red) on one minute of extra ride time.
+ *
+ * It is gone, not moved. The tolerance it was reaching for is expressed directly by the deficit
+ * limits below, in the unit the literature actually uses — 15 ml/kg *is* 1.5% of body mass — and
+ * as a continuous quantity there is no line left to step over. */
 
 /**
  * Where the *carb* bar turns green. A tolerance the badge applies on top of the honest 100% target
@@ -46,34 +44,90 @@ export const COVERAGE_SHORT_PCT = 55;
 export const GUT_LIMIT = 60;
 
 /**
- * Where the *hydration* bar turns green — deliberately not the carb number.
+ * Water is graded on **% of body mass**, not on % of sweat loss replaced, and this is the whole
+ * shape of the hydration verdict — see `waterBalancePct` for the quantity and `hydrationStatus`
+ * for the tiers.
  *
- * These two were briefly shared. That was wrong for a reason worth recording: only the carb
- * arithmetic changed, so moving the shared pair recalibrated hydration on carb evidence, and a
- * plan at 59% of sweat loss silently went red→amber (`food-7`/`food7` in docs/tests) without
- * anyone deciding it should. Asked and answered by the rider: dehydration is not the same kind of
- * failure as running low on carbs — bonking hurts, hyperthermia is dangerous — so water keeps the
- * stricter 85/60 it always had on desktop and does not inherit the carb recalibration.
+ * Two reasons the old 85/60 pair (percent of sweat loss, fixed) had to go. First, every study in
+ * the field reports its findings as body-mass loss, so "2% of your mass" is a number the rider can
+ * check against anything they have ever read, while "60% of sweat loss" is a number only this app
+ * uses. Second, and worse: the consequence of a deficit depends on the weather. Sawka, Cheuvront &
+ * Kenefick (2015, Sports Med 45(S1):51-60) found the cost negligible until skin temperature passes
+ * ~27 C, then ~1.3-1.5% of performance per further degree; their own tally by environment is 0 of 2
+ * studies showing harm in the cold, 4 of 7 in the moderate band, 8 of 9 above 25 C. A single fixed
+ * threshold has to pick one climate, and 85/60 had quietly picked "always 30 C" — the app was
+ * calling a perfectly good cold-weather plan short.
  *
- * `hydrationPct` is unchanged by any of this: still the plain `fluidAbsorbedTotal / sweatLoss`
- * ratio (capped at the gut's absorption rate — see `samples()` — not the raw volume poured),
- * reported as 100 below the short-ride gate. Note this is also stricter than the `>= 70` the
- * *mobile* card used to apply on its own — that number was never calibrated against anything and
- * disagreed with desktop, which is the whole class of bug this work set out to remove.
+ * These two anchors are the green limit at each end, interpolated linearly in between by
+ * `allowedDeficitPct`. Air temperature, not skin temperature: it is what the rider tells us, and
+ * the mapping between them is another model we would have to defend without better evidence.
  */
-export const HYDRATION_TARGET_PCT = 85;
+const DEFICIT_GREEN_COOL_PCT = 2.5;
+const DEFICIT_GREEN_HOT_PCT = 1.2;
+const DEFICIT_COOL_TEMP_C = 20;
+const DEFICIT_HOT_TEMP_C = 30;
 
-/** Amber/red split for water. Same reasoning as `HYDRATION_TARGET_PCT`. */
-export const HYDRATION_SHORT_PCT = 60;
+/** Width of the amber band below the green limit, in points of body mass. Red starts one full
+ *  percent of body mass past "no longer ideal" — at ~3-4% the audit's evidence table turns
+ *  unambiguous ("clear impairment everywhere, heat-illness risk"), and that is what red means. */
+const DEFICIT_AMBER_BAND_PCT = 1.0;
 
 /**
- * The top of the green band for water — past this, more fluid stops being an improvement.
- * Drinking beyond sweat loss is the documented route to exercise-associated hyponatraemia, the
- * only failure mode in this domain that ends in a hospital, so the bar goes red again above it
- * instead of rewarding the overshoot. Carbs are not graded this way: too much carb is wasted,
- * not dangerous.
+ * How far a plan may pour past sweat loss before the badge warns, in % of body mass.
+ *
+ * Drinking beyond what you sweat is the documented route to exercise-associated hyponatraemia —
+ * the only failure mode in this whole domain that ends in a hospital, and the one thing the app
+ * used to reward without limit. It is not a razor's edge, though: sweat rate is a model, not a
+ * measurement, so a plan half a percent over is inside the model's own error bar, and only a
+ * deliberate surplus should light up.
  */
-export const HYDRATION_OVER_PCT = 100;
+const SURPLUS_WARN_PCT = 0.5;
+
+/** The largest fluid deficit that still reads green at `temp` (deg C), as % of body mass.
+ *  Interpolates between the two anchors above and flattens outside them. */
+export function allowedDeficitPct(temp: number): number {
+  const t = Math.min(DEFICIT_HOT_TEMP_C, Math.max(DEFICIT_COOL_TEMP_C, temp));
+  const k = (t - DEFICIT_COOL_TEMP_C) / (DEFICIT_HOT_TEMP_C - DEFICIT_COOL_TEMP_C);
+  return DEFICIT_GREEN_COOL_PCT + k * (DEFICIT_GREEN_HOT_PCT - DEFICIT_GREEN_COOL_PCT);
+}
+
+export interface WaterBalanceInput {
+  sweatLoss: number;
+  fluidAbsorbedTotal: number;
+  fluidPlanned: number;
+  weight: number;
+}
+
+/**
+ * The plan's net water balance as a signed % of body mass: negative is a deficit, positive is a
+ * surplus. This is the one number the hydration badge grades, states and colours by.
+ *
+ * The two sides deliberately read different volumes, because they are different questions:
+ *
+ * - **Deficit** uses `fluidAbsorbedTotal` — what physiologically replaced the loss *during* the
+ *   ride. Fluid still sitting in the stomach at the finish has not defended anyone's plasma volume.
+ * - **Surplus** uses `fluidPlanned` — what the rider actually drinks. `mlAbsorbed` is capped at
+ *   `FLUID_ABSORPTION_CAP_ML_H`, so once sweat rate passes 900 ml/h an absorbed-based ratio can
+ *   never reach 100% however much goes in: the badge sat at 99% and green on a real plan pouring
+ *   4900 ml against 2893 ml of sweat. Hyponatraemia is caused by the volume swallowed, not by the
+ *   fraction of it the stomach cleared before the finish line.
+ *
+ * Since `fluidAbsorbedTotal <= fluidPlanned` always, the two can't both be positive, so the sign
+ * stays meaningful and the scale stays continuous through zero.
+ */
+export function waterBalancePct({
+  sweatLoss,
+  fluidAbsorbedTotal,
+  fluidPlanned,
+  weight,
+}: WaterBalanceInput): number {
+  if (weight <= 0) return 0;
+  const surplus = fluidPlanned - sweatLoss;
+  const ml = surplus > 0 ? surplus : -(sweatLoss - fluidAbsorbedTotal);
+  // 1 ml of body water ~ 1 g, which is the same approximation the weigh-yourself sweat test rests
+  // on and the reason body-mass loss is usable as a fluid unit at all.
+  return (ml / (weight * 1000)) * 100;
+}
 
 /**
  * Above roughly 80-90% of max effort — the app's 'high' intensity tier — blood flow shifts
@@ -91,7 +145,7 @@ const HIGH_INTENSITY_ABS_CAP_FACTOR = 0.88;
  */
 const COVERAGE_CARRY_MINUTES = 15;
 
-/** `over` is water-only — see `HYDRATION_OVER_PCT`; `coverageStatus` never returns it. */
+/** `over` is water-only — see `SURPLUS_WARN_PCT`; `coverageStatus` never returns it. */
 export type CoverageStatus = 'good' | 'partial' | 'short' | 'over';
 
 function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus {
@@ -111,12 +165,22 @@ export function coverageStatus(pct: number): CoverageStatus {
   return tier(pct, COVERAGE_TARGET_PCT, COVERAGE_SHORT_PCT);
 }
 
-/** The verdict on the *hydration* bar — stricter than carbs on purpose, see
- *  `HYDRATION_TARGET_PCT`. The same tiers as carbs plus one at the other end: unlike carbs, water
- *  can be overdone (`HYDRATION_OVER_PCT`), so this scale is bounded on both sides. */
-export function hydrationStatus(pct: number): CoverageStatus {
-  if (pct > HYDRATION_OVER_PCT) return 'over';
-  return tier(pct, HYDRATION_TARGET_PCT, HYDRATION_SHORT_PCT);
+/**
+ * The verdict on the *hydration* bar. Takes the signed balance from `waterBalancePct` and the
+ * ride's air temperature, not a percentage of sweat loss: unlike carbs, water is bounded on both
+ * sides — too little is graded on a limit that tightens with the heat, too much is its own,
+ * temperature-independent warning. See `DEFICIT_GREEN_COOL_PCT` for the evidence behind both.
+ *
+ * Same three colours as carbs plus the overshoot, so the desktop cards and the mobile list can
+ * still share one palette while each keeps its own numbers — which is the arrangement that stops
+ * a plan from reading green on one screen and short on the other.
+ */
+export function hydrationStatus(balancePct: number, temp: number): CoverageStatus {
+  if (balancePct > SURPLUS_WARN_PCT) return 'over';
+  const deficit = Math.max(0, -balancePct);
+  const green = allowedDeficitPct(temp);
+  if (deficit <= green) return 'good';
+  return deficit <= green + DEFICIT_AMBER_BAND_PCT ? 'partial' : 'short';
 }
 const PROFILE_SAMPLES = 160;
 const PACE_UP_K = 0.1;
@@ -703,7 +767,6 @@ export function samples(state: PlanState): Sample[] {
   const dt = hrs / N;
   const sweatRate = sweat(route);
 
-  const hydrationBuffer = route.weight * HYDRATION_BUFFER_ML_PER_KG;
   const sweatLoss = sweatRate * hrs;
   // This is about the *target* (need) line, not delivery: unlike carbs, fluid has no
   // enzyme-limited transporter stage on top of the stomach — the gut buffer added below models
@@ -712,19 +775,19 @@ export function samples(state: PlanState): Sample[] {
   // for a time-varying "ramp" in what's *needed*. Real hydration guidance is stated as a flat rate
   // (ml/h) anyway, so the target is one constant rate for the whole ride.
   //
-  // The total behind that flat rate is the full, undiscounted sweat loss (100%) — not
-  // `HYDRATION_TARGET_PCT` and not sweat loss minus the buffer. The chart's job is to show the
-  // honest physiological target; that constant is a separate, more lenient tolerance the *badge*
-  // applies on top (via `hydrationStatus`) to decide "is this still good enough," not something
-  // baked into what the line itself asks for. An earlier version used the buffer here and made
-  // the chart say "you're above the line" while the badge still read 79% and amber for the same
+  // The total behind that flat rate is the full, undiscounted sweat loss (100%), with no tolerance
+  // of any kind subtracted. The chart's job is to show the honest physiological target; deciding
+  // "is this still good enough" belongs to the badge (`hydrationStatus`), which applies the
+  // temperature-dependent deficit limit on top. An earlier version discounted the target here and
+  // made the chart say "you're above the line" while the badge read 79% and amber for the same
   // plan — confirmed on a real reproduction; using the true 100% total instead means falling
-  // short of the total always shows up as the actual line dipping below the target, honestly.
+  // short of it always shows up as the actual line dipping below the target, honestly.
   //
-  // Below the short-ride gate (sweatLoss < buffer — the same threshold that decides whether
-  // autoplan bothers suggesting water stops at all) there's honestly nothing to plan for, so the
-  // target stays at 0 rather than asking for a loss too small to act on.
-  const totalFluidNeed = sweatLoss < hydrationBuffer ? 0 : sweatLoss;
+  // A short ride now gets a real (small) target line where it used to get a flat zero, because the
+  // buffer gate that produced that zero is gone — see the note where the constant used to live.
+  // The badge stays green there on its own merits: an hour of sweat is well inside the deficit
+  // every climate tolerates.
+  const totalFluidNeed = sweatLoss;
   const out: Sample[] = [];
   let gut = preRideGut(route, cap);
   let absorbed = 0;
@@ -1018,7 +1081,12 @@ export interface PlanSummary {
   totalCarbs: number;
   fluidPlanned: number;
   sweatLoss: number;
+  /** Sweat loss actually replaced, as a percentage — the bar's headline figure. Purely a
+   *  *display* number: what the badge grades, and what decides its colour, is `waterBalancePct`.
+   *  Capped by absorption, so on a hot ride it cannot reach 100 whatever the rider pours. */
   hydrationPct: number;
+  /** Signed net water balance as % of body mass — see `waterBalancePct`. */
+  waterBalancePct: number;
   coverage: number;
   /** Grams counted toward `coverage` — pair this with `target` when showing the ratio in grams.
    *  Not the same as `absorbedTotal`, which ignores whether a gram arrived when it was needed. */
@@ -1049,18 +1117,13 @@ export function planSummary(state: PlanState): PlanSummary {
     fills.filter((f) => f.content !== 'gel').reduce((a, f) => a + volOf(f, gear), 0) +
     foods.reduce((a, f) => a + (f.ml || 0), 0);
   const sweatLoss = Math.round(sweat(route) * hrs);
-  // Below the short-ride buffer gate (the same one that zeroes the chart's fluidNeed target —
-  // see samples() above), there's honestly nothing to actively cover, so this reports "fully
-  // met" rather than dividing by a raw sweatLoss the chart itself has already decided doesn't
-  // apply — otherwise a mild/short ride with zero fills showed the chart's target line flat at
-  // 0 (satisfied) while this badge showed 0%, red: the same disagreement this whole rework set
-  // out to eliminate, just in the opposite direction.
+  // A ride that costs no sweat is covered by definition; every other ride gets the plain ratio.
+  // This used to answer a flat 100 below the short-ride buffer gate, which is how a minute of
+  // extra ride time flipped the badge from 100% and green to 0% and red — the tolerance now lives
+  // in `hydrationStatus`, where it can be continuous, so nothing here needs to lie.
   const { coverage, coveredCarbs, samples: S } = rateStats(state);
   const fluidAbsorbedTotal = S[S.length - 1].mlAbsorbed;
-  const hydrationPct =
-    sweatLoss > 0 && sweatLoss >= route.weight * HYDRATION_BUFFER_ML_PER_KG
-      ? Math.round((fluidAbsorbedTotal / sweatLoss) * 100)
-      : 100;
+  const hydrationPct = sweatLoss > 0 ? Math.round((fluidAbsorbedTotal / sweatLoss) * 100) : 100;
 
   return {
     target,
@@ -1071,6 +1134,12 @@ export function planSummary(state: PlanState): PlanSummary {
     fluidPlanned,
     sweatLoss,
     hydrationPct,
+    waterBalancePct: waterBalancePct({
+      sweatLoss,
+      fluidAbsorbedTotal,
+      fluidPlanned,
+      weight: route.weight,
+    }),
     coverage,
     coveredCarbs,
     absorbedTotal: S[S.length - 1].absorbed,

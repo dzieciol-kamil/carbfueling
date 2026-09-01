@@ -8,7 +8,9 @@ import {
 } from '../domain/fuel';
 import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
 import { InfoPopover } from './ui/InfoPopover';
+import { fmtWaterBalance } from './ui/waterBalance';
 
 function fmt(n: number): string {
   return n.toFixed(0);
@@ -84,7 +86,13 @@ export function SummaryCards() {
 
   const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
   const carbColor = statusColor(coverageStatus(summary.coverage), 'var(--carb)');
-  const hydColor = statusColor(hydrationStatus(summary.hydrationPct), 'var(--water)');
+  // Colour and parenthetical come from the same number on purpose: the bar's headline percentage
+  // is capped by absorption and can sit at 99 on a plan that pours nearly twice its sweat loss,
+  // so without the balance next to it a maroon bar at 99% would be unreadable.
+  const hydColor = statusColor(
+    hydrationStatus(summary.waterBalancePct, route.temp),
+    'var(--water)',
+  );
   const recovery = recoveryCarbs(route.weight);
 
   return (
@@ -173,7 +181,29 @@ export function SummaryCards() {
         </div>
         <div style={footerRowStyle}>
           <span>
-            {strings.sweatLoss} <b style={footerValueStyle}>{summary.sweatLoss} ml</b>
+            {strings.sweatLoss} <b style={footerValueStyle}>{summary.sweatLoss} ml</b>{' '}
+            <b style={{ ...footerValueStyle, color: hydColor }}>
+              ({fmtWaterBalance(summary.waterBalancePct, lang)})
+            </b>{' '}
+            <InfoPopover
+              ariaLabel={strings.waterBalanceAria}
+              hint={
+                <>
+                  {strings.waterBalanceHint}{' '}
+                  <a
+                    href={FAQ_HREF_FROM_CALCULATOR + 'hydration-water-per-hour/'}
+                    target="_blank"
+                    rel="noopener"
+                    style={{ color: 'inherit', textDecoration: 'underline' }}
+                  >
+                    {strings.waterBalanceHintLink}
+                  </a>
+                </>
+              }
+              popoverStyle={{ bottom: 'calc(100% + 6px)', left: 0 }}
+            >
+              ⓘ
+            </InfoPopover>
           </span>
           <span>
             {strings.tAbsorbed}{' '}

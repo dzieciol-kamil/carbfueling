@@ -320,6 +320,9 @@ export interface StringTable {
   exportPlanError: string;
   recoveryLabel: string;
   recoveryHint: string;
+  waterBalanceHint: string;
+  waterBalanceHintLink: string;
+  waterBalanceAria: string;
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -705,6 +708,10 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
+    waterBalanceHint:
+      'Bilans płynów w % masy ciała — jednostka, w której mówi o ryzyku literatura. Minus to niedobór, plus to picie ponad straty potu. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
+    waterBalanceHintLink: 'Jak to czytać →',
+    waterBalanceAria: 'Co oznacza bilans płynów',
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -1083,6 +1090,10 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
+    waterBalanceHint:
+      'Fluid balance as % of body mass — the unit the research states risk in. Minus is a shortfall, plus is drinking past your sweat loss. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
+    waterBalanceHintLink: 'How to read this →',
+    waterBalanceAria: 'What the fluid balance means',
   },
 };
 

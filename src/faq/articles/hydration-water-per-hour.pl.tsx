@@ -44,9 +44,36 @@ export default function HydrationWaterPerHourPl() {
         wchłaniają się wolniej dokładnie wtedy, gdy najbardziej ich potrzebujesz.
       </p>
       <p style={articleTextStyle}>
+        Naturalną jednostką tego deficytu jest procent masy ciała — bo w takiej jednostce podają
+        wyniki wszystkie badania, i bo ten sam litr znaczy zupełnie co innego dla 55-kilogramowej
+        biegaczki niż dla 95-kilogramowego kolarza. Dla kolarza o masie 75 kg litr niedoboru to
+        około 1,3% masy ciała. Mniej więcej do 2% dowody na wiarygodne pogorszenie wyników są słabe,
+        a sam próg 2% jest przedmiotem realnego sporu: część zaślepionych badań nie znajduje przy
+        2–3% żadnego efektu, inne znajdują przy tej samej liczbie wyraźny spadek. Traktuj to jako
+        strefę ostrzegawczą, a nie klif.
+      </p>
+      <p style={articleTextStyle}>
+        Ważniejsze od samej liczby są warunki, w jakich ją zbierasz. Sawka, Cheuvront i Kenefick
+        (2015) pokazali, że koszt odwodnienia jest zaniedbywalny, dopóki temperatura skóry nie
+        przekroczy około 27 °C — w ich zestawieniu literatury żadne badanie w chłodzie (2–10 °C) nie
+        wykazało pogorszenia, a powyżej 25 °C wykazało je 8 z 9. Ten sam deficyt 2% kosztuje Cię
+        prawie nic w chłodny dzień i kilka procent wyniku w prawdziwym upale. Dlatego Carb Fueling
+        ocenia ten sam niedobór inaczej w zależności od ustawionej temperatury: przy 20 °C i mniej
+        pasek zostaje zielony aż do 2,5% masy ciała, a przy 30 °C i więcej już tylko do 1,2%.
+      </p>
+      <p style={articleTextStyle}>
+        Drugi koniec skali jest rzadszy, ale groźniejszy. Picie ponad straty potu rozcieńcza sód we
+        krwi i prowadzi do hiponatremii wysiłkowej — jedynego ostrego zagrożenia w całej tej
+        dziedzinie z udokumentowaną drogą do szpitala, i takiego, które dopada zwykle wolniejszych
+        uczestników długich imprez, pijących na każdym punkcie „na zapas". Dlatego pasek nawodnienia
+        robi się bordowy również przy nadmiarze: za wypicie więcej, niż tracisz, nie ma nagrody.
+      </p>
+      <p style={articleTextStyle}>
         Carb Fueling bierze temperaturę ustawioną dla Twojej trasy oraz intensywność jazdy i na tej
         podstawie szacuje zapotrzebowanie na płyny w ml na godzinę razem z planem węglowodanowym —
-        więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy.
+        więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy. Liczba w nawiasie
+        obok strat potu to właśnie ten bilans: minus oznacza niedobór, plus — picie ponad to, co
+        wypocisz.
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

@@ -42,9 +42,37 @@ export default function HydrationWaterPerHourEn() {
         right when you need them fastest.
       </p>
       <p style={articleTextStyle}>
+        The natural unit for that deficit is percent of body mass, because that is the unit every
+        study reports its findings in — and because a litre means something very different to a 55
+        kg runner than to a 95 kg rider. For a 75 kg cyclist, one litre short is about 1.3% of body
+        mass. Up to roughly 2%, the evidence for any reliable performance cost is weak, and the 2%
+        figure itself is genuinely disputed: several blinded trials find nothing at 2–3%, while
+        others find a clear drop at the same number. Treat it as a soft warning zone, not a cliff
+        edge.
+      </p>
+      <p style={articleTextStyle}>
+        What matters more than the number is the weather you collect it in. Sawka, Cheuvront and
+        Kenefick (2015) found the cost of a deficit negligible until skin temperature passes about
+        27 °C — in their tally of the literature, no study in the cold (2–10 °C) showed impairment,
+        while 8 of 9 above 25 °C did. The same 2% deficit costs you close to nothing on a cold day
+        and several percent of your performance in real heat. That is why Carb Fueling grades the
+        same shortfall differently depending on the temperature you set: at 20 °C and below the bar
+        stays green out to 2.5% of body mass, and at 30 °C and above only to 1.2%.
+      </p>
+      <p style={articleTextStyle}>
+        The other end of the scale is rarer but more dangerous. Drinking past your sweat losses
+        dilutes the sodium in your blood and leads to exercise-associated hyponatraemia — the one
+        acute failure mode in this whole subject with a documented path to a hospital bed, and one
+        that typically catches slower finishers who drink at every aid station "to be safe". So the
+        hydration bar turns dark red for a surplus too: there is no prize for drinking more than you
+        lose.
+      </p>
+      <p style={articleTextStyle}>
         Carb Fueling takes the temperature you set for your route and your riding effort, and uses
         them to estimate your fluid need in ml per hour alongside your carb plan — so you don't have
-        to guess or run your own weigh-in test mid-ride.
+        to guess or run your own weigh-in test mid-ride. The figure in brackets next to your sweat
+        loss is that balance: a minus is a shortfall, a plus means the plan has you drinking more
+        than you sweat.
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>
