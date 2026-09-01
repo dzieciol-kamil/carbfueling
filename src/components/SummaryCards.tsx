@@ -10,7 +10,7 @@ import { t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
 import { InfoPopover } from './ui/InfoPopover';
-import { fmtWaterBalance } from './ui/waterBalance';
+import { balanceBarGeometry, fmtWaterBalance } from './ui/waterBalance';
 
 function fmt(n: number): string {
   return n.toFixed(0);
@@ -58,6 +58,18 @@ const trackStyle: CSSProperties = {
   background: 'var(--border-soft)',
   overflow: 'hidden',
 };
+/** The hydration track is a centre-zero axis, not a 0-100 fill: the same width to the left of the
+ *  middle means a deficit and to the right a surplus, so the bar shows *which way* a plan is wrong
+ *  as well as by how much. `position` is the only difference — the fill is absolutely placed. */
+const balanceTrackStyle: CSSProperties = { ...trackStyle, position: 'relative' };
+const balanceAxisRowStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginTop: 3,
+  fontSize: 10,
+  lineHeight: 1,
+  color: 'var(--muted-2)',
+};
 const footerRowStyle: CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
@@ -93,6 +105,7 @@ export function SummaryCards() {
     hydrationStatus(summary.waterBalancePct, route.temp),
     'var(--water)',
   );
+  const hydBar = balanceBarGeometry(summary.waterBalancePct);
   const recovery = recoveryCarbs(route.weight);
 
   return (
@@ -158,26 +171,37 @@ export function SummaryCards() {
       <div style={cardStyle}>
         <div style={titleRowStyle}>
           <span style={titleStyle}>{strings.hydration}</span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              fontWeight: 700,
-              color: hydColor,
-            }}
-          >
-            {summary.hydrationPct}%
-          </span>
         </div>
-        <div style={trackStyle}>
-          <div
-            style={{
-              width: `${Math.min(100, summary.hydrationPct)}%`,
-              height: '100%',
-              background: hydColor,
-              borderRadius: 6,
-            }}
-          />
+        <div>
+          <div style={balanceTrackStyle}>
+            <div
+              style={{
+                position: 'absolute',
+                left: `${hydBar.left}%`,
+                width: `${hydBar.width}%`,
+                height: '100%',
+                background: hydColor,
+                // Rounded only at the far end: a pill would pull away from the zero tick and read
+                // as a floating blob rather than a bar growing out of the centre.
+                borderRadius: summary.waterBalancePct < 0 ? '6px 0 0 6px' : '0 6px 6px 0',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: 0,
+                bottom: 0,
+                width: 1,
+                background: 'var(--muted-2)',
+              }}
+            />
+          </div>
+          <div style={balanceAxisRowStyle} aria-hidden>
+            <span>−</span>
+            <span>0</span>
+            <span>+</span>
+          </div>
         </div>
         <div style={footerRowStyle}>
           <span>
