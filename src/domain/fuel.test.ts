@@ -1197,6 +1197,16 @@ describe('hydrationStatus', () => {
     expect(coverageStatus(59)).toBe('partial'); // ...whereas 59% of your carbs is not red
   });
 
+  test('drinking past sweat loss reads as overshoot, not green', () => {
+    // EAH: the one failure mode in this domain with a documented path to a hospital bed. 100% is
+    // still the top of the green band; anything past it is a plan to over-drink.
+    expect(hydrationStatus(100)).toBe('good');
+    expect(hydrationStatus(101)).toBe('over');
+    expect(hydrationStatus(176)).toBe('over');
+    // Carbs deliberately keep the old scale — an overshoot there is wasted, not dangerous.
+    expect(coverageStatus(176)).toBe('good');
+  });
+
   test('the calibrated water values themselves', () => {
     expect(hydrationStatus(85)).toBe('good');
     expect(hydrationStatus(84)).toBe('partial'); // would be green on the carb scale

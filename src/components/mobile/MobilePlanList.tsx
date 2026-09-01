@@ -22,7 +22,7 @@ function selKeyFor(item: PlanCardItem): string {
       : 'x' + item.id;
 }
 
-/** Mobile's own tints for the three status tiers. The palette is shared between the carb and
+/** Mobile's own tints for the status tiers. The palette is shared between the carb and
  *  water cards; the *thresholds* deliberately are not — carbs go through `coverageStatus` and
  *  water through the stricter `hydrationStatus`, the same two calls the desktop cards make. What
  *  must never come back is this screen picking its own numbers, which is how it ended up grading
@@ -31,6 +31,8 @@ const COVERAGE_TINT: Record<CoverageStatus, { bg: string; fg: string }> = {
   good: { bg: '#E7F2E1', fg: '#3D7A26' },
   partial: { bg: '#FBEAE1', fg: '#A3512A' },
   short: { bg: '#F8DED5', fg: '#8F3D1F' },
+  // Water-only, and only above 100% — see HYDRATION_OVER_PCT.
+  over: { bg: '#F6DBE0', fg: '#8C2F39' },
 };
 
 function coverageCardStyle(status: CoverageStatus): CSSProperties {

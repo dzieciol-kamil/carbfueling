@@ -19,6 +19,9 @@ function fmt(n: number): string {
  *  in a colour helper. Only the palette is this layout's own. */
 function statusColor(status: CoverageStatus, goodColor: string): string {
   if (status === 'good') return goodColor;
+  // Deeper and cooler than the "short" brick on purpose: both ends of the water scale are bad,
+  // but they are not the same problem, and the number next to the bar says which one it is.
+  if (status === 'over') return '#8C2F39';
   if (status === 'short') return '#B4552F';
   return '#D2703F';
 }

@@ -67,6 +67,15 @@ export const HYDRATION_TARGET_PCT = 85;
 export const HYDRATION_SHORT_PCT = 60;
 
 /**
+ * The top of the green band for water — past this, more fluid stops being an improvement.
+ * Drinking beyond sweat loss is the documented route to exercise-associated hyponatraemia, the
+ * only failure mode in this domain that ends in a hospital, so the bar goes red again above it
+ * instead of rewarding the overshoot. Carbs are not graded this way: too much carb is wasted,
+ * not dangerous.
+ */
+export const HYDRATION_OVER_PCT = 100;
+
+/**
  * Above roughly 80-90% of max effort — the app's 'high' intensity tier — blood flow shifts
  * away from the gut, lowering how much carb it can actually absorb. Same effect for both
  * sports (it is an intensity effect, not a sport one); starting-point trim, not a citation.
@@ -82,7 +91,8 @@ const HIGH_INTENSITY_ABS_CAP_FACTOR = 0.88;
  */
 const COVERAGE_CARRY_MINUTES = 15;
 
-export type CoverageStatus = 'good' | 'partial' | 'short';
+/** `over` is water-only — see `HYDRATION_OVER_PCT`; `coverageStatus` never returns it. */
+export type CoverageStatus = 'good' | 'partial' | 'short' | 'over';
 
 function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus {
   if (pct >= targetPct) return 'good';
@@ -102,8 +112,10 @@ export function coverageStatus(pct: number): CoverageStatus {
 }
 
 /** The verdict on the *hydration* bar — stricter than carbs on purpose, see
- *  `HYDRATION_TARGET_PCT`. Same three tiers, so both layouts can share one palette. */
+ *  `HYDRATION_TARGET_PCT`. The same tiers as carbs plus one at the other end: unlike carbs, water
+ *  can be overdone (`HYDRATION_OVER_PCT`), so this scale is bounded on both sides. */
 export function hydrationStatus(pct: number): CoverageStatus {
+  if (pct > HYDRATION_OVER_PCT) return 'over';
   return tier(pct, HYDRATION_TARGET_PCT, HYDRATION_SHORT_PCT);
 }
 const PROFILE_SAMPLES = 160;
