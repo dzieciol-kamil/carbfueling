@@ -10,6 +10,7 @@ import {
 } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import { sourceColor } from '../chart/theme';
 import { InfoPopover } from '../ui/InfoPopover';
 import { balanceBarGeometry, fmtWaterBalance } from '../ui/waterBalance';
@@ -264,6 +265,34 @@ export function MobilePlanList() {
           >
             {Math.round(summary.fluidAbsorbedTotal)} / {summary.sweatLoss} ml
           </div>
+          {/* Names the big number, the way the recovery line names the carb card's. Mobile has no
+              room for the desktop card's full header line, so the label goes under the figures —
+              and it carries the hint, which is the only route from this screen to the FAQ. */}
+          <InfoPopover
+            ariaLabel={strings.waterBalanceAria}
+            hint={
+              <>
+                {strings.waterBalanceHint}{' '}
+                <a
+                  href={FAQ_HREF_FROM_CALCULATOR + 'hydration-water-per-hour/'}
+                  target="_blank"
+                  rel="noopener"
+                  style={{ color: 'inherit', textDecoration: 'underline' }}
+                >
+                  {strings.waterBalanceHintLink}
+                </a>
+              </>
+            }
+            triggerStyle={{
+              display: 'block',
+              fontSize: 9,
+              color: hydTint.fg,
+              marginTop: 2,
+            }}
+            popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+          >
+            {strings.waterBalanceLabel} ⓘ
+          </InfoPopover>
         </div>
       </div>
 
