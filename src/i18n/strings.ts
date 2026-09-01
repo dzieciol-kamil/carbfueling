@@ -323,7 +323,7 @@ export interface StringTable {
   waterBalanceHint: string;
   waterBalanceHintLink: string;
   waterBalanceAria: string;
-  waterBalanceUnit: string;
+  waterBalanceLabel: string;
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -710,12 +710,12 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
     waterBalanceHint:
-      'Bilans płynów w % masy ciała — jednostka, w której mówi o ryzyku literatura. Minus to niedobór, plus to picie ponad straty potu. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
+      'Minus to niedobór wobec strat potu, plus to picie ponad nie. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
     waterBalanceHintLink: 'Jak to czytać →',
     waterBalanceAria: 'Co oznacza bilans płynów',
-    // Not "utraty masy ciała": the number is signed, and a plus means the plan has the rider
+    // Not "ubytek masy ciała": the number is signed, and a plus means the plan has the rider
     // gaining water, not losing it.
-    waterBalanceUnit: 'masy ciała',
+    waterBalanceLabel: 'Bilans płynów w % masy ciała',
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -1095,10 +1095,10 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
     waterBalanceHint:
-      'Fluid balance as % of body mass — the unit the research states risk in. Minus is a shortfall, plus is drinking past your sweat loss. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
+      'A minus is a shortfall against your sweat loss, a plus is drinking past it. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
     waterBalanceHintLink: 'How to read this →',
     waterBalanceAria: 'What the fluid balance means',
-    waterBalanceUnit: 'body mass',
+    waterBalanceLabel: 'Fluid balance as % of body mass',
   },
 };
 

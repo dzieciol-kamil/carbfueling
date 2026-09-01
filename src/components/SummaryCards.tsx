@@ -171,20 +171,10 @@ export function SummaryCards() {
       <div style={cardStyle}>
         <div style={titleRowStyle}>
           <span style={titleStyle}>{strings.hydration}</span>
-          {/* The unit is spelled out rather than left as a bare percentage: "+2.6%" of *what* is
-              the whole difference between a number the rider can check against the literature and
-              one only this app uses. */}
+          {/* Named in full rather than left as a bare percentage: "+2.6%" of *what* is the whole
+              difference between a number the rider can check against the literature and one only
+              this app uses. */}
           <span style={{ fontSize: 11, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}>
-            <b
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontWeight: 700,
-                color: hydColor,
-              }}
-            >
-              {fmtWaterBalance(summary.waterBalancePct, lang)}
-            </b>{' '}
-            {strings.waterBalanceUnit}{' '}
             <InfoPopover
               ariaLabel={strings.waterBalanceAria}
               hint={
@@ -200,10 +190,22 @@ export function SummaryCards() {
                   </a>
                 </>
               }
-              popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+              // Opens rightward: the trigger now leads the group rather than trailing it, and a
+              // right-anchored bubble would hang off the card's left edge.
+              popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
             >
               ⓘ
-            </InfoPopover>
+            </InfoPopover>{' '}
+            {strings.waterBalanceLabel}{' '}
+            <b
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: 700,
+                color: hydColor,
+              }}
+            >
+              {fmtWaterBalance(summary.waterBalancePct, lang)}
+            </b>
           </span>
         </div>
         <div>
