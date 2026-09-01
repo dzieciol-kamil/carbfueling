@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
-  COVERAGE_SHORT_PCT,
-  COVERAGE_TARGET_PCT,
+  COVERAGE_SHORT_GPH,
+  COVERAGE_TARGET_GPH,
   FLUID_ABSORPTION_CAP_ML_H,
   absCap,
   allowedDeficitPct,
@@ -869,7 +869,7 @@ describe('samples', () => {
 describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effort-weighted)', () => {
   // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
   // sweatLoss = 700*4 = 2800ml, well above the buffer (weight*15=1125ml), so totalFluidNeed is
-  // the full, undiscounted 2800ml — not reduced by the buffer and not by COVERAGE_TARGET_PCT
+  // the full, undiscounted 2800ml — not reduced by the buffer and not by COVERAGE_TARGET_GPH
   // (that constant is a badge-only tolerance, not part of what the line asks for). Distributed by
   // eff(x)/tot exactly like carbs' `need` — no GPX here, so effort=1 everywhere and eff(x)/tot
   // reduces to x/D (a straight line), matching a flat ml/h target rate.
@@ -1040,6 +1040,20 @@ describe('rateStats coverage', () => {
     expect(rateStats(plan).coveredCarbs).toBeCloseTo(35, 6);
   });
 
+  test('totalCarbs carries the same still-undigested residual, not the raw pre-ride meal', () => {
+    // The other half of the fix this pair of tests guards: absorbedTotal/coveredCarbs already
+    // credited the 35g leftover from a pre-ride meal — totalCarbs (and so carbPlannedRateGph and
+    // the overshoot badge) used to see none of it, which is how a plan carrying nothing on the
+    // bike could still look "empty" while quietly scoring on breakfast.
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
+    expect(planSummary(plan).totalCarbs).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h, same as above
+  });
+
+  test('a fully-digested pre-ride meal contributes nothing to totalCarbs either', () => {
+    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) });
+    expect(planSummary(plan).totalCarbs).toBe(0);
+  });
+
   test('exactly the required carbs, spread evenly across the ride: ~100%', () => {
     const plan = withFood(TARGET, 0, 100);
     expect(rateStats(plan).coverage).toBeGreaterThanOrEqual(99);
@@ -1147,39 +1161,86 @@ describe('rateStats coverage', () => {
 });
 
 describe('coverageStatus', () => {
-  test('at or above the shared target threshold: good', () => {
-    expect(coverageStatus(COVERAGE_TARGET_PCT)).toBe('good');
-    expect(coverageStatus(100)).toBe('good');
+  // Everything below the 'overshoot' block is indifferent to the new (plannedRateGph, capGph)
+  // pair, so it passes plannedRateGph == rateGph against an infinite cap — i.e. "not overshooting,
+  // whatever this test's rate is."
+  const notOvershooting = Infinity;
+
+  test('at or above the plateau threshold: good', () => {
+    expect(coverageStatus(COVERAGE_TARGET_GPH, 4, COVERAGE_TARGET_GPH, notOvershooting)).toBe(
+      'good',
+    );
+    expect(coverageStatus(150, 4, 150, notOvershooting)).toBe('good');
   });
 
-  test('between the short threshold and the target: partial', () => {
-    expect(coverageStatus(COVERAGE_TARGET_PCT - 1)).toBe('partial');
-    expect(coverageStatus(COVERAGE_SHORT_PCT)).toBe('partial');
+  test('between the short threshold and the plateau: partial', () => {
+    expect(
+      coverageStatus(COVERAGE_TARGET_GPH - 1, 4, COVERAGE_TARGET_GPH - 1, notOvershooting),
+    ).toBe('partial');
+    expect(coverageStatus(COVERAGE_SHORT_GPH, 4, COVERAGE_SHORT_GPH, notOvershooting)).toBe(
+      'partial',
+    );
   });
 
   test('below the short threshold: short', () => {
-    expect(coverageStatus(COVERAGE_SHORT_PCT - 1)).toBe('short');
-    expect(coverageStatus(0)).toBe('short');
+    expect(coverageStatus(COVERAGE_SHORT_GPH - 1, 4, COVERAGE_SHORT_GPH - 1, notOvershooting)).toBe(
+      'short',
+    );
+    expect(coverageStatus(0, 4, 0, notOvershooting)).toBe('short');
   });
 
   test('the two thresholds stay ordered', () => {
-    expect(COVERAGE_SHORT_PCT).toBeLessThan(COVERAGE_TARGET_PCT);
+    expect(COVERAGE_SHORT_GPH).toBeLessThan(COVERAGE_TARGET_GPH);
   });
 
-  test('the calibrated values themselves, anchored on rider-verified plans', () => {
+  test('the calibrated values themselves, anchored on the Smith/Newell dose-response curve', () => {
     // Everything above is written in terms of the constants, so it passes for ANY pair of ordered
-    // numbers — setting them to 40/10 kept the whole suite green. That made the single most
-    // load-bearing product decision in this metric the least defended thing about it. These are
-    // the literal percentages the calibration was chosen to produce, taken from saved plans in
-    // docs/tests, so moving a threshold has to be a deliberate edit here too.
-    expect(coverageStatus(84)).toBe('good'); // izo-6: the rider's own plan, verified as green
-    expect(coverageStatus(80)).toBe('good'); // food7, landing exactly on the target threshold
-    expect(coverageStatus(56)).toBe('partial'); // mix-4-autoplan, deliberately not red
-    // Boundary probes rather than real plans — these pin the edges either side of the two tiers.
-    expect(coverageStatus(79)).toBe('partial');
-    expect(coverageStatus(54)).toBe('short');
-    expect(COVERAGE_TARGET_PCT).toBe(80);
-    expect(COVERAGE_SHORT_PCT).toBe(55);
+    // numbers. These are the literal g/h the calibration was chosen to produce — Smith et al.
+    // (2013) puts the plateau at 60-90 g/h and Newell et al. (2018) finds no reliable gain below
+    // ~40 g/h — so moving a threshold has to be a deliberate edit here too.
+    expect(COVERAGE_TARGET_GPH).toBe(60);
+    expect(COVERAGE_SHORT_GPH).toBe(30);
+  });
+
+  test('duration under 1h: unneeded regardless of rate — carbs do not move the needle that short', () => {
+    // Same boundary as durationTier()'s 'short' tier: below it the sub-40-g/h "real deficit"
+    // reading from the audit does not apply, because under ~45-60 min carbs during exercise have
+    // no established effect on performance at all. Grading a 40-minute spin red for 0 g/h would be
+    // answering a question the literature never asked.
+    expect(coverageStatus(0, 0.9, 0, notOvershooting)).toBe('unneeded');
+    expect(coverageStatus(90, 0.99, 90, notOvershooting)).toBe('unneeded'); // high rate doesn't buy a 'good' either
+  });
+
+  test('exactly 1h is graded normally, not unneeded', () => {
+    expect(coverageStatus(COVERAGE_SHORT_GPH, 1, COVERAGE_SHORT_GPH, notOvershooting)).toBe(
+      'partial',
+    );
+  });
+
+  test('the same percentage means different things at different targets — the bug this replaces', () => {
+    // §K/§11.1 of the audit: 80% of a 90 g/h target (72 g/h) is on the Smith plateau, essentially
+    // free; 80% of a 30 g/h target (24 g/h) is a real shortfall for an effort over an hour. The old
+    // percent-only metric graded both "good" at the same 80%. Rate-based grading tells them apart.
+    expect(coverageStatus(72, 4, 72, notOvershooting)).toBe('good');
+    expect(coverageStatus(24, 4, 24, notOvershooting)).toBe('short');
+  });
+
+  test('overshoot: planned rate above the gut cap is over, regardless of the credited rate', () => {
+    // §1b.7 of the research doc: CHO the gut can't clear stays in the lumen and pulls water in
+    // osmotically — nausea, fullness, cramping. The credited rate (rateGph) can't see this at all,
+    // because rateStats caps it at need; only the raw planned rate can. 205g/1.43h ≈ 143 g/h
+    // against a ~79 g/h cap is the live case that prompted this: coverage read a comfortable
+    // amber, hiding a plan carrying nearly double what the gut model says it can clear.
+    expect(coverageStatus(45, 1.43, 143, 79)).toBe('over');
+  });
+
+  test('overshoot beats the short-ride exemption — GI risk does not care whether carbs "matter"', () => {
+    expect(coverageStatus(0, 0.5, 200, 79)).toBe('over');
+  });
+
+  test('planned rate at or under the cap is not overshoot', () => {
+    expect(coverageStatus(60, 4, 79, 79)).toBe('good'); // exactly at cap: still fine
+    expect(coverageStatus(60, 4, 78.9, 79)).toBe('good');
   });
 });
 
@@ -1263,8 +1324,10 @@ describe('hydrationStatus', () => {
     expect(hydrationStatus(0.5, 25)).toBe('good'); // measurement noise, not a plan to over-drink
     expect(hydrationStatus(0.6, 25)).toBe('over');
     expect(hydrationStatus(2.23, 25)).toBe('over'); // the live plan from waterBalancePct above
-    // Carbs deliberately keep the old scale — an overshoot there is wasted, not dangerous.
-    expect(coverageStatus(176)).toBe('good');
+    // Carbs do have an 'over' tier (see the 'overshoot' tests above) — but it's driven by the
+    // planned rate against the personalised gut cap, not by the credited rate itself. A large
+    // credited rate with a planned rate safely under cap is still 'good'.
+    expect(coverageStatus(300, 4, 70, 79)).toBe('good');
   });
 
   test('the short-ride buffer no longer flips the verdict on one minute of riding', () => {
@@ -1374,6 +1437,47 @@ describe('planSummary', () => {
     expect(summary.hydrationPct).toBe(18); // round(500/2800*100)
     expect(summary.coverage).toBe(rateStats(plan).coverage);
     expect(summary.absorbedTotal).toBe(samples(plan).at(-1)!.absorbed);
+    // The number the carb badge's colour is actually computed from — not totalCarbs/hrs, which
+    // would drift from coveredCarbs (and so from the badge) on an unevenly-timed plan.
+    expect(summary.carbRateGph).toBeCloseTo(rateStats(plan).coveredCarbs / 4, 6);
+    // The overshoot pair: the raw planned rate (uncapped by need, unlike carbRateGph) and the
+    // rider's personalised gut ceiling — see coverageStatus's 'over' tier.
+    expect(summary.carbPlannedRateGph).toBeCloseTo(80 / 4, 6);
+    expect(summary.carbAbsCapGph).toBe(absCap(plan.mix, 55, 0, 'mid'));
+  });
+
+  test('an overpacked plan is flagged over end-to-end — the live case that prompted this', () => {
+    // 40km/28kph = 1h26, mid intensity: target 64g (45 g/h). A rider carrying 205g averages
+    // ~143 g/h — comfortably past the ~90 g/h gut cap for the default 2:1 mix — even though the
+    // credited rate (capped at target) reads a plain, unremarkable amber.
+    const route = makeRoute({ distance: 40, speed: 28, intensity: 'mid' });
+    const foods: FoodItem[] = [{ id: 1, key: 'x', name: 'Big dose', carbs: 205, from: 0, to: 100 }];
+    const plan = makePlan({ route, foods });
+    const summary = planSummary(plan);
+    const hrs = totalHours(route);
+
+    expect(summary.carbAbsCapGph).toBe(90);
+    expect(summary.carbPlannedRateGph).toBeCloseTo(205 / hrs, 6);
+    expect(
+      coverageStatus(summary.carbRateGph, hrs, summary.carbPlannedRateGph, summary.carbAbsCapGph),
+    ).toBe('over');
+  });
+
+  test('a pre-ride meal no longer hides behind an "empty" Planned total — audit §6', () => {
+    // The live case that started this: 4h ride, nothing on the bike at all, 300g eaten 10 min
+    // before the start. coverage/absorbedTotal always credited the undigested leftover; totalCarbs
+    // (what "Planned" shows) used to report 0g regardless — a plan carrying 285g into the ride
+    // looked empty. mid intensity default mix caps at 90 g/h, so 10 min clears 15g of the 300g.
+    const route = makeRoute({
+      mode: 'route',
+      distance: 100,
+      speed: 25,
+      intensity: 'mid',
+      preMealCarbs: 300,
+      preMealMinutes: 10,
+    });
+    const plan = makePlan({ route });
+    expect(planSummary(plan).totalCarbs).toBeCloseTo(285, 6);
   });
 
   test('zero-duration plan has zero sweat loss and reports full hydration coverage', () => {
@@ -1389,6 +1493,8 @@ describe('planSummary', () => {
     });
     expect(planSummary(zeroHrsPlan).sweatLoss).toBe(0);
     expect(planSummary(zeroHrsPlan).hydrationPct).toBe(100);
+    expect(planSummary(zeroHrsPlan).carbRateGph).toBe(0); // no division by a zero duration
+    expect(planSummary(zeroHrsPlan).carbPlannedRateGph).toBe(0);
   });
 
   test('a mild ride states its real coverage and is forgiven by the threshold, not by the metric', () => {

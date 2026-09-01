@@ -25,20 +25,36 @@ const FLUID_ABSORPTION_CAP_ML_H = 900;
  * as a continuous quantity there is no line left to step over. */
 
 /**
- * Where the *carb* bar turns green. A tolerance the badge applies on top of the honest 100% target
- * (see `fluidNeed` on `Sample`), not a discount baked into what any chart line asks for.
+ * Where the *carb* bar turns green — an absolute delivery rate in g/h, not a percentage of
+ * whatever target the rider happens to have. That used to be COVERAGE_TARGET_PCT (a flat 80% of
+ * target), and the audit (§K/§11.1) is what killed it: the same percentage means opposite things
+ * depending on the target it's a percentage *of*. 80% of a 90 g/h target is 72 g/h — on the Smith
+ * plateau, essentially free. 80% of a 30 g/h target is 24 g/h — a real shortfall on an effort over
+ * an hour. A metric that colours both "good" is measuring the rider's own target-setting, not
+ * their plan.
  *
- * Was 85 while `coverage` over-credited (it divided by an EMA-shrunk denominator; see rateStats).
- * Fixing that arithmetic made the same plan read a few points lower, so the thresholds moved down
- * with it to keep "good enough" meaning what it meant to the rider who calibrated it: of the 43
- * non-empty saved plans in docs/tests, 85/60 reclassified 9 downward — including the rider's own
- * hand-built izo-6, verified at the time as green — while 80/55 changes exactly one verdict
- * (mix-5-autoplan at 82%, upward). The number moved so the judgement wouldn't.
+ * Smith et al. (2013, Med Sci Sports Exerc 45(2):336-341, n=51, double-blind, 10-120 g/h) puts the
+ * performance plateau at 60-90 g/h, with 78 g/h the modelled optimum and returns essentially flat
+ * beyond it. Newell et al. (2018, Nutrients 10(1):37) independently replicates the shape and finds
+ * no reliable gain moving from 39 to 64 g/h — the practical floor for a dependable benefit sits
+ * around 40 g/h, not the 60 used here; 60 is kept as the *ceiling* of the amber band precisely
+ * because the last 20 g/h of that stretch does still buy a small, real amount (see
+ * COVERAGE_SHORT_GPH for where the floor is set instead).
+ *
+ * Below 1h of riding/running this whole scale is switched off (`coverageStatus` returns
+ * 'unneeded') — under roughly 45-60 min, carbs during exercise have no established performance
+ * effect at all, so grading a rate against a curve that only applies to longer efforts would be
+ * answering a question nobody asked.
  */
-export const COVERAGE_TARGET_PCT = 80;
+export const COVERAGE_TARGET_GPH = 60;
 
-/** Below this, a carb plan isn't "a bit short" any more — it's a different plan. */
-export const COVERAGE_SHORT_PCT = 55;
+/**
+ * Below this rate, a carb plan isn't "a bit short" any more — it's on the steep part of the
+ * dose-response curve, where every missing g/h has a real, measurable cost (Newell 2018: 20 g/h
+ * was not distinguishable from placebo; 39 g/h was). Only applies for rides/runs of 1h or more —
+ * see COVERAGE_TARGET_GPH.
+ */
+export const COVERAGE_SHORT_GPH = 30;
 
 /** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
 export const GUT_LIMIT = 60;
@@ -138,8 +154,11 @@ const HIGH_INTENSITY_ABS_CAP_FACTOR = 0.88;
  */
 const COVERAGE_CARRY_MINUTES = 15;
 
-/** `over` is water-only — see `SURPLUS_WARN_PCT`; `coverageStatus` never returns it. */
-export type CoverageStatus = 'good' | 'partial' | 'short' | 'over';
+/** `unneeded` is carb-only (see `coverageStatus`) — `hydrationStatus` never returns it. `over` is
+ *  shared: water triggers it from `SURPLUS_WARN_PCT` (drinking past sweat loss), carbs from a
+ *  planned rate past the rider's own gut cap (see `coverageStatus`) — two different mechanisms,
+ *  same colour, because both mean "you gave the plan more than it can use." */
+export type CoverageStatus = 'good' | 'partial' | 'short' | 'over' | 'unneeded';
 
 function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus {
   if (pct >= targetPct) return 'good';
@@ -153,9 +172,28 @@ function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus 
  * must not, or the same plan reads as fine on one screen and short on the other — which is
  * exactly the bug this pair of functions exists to prevent. One mechanism, two calibrations:
  * carbs and water each get their own numbers, but neither layout gets to invent its own.
+ *
+ * Takes the realised delivery rate (g/h — `PlanSummary.carbRateGph`), not a percentage of target,
+ * and the ride's duration, mirroring `hydrationStatus`'s (value, context) shape. Below 1h the rate
+ * doesn't get graded at all — see `COVERAGE_TARGET_GPH`.
+ *
+ * `plannedRateGph`/`capGph` are a second, independent pair for the overshoot check, checked first
+ * and able to override even the 1h exemption: GI risk from unabsorbed CHO doesn't care whether the
+ * ride is long enough for carbs to matter for performance. Deliberately not `rateGph` against a
+ * cap — `rateGph` is `coveredCarbs` averaged, and `rateStats` caps `coveredCarbs` at what's needed,
+ * so it structurally cannot see a rider carrying far more than that (see `carbPlannedRateGph` on
+ * `PlanSummary` for why the raw planned rate is used instead — the same lesson `waterBalancePct`
+ * already learned about not grading a surplus on an absorption-capped figure).
  */
-export function coverageStatus(pct: number): CoverageStatus {
-  return tier(pct, COVERAGE_TARGET_PCT, COVERAGE_SHORT_PCT);
+export function coverageStatus(
+  rateGph: number,
+  hrs: number,
+  plannedRateGph: number,
+  capGph: number,
+): CoverageStatus {
+  if (plannedRateGph > capGph) return 'over';
+  if (hrs < 1) return 'unneeded';
+  return tier(rateGph, COVERAGE_TARGET_GPH, COVERAGE_SHORT_GPH);
 }
 
 /**
@@ -1071,6 +1109,11 @@ export interface PlanSummary {
   izoCarbs: number;
   gelCarbs: number;
   foodCarbs: number;
+  /** `izoCarbs + gelCarbs + foodCarbs` plus any pre-ride meal still undigested at the start line
+   *  (see `preRideGut`) — not the raw pre-meal figure, which mostly digests before clipping in.
+   *  Everything downstream that grades or displays "what's planned" (the Planned line,
+   *  `carbPlannedRateGph`, the overshoot check) reads this, so it has to include what actually
+   *  rides into the ride, not just what's on the bike. */
   totalCarbs: number;
   fluidPlanned: number;
   sweatLoss: number;
@@ -1084,6 +1127,17 @@ export interface PlanSummary {
   /** Grams counted toward `coverage` — pair this with `target` when showing the ratio in grams.
    *  Not the same as `absorbedTotal`, which ignores whether a gram arrived when it was needed. */
   coveredCarbs: number;
+  /** `coveredCarbs` averaged over the ride — the number `coverageStatus` actually grades and
+   *  colours the badge from. Deliberately not `totalCarbs / hrs`: that would drift from the badge
+   *  on a plan whose timing doesn't match its need (front-loaded carbs, a big pre-ride meal), and
+   *  showing a rate next to a colour it doesn't explain is worse than showing no rate at all. */
+  carbRateGph: number;
+  /** `totalCarbs` averaged over the ride — uncapped by need, unlike `carbRateGph`, so it's the one
+   *  that can actually exceed `carbAbsCapGph` and drive `coverageStatus`'s 'over' tier. */
+  carbPlannedRateGph: number;
+  /** The rider's own gut ceiling for this mix/intensity — `absCap()`, in g/h. What
+   *  `carbPlannedRateGph` is checked against for overshoot. */
+  carbAbsCapGph: number;
   absorbedTotal: number;
   /** Fluid that actually cleared the stomach over the whole ride, capped at
    *  `FLUID_ABSORPTION_CAP_ML_H` — what `hydrationPct` is based on. Not the same as `fluidPlanned`,
@@ -1104,7 +1158,13 @@ export function planSummary(state: PlanState): PlanSummary {
     .filter((f) => f.content === 'gel')
     .reduce((a, f) => a + carbsFill(f, gear, mix), 0);
   const foodCarbs = foods.reduce((a, f) => a + f.carbs, 0);
-  const totalCarbs = izoCarbs + gelCarbs + foodCarbs;
+  const cap = absCap(mix, izoCarbs, gelCarbs, route.intensity);
+  // Not the raw preMealCarbs: what actually rides into the ride is whatever's still undigested at
+  // the start line (see preRideGut) — the rest was breakfast, already gone before clipping in.
+  // absorbedTotal/coveredCarbs have credited this same residual all along; totalCarbs used to miss
+  // it, so a plan carrying nothing on the bike could still look empty while scoring on it anyway.
+  const preMealResidual = preRideGut(route, cap);
+  const totalCarbs = izoCarbs + gelCarbs + foodCarbs + preMealResidual;
 
   const fluidPlanned =
     fills.filter((f) => f.content !== 'gel').reduce((a, f) => a + volOf(f, gear), 0) +
@@ -1130,6 +1190,9 @@ export function planSummary(state: PlanState): PlanSummary {
     waterBalancePct: waterBalancePct({ sweatLoss, fluidPlanned, weight: route.weight }),
     coverage,
     coveredCarbs,
+    carbRateGph: hrs > 0 ? coveredCarbs / hrs : 0,
+    carbPlannedRateGph: hrs > 0 ? totalCarbs / hrs : 0,
+    carbAbsCapGph: cap,
     absorbedTotal: S[S.length - 1].absorbed,
     fluidAbsorbedTotal,
   };

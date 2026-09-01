@@ -4,6 +4,7 @@ import {
   hydrationStatus,
   planSummary,
   recoveryCarbs,
+  totalHours,
   type CoverageStatus,
 } from '../domain/fuel';
 import { t } from '../i18n/strings';
@@ -25,6 +26,8 @@ function statusColor(status: CoverageStatus, goodColor: string): string {
   // but they are not the same problem, and the number next to the bar says which one it is.
   if (status === 'over') return '#8C2F39';
   if (status === 'short') return '#B4552F';
+  // Neutral, not a verdict: under 1h carbs don't move the needle either way — see coverageStatus.
+  if (status === 'unneeded') return '#7A817C';
   return '#D2703F';
 }
 
@@ -97,7 +100,15 @@ export function SummaryCards() {
   const strings = t(lang);
 
   const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
-  const carbColor = statusColor(coverageStatus(summary.coverage), 'var(--carb)');
+  const carbColor = statusColor(
+    coverageStatus(
+      summary.carbRateGph,
+      totalHours(route),
+      summary.carbPlannedRateGph,
+      summary.carbAbsCapGph,
+    ),
+    'var(--carb)',
+  );
   // Colour and parenthetical come from the same number on purpose: the bar's headline percentage
   // is capped by absorption and can sit at 99 on a plan that pours nearly twice its sweat loss,
   // so without the balance next to it a maroon bar at 99% would be unreadable.
@@ -162,8 +173,16 @@ export function SummaryCards() {
           <span>
             {strings.planned}{' '}
             <b style={footerValueStyle}>
-              {fmt(summary.totalCarbs)} g ({fmt(summary.totalCarbs * 4)} kcal)
-            </b>
+              {fmt(summary.totalCarbs)} g – {fmt(summary.carbRateGph)} g/h
+            </b>{' '}
+            <InfoPopover
+              hint={strings.carbRateHint}
+              triggerStyle={recoveryAnnotationStyle}
+              popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+            >
+              ⓘ
+            </InfoPopover>{' '}
+            <b style={footerValueStyle}>({fmt(summary.totalCarbs * 4)} kcal)</b>
           </span>
         </div>
       </div>

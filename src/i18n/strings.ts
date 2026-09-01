@@ -320,6 +320,7 @@ export interface StringTable {
   exportPlanError: string;
   recoveryLabel: string;
   recoveryHint: string;
+  carbRateHint: string;
   waterBalanceHint: string;
   waterBalanceHintLink: string;
   waterBalanceAria: string;
@@ -709,6 +710,8 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Regeneracja',
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
+    carbRateHint:
+      'Kolor paska liczy się z tego tempa (g/h), nie z procentu wyżej — ten sam procent przy różnych celach to różne ilości węgli na godzinę, a liczy się właśnie ta ilość. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
     waterBalanceHint:
       'Minus to niedobór wobec strat potu, plus to picie ponad nie. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
     waterBalanceHintLink: 'Jak to czytać →',
@@ -1094,6 +1097,8 @@ export const STR: Record<Lang, StringTable> = {
     recoveryLabel: 'Recovery',
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
+    carbRateHint:
+      "The bar's colour is based on this rate (g/h), not the percentage above it — the same percentage means a different amount of carbs per hour depending on your target, and it's that amount that actually matters. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
     waterBalanceHint:
       'A minus is a shortfall against your sweat loss, a plus is drinking past it. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
     waterBalanceHintLink: 'How to read this →',

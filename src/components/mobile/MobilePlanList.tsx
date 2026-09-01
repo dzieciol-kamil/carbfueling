@@ -6,6 +6,7 @@ import {
   hydrationStatus,
   planSummary,
   recoveryCarbs,
+  totalHours,
   type CoverageStatus,
 } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
@@ -33,8 +34,11 @@ const COVERAGE_TINT: Record<CoverageStatus, { bg: string; fg: string }> = {
   good: { bg: '#E7F2E1', fg: '#3D7A26' },
   partial: { bg: '#FBEAE1', fg: '#A3512A' },
   short: { bg: '#F8DED5', fg: '#8F3D1F' },
-  // Water-only, and only above 100% — see HYDRATION_OVER_PCT.
+  // Shared: water triggers this above 100% of sweat loss, carbs when the planned rate passes the
+  // rider's own gut cap — see coverageStatus.
   over: { bg: '#F6DBE0', fg: '#8C2F39' },
+  // Carb-only — under 1h, where coverageStatus stops grading. Neutral, not a verdict.
+  unneeded: { bg: '#EBEBE8', fg: '#5F655F' },
 };
 
 function coverageCardStyle(status: CoverageStatus): CSSProperties {
@@ -73,7 +77,12 @@ export function MobilePlanList() {
   // target itself and band it at 90-115%, which is why the same plan read 23% here and 31% on
   // the desktop cards. One engine, one threshold scale, two palettes.
   const carbPct = summary.coverage;
-  const carbStatus = coverageStatus(carbPct);
+  const carbStatus = coverageStatus(
+    summary.carbRateGph,
+    totalHours(route),
+    summary.carbPlannedRateGph,
+    summary.carbAbsCapGph,
+  );
   const carbTint = COVERAGE_TINT[carbStatus];
   // hydrationStatus, not coverageStatus: water is graded on its own scale entirely — the signed
   // balance in % of body mass, against a limit that tightens with temperature — and this screen
@@ -189,7 +198,15 @@ export function MobilePlanList() {
           >
             {/* coveredCarbs, not absorbedTotal: this line has to be the fraction the percentage
                 above was computed from, or the card contradicts itself in place. */}
-            {Math.round(summary.coveredCarbs)} / {Math.round(summary.target)} g
+            {Math.round(summary.coveredCarbs)} / {Math.round(summary.target)} g ·{' '}
+            {Math.round(summary.carbRateGph)} g/h{' '}
+            <InfoPopover
+              hint={strings.carbRateHint}
+              triggerStyle={{ display: 'inline', fontSize: 10, color: carbTint.fg }}
+              popoverStyle={{ top: 'calc(100% + 6px)', left: 0 }}
+            >
+              ⓘ
+            </InfoPopover>
           </div>
           <InfoPopover
             hint={strings.recoveryHint}
