@@ -1184,46 +1184,48 @@ describe('coverageStatus', () => {
 });
 
 describe('waterBalancePct', () => {
-  test('a shortfall is measured against the fluid that actually cleared the stomach', () => {
+  test('a shortfall is what you drank minus what you sweated, as % of body mass', () => {
     // 1000 ml short of a 3000 ml loss, on a 75 kg rider: 1.33% of body mass. That unit — not
     // "67% of sweat loss" — is the one every dehydration study reports its findings in.
-    expect(
-      waterBalancePct({
-        sweatLoss: 3000,
-        fluidAbsorbedTotal: 2000,
-        fluidPlanned: 2000,
-        weight: 75,
-      }),
-    ).toBeCloseTo(-1.333, 2);
+    expect(waterBalancePct({ sweatLoss: 3000, fluidPlanned: 2000, weight: 75 })).toBeCloseTo(
+      -1.333,
+      2,
+    );
   });
 
-  test('a surplus is measured against what was poured, not what cleared the stomach', () => {
+  test('a surplus is measured on the poured volume, which absorption can never cap', () => {
     // The bug that started this: `mlAbsorbed` is capped at FLUID_ABSORPTION_CAP_ML_H, so once
-    // sweat rate passes 900 ml/h the absorbed/loss ratio physically cannot reach 100% — measured
+    // sweat rate passes 900 ml/h an absorbed-based ratio physically cannot reach 100% — measured
     // live at 4900 ml poured, 2855 absorbed, 2893 sweated, badge stuck at 99% and green however
     // much the rider added. Hyponatraemia comes from what goes in, not from what the stomach
-    // managed to pass on before the finish line, so the surplus side reads the poured volume.
-    expect(
-      waterBalancePct({
-        sweatLoss: 2893,
-        fluidAbsorbedTotal: 2855,
-        fluidPlanned: 4900,
-        weight: 90,
-      }),
-    ).toBeCloseTo(2.23, 2);
+    // managed to pass on before the finish line.
+    expect(waterBalancePct({ sweatLoss: 2893, fluidPlanned: 4900, weight: 90 })).toBeCloseTo(
+      2.23,
+      2,
+    );
   });
 
-  test('a plan that pours less than it sweats can never read as a surplus', () => {
-    // The two sides use different numerators, so the sign has to come from one of them alone —
-    // absorbed <= poured always, which is what keeps this monotonic rather than a step.
-    expect(
-      waterBalancePct({
-        sweatLoss: 2000,
-        fluidAbsorbedTotal: 1999,
-        fluidPlanned: 2000,
-        weight: 80,
-      }),
-    ).toBeLessThanOrEqual(0);
+  test('adding a flask moves the balance by that flask, and by nothing else', () => {
+    // Reported live: 4250 ml planned against 4436 ml of sweat read −2.0%, and adding one 250 ml
+    // flask jumped it to +0.1% — a 1.6-litre swing out of a 250 ml change. The deficit side was
+    // measured on absorbed fluid (2855 ml, absorption-capped) while the surplus side was measured
+    // on poured fluid, so the seam at `poured == sweatLoss` was the entire unabsorbed volume wide.
+    // One numerator on both sides is what makes the scale continuous through zero.
+    const at = (fluidPlanned: number) =>
+      waterBalancePct({ sweatLoss: 4436, fluidPlanned, weight: 78 });
+    expect(at(4250)).toBeCloseTo(-0.238, 3);
+    expect(at(4500)).toBeCloseTo(0.082, 3);
+    expect(at(4500) - at(4250)).toBeCloseTo((250 / 78000) * 100, 6);
+  });
+
+  test('every 250 ml is worth the same, wherever it lands on the scale', () => {
+    const step = (fluidPlanned: number) =>
+      waterBalancePct({ sweatLoss: 4436, fluidPlanned: fluidPlanned + 250, weight: 78 }) -
+      waterBalancePct({ sweatLoss: 4436, fluidPlanned, weight: 78 });
+    const expected = (250 / 78000) * 100;
+    for (const from of [0, 2000, 4186, 4436, 6000]) {
+      expect(step(from)).toBeCloseTo(expected, 6);
+    }
   });
 });
 
@@ -1270,10 +1272,7 @@ describe('hydrationStatus', () => {
     // 0% and red between 1h17 and 1h18 of the same ride. Graded on mass deficit there is nothing
     // to cross: 1.48% and 1.52% of body mass are the same verdict, because they are the same ride.
     const at = (sweatLoss: number) =>
-      hydrationStatus(
-        waterBalancePct({ sweatLoss, fluidAbsorbedTotal: 0, fluidPlanned: 0, weight: 78 }),
-        24,
-      );
+      hydrationStatus(waterBalancePct({ sweatLoss, fluidPlanned: 0, weight: 78 }), 24);
     expect(at(1155)).toBe('good');
     expect(at(1170)).toBe('good');
     expect(at(1185)).toBe('good');

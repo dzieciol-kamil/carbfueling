@@ -93,7 +93,6 @@ export function allowedDeficitPct(temp: number): number {
 
 export interface WaterBalanceInput {
   sweatLoss: number;
-  fluidAbsorbedTotal: number;
   fluidPlanned: number;
   weight: number;
 }
@@ -102,31 +101,25 @@ export interface WaterBalanceInput {
  * The plan's net water balance as a signed % of body mass: negative is a deficit, positive is a
  * surplus. This is the one number the hydration badge grades, states and colours by.
  *
- * The two sides deliberately read different volumes, because they are different questions:
+ * Drunk minus sweated — which is exactly what the weigh-yourself test in the hydration FAQ
+ * measures, and why body-mass loss is a usable fluid unit at all (1 ml of body water ~ 1 g).
  *
- * - **Deficit** uses `fluidAbsorbedTotal` — what physiologically replaced the loss *during* the
- *   ride. Fluid still sitting in the stomach at the finish has not defended anyone's plasma volume.
- * - **Surplus** uses `fluidPlanned` — what the rider actually drinks. `mlAbsorbed` is capped at
- *   `FLUID_ABSORPTION_CAP_ML_H`, so once sweat rate passes 900 ml/h an absorbed-based ratio can
- *   never reach 100% however much goes in: the badge sat at 99% and green on a real plan pouring
- *   4900 ml against 2893 ml of sweat. Hyponatraemia is caused by the volume swallowed, not by the
- *   fraction of it the stomach cleared before the finish line.
+ * **Not** absorbed minus sweated, and the difference is not academic. `mlAbsorbed` is capped at
+ * `FLUID_ABSORPTION_CAP_ML_H`, so above 900 ml/h of sweat an absorbed-based figure can never
+ * reach balance however much the rider drinks — the badge sat at 99% and green on a plan pouring
+ * 4900 ml against 2893 ml of sweat. Worse, an earlier version here read absorbed on the deficit
+ * side and poured on the surplus side, which put a step the size of the whole unabsorbed volume
+ * at the crossing: 4250 ml against 4436 ml of sweat read −2.0%, and one more 250 ml flask read
+ * +0.1%. One numerator on both sides is what keeps 250 ml worth 250 ml everywhere on the scale.
  *
- * Since `fluidAbsorbedTotal <= fluidPlanned` always, the two can't both be positive, so the sign
- * stays meaningful and the scale stays continuous through zero.
+ * What this deliberately does not see is *timing*: fluid poured into the last 10 km counts the
+ * same as fluid spread across the ride, even though only the second gets absorbed. That question
+ * belongs to the chart's absorbed-vs-need lines and to the card's Loss/Absorbed pair, which is
+ * where the gap between swallowing and absorbing is visible in millilitres.
  */
-export function waterBalancePct({
-  sweatLoss,
-  fluidAbsorbedTotal,
-  fluidPlanned,
-  weight,
-}: WaterBalanceInput): number {
+export function waterBalancePct({ sweatLoss, fluidPlanned, weight }: WaterBalanceInput): number {
   if (weight <= 0) return 0;
-  const surplus = fluidPlanned - sweatLoss;
-  const ml = surplus > 0 ? surplus : -(sweatLoss - fluidAbsorbedTotal);
-  // 1 ml of body water ~ 1 g, which is the same approximation the weigh-yourself sweat test rests
-  // on and the reason body-mass loss is usable as a fluid unit at all.
-  return (ml / (weight * 1000)) * 100;
+  return ((fluidPlanned - sweatLoss) / (weight * 1000)) * 100;
 }
 
 /**
@@ -1134,12 +1127,7 @@ export function planSummary(state: PlanState): PlanSummary {
     fluidPlanned,
     sweatLoss,
     hydrationPct,
-    waterBalancePct: waterBalancePct({
-      sweatLoss,
-      fluidAbsorbedTotal,
-      fluidPlanned,
-      weight: route.weight,
-    }),
+    waterBalancePct: waterBalancePct({ sweatLoss, fluidPlanned, weight: route.weight }),
     coverage,
     coveredCarbs,
     absorbedTotal: S[S.length - 1].absorbed,
