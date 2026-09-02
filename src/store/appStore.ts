@@ -207,6 +207,8 @@ interface AppState {
   updateFoodLibEntry: (key: string, patch: Partial<FoodLibEntry>) => void;
   removeFoodLibEntry: (key: string) => void;
   addFoodLibEntry: () => void;
+
+  clearPlan: () => void;
 }
 
 const defaultRoute: RouteInput = {
@@ -648,6 +650,22 @@ export const useAppStore = create<AppState>()(
             nextFoodKey: s.nextFoodKey + 1,
           };
         }),
+
+      // Empties the rider's plan (fills, foods, shops) while leaving his setup — route,
+      // gear, mix, food library — untouched, unlike importSettings, which replaces those
+      // too. combinedFillIds/selKey/hoverKey/dragKey are reset the same way importSettings
+      // resets them for a fills replacement: each names an id this wipes out.
+      // Id counters (nextFid/nextFoodId/nextShopId) are deliberately left untouched — every
+      // other remove* action in this store (removeFill, removeFood, removeShop) never
+      // recycles an id after deletion, so a fresh id after clearing keeps that same guarantee.
+      clearPlan: () =>
+        set((s) => ({
+          fills: [],
+          foods: [],
+          shops: [],
+          combinedFillIds: [],
+          ui: { ...s.ui, selKey: null, hoverKey: null, dragKey: null },
+        })),
     }),
     {
       name: 'carbfueling',
