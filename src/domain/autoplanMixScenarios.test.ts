@@ -35,18 +35,17 @@ import type {
 } from './types';
 
 /**
- * The stop shape, the food-library shape and the plan-plus-stops shape these scenarios work in.
+ * The stop shape and the plan-plus-stops shape these scenarios work in.
  *
- * `feat/autoplan` had renamed `ShopStop` to `Stop` with an `autoCreated` flag, threaded a `stops`
- * array through `PlanState`, and given `FoodLibEntry` the `needsStop` flag that mix-7..9 are built
- * on; none of that exists on this branch. No scenario places a stop by hand and nothing asserts on
- * the materialized array, so the suite carries the extra fields locally rather than reshaping the
- * app's own types for them — `planSummary` reads only route/mix/gear/fills/foods, so a
- * `ScenarioState` is a valid `PlanState`.
+ * `feat/autoplan` had renamed `ShopStop` to `Stop` with an `autoCreated` flag and threaded a `stops`
+ * array through `PlanState`; neither exists on this branch. No scenario places a stop by hand and
+ * nothing asserts on the materialized array, so the suite carries the extra fields locally rather
+ * than reshaping the app's own types for them — `planSummary` reads only route/mix/gear/fills/foods,
+ * so a `ScenarioState` is a valid `PlanState`. (`needsStop`, which mix-7..9 are built on, is a real
+ * `FoodLibEntry` field again, so it needs no shim.)
  */
 type Stop = ShopStop & { autoCreated?: boolean };
 type ScenarioState = PlanState & { stops: Stop[] };
-type ScenarioFoodLibEntry = FoodLibEntry & { needsStop?: boolean };
 
 /** How far an existing stop may sit from a planned stop and still be treated as the same one in
  *  these assertions — a test tolerance, not anything the engine itself enforces, which is why it
@@ -64,7 +63,7 @@ function mergeWindow(D: number): number {
   return Math.min(10, D * 0.2);
 }
 
-const FOOD_LIB: ScenarioFoodLibEntry[] = [
+const FOOD_LIB: FoodLibEntry[] = [
   { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
   { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
   // You don't carry a cola for 40km — you buy it. Eating one is a stop.

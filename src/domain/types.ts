@@ -112,6 +112,9 @@ export interface FoodLibEntry {
   ml?: number;
   cont?: boolean;
   span?: number;
+  /** A product the rider buys en route rather than carries — a cola. Eating one therefore implies
+   *  a stop where it was bought, which is what a planner has to account for. */
+  needsStop?: boolean;
 }
 
 export interface PlanState {

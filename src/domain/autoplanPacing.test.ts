@@ -30,17 +30,17 @@ import { KIELCE_MARKI_ELE } from './__fixtures__/kielceMarkiEle';
 import type { FoodLibEntry, MixSettings, PlanState, RouteInput, ShopStop, Vessel } from './types';
 
 /**
- * The stop shape, the food-library shape and the plan-plus-stops shape this spec works in.
+ * The stop shape and the plan-plus-stops shape this spec works in.
  *
- * `feat/autoplan` had renamed `ShopStop` to `Stop` with an `autoCreated` flag, threaded a `stops`
- * array through `PlanState`, and given `FoodLibEntry` its `needsStop` flag; none of that exists on
- * this branch. The rider places no stop by hand here and nothing asserts on the materialized
- * array, so the spec carries the extra fields locally rather than reshaping the app's own types —
- * `planSummary` reads only route/mix/gear/fills/foods, so a `PacingState` is a valid `PlanState`.
+ * `feat/autoplan` had renamed `ShopStop` to `Stop` with an `autoCreated` flag and threaded a `stops`
+ * array through `PlanState`; neither exists on this branch. The rider places no stop by hand here
+ * and nothing asserts on the materialized array, so the spec carries the extra fields locally rather
+ * than reshaping the app's own types — `planSummary` reads only route/mix/gear/fills/foods, so a
+ * `PacingState` is a valid `PlanState`. (`needsStop` is a real `FoodLibEntry` field again, so it
+ * needs no shim.)
  */
 type Stop = ShopStop & { autoCreated?: boolean };
 type PacingState = PlanState & { stops: Stop[] };
-type PacingFoodLibEntry = FoodLibEntry & { needsStop?: boolean };
 
 const route: RouteInput = {
   sport: 'cycling',
@@ -84,7 +84,7 @@ const gear: Vessel[] = [
   { gid: 'g5', name: 'Bukłak', vol: 1500, allowed: ['water'], gelParts: 4 },
 ];
 
-const foodLib: PacingFoodLibEntry[] = [
+const foodLib: FoodLibEntry[] = [
   { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
   { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
   { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
