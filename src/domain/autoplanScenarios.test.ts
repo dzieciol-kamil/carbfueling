@@ -206,12 +206,21 @@ function expectThen(r: Run, then: Then): void {
   expect(productOrder(r)).toEqual(then.products);
 
   // --- structural rules ------------------------------------------------------------------
-  // Every refill is a real stop stop, and every stop stop is a refill — no free tap water.
-  const boundaries = [...new Set(result.fills.map((f) => f.from).filter((x) => x > 0))].sort(
-    (a, b) => a - b,
-  );
+  // Two different things happen at a fill boundary. A *handover* — one vessel runs dry and the
+  // next takes over on the load it left home with — costs nothing: the rider just reaches for the
+  // other bottle. A *refill* — a vessel that has already been used getting filled again — needs a
+  // tap, so it needs a stop. A fill is a refill exactly when its vessel has an earlier fill.
+  // Every refill is a real stop, and every stop is a refill — no free tap water.
+  const seen = new Set<string>();
+  const refillStarts: number[] = [];
+  for (const f of [...result.fills].sort((a, b) => a.from - b.from)) {
+    if (seen.has(f.gid)) refillStarts.push(f.from);
+    else seen.add(f.gid);
+  }
   const round = (x: number) => Math.round(x * 100) / 100;
-  expect(stopXs(r).map(round)).toEqual(boundaries.map(round));
+  // One stop tops up every bottle at once, so count rounds, not bottles.
+  const refillRounds = [...new Set(refillStarts)].sort((a, b) => a - b);
+  expect(stopXs(r).map(round)).toEqual(refillRounds.map(round));
 
   // Stops sit strictly inside the route, and the first one isn't parked at the start line.
   const stops = stopXs(r);

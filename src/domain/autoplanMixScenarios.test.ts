@@ -290,17 +290,26 @@ function expectThen(r: Run, then: Then): void {
   if (then.productCounts) expect(countBy(productOrder(r))).toEqual(then.productCounts);
 
   // --- inherited structural rules ---------------------------------------------------------
-  // Every refill is a real stop stop, and every stop stop is a refill or a `needsStop` product.
-  const boundaries = new Set(result.fills.map((f) => Math.round(f.from * 100) / 100));
-  boundaries.delete(0);
+  // Two different things happen at a fill boundary. A *handover* — one vessel runs dry and the
+  // next takes over on the load it left home with — costs nothing: the rider just reaches for the
+  // other bottle. A *refill* — a vessel that has already been used getting filled again — needs a
+  // tap, so it needs a stop. A fill is a refill exactly when its vessel has an earlier fill, and
+  // one stop tops up every bottle at once, so count rounds, not bottles.
+  // Every refill is a real stop, and every stop is a refill or a `needsStop` product.
+  const seen = new Set<string>();
+  const refillStarts = new Set<number>();
+  for (const f of [...result.fills].sort((a, b) => a.from - b.from)) {
+    if (seen.has(f.gid)) refillStarts.add(Math.round(f.from * 100) / 100);
+    else seen.add(f.gid);
+  }
   const stops = stopXs(r);
   const stopProducts = result.foods.filter((f) => FOOD_LIB.find((e) => e.key === f.key)?.needsStop);
   for (const x of stops) {
-    const isRefill = [...boundaries].some((b) => Math.abs(b - x) <= STOP_SNAP_KM);
+    const isRefill = [...refillStarts].some((b) => Math.abs(b - x) <= STOP_SNAP_KM);
     const isProductStop = stopProducts.some((f) => Math.abs(f.from - x) <= STOP_SNAP_KM);
     expect(isRefill || isProductStop, `stop @${x} serves nothing`).toBe(true);
   }
-  for (const b of boundaries) {
+  for (const b of refillStarts) {
     expect(
       stops.some((x) => Math.abs(x - b) <= STOP_SNAP_KM),
       `refill @${b} has no stop`,
