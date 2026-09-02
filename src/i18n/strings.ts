@@ -176,6 +176,7 @@ export interface StringTable {
   fCarbs: string;
   fMl: string;
   fCont: string;
+  fNeedsStop: string;
   fContHeader: string;
   foodSectionHint: string;
   foodContHint: string;
@@ -258,6 +259,7 @@ export interface StringTable {
   absCapNoteMobile: string;
   gelPartsStepper: string;
   foodStepwise: string;
+  foodNeedsStop: string;
   foodAddProduct: string;
   meWeight: string;
   meApp: string;
@@ -331,6 +333,30 @@ export interface StringTable {
   waterBalanceHintLink: string;
   waterBalanceAria: string;
   waterBalanceLabel: string;
+  autoplanButton: string;
+  autoplanPreflightTitle: string;
+  autoplanPreflightReplaceNote: string;
+  autoplanPreflightConfirm: string;
+  autoplanRouteTitle: string;
+  autoplanElevationLabel: string;
+  autoplanStopsTitle: string;
+  autoplanStopsKeepAndAdd: string;
+  autoplanStopsKeepAndAddHint: string;
+  autoplanStopsKeepOnly: string;
+  autoplanStopsKeepOnlyHint: string;
+  autoplanStopsClear: string;
+  autoplanStopsClearHint: string;
+  autoplanGearTitle: string;
+  autoplanGearHint: string;
+  autoplanGearEditLink: string;
+  autoplanFoodTitle: string;
+  autoplanDialogHint: string;
+  autoplanDialogCountLabel: string;
+  autoplanDialogCancel: string;
+  autoplanShortRideNote: string;
+  autoplanNeedsDuration: string;
+  autoplanAppliedNote: string;
+  autoplanAppliedDismiss: string;
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -517,6 +543,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'cukry (g)',
     fMl: 'płyn (ml)',
     fCont: 'stopniowo',
+    fNeedsStop: 'na postoju',
     fContHeader: 'uwalnianie',
     foodSectionHint:
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
@@ -646,6 +673,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'Przy tej proporcji limit to {cap} g/h — kropkowana linia na wykresie.',
     gelPartsStepper: 'Liczba porcji żelu',
     foodStepwise: 'stopniowo',
+    foodNeedsStop: 'na postoju',
     foodAddProduct: '+ Dodaj produkt',
     meWeight: 'Waga',
     meApp: 'Aplikacja',
@@ -732,6 +760,37 @@ export const STR: Record<Lang, StringTable> = {
     // Not "ubytek masy ciała": the number is signed, and a plus means the plan has the rider
     // gaining water, not losing it.
     waterBalanceLabel: 'Bilans płynów w % masy ciała',
+    autoplanButton: 'Zaproponuj plan',
+    autoplanPreflightTitle: 'Zanim ułożę plan',
+    autoplanPreflightReplaceNote:
+      'To nadpisze obecne napełnienia i produkty na trasie nową propozycją.',
+    autoplanPreflightConfirm: 'Ułóż plan',
+    autoplanRouteTitle: 'Trasa i warunki',
+    autoplanElevationLabel: 'Przewyższenie',
+    autoplanStopsTitle: 'Twoje stopy',
+    autoplanStopsKeepAndAdd: 'Dołóż',
+    autoplanStopsKeepAndAddHint:
+      'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
+    autoplanStopsKeepOnly: 'Tylko moje',
+    autoplanStopsKeepOnlyHint:
+      'Sprawdzimy, czy dasz radę na stopach, które już znasz — jeśli nie, zobaczysz brakującą ilość zamiast nowego stopu.',
+    autoplanStopsClear: 'Od nowa',
+    autoplanStopsClearHint:
+      'Usuniemy Twoje stopy i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
+    autoplanGearTitle: 'Sprzęt, który zabierasz',
+    autoplanGearHint:
+      'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
+    autoplanGearEditLink: 'Edytuj sprzęt',
+    autoplanFoodTitle: 'Produkty',
+    autoplanDialogHint:
+      'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
+    autoplanDialogCountLabel: 'Ile sztuk',
+    autoplanDialogCancel: 'Anuluj',
+    autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
+    autoplanShortRideNote:
+      'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
+    autoplanAppliedNote: 'To propozycja bazowa — dostosuj do własnych doświadczeń i preferencji.',
+    autoplanAppliedDismiss: 'OK',
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -915,6 +974,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'carbs (g)',
     fMl: 'fluid (ml)',
     fCont: 'over time',
+    fNeedsStop: 'at a stop',
     fContHeader: 'release',
     foodSectionHint:
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
@@ -1041,6 +1101,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'At this ratio the limit is {cap} g/h — the dotted line on the chart.',
     gelPartsStepper: 'Gel portions per fill',
     foodStepwise: 'over time',
+    foodNeedsStop: 'at a stop',
     foodAddProduct: '+ Add product',
     meWeight: 'Weight',
     meApp: 'App',
@@ -1124,6 +1185,38 @@ export const STR: Record<Lang, StringTable> = {
     waterBalanceHintLink: 'How to read this →',
     waterBalanceAria: 'What the fluid balance means',
     waterBalanceLabel: 'Fluid balance as % of body mass',
+    autoplanButton: 'Suggest a plan',
+    autoplanPreflightTitle: 'Before I build the plan',
+    autoplanPreflightReplaceNote:
+      'This will overwrite your current fills and food with a new suggestion.',
+    autoplanPreflightConfirm: 'Build the plan',
+    autoplanRouteTitle: 'Route & conditions',
+    autoplanElevationLabel: 'Elevation',
+    autoplanStopsTitle: 'Your stops',
+    autoplanStopsKeepAndAdd: 'Add more',
+    autoplanStopsKeepAndAddHint:
+      'Your stops stay, and new ones only appear where the ride genuinely needs them.',
+    autoplanStopsKeepOnly: 'Only mine',
+    autoplanStopsKeepOnlyHint:
+      "We'll check whether you can fuel the ride on the stops you already know — if not, you'll see the shortfall instead of a new stop.",
+    autoplanStopsClear: 'From scratch',
+    autoplanStopsClearHint:
+      "We'll clear your stops and plan the route from zero, as if none existed.",
+    autoplanGearTitle: "Gear you're taking",
+    autoplanGearHint:
+      "Uncheck anything you're not carrying today — for this plan only, it won't change your saved gear.",
+    autoplanGearEditLink: 'Edit gear',
+    autoplanFoodTitle: 'Food',
+    autoplanDialogHint:
+      "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
+    autoplanDialogCountLabel: 'Count',
+    autoplanDialogCancel: 'Cancel',
+    autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
+    autoplanShortRideNote:
+      "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",
+    autoplanAppliedNote:
+      'This is a starting suggestion — adjust it to your own experience and preferences.',
+    autoplanAppliedDismiss: 'OK',
   },
 };
 

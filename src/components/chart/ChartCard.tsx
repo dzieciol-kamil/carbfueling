@@ -3,6 +3,7 @@ import { dist, prof } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
 import type { XUnit } from '../../domain/types';
+import { AutoplanFlow } from '../autoplan/AutoplanFlow';
 import { FoodLibraryChips } from '../FoodLibraryChips';
 import { LanesSection } from '../lanes/LanesSection';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -130,6 +131,7 @@ export function ChartCard() {
             <StartOverIcon />
             <span>{strings.clearPlanButton}</span>
           </button>
+          <AutoplanFlow variant="desktop" />
           <div style={{ position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button onClick={handleExport} style={planBtnStyle}>
