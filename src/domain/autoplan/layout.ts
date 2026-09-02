@@ -88,6 +88,21 @@ export function mergeWindowKm(D: number): number {
   return Math.min(10, D * 0.2);
 }
 
+/**
+ * The last slice of the route, which a gel dose may not land in.
+ *
+ * The owner's rule, once pared back to what it actually needs to be: the fills tile from the start
+ * line onward and the end of the route mostly takes care of itself, *"może trochę przy dawce żelu,
+ * żeby gdzieś nie wpadł na samym końcu"*. A gel has to absorb and then have some effect, and neither
+ * happens in the last few hundred metres — so the one guard is that the gel stream's last delivery
+ * does not run onto the line. It is a fraction rather than a distance so that it scales with the
+ * route, and it is the same 2% `search.ts` already leaves clear for products and both scenario
+ * suites already measure the planner against, because it is the same statement about the same gut.
+ *
+ * Deliberately not a general finish-gap rule: izo is left exactly where the tiling puts it.
+ */
+const GEL_FINISH_GAP_FRACTION = 0.02;
+
 /** A load, before merging has had its say. `refill` is the reason a stop exists. */
 type Load = DraftFill & { refill: boolean };
 
@@ -241,6 +256,16 @@ export function layout(
     D,
   );
 
+  // **Water is rationed to the finish.** Rate-matching is the right span for a load that hands over
+  // to another one; it is the wrong span for the *last* water load, because there is nothing after
+  // it. The owner's rule is *"woda do końca"*: a bottle holding less than the ride demands gets
+  // spread over the whole route rather than drunk out early. Without this, a 350 ml bottle on a
+  // 15 km ride is laid out 0→5.9 and the rider spends nine kilometres with an empty bidon.
+  //
+  // Only the last load moves, so every handover before it stays exactly where the need line put it.
+  const lastWater = waterStream[waterStream.length - 1];
+  if (lastWater) lastWater.to = D;
+
   // The two needs are drunk at the same time, so the water stream starts again at km 0 rather than
   // queueing behind the carb one.
   const streams = [carbStream, waterStream].filter((s) => s.length > 0);
@@ -371,6 +396,19 @@ export function layout(
       if (topUp === 'izo') carbReach = Math.max(carbReach, to);
     }
   }
+
+  // **No gel dose on the line.** The one end-of-route guard the owner asked for: the last gel
+  // delivery is pulled back out of the final `GEL_FINISH_GAP_FRACTION` of the route, so a dose never
+  // lands somewhere it can neither absorb nor do anything. Applied last, on the finished fill list,
+  // so that nothing upstream — the relay's handovers, the merge, the stop list, the top-ups — is
+  // reasoning about a span that this then changes underneath it. A gel fill that starts inside the
+  // gap already is left alone: trimming it would leave a fill of no length, which is not a plan.
+  const gelCap = D * (1 - GEL_FINISH_GAP_FRACTION);
+  const lastGel = fills
+    .filter((f) => f.content === 'gel')
+    .sort((a, b) => a.from - b.from)
+    .at(-1);
+  if (lastGel && lastGel.to > gelCap && gelCap > lastGel.from) lastGel.to = gelCap;
 
   // Ride order, stable — so fills that start together stay in stream order, and the top-ups above
   // land next to the fills they follow rather than in a block at the end.

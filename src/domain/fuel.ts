@@ -48,6 +48,15 @@ const FLUID_ABSORPTION_CAP_ML_H = 900;
  */
 export const CARB_PLATEAU_GPH = 40;
 
+/**
+ * The shortest ride whose carb rate gets graded at all, in hours — the boundary the paragraph above
+ * describes. Exported because the planner has to agree with the badge about where it sits: below it
+ * the chart is grey and `coverageStatus` answers 'unneeded', so a planner still chasing
+ * `CARB_PLATEAU_GPH` there would be spending the rider's food on a question the app does not ask.
+ * One definition, read by `coverageStatus` and by `autoplan`'s scorer.
+ */
+export const CARB_GRADING_MIN_HOURS = 1;
+
 /** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
 export const GUT_LIMIT = 60;
 
@@ -187,7 +196,7 @@ export function coverageStatus(
   targetGph: number,
 ): CoverageStatus {
   if (plannedRateGph > capGph) return 'over';
-  if (hrs < 1) return 'unneeded';
+  if (hrs < CARB_GRADING_MIN_HOURS) return 'unneeded';
   const floor = Math.min(targetGph, CARB_PLATEAU_GPH);
   return tier(rateGph, floor, floor / 2);
 }

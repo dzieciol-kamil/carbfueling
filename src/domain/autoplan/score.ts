@@ -19,7 +19,14 @@
  * spent most of its life being recalibrated, because a weighted sum lets a tie-break buy its way
  * out of the objective. It cannot here.
  */
-import { CARB_PLATEAU_GPH, SURPLUS_WARN_PCT, allowedDeficitPct, planSummary } from '../fuel';
+import {
+  CARB_GRADING_MIN_HOURS,
+  CARB_PLATEAU_GPH,
+  SURPLUS_WARN_PCT,
+  allowedDeficitPct,
+  planSummary,
+  totalHours,
+} from '../fuel';
 import type { Fill, FoodItem, PlanState } from '../types';
 import type { DraftFill, DraftFood, DraftStop } from './types';
 
@@ -76,17 +83,22 @@ function materialize(state: PlanState, draft: Draft): PlanState {
  * The four terms below reproduce the two badges' own green conditions exactly, so `toGreen === 0`
  * and "both badges green" are the same statement — `score.test.ts` pins that agreement.
  *
- * With one asymmetry worth knowing: under an hour of riding `coverageStatus` answers `'unneeded'`
- * rather than `'good'`, because carbs during exercise have no established effect over that
- * distance. That is not a plan failing — there is nothing left to fix — so `toGreen` is 0 there and
- * the loop correctly stops working on the carb side.
+ * With one asymmetry worth knowing: under `CARB_GRADING_MIN_HOURS` of riding `coverageStatus`
+ * answers `'unneeded'` rather than `'good'`, because carbs during exercise have no established
+ * effect over that distance — the app greys the carb chart out. That is not a plan failing, there is
+ * nothing left to fix, so the shortfall term below is switched off there and the loop stops working
+ * on the carb side. The *overshoot* term is not: `coverageStatus` checks the planned rate against
+ * the gut's cap before the hour exemption and lets it override, because GI risk from unabsorbed CHO
+ * does not care how long the ride is, and this mirrors that order exactly.
  */
 export function score(state: PlanState, draft: Draft): Score {
   const s = planSummary(materialize(state, draft));
 
   // The floor `coverageStatus` grades `carbRateGph` against: the rider's own target, capped at the
   // plateau past which another g/h stops being worth grading. Read from `fuel.ts`, not restated.
-  const floor = Math.min(s.carbTargetGph, CARB_PLATEAU_GPH);
+  // Zero below the hour boundary, which is how "there is nothing to fall short of" is said here.
+  const graded = totalHours(state.route) >= CARB_GRADING_MIN_HOURS;
+  const floor = graded ? Math.min(s.carbTargetGph, CARB_PLATEAU_GPH) : 0;
   // The largest deficit that still reads green at this temperature — `hydrationStatus`'s own limit.
   const allowedDeficit = allowedDeficitPct(state.route.temp);
   const deficit = Math.max(0, -s.waterBalancePct);

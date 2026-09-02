@@ -16,7 +16,7 @@ import { MAX_STEPS, search } from './search';
 import { layout } from './layout';
 import { compareScore, score } from './score';
 import type { Draft } from './score';
-import { dist, hydrationStatus, planSummary, totalHours } from '../fuel';
+import { CARB_GRADING_MIN_HOURS, dist, hydrationStatus, planSummary, totalHours } from '../fuel';
 import type { CoverageStatus } from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
@@ -209,26 +209,82 @@ describe('the selection is an offer', () => {
   });
 
   /**
-   * A bought product may only be eaten at a stop the plan already has, so on a ride the bottle
-   * covers on its home load there is nowhere to buy one — and the planner must not invent a stop in
-   * order to. The contrast run is the control: the same ride, the same colas, the same score, with
-   * only `needsStop` cleared, does place them. So it is the stop rule that held them back and not
-   * the objective deciding it did not want them.
+   * A bought product *is* a stop — the rider pulls over to buy it — so placing one may create a
+   * stop the fills never paid for. This ride is chosen so that nothing else could have: the bottle
+   * covers the whole of it on the load it left home with, so the starting plan has no refill and
+   * therefore no stop at all, and every stop in the finished plan is a purchase.
+   *
+   * The contrast run is the control: the same ride and the same colas with only `needsStop` cleared
+   * place their food without a single stop. So the stop comes from the flag, not from the food.
    */
-  test('a bought product is not placed when there is no stop', () => {
+  test('a bought product creates the stop it is bought at', () => {
     const state = makeState(makeRoute({ distance: 40, speed: 20, intensity: 'low', temp: 15 }), [
       vessel('g1', 750, ['water']),
     ]);
+    expect(refills(startingDraft(state))).toEqual([]);
+
     const bought = search(state, [{ key: 'cola', count: 3 }]);
-    expect(bought.stops).toEqual([]);
-    expect(bought.foods).toEqual([]);
+    const colas = bought.foods.filter((f) => f.key === 'cola');
+    expect(colas.length).toBeGreaterThan(0);
+    expect(bought.stops).toHaveLength(colas.length);
+    for (const s of bought.stops) {
+      expect(colas.some((f) => f.from === s.at)).toBe(true);
+      // Inside the route, and never parked on the start line.
+      expect(s.at).toBeGreaterThan(0);
+      expect(s.at).toBeLessThan(dist(state.route));
+    }
 
     const carried = makeState(
       state.route,
       state.gear,
       FOOD_LIB.map((e) => (e.key === 'cola' ? { ...e, needsStop: false } : e)),
     );
-    expect(search(carried, [{ key: 'cola', count: 3 }]).foods.length).toBeGreaterThan(0);
+    const carriedDraft = search(carried, [{ key: 'cola', count: 3 }]);
+    expect(carriedDraft.foods.length).toBeGreaterThan(0);
+    expect(carriedDraft.stops).toEqual([]);
+  });
+
+  /**
+   * The list's order is the rider's priority — *"pierwszeństwo ma góra listy"* — so tier 1 takes the
+   * first entry that improves the plan rather than the best-scoring one.
+   *
+   * The two runs are the same ride and the same two products with only the order swapped, and each
+   * one takes what it was given first. A gel is 22 g and a cola 35 g, so ranking by score would take
+   * the cola both times: the answer differing between the runs is the whole property. (The cola's
+   * `needsStop` is cleared here, so neither candidate costs a stop and the priority is the only
+   * thing that can separate them.)
+   */
+  test('the offers are consumed in the order the rider listed them', () => {
+    const lib = FOOD_LIB.map((e) => (e.key === 'cola' ? { ...e, needsStop: false } : e));
+    const state = makeState(makeRoute({ distance: 90 }), [vessel('g1', 750, ['water'])], lib);
+
+    const gelFirst = search(state, [
+      { key: 'gel', count: 4 },
+      { key: 'cola', count: 4 },
+    ]);
+    const colaFirst = search(state, [
+      { key: 'cola', count: 4 },
+      { key: 'gel', count: 4 },
+    ]);
+    expect(gelFirst.foods[0].key).toBe('gel');
+    expect(colaFirst.foods[0].key).toBe('cola');
+  });
+
+  /**
+   * The other half of the same rule: what sits further down the list is carried in case, and stays
+   * in the pocket once the plan no longer needs it. No mechanism enforces that — one more product
+   * moves neither `stops` nor `powderCarried`, so once `toGreen` is 0 an extra item ties instead of
+   * improving and the loop's "strictly better or it is not a move" rule refuses it.
+   *
+   * Measured against the plan's own badge rather than a count: the run stops somewhere strictly
+   * inside the ten it was offered, and it is green where it stopped.
+   */
+  test('a green plan leaves the rest of the list unopened', () => {
+    const state = makeState(makeRoute({ distance: 90 }), [vessel('g1', 750, ['water'])]);
+    const draft = search(state, [{ key: 'gel', count: 10 }]);
+    expect(draft.foods.length).toBeGreaterThan(0);
+    expect(draft.foods.length).toBeLessThan(10);
+    expect(score(state, draft).toGreen).toBe(0);
   });
 
   /** Nothing is ever taken that the rider did not offer, and never more of it than he offered. */
@@ -237,6 +293,45 @@ describe('the selection is an offer', () => {
     const foods = search(state, [{ key: 'gel', count: 2 }]).foods;
     expect(foods.length).toBeLessThanOrEqual(2);
     expect(foods.every((f) => f.key === 'gel')).toBe(true);
+  });
+});
+
+describe('under an hour the carb side is switched off', () => {
+  /**
+   * *"Tak, dla poniżej 1h wykres jest szary, więc autoplan powinien zwrócić pustą listę."* Below
+   * `CARB_GRADING_MIN_HOURS` the app greys the carb chart out and `coverageStatus` answers
+   * 'unneeded', so there is nothing for the rider's food to buy and none of it is taken.
+   *
+   * 15 km at 25 km/h is 0.6 h; the same bottle and the same five gels on a 26 km ride — 1.04 h, the
+   * first side of the boundary that gets graded — do get eaten. It is the hour rule that empties the
+   * list, not the gels being pointless on any short ride.
+   */
+  test('a sub-hour ride takes no product, however much is offered', () => {
+    const state = makeState(makeRoute({ distance: 15 }), [vessel('g1', 750, ['water'])]);
+    expect(totalHours(state.route)).toBeLessThan(CARB_GRADING_MIN_HOURS);
+    expect(search(state, [{ key: 'gel', count: 5 }]).foods).toEqual([]);
+  });
+
+  test('the same ride just past the hour does', () => {
+    const state = makeState(makeRoute({ distance: 26 }), [vessel('g1', 750, ['water'])]);
+    expect(totalHours(state.route)).toBeGreaterThan(CARB_GRADING_MIN_HOURS);
+    expect(search(state, [{ key: 'gel', count: 5 }]).foods.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * The bottles are not switched off with it. `hydrationStatus` never answers 'unneeded' — water is
+   * graded on the signed balance against body mass and knows nothing about the hour rule — and a
+   * 24 km ride at 35 C still costs the rider more than a litre.
+   */
+  test('the water side is still planned', () => {
+    const state = makeState(makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35 }), [
+      vessel('g1', 500, ['water']),
+    ]);
+    expect(totalHours(state.route)).toBeLessThan(CARB_GRADING_MIN_HOURS);
+    const draft = search(state, [{ key: 'gel', count: 5 }]);
+    expect(draft.foods).toEqual([]);
+    expect(draft.fills.length).toBeGreaterThan(0);
+    expect(draft.fills.every((f) => f.content === 'water')).toBe(true);
   });
 });
 

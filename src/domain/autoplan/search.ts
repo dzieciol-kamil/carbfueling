@@ -29,12 +29,21 @@
  * separates plans that are already equal on the objective and on stops; the escalation is what keeps
  * powder from being bought with green in the first place.
  *
- * **The selection is an offer, not an instruction.** `autoplan(state, selection)` is told what the
- * rider is willing to eat, in his own priority order, and takes as much of it as helps. Tier 1 goes
- * both ways — a product that stopped earning its place is dropped again — so nothing here needs a
- * separate pruning pass.
+ * **The selection is an offer, and its order is a priority.** *"To nie reguła, po prostu jak wrzucam
+ * coś na koniec listy to zakładam że to mogę zużyć ale nie muszę; pierwszeństwo ma góra listy, czyli
+ * priorytetem jest kolejność."* So tier 1 walks the list **top-down** and takes the **first** entry
+ * that improves the plan, rather than the best-scoring one — otherwise the loop reaches past a gel
+ * the rider ranked first for a cola that happens to score a fraction better.
+ *
+ * That is the whole of it: what sits at the bottom of the list is carried in case, and needs no
+ * mechanism of its own to stay unopened. Once the plan is green `toGreen` is 0, and one more product
+ * moves neither `stops` nor `powderCarried`, so the add ties instead of improving and the "strictly
+ * better or it is not a move" rule refuses it already.
+ *
+ * Tier 1 still goes both ways — a product that stopped earning its place is dropped again — so
+ * nothing here needs a separate pruning pass.
  */
-import { dist } from '../fuel';
+import { CARB_GRADING_MIN_HOURS, dist, totalHours } from '../fuel';
 import type { Content, PlanState, Vessel } from '../types';
 import { layout } from './layout';
 import type { VesselAssignment } from './layout';
@@ -61,6 +70,10 @@ const MIN_STEP_KM = 1e-6;
  */
 export const MAX_STEPS = 200;
 
+/** The one tier whose candidates come in an order that means something — the rider's own priority
+ *  list — so it takes the first that improves rather than weighing them all. See `movesInTier`. */
+const FIRST_IMPROVING_TIER = 1;
+
 /** One line of the rider's selection, resolved against his food library. */
 type Offer = {
   key: string;
@@ -68,7 +81,7 @@ type Offer = {
   ml?: number;
   cont: boolean;
   span: number;
-  /** A product bought en route, so it can only be eaten at a stop the plan already has. */
+  /** A product bought en route rather than carried — so eating it *is* a stop. */
   needsStop: boolean;
   /** How many of these the rider offered. The plan may take fewer, never more. */
   max: number;
@@ -168,10 +181,15 @@ function allocate(m: number, widths: number[]): number[] {
  * Deliberately not searched over. Three rules decide it outright, so the loop has one fewer
  * dimension to climb and the answer is the same every time:
  *
- * - **A `needsStop` product sits at a stop the plan already has, and may not create one.** You buy a
- *   cola, you do not carry it; but a plan that pulls over *in order to* buy one has bought the stop
- *   with a product rather than the other way round. So the stops come from the fills, the colas are
- *   dealt out across them, and any the plan has no stop for stay in the pocket.
+ * - **A `needsStop` product may create the stop it is bought at.** The flag is the rider's own
+ *   "this one I buy on the way" toggle, and buying is a stop — *"na ekranie wyboru kolejności
+ *   produktu był toggle do oznaczania czy to jest do kupienia w sklepie czy nie"*. So the bought
+ *   products are dealt out evenly across the route, each one becomes a stop in `layout()`, and a
+ *   refill that lands near one is pulled onto it by the merge window rather than costing a second
+ *   pull-over. (This reverses the rule the search was first built with, which restricted a bought
+ *   product to stops the fills had already paid for and left the surplus in the rider's pocket.)
+ *   They sit strictly inside the route and never on the start line, which is what the `k + 1` even
+ *   split below buys: nobody buys a cola before they have set off.
  * - **Everything else is spread evenly across what is left**, in the rider's own priority order:
  *   the pinned products cut the route into gaps, and the loose ones are shared out between those
  *   gaps in proportion to width. That is the dumbest defensible spread, and the one thing the
@@ -186,7 +204,7 @@ function allocate(m: number, widths: number[]): number[] {
  * - **Nothing is open twice and nothing lands on the line.** A continuous product ends where the
  *   next one starts at the latest, and the last `FINISH_GAP_FRACTION` of the route is left clear.
  */
-function placeFoods(state: PlanState, chosen: Offer[], stops: number[]): DraftFood[] {
+function placeFoods(state: PlanState, chosen: Offer[]): DraftFood[] {
   const D = dist(state.route);
   const end = D * (1 - FINISH_GAP_FRACTION);
   if (!(end > 0) || chosen.length === 0) return [];
@@ -194,19 +212,12 @@ function placeFoods(state: PlanState, chosen: Offer[], stops: number[]): DraftFo
   const pinned = chosen.filter((c) => c.needsStop);
   const loose = chosen.filter((c) => !c.needsStop);
 
-  // The stops a bought product may be eaten at, in ride order.
-  const usable = [...new Set(stops.filter((x) => x > 0 && x < end))].sort((a, b) => a - b);
-  const k = Math.min(pinned.length, usable.length);
-  // Spread the bought products across the stops there are, ends included, rather than stacking them
-  // onto the first few: a cola at km 20 and another at km 25 of a 300 km ride is one purchase twice.
+  // The bought products, evenly spaced strictly inside `(0, end)`: `k` purchases cut the ride into
+  // `k + 1` equal stretches, which is both the widest they can be spread and the one arrangement
+  // that puts none of them on the start line.
+  const k = pinned.length;
   const at: number[] = [];
-  for (let j = 0; j < k; j++) {
-    at.push(
-      k === 1
-        ? usable[Math.floor((usable.length - 1) / 2)]
-        : usable[Math.round((j * (usable.length - 1)) / (k - 1))],
-    );
-  }
+  for (let j = 0; j < k; j++) at.push(((j + 1) * end) / (k + 1));
 
   const bounds = [0, ...at, end];
   const widths = bounds.slice(1).map((b, i) => b - bounds[i]);
@@ -246,24 +257,20 @@ function placeFoods(state: PlanState, chosen: Offer[], stops: number[]): DraftFo
   return out;
 }
 
-/**
- * One decision, laid out and scored.
- *
- * The extra `layout()` call is what makes "a bought product goes to a stop that already exists"
- * literally true: the stops are read off a plan that has no products in it at all, so no cola can
- * ever be the reason one of them is there. It is only paid for when the plan actually holds a
- * bought product.
- */
+/** One decision, laid out and scored. Food placement is a pure function of the decision, so a
+ *  decision determines its draft exactly and the memo below is sound. */
 function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {
   const chosen = chosenOf(offers, decision.counts);
-  const stops = chosen.some((c) => c.needsStop)
-    ? layout(state, decision.assignment, []).stops.map((s) => s.at)
-    : [];
-  const draft = layout(state, decision.assignment, placeFoods(state, chosen, stops));
+  const draft = layout(state, decision.assignment, placeFoods(state, chosen));
   return { decision, draft, score: score(state, draft) };
 }
 
-/** The candidate decisions one tier away from `d`. See the table at the top of the file. */
+/**
+ * The candidate decisions one tier away from `d`. See the table at the top of the file.
+ *
+ * Tier 1's order is load-bearing, because that tier takes the *first* improving candidate rather
+ * than the best one: it is the rider's own priority order, walked from the top.
+ */
 function movesInTier(tier: number, d: Decision, gear: Vessel[], offers: Offer[]): Decision[] {
   const out: Decision[] = [];
   if (tier === 0) {
@@ -322,7 +329,15 @@ function keyOf(d: Decision): string {
  */
 export function search(state: PlanState, selection: FoodSelectionEntry[] = []): Draft {
   const gear = usableGear(state.gear);
-  const offers = offersOf(state, selection);
+  // Under `CARB_GRADING_MIN_HOURS` the app greys the carb chart out and `coverageStatus` answers
+  // 'unneeded', so the owner's ruling is that the planner hands back an empty product list there:
+  // *"tak dla poniżej 1h wykres jest szary, więc autoplan powinien zwrócić pustą listę."* There is
+  // nothing for food to buy on such a ride, and `score()` says the same thing from the other side by
+  // switching its carb shortfall term off. The bottles are still planned — water is graded on sweat
+  // loss against body mass and does not know about the hour rule (see `hydrationStatus`, which never
+  // answers 'unneeded'), and a 24 km ride at 35 C still costs the rider a litre.
+  const offers =
+    totalHours(state.route) >= CARB_GRADING_MIN_HOURS ? offersOf(state, selection) : [];
   const start: Decision = {
     assignment: gear.map((v) => ({ gid: v.gid, content: v.allowed[0], loads: 1 })),
     counts: offers.map(() => 0),
@@ -348,6 +363,16 @@ export function search(state: PlanState, selection: FoodSelectionEntry[] = []): 
       let best: Evaluated | null = null;
       for (const m of movesInTier(tier, current.decision, gear, offers)) {
         const e = look(m);
+        // The rider's selection is a priority list, so tier 1 takes the first candidate that helps
+        // and stops looking. Every other tier is a set of interchangeable moves with no order of
+        // its own, so it takes the best one.
+        if (tier === FIRST_IMPROVING_TIER) {
+          if (compareScore(e.score, current.score) < 0) {
+            best = e;
+            break;
+          }
+          continue;
+        }
         if (best === null || compareScore(e.score, best.score) < 0) best = e;
       }
       // Strictly better, or it is not a move: this is what makes the climb finite.

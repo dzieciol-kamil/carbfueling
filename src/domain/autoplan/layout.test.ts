@@ -481,16 +481,21 @@ describe('water is matched against what the izo does not supply', () => {
   const route = makeRoute();
   const D = dist(route);
 
+  /**
+   * Read off the *first* of two loads, not the only one: the last load of a water stream is
+   * rationed out to the finish (see 'the water stream is rationed to the finish' below), so it no
+   * longer says anything about the need line it was matched against. Every load before it does.
+   */
   test('the same bottle goes further when there is izo on board', () => {
     const dry = makeState(route, [vessel('w', 900, ['water'])]);
-    const alone = layout(dry, [{ gid: 'w', content: 'water', loads: 1 }], []);
+    const alone = layout(dry, [{ gid: 'w', content: 'water', loads: 2 }], []);
 
     const wet = makeState(route, [vessel('a', 750, ['izo']), vessel('w', 900, ['water'])]);
     const withIzo = layout(
       wet,
       [
         { gid: 'a', content: 'izo', loads: 2 },
-        { gid: 'w', content: 'water', loads: 1 },
+        { gid: 'w', content: 'water', loads: 2 },
       ],
       [],
     );
@@ -529,7 +534,9 @@ describe('water is matched against what the izo does not supply', () => {
       state,
       [
         { gid: 'a', content: 'izo', loads: 5 },
-        { gid: 'w', content: 'water', loads: 1 },
+        // Two loads, so the one the residual is read off is not the stream's last — that one is
+        // rationed to the finish and no longer reports the line it was matched against.
+        { gid: 'w', content: 'water', loads: 2 },
       ],
       [],
     );
@@ -561,6 +568,67 @@ describe('water is matched against what the izo does not supply', () => {
     const { fills } = layout(state, assignment, []);
     expect(of(fills, 'water')).toHaveLength(0);
     expect(froms(of(fills, 'izo'))).toEqual([0, 100]);
+  });
+});
+
+describe('where a stream ends', () => {
+  const route = makeRoute();
+  const D = dist(route);
+
+  /**
+   * *"Woda do końca."* Rate-matching is the right span for a load that hands over to another one and
+   * the wrong one for the last load of a stream, because there is nothing after it — a bottle
+   * holding less than the ride demands is rationed across the route, not drunk out early.
+   *
+   * The arithmetic: this ride sweats 5600 ml, so 900 ml is rate-matched to 900/5600 × 200 = 32.14 km.
+   * That is where the *first* of two loads ends, and it is where a single load used to end, leaving
+   * the rider 168 km with an empty bidon.
+   */
+  test('the water stream is rationed to the finish', () => {
+    const state = makeState(route, [vessel('w', 900, ['water'])]);
+    expect(waterSpan(route, 900)).toBeCloseTo(32.142857142857146, 9);
+
+    const one = layout(state, [{ gid: 'w', content: 'water', loads: 1 }], []);
+    expectFillsClose(one.fills, [{ gid: 'w', content: 'water', from: 0, to: D }]);
+
+    const two = layout(state, [{ gid: 'w', content: 'water', loads: 2 }], []);
+    expectFillsClose(two.fills, [
+      { gid: 'w', content: 'water', from: 0, to: waterSpan(route, 900) },
+      { gid: 'w', content: 'water', from: waterSpan(route, 900), to: D },
+    ]);
+  });
+
+  /**
+   * The gel guard, and the whole of the end-of-route rule for carbs: a dose may not land in the last
+   * `GEL_FINISH_GAP_FRACTION` of the route, because it would neither absorb nor have any effect
+   * there. 1000 ml of the 60 g/100 ml gel is 600 g, which is exactly this 8 h / 75 g/h ride, so the
+   * flask's one load is rate-matched onto the line at 200 km — and pulled back to 196.
+   */
+  test('a gel load is pulled back out of the last stretch of the route', () => {
+    const state = makeState(route, [vessel('f', 1000, ['gel'])]);
+    expect(carbsIn(state, 'f', 'gel')).toBe(600);
+    expect(carbSpan(route, 600)).toBe(D);
+
+    const { fills } = layout(state, [{ gid: 'f', content: 'gel', loads: 1 }], []);
+    expectFillsClose(fills, [{ gid: 'f', content: 'gel', from: 0, to: 196 }]);
+    expect(196).toBe(D * 0.98);
+  });
+
+  /** A gel load that already stops short of the gap is left exactly where the tiling put it. */
+  test('a gel load that ends well short is not moved', () => {
+    const state = makeState(route, [vessel('f', 250, ['gel'])]);
+    expect(carbSpan(route, carbsIn(state, 'f', 'gel'))).toBe(50);
+    const { fills } = layout(state, [{ gid: 'f', content: 'gel', loads: 1 }], []);
+    expectFillsClose(fills, [{ gid: 'f', content: 'gel', from: 0, to: 50 }]);
+  });
+
+  /** izo has no finish gap of its own: four loads of 50 km tile this route exactly, and the last of
+   *  them ends on the line rather than being pulled back the way the gel one is. */
+  test('an izo load is left where the tiling put it', () => {
+    const state = makeState(route, [vessel('a', 750, ['izo'])]);
+    const { fills } = layout(state, [{ gid: 'a', content: 'izo', loads: 4 }], []);
+    expect(fills).toHaveLength(4);
+    expect(fills[3].to).toBe(D);
   });
 });
 
@@ -602,9 +670,11 @@ describe('merging nearby stops', () => {
       { gid: 'a', content: 'izo', from: 0, to: 44 },
       { gid: 'a', content: 'izo', from: 44, to: 100 },
     ]);
+    // The second water load is the stream's last, so it is rationed out to the finish rather than
+    // ending at the 88 km its own 902 ml would have been rate-matched to.
     expectFillsClose(of(fills, 'water'), [
       { gid: 'w', content: 'water', from: 0, to: 44 },
-      { gid: 'w', content: 'water', from: 44, to: 88 },
+      { gid: 'w', content: 'water', from: 44, to: D },
     ]);
     for (const c of ['izo', 'water'] as Content[]) expectTiled(of(fills, c), D);
     expectStopsMatchRefills(fills, stops);

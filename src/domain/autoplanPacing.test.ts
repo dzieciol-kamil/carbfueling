@@ -185,8 +185,15 @@ describe('autoplan pacing (the rider 194km ride)', () => {
    * service or the rider should have left it at home; the plan may not have it both ways." That is
    * dead weight — a vessel whose absence would have cost the plan nothing — and it is directly
    * testable: drop the vessel from `gear` and re-run autoplan(). If the reduced-gear plan needs no
-   * more stops and scores no worse on the app's own coverage/hydration numbers, the vessel was never
+   * more stops and scores no worse on the app's own coverage/water numbers, the vessel was never
    * earning its keep.
+   *
+   * The water side of that is measured on `waterBalancePct`, not on `hydrationPct` — *"tak, test
+   * powinien lecieć na tym, na czym jest silnik."* `fuel.ts` documents `hydrationPct` as a
+   * display-only figure capped by absorption, and on this 28 C, 8.8 h ride the plan already sits at
+   * that cap: removing a 630 ml bottle does not move it by a single point, so a bottle that is worth
+   * 0.81% of body mass reads as dead weight. `waterBalancePct` is the signed balance the engine
+   * actually grades and the badge actually colours, and it sees the difference.
    */
   test('a vessel drained early is only legal if losing it would cost the plan something', () => {
     for (const v of gear) {
@@ -206,15 +213,16 @@ describe('autoplan pacing (the rider 194km ride)', () => {
       const costsSomething =
         reducedResult.newStops.length > result.newStops.length ||
         after.coverage < before.coverage ||
-        (carriesWater && after.hydrationPct < before.hydrationPct);
+        (carriesWater && after.waterBalancePct < before.waterBalancePct);
 
+      const bal = (s: { waterBalancePct: number }) => `${s.waterBalancePct.toFixed(2)}% balance`;
       expect(
         costsSomething,
         `${v.name} (${v.gid}) drains at ${last.toFixed(0)}km, but dropping it from gear leaves the ` +
           `plan just as good (${reducedResult.newStops.length} stops / ${after.coverage}% coverage` +
-          `${carriesWater ? ` / ${after.hydrationPct}% hydration` : ''} vs ${result.newStops.length} ` +
+          `${carriesWater ? ` / ${bal(after)}` : ''} vs ${result.newStops.length} ` +
           `stops / ${before.coverage}% coverage` +
-          `${carriesWater ? ` / ${before.hydrationPct}% hydration` : ''}) — dead weight`,
+          `${carriesWater ? ` / ${bal(before)}` : ''}) — dead weight`,
       ).toBe(true);
     }
   });
