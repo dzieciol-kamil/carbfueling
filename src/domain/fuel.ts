@@ -423,9 +423,16 @@ export function absCap(
   return intensity === 'high' ? Math.max(45, Math.round(cap * HIGH_INTENSITY_ABS_CAP_FACTOR)) : cap;
 }
 
-export function preRideGut(route: RouteInput, cap: number): number {
+/** How fast a solid pre-ride meal clears the stomach at rest, g/h. Deliberately not `absCap()` —
+ *  that's the intestinal transporter ceiling for carbs delivered continuously in liquid form
+ *  during exercise, a different bottleneck than gastric emptying of a solid meal before the rider
+ *  has even started (no mix ratio or exercise-intensity dependence applies here). A rough,
+ *  order-of-magnitude figure for a mixed solid meal at rest, not a citation. */
+const PRE_RIDE_DIGESTION_GPH = 20;
+
+export function preRideGut(route: RouteInput): number {
   const preRideHours = route.preMealMinutes / 60;
-  return Math.max(0, route.preMealCarbs - cap * preRideHours);
+  return Math.max(0, route.preMealCarbs - PRE_RIDE_DIGESTION_GPH * preRideHours);
 }
 
 const SYNTHETIC_ANCHORS: [number, number][] = [
@@ -820,7 +827,7 @@ export function samples(state: PlanState): Sample[] {
   // every climate tolerates.
   const totalFluidNeed = sweatLoss;
   const out: Sample[] = [];
-  let gut = preRideGut(route, cap);
+  let gut = preRideGut(route);
   let absorbed = 0;
   let prevIn = 0;
   let fluidGut = 0;
@@ -1163,7 +1170,7 @@ export function planSummary(state: PlanState): PlanSummary {
   // the start line (see preRideGut) — the rest was breakfast, already gone before clipping in.
   // absorbedTotal/coveredCarbs have credited this same residual all along; totalCarbs used to miss
   // it, so a plan carrying nothing on the bike could still look empty while scoring on it anyway.
-  const preMealResidual = preRideGut(route, cap);
+  const preMealResidual = preRideGut(route);
   const totalCarbs = izoCarbs + gelCarbs + foodCarbs + preMealResidual;
 
   const fluidPlanned =

@@ -340,22 +340,30 @@ describe('cph() vs absCap() interaction at cycling, high intensity, long duratio
 describe('preRideGut', () => {
   test('nothing eaten before start: zero gut', () => {
     const route = makeRoute({ preMealCarbs: 0, preMealMinutes: 45 });
-    expect(preRideGut(route, 60)).toBe(0);
+    expect(preRideGut(route)).toBe(0);
   });
 
   test('eaten right at the start line: full carbs still in gut', () => {
     const route = makeRoute({ preMealCarbs: 50, preMealMinutes: 0 });
-    expect(preRideGut(route, 60)).toBe(50);
+    expect(preRideGut(route)).toBe(50);
   });
 
-  test('fully digested by start (cap * hours >= carbs): zero gut', () => {
-    const route = makeRoute({ preMealCarbs: 50, preMealMinutes: 60 });
-    expect(preRideGut(route, 60)).toBe(0);
+  test('fully digested by start (digestionRate * hours >= carbs): zero gut', () => {
+    const route = makeRoute({ preMealCarbs: 50, preMealMinutes: 150 });
+    expect(preRideGut(route)).toBe(0); // 20 g/h * 2.5h = 50
   });
 
-  test('partially digested: leftover = carbs - cap * hours', () => {
+  test('partially digested: leftover = carbs - digestionRate * hours', () => {
     const route = makeRoute({ preMealCarbs: 50, preMealMinutes: 45 });
-    expect(preRideGut(route, 60)).toBeCloseTo(5, 6); // 50 - 60*0.75
+    expect(preRideGut(route)).toBeCloseTo(35, 6); // 50 - 20*0.75
+  });
+
+  test("a large meal eaten minutes before the start mostly stays undigested — audit §10's fix", () => {
+    // The scenario that exposed the bug: absCap()'s 60-90 g/h in-exercise absorption ceiling was
+    // being reused as a resting gastric-emptying rate, letting a 300g meal 10 minutes pre-start
+    // look nearly fully digested. A solid meal empties from the stomach far slower than that.
+    const route = makeRoute({ preMealCarbs: 300, preMealMinutes: 10 });
+    expect(preRideGut(route)).toBeCloseTo(300 - (20 * 10) / 60, 6); // ≈296.7
   });
 });
 
@@ -1020,37 +1028,44 @@ describe('rateStats coverage', () => {
     // the ride-window integral, so a plan with literally nothing to eat or drink on the bike
     // reported 8% covered. Nothing on board must read as nothing covered.
     //
-    // 50 g eaten 45 min out is fully digested by the start (cap 90 g/h clears 67 g in that time),
-    // so preRideGut() carries nothing over and absorbedTotal is a true zero.
-    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) });
+    // 50 g eaten 150 min (2.5h) out is fully digested by the start at resting gastric-emptying
+    // speed (PRE_RIDE_DIGESTION_GPH = 20 g/h clears exactly 50g in that time), so preRideGut()
+    // carries nothing over and absorbedTotal is a true zero.
+    const plan = makePlan({
+      route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 150 }),
+    });
     expect(planSummary(plan).absorbedTotal).toBe(0);
     expect(rateStats(plan).coverage).toBe(0);
   });
 
   test('a pre-ride meal still being digested at the start line does count toward coverage', () => {
     // The other side of the line above, and the reason the fix targets the EMA seed rather than
-    // pre-ride carbs as such: 80 g eaten only 30 min out leaves 35 g genuinely undigested in the
-    // gut when the rider clips in. Those grams are real fuel arriving during the ride and must
-    // keep counting — this guards against "fixing" the phantom by zeroing pre-ride carbs entirely.
+    // pre-ride carbs as such: 80 g eaten only 30 min out leaves 70 g genuinely undigested in the
+    // gut when the rider clips in (resting emptying clears only 20 g/h * 0.5h = 10g). Those grams
+    // are real fuel arriving during the ride and must keep counting — this guards against "fixing"
+    // the phantom by zeroing pre-ride carbs entirely.
     const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
-    expect(planSummary(plan).absorbedTotal).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h
-    // All of it counts here: the leftover clears the gut at the 90 g/h cap against a 75 g/h
-    // requirement, and the ~6 g of surplus that runs ahead of the need is well inside the carry
-    // window, so it is spent a few minutes later rather than discarded.
-    expect(rateStats(plan).coveredCarbs).toBeCloseTo(35, 6);
+    expect(planSummary(plan).absorbedTotal).toBeCloseTo(70, 6); // 80 - 20 g/h * 0.5h
+    // All of it counts here: 70g clears the gut well inside a 4h ride against a 75 g/h/300g
+    // requirement, absorbed at the rider's own gut cap (90 g/h) once the ride starts — any part
+    // that briefly runs ahead of need is well inside the carry window, spent minutes later rather
+    // than discarded.
+    expect(rateStats(plan).coveredCarbs).toBeCloseTo(70, 6);
   });
 
   test('totalCarbs carries the same still-undigested residual, not the raw pre-ride meal', () => {
     // The other half of the fix this pair of tests guards: absorbedTotal/coveredCarbs already
-    // credited the 35g leftover from a pre-ride meal — totalCarbs (and so carbPlannedRateGph and
+    // credited the 70g leftover from a pre-ride meal — totalCarbs (and so carbPlannedRateGph and
     // the overshoot badge) used to see none of it, which is how a plan carrying nothing on the
     // bike could still look "empty" while quietly scoring on breakfast.
     const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 80, preMealMinutes: 30 }) });
-    expect(planSummary(plan).totalCarbs).toBeCloseTo(35, 6); // 80 - 90 g/h * 0.5h, same as above
+    expect(planSummary(plan).totalCarbs).toBeCloseTo(70, 6); // 80 - 20 g/h * 0.5h, same as above
   });
 
   test('a fully-digested pre-ride meal contributes nothing to totalCarbs either', () => {
-    const plan = makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) });
+    const plan = makePlan({
+      route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 150 }),
+    });
     expect(planSummary(plan).totalCarbs).toBe(0);
   });
 
@@ -1466,8 +1481,10 @@ describe('planSummary', () => {
   test('a pre-ride meal no longer hides behind an "empty" Planned total — audit §6', () => {
     // The live case that started this: 4h ride, nothing on the bike at all, 300g eaten 10 min
     // before the start. coverage/absorbedTotal always credited the undigested leftover; totalCarbs
-    // (what "Planned" shows) used to report 0g regardless — a plan carrying 285g into the ride
-    // looked empty. mid intensity default mix caps at 90 g/h, so 10 min clears 15g of the 300g.
+    // (what "Planned" shows) used to report 0g regardless — a plan carrying carbs into the ride
+    // looked empty. Resting gastric emptying (PRE_RIDE_DIGESTION_GPH, 20 g/h) clears ~3g of the
+    // 300g in 10 minutes — the vast majority is still sitting in the gut, as a solid meal that
+    // recent would actually be.
     const route = makeRoute({
       mode: 'route',
       distance: 100,
@@ -1477,7 +1494,7 @@ describe('planSummary', () => {
       preMealMinutes: 10,
     });
     const plan = makePlan({ route });
-    expect(planSummary(plan).totalCarbs).toBeCloseTo(285, 6);
+    expect(planSummary(plan).totalCarbs).toBeCloseTo(300 - (20 * 10) / 60, 6); // ≈296.7
   });
 
   test('zero-duration plan has zero sweat loss and reports full hydration coverage', () => {
