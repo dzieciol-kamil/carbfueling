@@ -259,7 +259,7 @@ const defaultCombinedFillIds: number[] = [];
 const defaultFoodLib: FoodLibEntry[] = [
   { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
   { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 },
+  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
   { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
 ];
 
