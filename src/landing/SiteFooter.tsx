@@ -64,15 +64,21 @@ export default function SiteFooter({ lang }: SiteFooterProps) {
                 <GitHubIcon />
               </a>
             </div>
-            <a
-              className="site-footer-pill site-footer-pill-coffee"
-              href="https://suppi.pl/kamild"
-              target="_blank"
-              rel="noopener"
-            >
-              <CoffeeIcon />
-              <span>{strings.ftSupport}</span>
-            </a>
+            <div className="site-footer-row">
+              <a className="site-footer-pill" href="mailto:carbfueling@gmail.com">
+                <span className="site-footer-dot" style={{ background: '#8b5cf6' }} />
+                <span>{strings.ftContact}</span>
+              </a>
+              <a
+                className="site-footer-pill site-footer-pill-coffee"
+                href="https://suppi.pl/kamild"
+                target="_blank"
+                rel="noopener"
+              >
+                <CoffeeIcon />
+                <span>{strings.ftSupport}</span>
+              </a>
+            </div>
             <a className="site-footer-pill" href={faqHref(lang)}>
               <span className="site-footer-dot" style={{ background: 'var(--food)' }} />
               <span>{strings.ftFaq}</span>

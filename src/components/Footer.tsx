@@ -185,64 +185,94 @@ export function Footer() {
                 <GitHubIcon />
               </a>
             </div>
-            <a
-              href="https://suppi.pl/kamild"
-              target="_blank"
-              rel="noopener"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 9,
-                border: '1px solid var(--chip-border)',
-                background: '#fff',
-                borderRadius: 999,
-                padding: '9px 16px',
-                fontSize: 13.5,
-                fontWeight: 600,
-                color: 'var(--gel)',
-              }}
-            >
-              <CoffeeIcon />
-              <span>{strings.ftSupport}</span>
-            </a>
-            <a
-              href={FAQ_HREF_FROM_CALCULATOR}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                border: '1px solid var(--chip-border)',
-                background: '#fff',
-                borderRadius: 999,
-                padding: '7px 13px',
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--ink)',
-              }}
-            >
-              <span
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <a
+                href="mailto:carbfueling@gmail.com"
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: 'var(--food)',
-                  flex: '0 0 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  border: '1px solid var(--chip-border)',
+                  background: '#fff',
+                  borderRadius: 999,
+                  padding: '7px 13px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--ink)',
                 }}
-              />
-              <span>{strings.ftFaq}</span>
-            </a>
-            <button onClick={handleReplay} style={replayButtonStyle}>
-              <span
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: '#8b5cf6',
+                    flex: '0 0 8px',
+                  }}
+                />
+                <span>{strings.ftContact}</span>
+              </a>
+              <a
+                href="https://suppi.pl/kamild"
+                target="_blank"
+                rel="noopener"
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: 'var(--water)',
-                  flex: '0 0 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  border: '1px solid var(--chip-border)',
+                  background: '#fff',
+                  borderRadius: 999,
+                  padding: '9px 16px',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: 'var(--gel)',
                 }}
-              />
-              <span>{strings.tourReplayButton}</span>
-            </button>
+              >
+                <CoffeeIcon />
+                <span>{strings.ftSupport}</span>
+              </a>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <a
+                href={FAQ_HREF_FROM_CALCULATOR}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  border: '1px solid var(--chip-border)',
+                  background: '#fff',
+                  borderRadius: 999,
+                  padding: '7px 13px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--ink)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: 'var(--food)',
+                    flex: '0 0 8px',
+                  }}
+                />
+                <span>{strings.ftFaq}</span>
+              </a>
+              <button onClick={handleReplay} style={replayButtonStyle}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: 'var(--water)',
+                    flex: '0 0 8px',
+                  }}
+                />
+                <span>{strings.tourReplayButton}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -199,6 +199,7 @@ export interface StringTable {
   ftIssues: string;
   ftRepo: string;
   ftSupport: string;
+  ftContact: string;
   ftCopyright: string;
   tourWelcomeTitle: string;
   tourWelcomeBody: string;
@@ -556,6 +557,7 @@ export const STR: Record<Lang, StringTable> = {
     ftIssues: 'Pomysły i błędy → GitHub Issues',
     ftRepo: 'Kod źródłowy na GitHubie',
     ftSupport: 'Postaw mi kawę',
+    ftContact: 'Napisz do mnie',
     ftSources2: 'Utrata potu: przybliżenie z wagi, intensywności i temperatury.',
     ftCopyright: '© 2026 Carb Fueling · open source',
     tourWelcomeTitle: 'Witaj w Carb Fueling',
@@ -946,6 +948,7 @@ export const STR: Record<Lang, StringTable> = {
     ftIssues: 'Ideas & bugs → GitHub Issues',
     ftRepo: 'Source code on GitHub',
     ftSupport: 'Buy me a coffee',
+    ftContact: 'Get in touch',
     ftSources2: 'Sweat loss: an estimate from weight, intensity and temperature.',
     ftCopyright: '© 2026 Carb Fueling · open source',
     tourWelcomeTitle: 'Welcome to Carb Fueling',
