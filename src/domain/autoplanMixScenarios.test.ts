@@ -482,13 +482,19 @@ describe('autoplan combined scenarios — gel vessel reused for water', () => {
     const flask = vessel('g2', 'Flaszka', 250, ['gel', 'water']);
     const r = run(makePlan(route, [vessel('g1', 'Bidon', 650, ['water']), flask], mix));
     // The flask never gets refilled with gel once spent (gel is strictly one-shot), so its full
-    // 250ml × gelConc content — 150g — is the hard ceiling on this scenario's carbs. That used to
-    // force a hand-derived percentage floor, because a share-of-target bar the kit physically
-    // cannot reach is not a bar at all. The badge grades a *rate* against `min(target, plateau)`
-    // instead, and 150g spread over this ride clears the plateau, so green is reachable here with
-    // the flask alone — no ceiling arithmetic needed to state it.
-    // The scenario's real point is *where* those grams land — spread far enough down the route that
-    // the shortfall isn't "eat everything by km 50, then coast" (expectNotWorseThanEvenSpread).
+    // 250ml × gelConc content — 150g — is the hard ceiling on this scenario's carbs. Green is
+    // reachable on that alone, but not because 150g is "enough": the badge grades a *rate* against
+    // `min(carbTargetGph, CARB_PLATEAU_GPH)` = 40 g/h, so what decides the colour is the span those
+    // grams are poured over. Measured on this ride (3.60h, need line 75 g/h): stretched across all
+    // 90km the same 150g reads 31.7 g/h — 'partial'; squeezed into the first 30km it reads 39.9 g/h,
+    // still short of the floor, because it outruns the need line and the surplus is not credited;
+    // anywhere from roughly 45km to 75km the whole 150g counts at 41.7 g/h — 'good'.
+    // So this is a span test, not an amount test, and the span it wants falls straight out of the
+    // arithmetic: 150g ÷ 75 g/h = 2.0h, which at 25 km/h is a 50km delivery — a rate-matched span,
+    // sitting comfortably inside the green window. That is the placement rule under test here.
+    // Hydration constrains the plan as well: 4032ml of sweat against the 1.2%-of-body-mass green
+    // band that 30°C allows. Four 650ml loads (2600ml) land at −1.91% and read 'partial'; it takes
+    // a fifth (3250ml) to reach −1.04% and go green — which `maxRefills: 8` below leaves room for.
     expectThen(r, {
       carbs: 'good',
       hydration: 'good',

@@ -381,6 +381,16 @@ describe('autoplan scenarios — water only', () => {
     });
   });
 
+  // The title's premise is inverted by master's body-mass hydration model. This ride loses 1225ml
+  // of sweat, and at 5°C the green band tolerates a 2.5%-of-body-mass deficit (≈1750ml on 70kg).
+  // Measured: carrying nothing at all scores −1.75% and already reads 'good'; one 1000ml load run
+  // start to finish is the best plan on the board at −0.32%; and the second load that the title's
+  // stop would buy overshoots to +1.11%, past SURPLUS_WARN_PCT and into the hyponatraemia warning.
+  // The stop this was written to require is now the wrong move, not the required one.
+  // Nothing below is wrong — 'good' is the right badge and `maxStops` is a ceiling that permits
+  // zero — but the scenario has stopped discriminating: it passes against the empty-plan stub too,
+  // so its green is not evidence that the planner did anything. Whether it gets re-derived onto a
+  // premise that bites again or retired outright is the owner's call, not a silent edit here.
   test('#8: 70km / 1000ml / 5°C / 70kg — 81.6% of the need is not green, so it costs a stop', () => {
     const r = run(
       makePlan(makeRoute({ distance: 70, speed: 20, intensity: 'low', temp: 5, weight: 70 }), [
