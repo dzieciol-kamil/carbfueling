@@ -17,22 +17,39 @@
  * and as the two scenario suites', on purpose: there is one definition of a refill on this branch.
  *
  * **One stop tops up every bottle at once**, so stops are counted per round, not per bottle. For a
- * content needing `L` loads across `V` vessels that is `stops ≈ max(0, L − V)` — the home load is
+ * stream needing `L` loads across `V` vessels that is `stops ≈ max(0, L − V)` — the home load is
  * the `− V`. The owner's worked example: 2 izo bottles + a gel flask + a bladder cover 100 km with
- * **zero** stops, because `L ≤ V` for every content.
+ * **zero** stops, because `L ≤ V` in either stream.
  *
- * **Vessels within one content stream run in round-robin relay.** The owner's own 194 km plan reads
+ * **Vessels within one stream run in round-robin relay.** The owner's own 194 km plan reads
  * `izo g1 0→48, g3 48→101, g1 101→150, g3 150→194`: the first pass over the vessels is the home
  * loads (free handovers) and the wrap back onto `g1` at 101 is the first refill, hence the first
  * stop.
  *
- * **Streams run in parallel.** Izo and water are drunk at the same time, so each content stream
- * tiles the whole route independently from km 0 rather than queueing behind the others.
+ * **Each need is covered once, by the sum of its sources.** There are two needs — carbs and fluid —
+ * not three contents' worth of them. Carbs come from izo *and* gel, so every carb-carrying vessel
+ * joins **one** relay and their spans tile the carb requirement once between them; that is what
+ * makes the owner's plan alternate izo, gel, izo, gel rather than run two full-route streams on top
+ * of each other. Fluid comes from izo *and* water, and the izo is already on board, so the water
+ * stream is laid out against what the izo does not supply. Rate-matching a fill against a whole
+ * need line is right only where that fill is the only thing feeding it.
  *
- * **A spent vessel may take water at a stop that already exists — never at a new one.** Once a
- * bottle has finished its carb duty it can be topped up with water, but it must not buy a stop to
- * do it: water is free and available everywhere, and a bottle earning its keep this way is not
- * worth pulling over for.
+ * **`allowed` binds** — *"allowed wiąże, bo tylko to można wybrać na wykresie co jest w allowed"*.
+ * A vessel holds exactly what its own list says it may, and nothing here ever pours outside it. A
+ * gel flask is therefore refilled with gel like any other vessel is refilled with what it carries:
+ * the alternative was a flask that sits empty for the rest of the ride, and the owner's ruling is
+ * that refills win — *"albo dobra niech będą też dolewki do żelu, fuck it, jak ktoś nie chce to
+ * sobie przerobi"*. A second load of gel is a refill and buys a stop exactly as izo's does.
+ *
+ * **A spent vessel may take water — or, at a pinch, izo — at a stop that already exists, never at a
+ * new one.** Once a bottle has finished its carb duty it can be topped up, but it must not buy a
+ * stop to do it: a bottle earning its keep this way is not worth pulling over for. Water is the
+ * default, because it is free and needs no sachet carried from home; izo is the escalation — *"od
+ * biedy izo"* — for a vessel that may not hold water at all *and* only while the relay leaves the
+ * finish uncovered, since water cannot close a carb shortfall and a load past the last one the ride
+ * needs would be exactly the double-counting this module exists to avoid. `allowed` is the
+ * authority on both, so a flask declared `['gel']` alone takes neither, which is no loss now that
+ * it can be refilled with gel.
  *
  * Deliberately *not* here:
  *
@@ -41,11 +58,13 @@
  *   as an ordinary stream — one continuous span per load — which is the same shape the chart
  *   already draws for a gel fill with no `pos`.
  * - **Choosing the assignment.** That is the search's job. `layout` is the function the search
- *   calls; it never second-guesses what it was handed.
+ *   calls; it never second-guesses what it was handed. The one thing it adds on its own is the
+ *   top-up above, and only into a vessel the assignment already spent, only at a stop the plan
+ *   already has.
  * - **Placing food.** `foods` is an input and comes back out untouched. All this module does with it
  *   is read which of its entries are `needsStop` products, because buying one is a stop.
  */
-import { carbsFill, dist } from '../fuel';
+import { carbsFill, dist, sweat, totalHours } from '../fuel';
 import type { Content, Fill, PlanState, Vessel } from '../types';
 import { carbSpanEndKm, waterSpanEndKm } from './spans';
 import type { Draft } from './score';
@@ -93,6 +112,37 @@ function loadSpanEnd(state: PlanState, vessel: Vessel, content: Content, from: n
 /** A position that wants a stop, and whether it is free to move to get one. */
 type Candidate = { at: number; movable: boolean };
 
+/** One vessel's part in a relay: how many turns it takes, and how far each turn reaches. */
+type Leg = { a: VesselAssignment; turns: number; spanEnd: (from: number) => number };
+
+/**
+ * Run `legs` as a round-robin relay from km 0, each load starting where the last one ended.
+ *
+ * A vessel takes its turn in pass `r` only if it was given more than `r` turns, so the first pass
+ * is the home loads — free handovers — and every later turn is a refill. A load that reaches
+ * nowhere (an empty vessel, or a stream with nothing left to cover) is not a fill and must not
+ * stall the relay: it is skipped without consuming the vessel's turn as "used".
+ */
+function relay(legs: Leg[], D: number): Load[] {
+  const rounds = Math.max(0, ...legs.map((l) => l.turns));
+  const used = new Set<string>();
+  const stream: Load[] = [];
+  let x = 0;
+  for (let r = 0; r < rounds && x < D; r++) {
+    for (const leg of legs) {
+      if (x >= D) break;
+      if (leg.turns <= r) continue;
+      const to = Math.min(D, leg.spanEnd(x));
+      if (!(to > x)) continue;
+      const { gid, content } = leg.a;
+      stream.push({ gid, content, from: x, to, refill: used.has(gid) });
+      used.add(gid);
+      x = to;
+    }
+  }
+  return stream;
+}
+
 /**
  * Lay `assignment` out into a draft plan.
  *
@@ -103,7 +153,8 @@ type Candidate = { at: number; movable: boolean };
  * would then score *that* plan while believing it had measured the other. Every hard bug in the
  * previous engine was some version of "the planner thinks X, the app says Y", so this fails loudly
  * at the point the mistake was made instead of quietly two layers later. `loads: 0` is not an
- * error — that is a legal way to say a vessel is left at home.
+ * error — that is a legal way to say a vessel is left at home, and neither is `loads: 2` on a gel
+ * vessel: gel is refilled like anything else.
  */
 export function layout(
   state: PlanState,
@@ -124,38 +175,75 @@ export function layout(
     vesselOf.set(a.gid, v);
   }
 
-  // --- Tile each content stream ------------------------------------------------------------
+  // --- Tile the carb stream ------------------------------------------------------------------
   //
-  // Contents are laid out in the order they first appear in the assignment; within a content, the
-  // vessels keep the order they were given, because that order *is* the handover order and it is
-  // one of the search's decisions. Each stream starts again at km 0: izo and water are drunk
-  // simultaneously, not one after the other.
-  const contents: Content[] = [];
-  for (const a of assignment) if (!contents.includes(a.content)) contents.push(a.content);
-
-  const streams: Load[][] = [];
-  for (const content of contents) {
-    const group = assignment.filter((a) => a.content === content);
-    const rounds = Math.max(0, ...group.map((a) => loadCount(a.loads)));
-    const used = new Set<string>();
-    const stream: Load[] = [];
-    let x = 0;
-    for (let r = 0; r < rounds && x < D; r++) {
-      for (const a of group) {
-        if (x >= D) break;
-        if (loadCount(a.loads) <= r) continue;
+  // izo and gel are two sources of one need, so they share one relay and tile the carb requirement
+  // once between them. The vessels keep the order the assignment gave them, because that order *is*
+  // the handover order and it is one of the search's decisions; interleaving izo and gel in the
+  // rotation is the point, not an accident of it. A gel vessel is an ordinary member of the
+  // rotation — a second turn is a refill and buys a stop, exactly as a bottle's does.
+  const carbStream = relay(
+    assignment
+      .filter((a) => a.content !== 'water')
+      .map((a) => {
         const vessel = vesselOf.get(a.gid) as Vessel;
-        const to = Math.min(D, loadSpanEnd(state, vessel, content, x));
-        // A load that reaches nowhere (an empty vessel) is not a fill, and must not be allowed to
-        // stall the relay: skip it without consuming the vessel's turn as "used".
-        if (!(to > x)) continue;
-        stream.push({ gid: a.gid, content, from: x, to, refill: used.has(a.gid) });
-        used.add(a.gid);
-        x = to;
-      }
-    }
-    if (stream.length > 0) streams.push(stream);
-  }
+        return {
+          a,
+          turns: loadCount(a.loads),
+          spanEnd: (from: number) => loadSpanEnd(state, vessel, a.content, from),
+        };
+      }),
+    D,
+  );
+
+  // --- Tile the water stream, against what the izo leaves unmet -------------------------------
+  //
+  // izo pours fluid as well as carbs. Matching a water vessel against the whole sweat loss would
+  // pour it on top of a requirement the bottles on board already meet part of, so what is left for
+  // water to cover is
+  //
+  //     residual = sweat × totalHours − (millilitres of izo the plan actually carries)
+  //
+  // counted off the carb stream above — which is why that had to be laid out first: a load that
+  // fell past the finish line was never planned and pours nothing. A residual of zero or less means
+  // the izo alone covers the ride's fluid, and the honest answer there is that the water vessels get
+  // no fills.
+  const fluidNeed = sweat(route) * totalHours(route);
+  const izoMl = carbStream
+    .filter((f) => f.content === 'izo')
+    .reduce((ml, f) => ml + (vesselOf.get(f.gid) as Vessel).vol, 0);
+  const residualFluid = fluidNeed - izoMl;
+
+  // `spans.ts` inverts the fluid need line from its whole-ride total, and that total enters the
+  // inversion only through the ratio `delivered / rideTotal`. Asking it about `ml × need / residual`
+  // against the full line is therefore exactly asking about `ml` against the residual one — which
+  // keeps `spans.ts` the single model of the curve rather than adding a second entry point for a
+  // rescaled copy of it. A ride with no fluid requirement at all (a zero-distance route) has no
+  // residual to speak of and keeps `waterSpanEndKm`'s own answer: a fill against a line that demands
+  // nothing reaches the finish.
+  const waterSpanEnd = (from: number, ml: number): number => {
+    if (!(fluidNeed > 0)) return waterSpanEndKm(route, from, ml);
+    if (!(residualFluid > 0)) return from;
+    return waterSpanEndKm(route, from, (ml * fluidNeed) / residualFluid);
+  };
+
+  const waterStream = relay(
+    assignment
+      .filter((a) => a.content === 'water')
+      .map((a) => {
+        const vessel = vesselOf.get(a.gid) as Vessel;
+        return {
+          a,
+          turns: loadCount(a.loads),
+          spanEnd: (from: number) => waterSpanEnd(from, vessel.vol),
+        };
+      }),
+    D,
+  );
+
+  // The two needs are drunk at the same time, so the water stream starts again at km 0 rather than
+  // queueing behind the carb one.
+  const streams = [carbStream, waterStream].filter((s) => s.length > 0);
 
   // --- Collect what wants a stop ------------------------------------------------------------
   //
@@ -238,25 +326,49 @@ export function layout(
   for (const f of stopFoods) at.add(repOf(f.from));
   const stops: DraftStop[] = [...at].sort((a, b) => a - b).map((x) => ({ at: x }));
 
-  // --- Water into vessels that have finished their carb duty ---------------------------------
+  // --- Topping up vessels that have finished their carb duty ---------------------------------
   //
-  // Only at a stop the plan already has, and only into a vessel that may hold water at all. The
-  // fill starts at the stop, not where the bottle ran dry, so a gap between the two is real: the
-  // rider carried an empty bottle for that stretch. Repeats at each later stop the bottle is empty
-  // at, since one stop tops up every bottle at once.
+  // Only at a stop the plan already has. The fill starts at the stop, not where the bottle ran dry,
+  // so a gap between the two is real: the rider carried an empty bottle for that stretch. Repeats at
+  // each later stop the bottle is empty at, since one stop tops up every bottle at once.
+  //
+  // Water first — it is free, available everywhere, and costs no sachet carried from home. izo is
+  // the escalation, and only under both of its conditions: the vessel's `allowed` list must rule
+  // water out, and the carb relay must still leave the finish uncovered. The second condition is
+  // what keeps this from undoing the rest of the module — water cannot close a shortfall in carbs,
+  // which is the "od biedy" the owner's rule is about, but a load poured after the relay already
+  // reaches the line is carbs the ride never asked for, and carrying those twice is the thing this
+  // whole file was rewritten to stop. `allowed` is the authority throughout: a flask declared
+  // `['gel']` alone takes neither, which costs it nothing now that it can be refilled with gel.
+  //
+  // Note the water is measured against the *whole* fluid need, not the residual the stream above
+  // used: a top-up is not part of that stream and has no rate to match, it simply says how far this
+  // bottle of water goes.
+  let carbReach = fills.reduce((x, f) => (f.content === 'water' ? x : Math.max(x, f.to)), 0);
   for (const a of assignment) {
     if (a.content === 'water') continue;
     const vessel = vesselOf.get(a.gid) as Vessel;
-    if (!vessel.allowed.includes('water')) continue;
+    const topUp: Content | null = vessel.allowed.includes('water')
+      ? 'water'
+      : vessel.allowed.includes('izo')
+        ? 'izo'
+        : null;
+    if (topUp === null) continue;
     const own = fills.filter((f) => f.gid === a.gid);
     if (own.length === 0) continue;
     let spentAt = Math.max(...own.map((f) => f.to));
     for (const s of stops) {
       if (s.at < spentAt || s.at >= D) continue;
-      const to = Math.min(D, waterSpanEndKm(route, s.at, vessel.vol));
+      if (topUp === 'izo' && carbReach >= D) break;
+      const reach =
+        topUp === 'water'
+          ? waterSpanEndKm(route, s.at, vessel.vol)
+          : loadSpanEnd(state, vessel, 'izo', s.at);
+      const to = Math.min(D, reach);
       if (!(to > s.at)) continue;
-      fills.push({ gid: a.gid, content: 'water', from: s.at, to });
+      fills.push({ gid: a.gid, content: topUp, from: s.at, to });
       spentAt = to;
+      if (topUp === 'izo') carbReach = Math.max(carbReach, to);
     }
   }
 
