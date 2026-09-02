@@ -1,13 +1,6 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { absCap } from '../../domain/fuel';
 import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
-import {
-  buildSettingsExport,
-  parseSettingsImport,
-  serializeSettingsExport,
-  settingsExportFileName,
-  type PlanFeedback,
-} from '../../domain/settingsExport';
 import { LANGS, t } from '../../i18n/strings';
 import {
   hasPlanData,
@@ -15,11 +8,11 @@ import {
   useAppStore,
   type ViewMode,
 } from '../../store/appStore';
-import { saveTextFile } from '../../utils/fileSave';
 import { CoffeeIcon, GitHubIcon } from '../Footer';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { usePlanFileTransfer } from '../usePlanFileTransfer';
 import { MobileStepper } from './MobileStepper';
 
 export function MobileProfile() {
@@ -33,8 +26,6 @@ export function MobileProfile() {
   const mix = useAppStore((s) => s.mix);
   const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
-  const getSettingsExportData = useAppStore((s) => s.getSettingsExportData);
-  const importSettings = useAppStore((s) => s.importSettings);
   const strings = t(lang);
   // No fills in scope here — falls back to absCap's izo-only default rather than a real
   // izo/gel blend, since the "Me" tab isn't tied to a specific plan.
@@ -42,9 +33,16 @@ export function MobileProfile() {
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
-  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [planFeedback, setPlanFeedback] = useState<PlanFeedback | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    fileInputRef,
+    planFeedback,
+    pendingImportFile,
+    handleExport,
+    handleImportPick,
+    handleFileInputChange,
+    cancelImport,
+    confirmImport,
+  } = usePlanFileTransfer();
 
   const handleReplay = () => {
     if (hasPlanData(useAppStore.getState())) {
@@ -57,43 +55,6 @@ export function MobileProfile() {
   const handleViewModePick = (v: ViewMode) => {
     if (shouldConfirmViewModeChange(v, viewMode)) setPendingViewMode(v);
     else setViewMode(v);
-  };
-
-  const handleExport = async () => {
-    setPlanFeedback(null);
-    const file = buildSettingsExport(getSettingsExportData());
-    try {
-      await saveTextFile(serializeSettingsExport(file), settingsExportFileName());
-    } catch {
-      setPlanFeedback('export-error');
-    }
-  };
-
-  const handleImportPick = () => fileInputRef.current?.click();
-
-  // Always confirm before import: it silently overwrites the entire plan —
-  // route, gear, mix, fills, foods and shops, not just narrow "settings" —
-  // a rare, deliberate action, so there's no real UX cost to asking every
-  // time rather than trying to detect "is there anything worth losing".
-  const handleFileChosen = (file: File | null) => {
-    if (!file) return;
-    setPendingImportFile(file);
-  };
-
-  const applyImportedFile = async (file: File) => {
-    setPlanFeedback(null);
-    try {
-      const text = await file.text();
-      const result = parseSettingsImport(text);
-      if (!result.ok) {
-        setPlanFeedback('import-error');
-        return;
-      }
-      importSettings(result.data);
-      setPlanFeedback('import-success');
-    } catch {
-      setPlanFeedback('import-error');
-    }
   };
 
   return (
@@ -254,11 +215,7 @@ export function MobileProfile() {
           type="file"
           accept="application/json,.json"
           style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0] ?? null;
-            handleFileChosen(file);
-            e.target.value = '';
-          }}
+          onChange={handleFileInputChange}
         />
         {planFeedback && (
           <p
@@ -526,12 +483,8 @@ export function MobileProfile() {
           body={strings.importPlanConfirmBody}
           cancelLabel={strings.importPlanConfirmCancel}
           confirmLabel={strings.importPlanConfirmConfirm}
-          onCancel={() => setPendingImportFile(null)}
-          onConfirm={() => {
-            const file = pendingImportFile;
-            setPendingImportFile(null);
-            void applyImportedFile(file);
-          }}
+          onCancel={cancelImport}
+          onConfirm={confirmImport}
         />
       )}
     </div>
