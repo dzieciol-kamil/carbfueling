@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  COVERAGE_SHORT_GPH,
-  COVERAGE_TARGET_GPH,
+  CARB_PLATEAU_GPH,
   FLUID_ABSORPTION_CAP_ML_H,
   absCap,
   allowedDeficitPct,
@@ -877,7 +876,7 @@ describe('samples', () => {
 describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effort-weighted)', () => {
   // 100km/25kph=4h, weight 75kg, 20C/mid -> sweat=700ml/h (matches the water-scenario batch).
   // sweatLoss = 700*4 = 2800ml, well above the buffer (weight*15=1125ml), so totalFluidNeed is
-  // the full, undiscounted 2800ml — not reduced by the buffer and not by COVERAGE_TARGET_GPH
+  // the full, undiscounted 2800ml — not reduced by the buffer and not by CARB_PLATEAU_GPH
   // (that constant is a badge-only tolerance, not part of what the line asks for). Distributed by
   // eff(x)/tot exactly like carbs' `need` — no GPX here, so effort=1 everywhere and eff(x)/tot
   // reduces to x/D (a straight line), matching a flat ml/h target rate.
@@ -1176,68 +1175,64 @@ describe('rateStats coverage', () => {
 });
 
 describe('coverageStatus', () => {
-  // Everything below the 'overshoot' block is indifferent to the new (plannedRateGph, capGph)
-  // pair, so it passes plannedRateGph == rateGph against an infinite cap — i.e. "not overshooting,
+  // Everything below the 'overshoot' block is indifferent to the (plannedRateGph, capGph) pair,
+  // so it passes plannedRateGph == rateGph against an infinite cap — i.e. "not overshooting,
   // whatever this test's rate is."
   const notOvershooting = Infinity;
 
-  test('at or above the plateau threshold: good', () => {
-    expect(coverageStatus(COVERAGE_TARGET_GPH, 4, COVERAGE_TARGET_GPH, notOvershooting)).toBe(
+  test('a high target (>= the plateau) only demands the plateau, not the target itself', () => {
+    // Live case that prompted this: a 92%-of-target, 55 g/h plan on a low-intensity ~2h40 ride
+    // (target ~57 g/h) still read amber under the old flat-60 rule. The doc's own §1b.2 design
+    // note says the app should not paint red for landing at 70 g/h against a 90 g/h target either.
+    expect(coverageStatus(CARB_PLATEAU_GPH, 4, CARB_PLATEAU_GPH, notOvershooting, 150)).toBe(
       'good',
     );
-    expect(coverageStatus(150, 4, 150, notOvershooting)).toBe('good');
+    expect(coverageStatus(70, 4, 70, notOvershooting, 90)).toBe('good');
+    expect(coverageStatus(55, 4, 55, notOvershooting, 57)).toBe('good');
   });
 
-  test('between the short threshold and the plateau: partial', () => {
+  test('a high target: between half the plateau and the plateau is partial', () => {
     expect(
-      coverageStatus(COVERAGE_TARGET_GPH - 1, 4, COVERAGE_TARGET_GPH - 1, notOvershooting),
+      coverageStatus(CARB_PLATEAU_GPH - 1, 4, CARB_PLATEAU_GPH - 1, notOvershooting, 150),
     ).toBe('partial');
-    expect(coverageStatus(COVERAGE_SHORT_GPH, 4, COVERAGE_SHORT_GPH, notOvershooting)).toBe(
-      'partial',
-    );
+    expect(
+      coverageStatus(CARB_PLATEAU_GPH / 2, 4, CARB_PLATEAU_GPH / 2, notOvershooting, 150),
+    ).toBe('partial');
   });
 
-  test('below the short threshold: short', () => {
-    expect(coverageStatus(COVERAGE_SHORT_GPH - 1, 4, COVERAGE_SHORT_GPH - 1, notOvershooting)).toBe(
-      'short',
-    );
-    expect(coverageStatus(0, 4, 0, notOvershooting)).toBe('short');
+  test('a high target: below half the plateau is short', () => {
+    expect(
+      coverageStatus(CARB_PLATEAU_GPH / 2 - 1, 4, CARB_PLATEAU_GPH / 2 - 1, notOvershooting, 150),
+    ).toBe('short');
+    expect(coverageStatus(0, 4, 0, notOvershooting, 150)).toBe('short');
   });
 
-  test('the two thresholds stay ordered', () => {
-    expect(COVERAGE_SHORT_GPH).toBeLessThan(COVERAGE_TARGET_GPH);
+  test('a low target (< the plateau): hitting it is good, even far under the plateau', () => {
+    // Live case: a 1h25, medium-intensity ride whose own target is ~45 g/h. The old flat-60 rule
+    // demanded 60 g/h regardless — more than the ride actually needed.
+    expect(coverageStatus(25, 4, 25, notOvershooting, 25)).toBe('good');
+    expect(coverageStatus(45, 4, 45, notOvershooting, 45.2)).toBe('good');
   });
 
-  test('the calibrated values themselves, anchored on the Smith/Newell dose-response curve', () => {
-    // Everything above is written in terms of the constants, so it passes for ANY pair of ordered
-    // numbers. These are the literal g/h the calibration was chosen to produce — Smith et al.
-    // (2013) puts the plateau at 60-90 g/h and Newell et al. (2018) finds no reliable gain below
-    // ~40 g/h — so moving a threshold has to be a deliberate edit here too.
-    expect(COVERAGE_TARGET_GPH).toBe(60);
-    expect(COVERAGE_SHORT_GPH).toBe(30);
+  test('a low target: short of it is graded against half of it, not half the plateau', () => {
+    expect(coverageStatus(24, 4, 24, notOvershooting, 25)).toBe('partial');
+    expect(coverageStatus(12, 4, 12, notOvershooting, 25)).toBe('short'); // < 12.5 = 25 / 2
+  });
+
+  test('the plateau value itself, anchored on Newell 2018', () => {
+    // 20 g/h was not distinguishable from placebo, 39 g/h already was, and 39 vs 64 g/h showed no
+    // reliable difference — ~40 g/h is where a reliable benefit starts, not a number picked to
+    // land in the middle of Smith 2013's 60-90 g/h plateau.
+    expect(CARB_PLATEAU_GPH).toBe(40);
   });
 
   test('duration under 1h: unneeded regardless of rate — carbs do not move the needle that short', () => {
-    // Same boundary as durationTier()'s 'short' tier: below it the sub-40-g/h "real deficit"
-    // reading from the audit does not apply, because under ~45-60 min carbs during exercise have
-    // no established effect on performance at all. Grading a 40-minute spin red for 0 g/h would be
-    // answering a question the literature never asked.
-    expect(coverageStatus(0, 0.9, 0, notOvershooting)).toBe('unneeded');
-    expect(coverageStatus(90, 0.99, 90, notOvershooting)).toBe('unneeded'); // high rate doesn't buy a 'good' either
+    expect(coverageStatus(0, 0.9, 0, notOvershooting, 90)).toBe('unneeded');
+    expect(coverageStatus(90, 0.99, 90, notOvershooting, 90)).toBe('unneeded'); // high rate doesn't buy a 'good' either
   });
 
   test('exactly 1h is graded normally, not unneeded', () => {
-    expect(coverageStatus(COVERAGE_SHORT_GPH, 1, COVERAGE_SHORT_GPH, notOvershooting)).toBe(
-      'partial',
-    );
-  });
-
-  test('the same percentage means different things at different targets — the bug this replaces', () => {
-    // §K/§11.1 of the audit: 80% of a 90 g/h target (72 g/h) is on the Smith plateau, essentially
-    // free; 80% of a 30 g/h target (24 g/h) is a real shortfall for an effort over an hour. The old
-    // percent-only metric graded both "good" at the same 80%. Rate-based grading tells them apart.
-    expect(coverageStatus(72, 4, 72, notOvershooting)).toBe('good');
-    expect(coverageStatus(24, 4, 24, notOvershooting)).toBe('short');
+    expect(coverageStatus(20, 1, 20, notOvershooting, 90)).toBe('partial');
   });
 
   test('overshoot: planned rate above the gut cap is over, regardless of the credited rate', () => {
@@ -1246,16 +1241,16 @@ describe('coverageStatus', () => {
     // because rateStats caps it at need; only the raw planned rate can. 205g/1.43h ≈ 143 g/h
     // against a ~79 g/h cap is the live case that prompted this: coverage read a comfortable
     // amber, hiding a plan carrying nearly double what the gut model says it can clear.
-    expect(coverageStatus(45, 1.43, 143, 79)).toBe('over');
+    expect(coverageStatus(45, 1.43, 143, 79, 90)).toBe('over');
   });
 
   test('overshoot beats the short-ride exemption — GI risk does not care whether carbs "matter"', () => {
-    expect(coverageStatus(0, 0.5, 200, 79)).toBe('over');
+    expect(coverageStatus(0, 0.5, 200, 79, 90)).toBe('over');
   });
 
   test('planned rate at or under the cap is not overshoot', () => {
-    expect(coverageStatus(60, 4, 79, 79)).toBe('good'); // exactly at cap: still fine
-    expect(coverageStatus(60, 4, 78.9, 79)).toBe('good');
+    expect(coverageStatus(CARB_PLATEAU_GPH, 4, 79, 79, 90)).toBe('good'); // exactly at cap: still fine
+    expect(coverageStatus(CARB_PLATEAU_GPH, 4, 78.9, 79, 90)).toBe('good');
   });
 });
 
@@ -1342,7 +1337,7 @@ describe('hydrationStatus', () => {
     // Carbs do have an 'over' tier (see the 'overshoot' tests above) — but it's driven by the
     // planned rate against the personalised gut cap, not by the credited rate itself. A large
     // credited rate with a planned rate safely under cap is still 'good'.
-    expect(coverageStatus(300, 4, 70, 79)).toBe('good');
+    expect(coverageStatus(300, 4, 70, 79, 90)).toBe('good');
   });
 
   test('the short-ride buffer no longer flips the verdict on one minute of riding', () => {
@@ -1459,6 +1454,8 @@ describe('planSummary', () => {
     // rider's personalised gut ceiling — see coverageStatus's 'over' tier.
     expect(summary.carbPlannedRateGph).toBeCloseTo(80 / 4, 6);
     expect(summary.carbAbsCapGph).toBe(absCap(plan.mix, 55, 0, 'mid'));
+    // What coverageStatus caps at CARB_PLATEAU_GPH before grading carbRateGph against it.
+    expect(summary.carbTargetGph).toBeCloseTo(75, 6);
   });
 
   test('an overpacked plan is flagged over end-to-end — the live case that prompted this', () => {
@@ -1474,7 +1471,13 @@ describe('planSummary', () => {
     expect(summary.carbAbsCapGph).toBe(90);
     expect(summary.carbPlannedRateGph).toBeCloseTo(205 / hrs, 6);
     expect(
-      coverageStatus(summary.carbRateGph, hrs, summary.carbPlannedRateGph, summary.carbAbsCapGph),
+      coverageStatus(
+        summary.carbRateGph,
+        hrs,
+        summary.carbPlannedRateGph,
+        summary.carbAbsCapGph,
+        summary.carbTargetGph,
+      ),
     ).toBe('over');
   });
 
@@ -1653,7 +1656,7 @@ describe('presetTagFor', () => {
     expect(presetTagFor(2)).toBe('iso');
     expect(presetTagFor(1)).toBe('sugar');
     expect(presetTagFor(0.8)).toBe('honey');
-    expect(presetTagFor(1.5)).toBe('ratio15');
+    expect(presetTagFor(1.2)).toBe('ratio15');
   });
 
   test('maps any other ratio to custom', () => {
@@ -1662,15 +1665,15 @@ describe('presetTagFor', () => {
 });
 
 describe('ratioPresetIndex', () => {
-  const presets = [2, 1.5, 1, 0.8];
+  const presets = [2, 1.2, 1, 0.8];
 
   test('finds the preset whose value and tag both match', () => {
-    expect(ratioPresetIndex(1.5, 'ratio15', presets)).toBe(1);
+    expect(ratioPresetIndex(1.2, 'ratio15', presets)).toBe(1);
     expect(ratioPresetIndex(0.8, 'honey', presets)).toBe(3);
   });
 
   test('returns -1 when the tag is custom even if the value matches a preset', () => {
-    expect(ratioPresetIndex(1.5, 'custom', presets)).toBe(-1);
+    expect(ratioPresetIndex(1.2, 'custom', presets)).toBe(-1);
   });
 
   test('returns -1 for a genuinely custom ratio not in the preset list', () => {

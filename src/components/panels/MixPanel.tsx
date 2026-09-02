@@ -18,7 +18,7 @@ import { SegmentedControl, SegmentedTrack, segmentItemStyle } from '../ui/Segmen
 import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import { PanelShell } from './PanelShell';
 
-const RATIO_PRESETS = [2, 1.5, 1, 0.8];
+const RATIO_PRESETS = [2, 1.2, 1, 0.8];
 const CITRIC_SOURCES: CitricSource[] = ['citric', 'lemon', 'lemonJuice', 'lime', 'limeJuice'];
 
 function FaqLink({ slug, children }: { slug: string; children: ReactNode }) {

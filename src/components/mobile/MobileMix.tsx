@@ -16,7 +16,7 @@ import { InfoPopover } from '../ui/InfoPopover';
 import { SegmentedControl, SegmentedTrack, segmentItemStyle } from '../ui/SegmentedControl';
 import { MobileStepper } from './MobileStepper';
 
-const RATIO_PRESETS = [2, 1.5, 1, 0.8];
+const RATIO_PRESETS = [2, 1.2, 1, 0.8];
 const CITRIC_SOURCES: CitricSource[] = ['citric', 'lemon', 'lemonJuice', 'lime', 'limeJuice'];
 
 export function MobileMix() {

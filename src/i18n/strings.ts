@@ -414,7 +414,7 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Gramy do odmierzenia na każde napełnienie — osobno na bidon, flask czy słoiczek.',
     ratio: 'Maltodekstryna : Fruktoza',
     mixRatioHint:
-      'Maltodekstryna i fruktoza wchłaniają się w jelicie dwoma osobnymi drogami — łącząc je, organizm przyswaja więcej węglowodanów w ciągu godziny niż z samej maltodekstryny. Domyślna proporcja to 2:1, ale podobny efekt daje zwykły cukier (naturalnie ok. 1:1 glukozy do fruktozy) albo miód (ok. 0,8:1) — to gotowe, naturalne odpowiedniki tej samej mieszanki.',
+      'Maltodekstryna i fruktoza wchłaniają się w jelicie dwoma osobnymi drogami — łącząc je, organizm przyswaja więcej węglowodanów w ciągu godziny niż z samej maltodekstryny. Domyślna proporcja to 2:1, ale podobny efekt daje zwykły cukier (naturalnie ok. 1:1 glukozy do fruktozy) albo miód (ok. 0,8:1) — to gotowe, naturalne odpowiedniki tej samej mieszanki. Przy dobrze wytrenowanym jelicie sprawdza się też mieszanka 1,2:1.',
     mixSugarBlendHeader: 'Mieszanka cukrów — stosunek Maltodekstryny do Fruktozy',
     mixSugarAmountIzo: 'Ile cukru (łącznie) ma być w napoju',
     mixSugarAmountGel: 'Ile cukru (łącznie) ma być w żelu',
@@ -711,7 +711,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
     carbRateHint:
-      'Kolor paska liczy się z tego tempa (g/h), nie z procentu wyżej — ten sam procent przy różnych celach to różne ilości węgli na godzinę, a liczy się właśnie ta ilość. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
+      'Kolor paska pokazuje realne tempo dowozu węgli (g/h) względem tego, ile faktycznie potrzebuje ta trasa — nie procentu wyżej. Zielono jest, gdy dowozisz tyle, ile trzeba; jeśli potrzeba przekracza ok. 40 g/h, wystarczy dobić do 40 g/h, bo powyżej tego dokładanie węgli daje już bardzo mało. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
     waterBalanceHint:
       'Minus to niedobór wobec strat potu, plus to picie ponad nie. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
     waterBalanceHintLink: 'Jak to czytać →',
@@ -805,7 +805,7 @@ export const STR: Record<Lang, StringTable> = {
     recipesHint: 'Grams to measure out for each fill — per bottle, flask or jar.',
     ratio: 'Maltodextrin : Fructose',
     mixRatioHint:
-      "Maltodextrin and fructose are absorbed through two separate gut pathways — combining them lets your body take in more carbs per hour than from maltodextrin alone. The default ratio is 2:1, but plain sugar (naturally about 1:1 glucose to fructose) or honey (about 0.8:1) give a similar effect — they're ready-made, natural equivalents of the same blend.",
+      "Maltodextrin and fructose are absorbed through two separate gut pathways — combining them lets your body take in more carbs per hour than from maltodextrin alone. The default ratio is 2:1, but plain sugar (naturally about 1:1 glucose to fructose) or honey (about 0.8:1) give a similar effect — they're ready-made, natural equivalents of the same blend. A well-trained gut can also work well with a 1.2:1 mix.",
     mixSugarBlendHeader: 'Sugar blend — Maltodextrin to Fructose ratio',
     mixSugarAmountIzo: 'How much sugar (total) should be in the drink',
     mixSugarAmountGel: 'How much sugar (total) should be in the gel',
@@ -1098,7 +1098,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
     carbRateHint:
-      "The bar's colour is based on this rate (g/h), not the percentage above it — the same percentage means a different amount of carbs per hour depending on your target, and it's that amount that actually matters. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
+      "The bar's colour tracks your realised delivery rate (g/h) against what this specific ride actually needs — not the percentage above it. It turns green once you're delivering what the ride needs; if that need is above roughly 40 g/h, reaching 40 g/h is enough, since more carbs past that point barely help. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
     waterBalanceHint:
       'A minus is a shortfall against your sweat loss, a plus is drinking past it. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
     waterBalanceHintLink: 'How to read this →',

@@ -25,36 +25,28 @@ const FLUID_ABSORPTION_CAP_ML_H = 900;
  * as a continuous quantity there is no line left to step over. */
 
 /**
- * Where the *carb* bar turns green — an absolute delivery rate in g/h, not a percentage of
- * whatever target the rider happens to have. That used to be COVERAGE_TARGET_PCT (a flat 80% of
- * target), and the audit (§K/§11.1) is what killed it: the same percentage means opposite things
- * depending on the target it's a percentage *of*. 80% of a 90 g/h target is 72 g/h — on the Smith
- * plateau, essentially free. 80% of a 30 g/h target is 24 g/h — a real shortfall on an effort over
- * an hour. A metric that colours both "good" is measuring the rider's own target-setting, not
- * their plan.
+ * Where the marginal value of another g/h stops being worth grading on — not a flat "good" floor
+ * for every rider, but a cap on how high the rider's *own* target can push that floor. §1b.2 of
+ * the research doc, reading the same dose-response data COVERAGE used to cite for a flat 60 g/h
+ * floor, draws the opposite design conclusion: "the app should not paint a plan red for landing at
+ * 70 g/h against a 90 g/h target — the steep part of the curve is 0 to ~40 g/h." Newell et al.
+ * (2018, Nutrients 10(1):37) backs the number directly: 20 g/h was not distinguishable from
+ * placebo, 39 g/h already was, and 39 vs 64 g/h showed no reliable difference — so ~40 g/h is
+ * where a reliable benefit starts, not where it runs out.
  *
- * Smith et al. (2013, Med Sci Sports Exerc 45(2):336-341, n=51, double-blind, 10-120 g/h) puts the
- * performance plateau at 60-90 g/h, with 78 g/h the modelled optimum and returns essentially flat
- * beyond it. Newell et al. (2018, Nutrients 10(1):37) independently replicates the shape and finds
- * no reliable gain moving from 39 to 64 g/h — the practical floor for a dependable benefit sits
- * around 40 g/h, not the 60 used here; 60 is kept as the *ceiling* of the amber band precisely
- * because the last 20 g/h of that stretch does still buy a small, real amount (see
- * COVERAGE_SHORT_GPH for where the floor is set instead).
+ * `coverageStatus` grades against `min(targetGph, CARB_PLATEAU_GPH)`: a rider whose own computed
+ * target sits below the plateau (a short or easy effort) only has to hit that target, not be
+ * dragged up to a number the ride never asked for; a rider whose target sits above it only has to
+ * clear the plateau, because the doc's own reading of Smith/Newell says the rest of that target is
+ * a rounding error to the curve. 'short' is set at half that floor — for a high-target rider that
+ * lands on 20 g/h, Newell's placebo-indistinguishable point exactly.
  *
  * Below 1h of riding/running this whole scale is switched off (`coverageStatus` returns
  * 'unneeded') — under roughly 45-60 min, carbs during exercise have no established performance
  * effect at all, so grading a rate against a curve that only applies to longer efforts would be
  * answering a question nobody asked.
  */
-export const COVERAGE_TARGET_GPH = 60;
-
-/**
- * Below this rate, a carb plan isn't "a bit short" any more — it's on the steep part of the
- * dose-response curve, where every missing g/h has a real, measurable cost (Newell 2018: 20 g/h
- * was not distinguishable from placebo; 39 g/h was). Only applies for rides/runs of 1h or more —
- * see COVERAGE_TARGET_GPH.
- */
-export const COVERAGE_SHORT_GPH = 30;
+export const CARB_PLATEAU_GPH = 40;
 
 /** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
 export const GUT_LIMIT = 60;
@@ -173,9 +165,11 @@ function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus 
  * exactly the bug this pair of functions exists to prevent. One mechanism, two calibrations:
  * carbs and water each get their own numbers, but neither layout gets to invent its own.
  *
- * Takes the realised delivery rate (g/h — `PlanSummary.carbRateGph`), not a percentage of target,
- * and the ride's duration, mirroring `hydrationStatus`'s (value, context) shape. Below 1h the rate
- * doesn't get graded at all — see `COVERAGE_TARGET_GPH`.
+ * Takes the realised delivery rate (g/h — `PlanSummary.carbRateGph`) and the rider's own target
+ * rate (g/h — `PlanSummary.carbTargetGph`, itself already shaped by duration/intensity/weight),
+ * mirroring `hydrationStatus`'s (value, context) shape. Graded against `min(targetGph,
+ * CARB_PLATEAU_GPH)` — see that constant for why a flat absolute floor and a flat percent-of-target
+ * both failed live tests before this. Below 1h the rate doesn't get graded at all.
  *
  * `plannedRateGph`/`capGph` are a second, independent pair for the overshoot check, checked first
  * and able to override even the 1h exemption: GI risk from unabsorbed CHO doesn't care whether the
@@ -190,10 +184,12 @@ export function coverageStatus(
   hrs: number,
   plannedRateGph: number,
   capGph: number,
+  targetGph: number,
 ): CoverageStatus {
   if (plannedRateGph > capGph) return 'over';
   if (hrs < 1) return 'unneeded';
-  return tier(rateGph, COVERAGE_TARGET_GPH, COVERAGE_SHORT_GPH);
+  const floor = Math.min(targetGph, CARB_PLATEAU_GPH);
+  return tier(rateGph, floor, floor / 2);
 }
 
 /**
@@ -566,7 +562,7 @@ export function presetTagFor(r: number): RatioPreset {
   if (r === 2) return 'iso';
   if (r === 1) return 'sugar';
   if (r === 0.8) return 'honey';
-  if (r === 1.5) return 'ratio15';
+  if (r === 1.2) return 'ratio15';
   return 'custom';
 }
 
@@ -1142,6 +1138,9 @@ export interface PlanSummary {
   /** `totalCarbs` averaged over the ride — uncapped by need, unlike `carbRateGph`, so it's the one
    *  that can actually exceed `carbAbsCapGph` and drive `coverageStatus`'s 'over' tier. */
   carbPlannedRateGph: number;
+  /** `target / hrs` — the rider's own need, as a rate. What `coverageStatus` caps at
+   *  `CARB_PLATEAU_GPH` before grading `carbRateGph` against it. */
+  carbTargetGph: number;
   /** The rider's own gut ceiling for this mix/intensity — `absCap()`, in g/h. What
    *  `carbPlannedRateGph` is checked against for overshoot. */
   carbAbsCapGph: number;
@@ -1199,6 +1198,7 @@ export function planSummary(state: PlanState): PlanSummary {
     coveredCarbs,
     carbRateGph: hrs > 0 ? coveredCarbs / hrs : 0,
     carbPlannedRateGph: hrs > 0 ? totalCarbs / hrs : 0,
+    carbTargetGph: hrs > 0 ? cph(route) : 0,
     carbAbsCapGph: cap,
     absorbedTotal: S[S.length - 1].absorbed,
     fluidAbsorbedTotal,

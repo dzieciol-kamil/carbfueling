@@ -106,6 +106,7 @@ export function SummaryCards() {
       totalHours(route),
       summary.carbPlannedRateGph,
       summary.carbAbsCapGph,
+      summary.carbTargetGph,
     ),
     'var(--carb)',
   );
