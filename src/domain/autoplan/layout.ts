@@ -351,11 +351,23 @@ export function layout(
   for (const f of stopFoods) at.add(repOf(f.from));
   const stops: DraftStop[] = [...at].sort((a, b) => a - b).map((x) => ({ at: x }));
 
-  // --- Topping up vessels that have finished their carb duty ---------------------------------
+  // --- Topping up vessels that are empty -----------------------------------------------------
   //
   // Only at a stop the plan already has. The fill starts at the stop, not where the bottle ran dry,
   // so a gap between the two is real: the rider carried an empty bottle for that stretch. Repeats at
   // each later stop the bottle is empty at, since one stop tops up every bottle at once.
+  //
+  // **A relay vessel is empty between its turns, not busy until the last of them.** This used to ask
+  // whether the stop came after `max(to)` over the vessel's fills, which is a different question on
+  // any vessel that hands over and comes back: a bidon running `0→14` and again `52→53` was read as
+  // occupied for the whole 38 km in between and lost every top-up in that gap. That made the layout
+  // *non-monotone in loads* — adding a load to a vessel could push its last `to` past stops it had
+  // been drinking water at and hand back a plan carrying strictly less fluid than the one before it
+  // (measured: `izo:1`+gel → 2610 ml, `izo:2`+gel → 2210 ml on the same 53 km route). A search that
+  // only accepts a strictly better plan cannot climb through that, so it stalled one load short.
+  // The vessel's own fills are the authority on when it is occupied, and it is occupied only over
+  // the stretches they actually cover — with the home load an exception that is not one, since the
+  // first load is mixed in the kitchen and rides along from km 0 whether or not it is being drunk.
   //
   // Water first — it is free, available everywhere, and costs no sachet carried from home. izo is
   // the escalation, and only under both of its conditions: the vessel's `allowed` list must rule
@@ -379,20 +391,31 @@ export function layout(
         ? 'izo'
         : null;
     if (topUp === null) continue;
-    const own = fills.filter((f) => f.gid === a.gid);
+    const own = fills.filter((f) => f.gid === a.gid).sort((x, y) => x.from - y.from);
     if (own.length === 0) continue;
-    let spentAt = Math.max(...own.map((f) => f.to));
+    // `due` is the vessel's next scheduled load and `empty` the km from which it holds nothing —
+    // advanced by each load the stops walk past, and by each top-up poured. Both lists are in ride
+    // order, so one pass over the stops settles every gap.
+    let due = 1;
+    let empty = own[0].to;
     for (const s of stops) {
-      if (s.at < spentAt || s.at >= D) continue;
+      if (s.at >= D) continue;
+      while (due < own.length && own[due].from <= s.at) {
+        empty = Math.max(empty, own[due].to);
+        due += 1;
+      }
+      if (s.at < empty) continue;
       if (topUp === 'izo' && carbReach >= D) break;
       const reach =
         topUp === 'water'
           ? waterSpanEndKm(route, s.at, vessel.vol)
           : loadSpanEnd(state, vessel, 'izo', s.at);
-      const to = Math.min(D, reach);
+      // A top-up fills a gap; it never runs into the load the vessel is next due to take, which
+      // would draw one bottle holding two things at once.
+      const to = Math.min(due < own.length ? own[due].from : D, reach);
       if (!(to > s.at)) continue;
       fills.push({ gid: a.gid, content: topUp, from: s.at, to });
-      spentAt = to;
+      empty = to;
       if (topUp === 'izo') carbReach = Math.max(carbReach, to);
     }
   }
