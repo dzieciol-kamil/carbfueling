@@ -239,6 +239,34 @@ describe('score', () => {
       expect(score(twoBidons, d).powderCarried).toBe(1);
     });
 
+    test('refilling a gel flask carried a sachet just the same', () => {
+      const d = draft([
+        { gid: 'f1', content: 'gel', from: 0, to: 30 },
+        { gid: 'b1', content: 'izo', from: 30, to: 60 },
+        { gid: 'f1', content: 'gel', from: 60, to: 90 },
+      ]);
+      // The flask's second load is gel concentrate mixed in the kitchen and carried in a pocket —
+      // the izo case exactly. A roadside tap sells neither.
+      expect(score(state, d).powderCarried).toBe(1);
+    });
+
+    test('an izo refill and a gel refill weigh the same', () => {
+      // Same shape twice, once in the bidon and once in the flask. If only izo were counted the
+      // tie-break would quietly prefer the flask, on a difference the rider never experiences.
+      const izoRefill = draft([
+        { gid: 'b1', content: 'izo', from: 0, to: 45 },
+        { gid: 'f1', content: 'gel', from: 45, to: 60 },
+        { gid: 'b1', content: 'izo', from: 60, to: 90 },
+      ]);
+      const gelRefill = draft([
+        { gid: 'f1', content: 'gel', from: 0, to: 45 },
+        { gid: 'b1', content: 'izo', from: 45, to: 60 },
+        { gid: 'f1', content: 'gel', from: 60, to: 90 },
+      ]);
+      expect(score(state, izoRefill).powderCarried).toBe(1);
+      expect(score(state, gelRefill).powderCarried).toBe(1);
+    });
+
     test('ignores a water fill that starts mid-route', () => {
       const d = draft([
         { gid: 'b1', content: 'water', from: 0, to: 45 },
