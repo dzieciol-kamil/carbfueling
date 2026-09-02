@@ -102,14 +102,27 @@ export function score(state: PlanState, draft: Draft): Score {
     // Too wet — the EAH warning. `waterBalancePct` is signed, so this term only exists above zero.
     penalty(s.waterBalancePct - SURPLUS_WARN_PCT, SURPLUS_WARN_PCT);
 
+  // Two different things happen at a fill boundary. A *handover* — one vessel runs dry and the next
+  // takes over on the load it left home with — carried nothing, however late in the ride the second
+  // bottle comes out of the jersey: its izo was mixed in the kitchen. A *refill* — a vessel that has
+  // already been used getting filled again — is the other case, and drink powder cannot be bought at
+  // a roadside shop, so izo going into a bottle that is already in use means the rider carried a
+  // sachet from home to mix there. A fill is a refill exactly when its vessel has an earlier fill,
+  // which is a question about ride order and not about array position — hence the sort. Water
+  // refills cost no carrying decision and are not counted. The owner's rule is that carrying powder
+  // is a last resort, and this is the quantity that says so.
+  const seen = new Set<string>();
+  let powderCarried = 0;
+  for (const f of [...draft.fills].sort((a, b) => a.from - b.from)) {
+    if (seen.has(f.gid)) {
+      if (f.content === 'izo') powderCarried += 1;
+    } else seen.add(f.gid);
+  }
+
   return {
     toGreen,
     stops: draft.stops.length,
-    // Drink powder cannot be bought at a roadside shop, so an izo fill that begins mid-route means
-    // the rider carried a sachet from home to mix there. Water refills are free and are not
-    // counted; neither is the izo the rider left home with, which cost no carrying decision. The
-    // owner's rule is that carrying powder is a last resort, and this is the quantity that says so.
-    powderCarried: draft.fills.filter((f) => f.content === 'izo' && f.from > 0).length,
+    powderCarried,
   };
 }
 

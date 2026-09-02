@@ -207,13 +207,36 @@ describe('score', () => {
   });
 
   describe('powderCarried', () => {
-    test('counts an izo fill that starts mid-route', () => {
+    /** Two bidons, so one can hand over to the *other* — the shared `gear` has a single one, and a
+     *  handover needs a second vessel to hand over to. No expectation below reads a vessel's
+     *  volume: `powderCarried` is a question about the draft's fills alone. */
+    const twoBidons: PlanState = {
+      ...state,
+      gear: [
+        { gid: 'b1', name: 'Bidon 1', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
+        { gid: 'b2', name: 'Bidon 2', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
+      ],
+    };
+
+    test('a handover to a second bottle carried no powder', () => {
       const d = draft([
         { gid: 'b1', content: 'izo', from: 0, to: 45 },
-        { gid: 'b1', content: 'izo', from: 45, to: 90 },
+        { gid: 'b2', content: 'izo', from: 45, to: 90 },
       ]);
-      // The home load cost no carrying decision; the second sachet was carried to km 45.
-      expect(score(state, d).powderCarried).toBe(1);
+      // Both bottles were mixed in the kitchen and left home full; the second one merely comes out
+      // of the jersey at km 45. Its `from` is mid-route, but no sachet travelled anywhere.
+      expect(score(twoBidons, d).powderCarried).toBe(0);
+    });
+
+    test('filling a bottle that has already been used means a sachet was carried', () => {
+      const d = draft([
+        { gid: 'b1', content: 'izo', from: 0, to: 45 },
+        { gid: 'b2', content: 'izo', from: 45, to: 65 },
+        { gid: 'b1', content: 'izo', from: 65, to: 90 },
+      ]);
+      // Three izo fills, two of them home loads. Only b1's second turn is a refill, and a refill is
+      // the only way izo can appear in a bottle out on the road: shops sell water, not powder.
+      expect(score(twoBidons, d).powderCarried).toBe(1);
     });
 
     test('ignores a water fill that starts mid-route', () => {
@@ -222,6 +245,18 @@ describe('score', () => {
         { gid: 'b1', content: 'water', from: 45, to: 90 },
       ]);
       expect(score(state, d).powderCarried).toBe(0);
+    });
+
+    test("a vessel's first use is first in ride order, not first in the array", () => {
+      const rideOrder: DraftFill[] = [
+        { gid: 'b1', content: 'water', from: 0, to: 45 },
+        { gid: 'b1', content: 'izo', from: 45, to: 90 },
+      ];
+      // The bidon left home with water, so the izo poured into it at km 45 came out of a pocket.
+      expect(score(twoBidons, draft(rideOrder)).powderCarried).toBe(1);
+      // The same plan, listed back to front. Without the sort the km-0 water fill would be read as
+      // the refill and the izo one as the home load, and the carried sachet would go uncounted.
+      expect(score(twoBidons, draft([...rideOrder].reverse())).powderCarried).toBe(1);
     });
 
     test('a plan that only refills with water carries no powder', () => {
