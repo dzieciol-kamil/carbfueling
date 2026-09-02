@@ -114,7 +114,10 @@ export function SummaryCards() {
   // so without the balance next to it a maroon bar at 99% would be unreadable.
   const hydColor = statusColor(
     hydrationStatus(summary.waterBalancePct, route.temp),
-    'var(--water)',
+    // Same green as the carb card's 'good', not the water-brand blue: the mobile plan list
+    // already grades this tier green, and a bar that recolours per tier needs 'good' to read
+    // as the green/amber/red convention promises, not as a fixed brand colour.
+    'var(--carb)',
   );
   const hydBar = balanceBarGeometry(summary.waterBalancePct);
   const recovery = recoveryCarbs(route.weight);
