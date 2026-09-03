@@ -956,6 +956,37 @@ describe('samples: fluidNeed / fluidNeedRate (flat 100%-of-sweat-loss rate, effo
     });
   });
 
+  test('a drink swallowed on the start line draws the same bump as the same drink a few km in', () => {
+    // `fracFood` puts a point food at `from = 0` wholly into sample 0, and sample 0 has no interval
+    // behind it to difference against — so a cola drunk on the line used to leave `fluidRate` flat
+    // at zero for the whole ride while sitting in `ml`, in the totals and in the rider's stomach
+    // the entire time. What makes that a bug rather than a rounding detail is stated here as a
+    // symmetry and as a conservation law, neither of which is a number read off the output.
+    const bolus = (from: number): FoodItem[] => [
+      { id: 1, key: 'cola', name: 'Cola', carbs: 35, ml: 330, from, to: from },
+    ];
+    const atStart = samples(makePlan({ route, foods: bolus(0) }));
+    const laterOn = samples(makePlan({ route, foods: bolus(5) }));
+    const dt = totalHours(route) / (atStart.length - 1);
+
+    // The conservation law: a rate curve that does not integrate to the volume poured is not a
+    // rate curve for that volume. This is the assertion the old code failed outright — at km 0 it
+    // integrated to nothing at all.
+    for (const S of [atStart, laterOn]) {
+      expect(S.reduce((a, p) => a + p.fluidRate * dt, 0)).toBeCloseTo(330, 6);
+    }
+
+    // The symmetry: the same 330 ml is the same swallow wherever it happens, so it has to draw the
+    // same curve, only moved along the axis.
+    const i0 = atStart.findIndex((p) => p.ml > 0);
+    const i5 = laterOn.findIndex((p) => p.ml > 0);
+    expect(i0).toBe(0);
+    expect(i5).toBeGreaterThan(0);
+    for (let k = 0; k + i5 < laterOn.length; k++) {
+      expect(atStart[i0 + k].fluidRate).toBeCloseTo(laterOn[i5 + k].fluidRate, 9);
+    }
+  });
+
   test('a fill boundary (bottle swap at a stop) never drops before the bottle actually ends, then eases in gently', () => {
     const gear: Vessel[] = [
       { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water'], gelParts: 1 },

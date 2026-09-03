@@ -1,0 +1,686 @@
+/**
+ * BDD scenarios for autoplan(), transcribed from `docs/tests/autoplan-scenarios.md`.
+ *
+ * That doc (and its `docs/tests/input|output/*.json` fixtures) is gitignored scratch space, so
+ * every scenario is re-expressed here as plain factory calls — same route/gear/mix numbers, no
+ * file loading. Scenario ids (#1..#10, izo-1..6, food-1..7) map 1:1 onto the doc's headings.
+ *
+ * Every scenario states the same five-part `then` (see `Then`): the two badges the app itself
+ * shows for the plan, how many stops the route may cost, how many vessel top-ups that adds up to,
+ * and which products get eaten in which order. Stop and refill counts are **ceilings, not
+ * targets** — the physics says the ride is doable in that many, and a plan that finds a way to do
+ * it in fewer while still reading green on both badges is a better plan, not a failing one.
+ *
+ * Exact km positions are deliberately not asserted, except where a rider-exported build recorded
+ * them: the doc's own confirmed builds don't match the even-slot formula, and the "how far before
+ * the finish should the last leg stop" question is still open.
+ */
+import { describe, expect, test } from 'vitest';
+import { autoplan } from './autoplan';
+import type { AutoplanResult, FoodSelectionEntry } from './autoplan/types';
+import { coverageStatus, dist, hydrationStatus, planSummary, totalHours } from './fuel';
+import type { CoverageStatus } from './fuel';
+import type {
+  Fill,
+  FoodItem,
+  FoodLibEntry,
+  MixSettings,
+  PlanState,
+  RouteInput,
+  ShopStop,
+  Vessel,
+} from './types';
+
+/**
+ * The stop shape and the plan-plus-stops shape these scenarios work in.
+ *
+ * `feat/autoplan` had renamed `ShopStop` to `Stop`, given it an `autoCreated` flag and threaded a
+ * `stops` array through `PlanState`; none of that exists on this branch. No scenario here places a
+ * stop by hand (every `stops` starts empty) and nothing asserts on the materialized array, so the
+ * suite carries the extra field locally rather than reshaping the app's own types for it —
+ * `planSummary` reads only route/mix/gear/fills/foods, so a `ScenarioState` is a valid `PlanState`.
+ */
+type Stop = ShopStop & { autoCreated?: boolean };
+type ScenarioState = PlanState & { stops: Stop[] };
+
+/**
+ * Smallest end-of-route gap seen in the rider's real builds (izo-6 stopped 5km short of a 100km
+ * route, food-2's last chews 2km short of 55km). Carbs delivered right at the line never finish
+ * draining out of `gut`, so they score as unabsorbed — the exact buffer is unformalized, this is
+ * the floor the real data supports.
+ */
+const FINISH_GAP_FRACTION = 0.02;
+
+const FOOD_LIB: FoodLibEntry[] = [
+  { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
+  { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
+  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 },
+  { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
+];
+
+/** The `then` every scenario states, in the shape the rider asked for. */
+interface Then {
+  /** Expected carb badge, or null when the scenario carries no carbs at all. */
+  carbs: CoverageStatus | null;
+  /** Expected hydration badge, or null when there is no water on board. */
+  hydration: CoverageStatus | null;
+  /** Ceiling on carb coverage — only for scenarios whose point is a deliberate shortfall. */
+  maxCarbs?: number;
+  /** Ceiling on stops. Fewer is better as long as the floors above still hold. */
+  maxStops: number;
+  /** Ceiling on vessel top-ups — one stop can refill more than one bottle. */
+  maxRefills: number;
+  /**
+   * Products eaten along the route, in order. The selection list is a priority list.
+   *
+   * Optional, because for some scenarios nobody currently knows the right answer. Where the list
+   * came from a build the rider made against the retired *percentage-of-target* bar, it asks the
+   * engine to keep eating past the point the badge turns green, and the honest move is to leave the
+   * field off with a note rather than paste in whatever `autoplan()` happens to emit today.
+   */
+  products?: string[];
+}
+
+function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
+  return {
+    sport: 'cycling',
+    mode: 'route',
+    distance: 100,
+    speed: 25,
+    hours: 0,
+    minutes: 0,
+    weight: 75,
+    preMealCarbs: 0,
+    preMealMinutes: 0,
+    intensity: 'mid',
+    temp: 20,
+    useGpx: false,
+    gpxTrack: null,
+    gpxName: null,
+    gpxError: null,
+    ...overrides,
+  };
+}
+
+function makeMix(overrides: Partial<MixSettings> = {}): MixSettings {
+  return {
+    conc: 8.4,
+    gelConc: 60,
+    ratio: 2,
+    gelRatio: 2,
+    ratioPreset: 'iso',
+    gelRatioPreset: 'iso',
+    salt: 0.16,
+    citric: 0.2,
+    gelSalt: 0.4,
+    gelCitric: 0.4,
+    citricSource: 'citric',
+    gelCitricSource: 'citric',
+    ...overrides,
+  };
+}
+
+function water(vol: number, gid = 'g1'): Vessel {
+  return { gid, name: 'Bidon', vol, allowed: ['water'], gelParts: 1 };
+}
+
+function izo(vol: number, gid = 'g1'): Vessel {
+  return { gid, name: 'Bidon', vol, allowed: ['izo'], gelParts: 1 };
+}
+
+function makePlan(route: RouteInput, gear: Vessel[], mix: MixSettings = makeMix()): ScenarioState {
+  return { route, mix, gear, fills: [], foods: [], foodLib: FOOD_LIB, stops: [] };
+}
+
+interface Run {
+  state: ScenarioState;
+  result: AutoplanResult;
+  /** The state as the app would look after applying the result (mirrors `applyAutoplan`). */
+  planned: ScenarioState;
+  D: number;
+}
+
+/** Runs autoplan and materializes its drafts the same way `applyAutoplan` does in the store. */
+function run(state: ScenarioState, selection: FoodSelectionEntry[] = []): Run {
+  const result = autoplan(state, selection);
+  let fid = 1;
+  const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
+  let foodId = 1;
+  const foods: FoodItem[] = result.foods.map((f) => ({
+    ...f,
+    id: foodId++,
+    name: state.foodLib.find((e) => e.key === f.key)?.pl ?? f.key,
+  }));
+  let stopId = 1;
+  const stops: Stop[] = [
+    ...state.stops,
+    ...result.newStops.map((sh) => ({ ...sh, id: stopId++, name: 'Sklep', autoCreated: true })),
+  ];
+  return { state, result, planned: { ...state, fills, foods, stops }, D: dist(state.route) };
+}
+
+function stopXs(r: Run): number[] {
+  return r.result.newStops.map((s) => s.at).sort((a, b) => a - b);
+}
+
+/** Top-ups, not fills: the first fill of each vessel is what the rider leaves home with. */
+function refillCount(r: Run): number {
+  const perVessel = new Map<string, number>();
+  for (const f of r.result.fills) perVessel.set(f.gid, (perVessel.get(f.gid) || 0) + 1);
+  let total = 0;
+  for (const n of perVessel.values()) total += n - 1;
+  return total;
+}
+
+/** Products in the order they are actually eaten along the route. */
+function productOrder(r: Run): string[] {
+  return [...r.result.foods].sort((a, b) => a.from - b.from).map((f) => f.key);
+}
+
+/** How many full loads it takes to reach 85% of the requirement, minus the one carried from home. */
+function loadsNeeded(need: number, load: number): number {
+  return Math.ceil((0.85 * need) / load) - 1;
+}
+
+/**
+ * Checks the scenario's stated `then`, plus the structural rules that hold everywhere: refills
+ * are real stops, fills tile the route per vessel, and no two products are ever open at once.
+ */
+function expectThen(r: Run, then: Then): void {
+  const { D, result } = r;
+  const summary = planSummary(r.planned);
+
+  // --- the stated `then` -----------------------------------------------------------------
+  // The pass criterion is the app's own pair of badges — the same two calls `SummaryCards` and
+  // `MobilePlanList` make, argument for argument — not a percentage floor of the suite's own.
+  if (then.carbs !== null) {
+    expect(
+      coverageStatus(
+        summary.carbRateGph,
+        totalHours(r.state.route),
+        summary.carbPlannedRateGph,
+        summary.carbAbsCapGph,
+        summary.carbTargetGph,
+      ),
+    ).toBe(then.carbs);
+  }
+  if (then.maxCarbs !== undefined) expect(summary.coverage).toBeLessThanOrEqual(then.maxCarbs);
+  if (then.hydration !== null) {
+    expect(hydrationStatus(summary.waterBalancePct, r.state.route.temp)).toBe(then.hydration);
+  }
+  expect(stopXs(r).length).toBeLessThanOrEqual(then.maxStops);
+  expect(refillCount(r)).toBeLessThanOrEqual(then.maxRefills);
+  if (then.products) expect(productOrder(r)).toEqual(then.products);
+
+  // --- structural rules ------------------------------------------------------------------
+  //
+  // DISABLED: `expect(stopXs(r).map(round)).toEqual(refillRounds.map(round))` — every refill's
+  // `from` had to be a stop and every stop had to be a refill's `from`. That is the *stop set
+  // equals the fill boundaries* rule, and it is the same mistake `layout()` used to make: it reads
+  // a bottle being poured out and a bottle being filled as one event. They are not. The rider fills
+  // at a tap and opens the bottle where he likes — sometimes tens of kilometres later — and the
+  // engine now charges a refill to any earlier stop where that vessel was already empty, which is
+  // what lets one stop buy a whole round of bottles. Under this assertion the cheaper plan is the
+  // failing one: #5's two-bottle relay dropped from three stops to two and tripped exactly here.
+  //
+  // Not simply deleted-and-forgotten: the correct invariant is written and passing in
+  // `layout.test.ts`'s `expectStopsMatchRefills` — a refill is served by a stop somewhere in
+  // `[where its vessel ran dry, where the load is opened]`. Lifting that here is the way back, and
+  // it needs `place()`'s carry windows, which this suite does not currently reach for.
+
+  // Stops sit strictly inside the route, and the first one isn't parked at the start line.
+  const stops = stopXs(r);
+  for (const x of stops) {
+    expect(x).toBeGreaterThan(0);
+    expect(x).toBeLessThan(D);
+  }
+  if (stops.length > 0) expect(stops[0]).toBeGreaterThanOrEqual(3);
+  if (stops.length > 1) {
+    const gaps = stops.slice(1).map((x, i) => x - stops[i]);
+    const typical = gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
+    expect(stops[0]).toBeGreaterThanOrEqual(0.6 * typical);
+  }
+
+  // Per vessel: fills stay inside the route.
+  //
+  // DISABLED, two of the three clauses that used to be here:
+  //
+  //   expect(own[0].from).toBe(0)                          — every vessel opens on the start line
+  //   expect(own[i].from).toBeCloseTo(own[i - 1].to, 6)    — a vessel's loads are contiguous
+  //
+  // Both were true of the engine that tiled fills against the need line and nothing else, and both
+  // are false of the one the rider asked for. The first is the gut gate: a carb load waits until
+  // `Sample.gut` has drained to zero, so on any ride that starts on a pre-ride meal the first load
+  // opens well down the road — km 9.7 on his own 194 km ride, and his hand-built 53 km plan starts
+  // at km 5 for the same reason. "Don't pour onto a full stomach" and "every bottle opens at km 0"
+  // are the same sentence twice, with opposite signs. The second is the hole that leaves behind,
+  // plus the one a carried refill leaves: a bottle filled at km 22 and opened at km 34 is a gap in
+  // that vessel's own sequence, and it is the gap that saves the stop.
+  //
+  // What is left is the clause that is still true and still worth having: no fill runs backwards,
+  // and none runs off the end of the route.
+  for (const v of r.state.gear) {
+    const own = result.fills.filter((f) => f.gid === v.gid).sort((a, b) => a.from - b.from);
+    if (own.length === 0) continue;
+    for (const f of own) {
+      expect(f.to).toBeGreaterThan(f.from);
+      expect(f.to).toBeLessThanOrEqual(D + 1e-9);
+    }
+  }
+
+  // No two products are ever open at once — not even two of the same kind.
+  const foods = [...result.foods].sort((a, b) => a.from - b.from);
+  for (let i = 1; i < foods.length; i++) {
+    expect(foods[i].from).toBeGreaterThanOrEqual(foods[i - 1].to);
+    expect(foods[i].from).toBeGreaterThan(foods[i - 1].from);
+  }
+  // Nothing is eaten on the finish line — there'd be no time left to absorb it.
+  for (const f of foods) {
+    expect(f.to).toBeLessThanOrEqual(D * (1 - FINISH_GAP_FRACTION));
+  }
+}
+
+/** A ride the rider carries the whole way: one fill per vessel, start to finish, no stop. */
+function expectSingleFillRide(r: Run): void {
+  expect(r.result.fills).toHaveLength(r.state.gear.length);
+  for (const f of r.result.fills) {
+    expect(f).toMatchObject({ from: 0, to: r.D });
+  }
+}
+
+describe('autoplan scenarios — water only', () => {
+  test('#1: 20km / 500ml / 15°C / 65kg — one bottle covers the ride', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 20, speed: 20, intensity: 'low', temp: 15, weight: 65 }), [
+        water(500),
+      ]),
+    );
+    // 330ml of sweat loss against a 500ml bottle — confirmed against the rider's export.
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: 0,
+      maxRefills: 0,
+      products: [],
+    });
+    expectSingleFillRide(r);
+  });
+
+  test('#2: 200km / 1000ml — the rider hand-built this one with four stops', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 200, speed: 25, intensity: 'mid', temp: 20, weight: 75 }), [
+        water(1000),
+      ]),
+    );
+    // 5600ml needed, 1000ml carried: four top-ups get hydration to 89%.
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(5600, 1000),
+      maxRefills: loadsNeeded(5600, 1000),
+      products: [],
+    });
+    // Rider's real build: 37 / 77 / 117 / 157. Even-load spacing lands them ~35.7km apart.
+    for (const [i, x] of stopXs(r).entries()) {
+      expect(x).toBeGreaterThan(25 + i * 35);
+      expect(x).toBeLessThan(50 + i * 40);
+    }
+  });
+
+  test('#3: 15km / 350ml / 38°C / 85kg — brutal but brief, under the 1.5%-body-mass gate', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 15, speed: 30, intensity: 'high', temp: 38, weight: 85 }), [
+        water(350),
+      ]),
+    );
+    // 885ml lost against a 1275ml gate: no water planning at all, despite 38°C.
+    expectThen(r, {
+      carbs: null,
+      hydration: null,
+      maxStops: 0,
+      maxRefills: 0,
+      products: [],
+    });
+    expectSingleFillRide(r);
+  });
+
+  test('#4: 120km / 650ml / 25°C / 70kg', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 120, speed: 25, intensity: 'mid', temp: 25, weight: 70 }), [
+        water(650),
+      ]),
+    );
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(4080, 650),
+      maxRefills: loadsNeeded(4080, 650),
+      products: [],
+    });
+  });
+
+  test('#5: 100km / 500ml + 500ml / 25°C / 80kg — split capacity', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 100, speed: 25, intensity: 'mid', temp: 25, weight: 80 }), [
+        water(500, 'g1'),
+        water(500, 'g2'),
+      ]),
+    );
+    // Same 1000ml as #6, just in two bottles — so the same stops, but each one tops up both.
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(3880, 1000),
+      maxRefills: 2 * loadsNeeded(3880, 1000),
+      products: [],
+    });
+    // DISABLED: `expect(fills of v).toHaveLength(stopXs(r).length + 1)` for each bottle — every
+    // vessel filled at every stop, plus the load it left home with. That equality is the same
+    // fill-boundaries-are-stops premise as the block in `expectThen`, written per vessel, and the
+    // carry rule breaks it in the direction that saves stops: a bottle filled at one stop and not
+    // opened until later is still full at the next one, so it cannot be refilled there and ends the
+    // ride with fewer loads than there were stops. Here that is two stops and two loads per bottle
+    // rather than three, hydration still green at −1.73 % of body mass. The surviving inequality —
+    // `maxStops`/`maxRefills` in the `then` above — is the part that was ever a requirement.
+  });
+
+  test('#6: 100km / one 1000ml bottle — same stops as the two-bottle #5', () => {
+    const route = makeRoute({ distance: 100, speed: 25, intensity: 'mid', temp: 25, weight: 80 });
+    const r = run(makePlan(route, [water(1000)]));
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(3880, 1000),
+      maxRefills: loadsNeeded(3880, 1000),
+      products: [],
+    });
+    // Only the total ml matters, not how many bottles it is spread across.
+    const split = run(makePlan(route, [water(500, 'g1'), water(500, 'g2')]));
+    expect(stopXs(r)).toEqual(stopXs(split));
+  });
+
+  test('#7: 300km / 750ml — modest gear on an ultra, and the honest number of stops', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 300, speed: 25, intensity: 'mid', temp: 22, weight: 78 }), [
+        water(750),
+      ]),
+    );
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(9840, 750),
+      maxRefills: loadsNeeded(9840, 750),
+      products: [],
+    });
+  });
+
+  // The title's premise is inverted by master's body-mass hydration model. This ride loses 1225ml
+  // of sweat, and at 5°C the green band tolerates a 2.5%-of-body-mass deficit (≈1750ml on 70kg).
+  // Measured: carrying nothing at all scores −1.75% and already reads 'good'; one 1000ml load run
+  // start to finish is the best plan on the board at −0.32%; and the second load that the title's
+  // stop would buy overshoots to +1.11%, past SURPLUS_WARN_PCT and into the hyponatraemia warning.
+  // The stop this was written to require is now the wrong move, not the required one.
+  // Nothing below is wrong — 'good' is the right badge and `maxStops` is a ceiling that permits
+  // zero — but the scenario has stopped discriminating: it passes against the empty-plan stub too,
+  // so its green is not evidence that the planner did anything. Whether it gets re-derived onto a
+  // premise that bites again or retired outright is the owner's call, not a silent edit here.
+  test('#8: 70km / 1000ml / 5°C / 70kg — 81.6% of the need is not green, so it costs a stop', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 70, speed: 20, intensity: 'low', temp: 5, weight: 70 }), [
+        water(1000),
+      ]),
+    );
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(1225, 1000),
+      maxRefills: loadsNeeded(1225, 1000),
+      products: [],
+    });
+  });
+
+  test('#9: 22km / 35°C / 75kg — 1056ml lost, just under the 1125ml gate', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 22, speed: 30, intensity: 'high', temp: 35, weight: 75 }), [
+        water(500),
+      ]),
+    );
+    expectThen(r, {
+      carbs: null,
+      hydration: null,
+      maxStops: 0,
+      maxRefills: 0,
+      products: [],
+    });
+    expectSingleFillRide(r);
+  });
+
+  test('#10: 24km / 35°C / 75kg — 1152ml clears the gate, so water is planned despite <1h', () => {
+    const route = makeRoute({ distance: 24, speed: 30, intensity: 'high', temp: 35, weight: 75 });
+    const r = run(makePlan(route, [water(500)]));
+    // The one scenario where the old "<1h means don't bother" rule and the sweat gate disagree.
+    //
+    // This used to state a hand-derived physical ceiling, because a percentage-of-sweat-loss floor
+    // could never be met here: the gut only clears so much fluid an hour, and over ~0.8h that
+    // ceiling sits well under the loss. `hydrationStatus` grades the signed balance in % of body
+    // mass against a temperature-dependent limit instead, and that limit is exactly the tolerance
+    // the ceiling used to stand in for — so green is the whole statement, no ceiling arithmetic.
+    expectThen(r, {
+      carbs: null,
+      hydration: 'good',
+      maxStops: loadsNeeded(1152, 500),
+      maxRefills: loadsNeeded(1152, 500),
+      products: [],
+    });
+  });
+});
+
+describe('autoplan scenarios — izo only', () => {
+  test('izo-1: 60km / 650ml @ 8.4g', () => {
+    const r = run(makePlan(makeRoute({ distance: 60 }), [izo(650)]));
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: loadsNeeded(108, 54.6),
+      maxRefills: loadsNeeded(108, 54.6),
+      products: [],
+    });
+  });
+
+  test('izo-2: 150km / 750ml @ 8.4g', () => {
+    const r = run(makePlan(makeRoute({ distance: 150 }), [izo(750)]));
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: loadsNeeded(450, 63),
+      maxRefills: loadsNeeded(450, 63),
+      products: [],
+    });
+  });
+
+  test('izo-3: 250km / 500ml @ 8.4g — a small bottle on an ultra', () => {
+    const r = run(makePlan(makeRoute({ distance: 250 }), [izo(500)]));
+    // 15 is what the raw sums demand; the real integral has room to need fewer.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: loadsNeeded(750, 42),
+      maxRefills: loadsNeeded(750, 42),
+      products: [],
+    });
+  });
+
+  test('izo-4: 60km / 650ml @ 15g — a concentrated mix carries the whole ride', () => {
+    const r = run(makePlan(makeRoute({ distance: 60 }), [izo(650)], makeMix({ conc: 15 })));
+    // 97.5g of a 108g target, 90% — green without stopping. Confirmed against the export.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: 0,
+      maxRefills: 0,
+      products: [],
+    });
+    expectSingleFillRide(r);
+  });
+
+  test('izo-5: 60km at high intensity — the higher target costs more than izo-1', () => {
+    const r = run(makePlan(makeRoute({ distance: 60, intensity: 'high' }), [izo(650)]));
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: loadsNeeded(144, 54.6),
+      maxRefills: loadsNeeded(144, 54.6),
+      products: [],
+    });
+    const izo1 = run(makePlan(makeRoute({ distance: 60 }), [izo(650)]));
+    expect(stopXs(r).length).toBeGreaterThanOrEqual(stopXs(izo1).length);
+  });
+
+  test('izo-6: 100km / 1000ml @ 8.4g — two stops, and the last leg stops short of the line', () => {
+    const r = run(makePlan(makeRoute({ distance: 100 }), [izo(1000)]));
+    // Built by hand twice, both times two stops near 32 and 64 — one fewer than the raw sums
+    // demand, because `coverage()` integrates absorption instead of dividing totals.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: 2,
+      maxRefills: 2,
+      products: [],
+    });
+    // DISABLED: an exact two stops, and a window for each. The engine covers this ride on **one**
+    // stop, at km 28, and is green on both badges doing it — 42.0 g/h over a floor of 40, −1.07 %
+    // of body mass. A scenario that fails a plan for reaching the same place with one fewer
+    // pull-over has stopped describing what the rider wants; the title's "two stops" was an
+    // observation about the old engine, not a requirement. The `maxStops` ceiling in the `then`
+    // above still holds it from the side that matters, and the finish-gap check below is untouched.
+    // Carbs poured in at the finish never drain out of `gut`, so they score as unabsorbed.
+    const last = Math.max(...r.result.fills.map((f) => f.to));
+    expect(last).toBeLessThanOrEqual(100 * (1 - FINISH_GAP_FRACTION));
+  });
+});
+
+describe('autoplan scenarios — products only', () => {
+  test('food-1: 90km, 11 gels selected — prune trims the last one back to green', () => {
+    const r = run(makePlan(makeRoute({ distance: 90 }), [water(750)]), [{ key: 'gel', count: 11 }]);
+    // 242g of a 270g target (89.6%): the selection runs out before the target does. Dropping the
+    // last-selected gel still clears `COVERAGE_TARGET_PCT` — 220/270 = 81.5% — so `pruneUnneededFood`
+    // takes it (the owner's ruling: "we remove as long as it's green, the threshold is 80"); a second
+    // gel would fall to 198/270 = 73.3%, below the floor, and is refused. Exactly one gel goes.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: 'good',
+      maxStops: loadsNeeded(2520, 750),
+      maxRefills: loadsNeeded(2520, 750),
+      // DISABLED: `products: Array(10).fill('gel')`. Ten gels is 242 g of a 270 g target, and the
+      // comment above says what that is — "89.6%". The percentage bar it was written against is
+      // gone: carbs are graded in g/h now, against `min(carbTargetGph, CARB_PLATEAU_GPH)`. The
+      // engine places seven gels, reaches 42.8 g/h over a floor of 40, and both badges read green.
+      // So this line asks it to eat three more gels than the plan needs, and "prune trims the last
+      // one back to green" is a title about a bar that no longer exists. What the right list is now
+      // is the rider's call, not something to be back-filled from whatever the engine emits today.
+    });
+  });
+
+  test('food-2: 55km, gel > banana > chews > cola — stops at 149g, cola untouched', () => {
+    // The banana sits second on purpose: it bruises, so the rider wants it eaten before the
+    // chews. Priority is the rider's own ordering, not a carb-density ranking.
+    const r = run(
+      makePlan(makeRoute({ distance: 55, speed: 20, intensity: 'low' }), [water(750)]),
+      [
+        { key: 'gel', count: 3 },
+        { key: 'banana', count: 1 },
+        { key: 'chew', count: 2 },
+        { key: 'cola', count: 1 },
+      ],
+    );
+    // Both of the rider's independent builds landed on 3 gels + 1 banana + 2 chews = 149g (90%),
+    // eaten in exactly that order, with the cola left in the pocket.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: 'good',
+      maxStops: loadsNeeded(1623, 750),
+      maxRefills: loadsNeeded(1623, 750),
+      // DISABLED: `products: ['gel', 'gel', 'gel', 'banana', 'chew', 'chew']`, and with it the
+      // 149 g total below. Both of the rider's builds landed there, but the comment says under what
+      // rule — "149g (90%)" — and that rule is retired. On g/h the engine's five products reach
+      // 43.3 g/h against a floor of 40 and both badges are green; the sixth is carbs the ride did
+      // not ask for. The *ordering* claim this scenario is really about — that priority is the
+      // rider's own sequence and not a carb-density ranking — survives and is still checked by
+      // food-3 and food-5.
+    });
+  });
+
+  test('food-3: 40km, a single gel selected — autoplan never adds what the rider did not pick', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 40, speed: 20, intensity: 'low' }), [water(750)]),
+      [{ key: 'gel', count: 1 }],
+    );
+    // 22g against a 60g target. The shortfall stays visible instead of being invented away.
+    expectThen(r, {
+      carbs: null,
+      maxCarbs: 45,
+      hydration: 'good',
+      maxStops: loadsNeeded(1180, 750),
+      maxRefills: loadsNeeded(1180, 750),
+      products: ['gel'],
+    });
+  });
+
+  test('food-4: 24km, 10 gels selected — only 3 are placed, the rest stay in the pocket', () => {
+    const r = run(makePlan(makeRoute({ distance: 24, speed: 20 }), [water(750)]), [
+      { key: 'gel', count: 10 },
+    ]);
+    // 2 gels miss the 54g target, 3 clear it. 840ml of sweat is under the gate, so no water stop.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: null,
+      maxStops: 0,
+      maxRefills: 0,
+      products: ['gel', 'gel', 'gel'],
+    });
+  });
+
+  test('food-5: 40km, 2 packs of chews — placed back-to-back, never overlapping', () => {
+    const r = run(
+      makePlan(makeRoute({ distance: 40, speed: 20, intensity: 'low' }), [water(750)]),
+      [{ key: 'chew', count: 2 }],
+    );
+    expectThen(r, {
+      carbs: 'good',
+      hydration: 'good',
+      maxStops: loadsNeeded(1180, 750),
+      maxRefills: loadsNeeded(1180, 750),
+      products: ['chew', 'chew'],
+    });
+    const chews = [...r.result.foods].sort((a, b) => a.from - b.from);
+    expect(chews[0].to).toBeLessThanOrEqual(chews[1].from);
+    expect(chews[0].cont).toBe(true);
+  });
+
+  test('food-6: 15km / 0.6h — the carb gate skips every product, water still gets its fill', () => {
+    const r = run(makePlan(makeRoute({ distance: 15 }), [water(750)]), [{ key: 'gel', count: 5 }]);
+    expectThen(r, {
+      carbs: null,
+      hydration: null,
+      maxStops: 0,
+      maxRefills: 0,
+      products: [],
+    });
+    expectSingleFillRide(r);
+  });
+
+  test('food-7: 60km, 3 colas — their 990ml counts as fluid, so the bottle needs no refill', () => {
+    const r = run(makePlan(makeRoute({ distance: 60 }), [water(1000)]), [
+      { key: 'cola', count: 3 },
+    ]);
+    // 1000ml carried + 990ml of cola against 1680ml of sweat loss — green without stopping.
+    expectThen(r, {
+      carbs: 'good',
+      hydration: 'good',
+      maxStops: 0,
+      maxRefills: 0,
+      products: ['cola', 'cola', 'cola'],
+    });
+    expectSingleFillRide(r);
+  });
+});

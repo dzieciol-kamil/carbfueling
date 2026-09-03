@@ -91,6 +91,10 @@ export interface ShopStop {
   id: number;
   at: number;
   name: string;
+  /** Placed by an autoplan run rather than by the rider — the flag a re-run reads to know which
+   *  stops are its own to replace. Cleared the moment the rider edits the stop (see `updateShop`),
+   *  because from then on it is his note about the route, not a guess. */
+  autoCreated?: boolean;
 }
 
 export interface FoodItem {
@@ -112,6 +116,9 @@ export interface FoodLibEntry {
   ml?: number;
   cont?: boolean;
   span?: number;
+  /** A product the rider buys en route rather than carries — a cola. Eating one therefore implies
+   *  a stop where it was bought, which is what a planner has to account for. */
+  needsStop?: boolean;
 }
 
 export interface PlanState {

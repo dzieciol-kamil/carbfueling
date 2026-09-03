@@ -48,6 +48,15 @@ const FLUID_ABSORPTION_CAP_ML_H = 900;
  */
 export const CARB_PLATEAU_GPH = 40;
 
+/**
+ * The shortest ride whose carb rate gets graded at all, in hours — the boundary the paragraph above
+ * describes. Exported because the planner has to agree with the badge about where it sits: below it
+ * the chart is grey and `coverageStatus` answers 'unneeded', so a planner still chasing
+ * `CARB_PLATEAU_GPH` there would be spending the rider's food on a question the app does not ask.
+ * One definition, read by `coverageStatus` and by `autoplan`'s scorer.
+ */
+export const CARB_GRADING_MIN_HOURS = 1;
+
 /** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
 export const GUT_LIMIT = 60;
 
@@ -89,7 +98,7 @@ const DEFICIT_AMBER_BAND_PCT = 1.0;
  * measurement, so a plan half a percent over is inside the model's own error bar, and only a
  * deliberate surplus should light up.
  */
-const SURPLUS_WARN_PCT = 0.5;
+export const SURPLUS_WARN_PCT = 0.5;
 
 /** The largest fluid deficit that still reads green at `temp` (deg C), as % of body mass.
  *  Interpolates between the two anchors above and flattens outside them. */
@@ -187,7 +196,7 @@ export function coverageStatus(
   targetGph: number,
 ): CoverageStatus {
   if (plannedRateGph > capGph) return 'over';
-  if (hrs < 1) return 'unneeded';
+  if (hrs < CARB_GRADING_MIN_HOURS) return 'unneeded';
   const floor = Math.min(targetGph, CARB_PLATEAU_GPH);
   return tier(rateGph, floor, floor / 2);
 }
@@ -445,7 +454,40 @@ const SYNTHETIC_ANCHORS: [number, number][] = [
   [1, 140],
 ];
 
+/**
+ * Last profile built per route object, so `eff`/`timeAtDistance`/`distanceAtTime` stop rebuilding
+ * 161 points on every single call — `samples()` alone asks for one three times per fill per sample,
+ * which on a long plan is a few hundred milliseconds of pure repetition.
+ *
+ * Purely a cache: same inputs, same numbers. The signature guards the one case a `WeakMap` keyed on
+ * the object cannot see — a route mutated in place rather than replaced, which the store never does
+ * but a caller could.
+ */
+const profCache = new WeakMap<RouteInput, { sig: string; profile: Profile }>();
+
+function profSig(route: RouteInput): string {
+  return [
+    route.mode,
+    route.distance,
+    route.speed,
+    route.hours,
+    route.minutes,
+    route.useGpx ? 1 : 0,
+    route.gpxTrack ? route.gpxTrack.id : 'none',
+    route.gpxTrack ? route.gpxTrack.ele.length : 0,
+  ].join('|');
+}
+
 export function prof(route: RouteInput): Profile {
+  const sig = profSig(route);
+  const cached = profCache.get(route);
+  if (cached && cached.sig === sig) return cached.profile;
+  const built = buildProf(route);
+  profCache.set(route, { sig, profile: built });
+  return built;
+}
+
+function buildProf(route: RouteInput): Profile {
   const T = route.gpxTrack;
   const D = dist(route);
   const N = PROFILE_SAMPLES;
@@ -956,20 +998,35 @@ export function samples(state: PlanState): Sample[] {
     if (n < 2 || dt <= 0) return cumulative.map(() => 0);
     const raw = new Array<number>(n).fill(0);
     for (let i = 1; i < n; i++) raw[i] = (cumulative[i] - cumulative[i - 1]) / dt;
-    raw[0] = raw[1];
 
+    // Index 0 has no interval behind it, so two different things land on it and they have to be
+    // told apart. The *continuous* rate at the start of the ride is `raw[1]`, and using it as the
+    // filter's resting state is what keeps a bottle poured from km 0 reading its full rate from the
+    // first pixel instead of ramping up through a warm-up curve that means nothing (see above).
+    // `cumulative[0]` is the other thing: fluid already swallowed at the start line — a bolus with
+    // no interval to spread across. `fracFood` puts a product at `from = 0` wholly into sample 0,
+    // so a cola drunk on the line used to disappear from this curve altogether: every later
+    // difference is zero, and a resting state copied from `raw[1]` looks straight past it. It was
+    // in `ml`, in the totals and in the rider's stomach, and only the rate chart pretended
+    // otherwise. So it enters here as an impulse riding on the resting rate, which is exactly how
+    // the same cola drunk a kilometre later enters at its own index — and the two now draw the
+    // same bump.
+    const resting = raw[1];
+    raw[0] = resting + cumulative[0] / dt;
+
+    // Both passes start *at* the resting rate and filter index 0 like any other, so with nothing at
+    // the origin (`cumulative[0] === 0`, every ride that does not start with a swallow) the first
+    // step is a no-op and the output is unchanged.
     const pass1 = new Array<number>(n);
-    let ema = raw[0];
-    pass1[0] = ema;
-    for (let i = 1; i < n; i++) {
+    let ema = resting;
+    for (let i = 0; i < n; i++) {
       ema += fluidAlpha * (raw[i] - ema);
       pass1[i] = ema;
     }
 
     const pass2 = new Array<number>(n);
-    ema = pass1[0];
-    pass2[0] = ema;
-    for (let i = 1; i < n; i++) {
+    ema = resting;
+    for (let i = 0; i < n; i++) {
       ema += fluidAlpha * (pass1[i] - ema);
       pass2[i] = ema;
     }

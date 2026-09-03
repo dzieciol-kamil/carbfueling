@@ -1,72 +1,15 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import {
-  buildSettingsExport,
-  parseSettingsImport,
-  serializeSettingsExport,
-  settingsExportFileName,
-  type PlanFeedback,
-} from '../domain/settingsExport';
+import { useState, type CSSProperties } from 'react';
 import { LANGS, t } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
 import { LANDING_HREF_FROM_CALCULATOR } from '../urls';
-import { saveTextFile } from '../utils/fileSave';
-import { ConfirmDialog } from './ui/ConfirmDialog';
 
 export function Header() {
   const lang = useAppStore((s) => s.ui.lang);
   const setLang = useAppStore((s) => s.setLang);
   const openPanel = useAppStore((s) => s.openPanel);
   const panel = useAppStore((s) => s.ui.panel);
-  const getSettingsExportData = useAppStore((s) => s.getSettingsExportData);
-  const importSettings = useAppStore((s) => s.importSettings);
   const [langOpen, setLangOpen] = useState(false);
-  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [planFeedback, setPlanFeedback] = useState<PlanFeedback | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const strings = t(lang);
-
-  useEffect(() => {
-    if (!planFeedback) return;
-    const timer = setTimeout(() => setPlanFeedback(null), 4000);
-    return () => clearTimeout(timer);
-  }, [planFeedback]);
-
-  const handleExport = async () => {
-    setPlanFeedback(null);
-    const file = buildSettingsExport(getSettingsExportData());
-    try {
-      await saveTextFile(serializeSettingsExport(file), settingsExportFileName());
-    } catch {
-      setPlanFeedback('export-error');
-    }
-  };
-
-  const handleImportPick = () => fileInputRef.current?.click();
-
-  // Always confirm before import: it silently overwrites the entire plan —
-  // route, gear, mix, fills, foods and shops, not just narrow "settings" —
-  // a rare, deliberate action, so there's no real UX cost to asking every
-  // time rather than trying to detect "is there anything worth losing".
-  const handleFileChosen = (file: File | null) => {
-    if (!file) return;
-    setPendingImportFile(file);
-  };
-
-  const applyImportedFile = async (file: File) => {
-    setPlanFeedback(null);
-    try {
-      const text = await file.text();
-      const result = parseSettingsImport(text);
-      if (!result.ok) {
-        setPlanFeedback('import-error');
-        return;
-      }
-      importSettings(result.data);
-      setPlanFeedback('import-success');
-    } catch {
-      setPlanFeedback('import-error');
-    }
-  };
 
   return (
     <div
@@ -107,56 +50,6 @@ export function Header() {
       </a>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={handleExport} style={planBtnStyle()}>
-              <DownloadIcon />
-              <span>{strings.exportPlanButton}</span>
-            </button>
-            <button onClick={handleImportPick} style={planBtnStyle()}>
-              <UploadIcon />
-              <span>{strings.importPlanButton}</span>
-            </button>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.target.files?.[0] ?? null;
-              handleFileChosen(file);
-              e.target.value = '';
-            }}
-          />
-          {planFeedback && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                minWidth: 220,
-                maxWidth: 280,
-                background: '#fff',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                padding: '9px 12px',
-                boxShadow: '0 14px 34px rgba(0,0,0,0.14)',
-                fontSize: 12,
-                lineHeight: 1.5,
-                color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
-                zIndex: 60,
-              }}
-            >
-              {planFeedback === 'import-error'
-                ? strings.importPlanError
-                : planFeedback === 'import-success'
-                  ? strings.importPlanSuccess
-                  : strings.exportPlanError}
-            </div>
-          )}
-        </div>
-
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setLangOpen((v) => !v)}
@@ -273,73 +166,7 @@ export function Header() {
           <span>{strings.settings}</span>
         </button>
       </div>
-      {pendingImportFile && (
-        <ConfirmDialog
-          title={strings.importPlanConfirmTitle}
-          body={strings.importPlanConfirmBody}
-          cancelLabel={strings.importPlanConfirmCancel}
-          confirmLabel={strings.importPlanConfirmConfirm}
-          onCancel={() => setPendingImportFile(null)}
-          onConfirm={() => {
-            const file = pendingImportFile;
-            setPendingImportFile(null);
-            void applyImportedFile(file);
-          }}
-        />
-      )}
     </div>
-  );
-}
-
-function planBtnStyle(): CSSProperties {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 7,
-    border: '1px solid var(--chip-border)',
-    background: '#fff',
-    borderRadius: 999,
-    padding: '7px 12px',
-    fontFamily: 'Archivo, sans-serif',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--ink)',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  };
-}
-
-function DownloadIcon() {
-  return (
-    <svg
-      width={12}
-      height={12}
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 1.2 V7.6 M3.2 5 L6 7.8 L8.8 5 M1.5 9.8 H10.5" />
-    </svg>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg
-      width={12}
-      height={12}
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 7.6 V1.2 M3.2 3.8 L6 1 L8.8 3.8 M1.5 9.8 H10.5" />
-    </svg>
   );
 }
 
