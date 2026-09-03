@@ -20,10 +20,18 @@
  * its vessel has an earlier fill, in ride order. Same predicate as `score.ts`'s `powderCarried`,
  * and as the two scenario suites', on purpose: there is one definition of a refill on this branch.
  *
+ * **A refill needs a stop, not a stop of its own.** Filling a bottle and drinking from it are two
+ * different kilometres: the rider tops up at a tap and opens the bottle tens of kilometres later.
+ * So a refill is charged to any stop on the stretch its vessel is empty — from where its previous
+ * load ran out to where this one starts being drunk — and buys one only where the plan has none
+ * there. See `carryStop` and `stopsNeeded`.
+ *
  * **One stop tops up every bottle at once**, so stops are counted per round, not per bottle. For a
- * stream needing `L` loads across `V` vessels that is `stops ≈ max(0, L − V)` — the home load is
- * the `− V`. The owner's worked example: 2 izo bottles + a gel flask + a bladder cover 100 km with
- * **zero** stops, because `L ≤ V` in either stream.
+ * stream needing `L` loads across `V` vessels `max(0, L − V)` is therefore the *ceiling* rather than
+ * the count: a whole round of refills whose windows overlap is one pull-over, so `V` bottles running
+ * in relay can cost as little as one stop per round. The owner's worked example is the other end of
+ * the same rule: 2 izo bottles + a gel flask + a bladder cover 100 km with **zero** stops, because
+ * `L ≤ V` in either stream and there are no refills to charge at all.
  *
  * **Vessels within one stream run in round-robin relay.** The owner's own 194 km plan reads
  * `izo g1 0→48, g3 48→101, g1 101→150, g3 150→194`: the first pass over the vessels is the home
@@ -149,6 +157,34 @@ function loadSpanEnd(state: PlanState, vessel: Vessel, content: Content, from: n
 type Candidate = { at: number; movable: boolean };
 
 /**
+ * The stop a refill is *charged to*: the latest one the plan already has on the stretch over which
+ * the vessel is empty, or `null` if it has none there and so has to buy one.
+ *
+ * **Filling a bottle and drinking from it are two different kilometres.** The rider tops a bottle up
+ * at a tap and opens it tens of kilometres later; a refill therefore only has to happen *somewhere*
+ * between `emptyFrom` — where the vessel's previous load ran out — and `openAt`, where this one
+ * starts being drunk. Both ends are legal, so the window is closed: a stop exactly where the bottle
+ * ran dry serves it, and so does one exactly where it is opened.
+ *
+ * **The latest such stop, not the earliest.** Both would cost the same number of stops, so this is a
+ * free choice and it is made for the rider: the later he fills, the shorter he hauls a full bottle
+ * and the less time it spends warming in the sun. (Earliest would be the answer if a stop could run
+ * dry before he got there, but a tap does not.)
+ *
+ * Stated once and read from both ends — `place` uses it to decide whether a refill buys a stop, and
+ * `stretch` uses it to know how far the *previous* load may be drawn out, since a bottle cannot be
+ * refilled while it is still being sipped. Two mechanisms saying this is how they drift apart.
+ */
+function carryStop(stops: Iterable<number>, emptyFrom: number, openAt: number): number | null {
+  let best: number | null = null;
+  for (const s of stops) {
+    if (s < emptyFrom || s > openAt) continue;
+    if (best === null || s > best) best = s;
+  }
+  return best;
+}
+
+/**
  * The km at or after `from` at which the gut has emptied, read off `fuel.ts`'s own gut curve.
  *
  * `curve` is what `samples()` answered for the plan as it stands, so this is the top chart's `gut`
@@ -255,9 +291,20 @@ const SIPPED: Content[] = ['water', 'izo'];
  *
  * ```
  * to = max(to, min( the next fill of the same content, in any vessel   — the lane is taken over
- *                 , this vessel's own next fill                        — the bottle holds something else
+ *                 , where this vessel is next filled                   — the bottle holds something else
  *                 , dist(route) ))                                     — the ride is over
  * ```
+ *
+ * **The two clauses read a different kilometre off the same fill, and that is the point.** A lane is
+ * taken over when the other bottle starts being *drunk*, so the first clause reads `from`. A bottle
+ * stops holding what it held when it is *filled*, which — since `stopsNeeded` may charge a refill to
+ * an earlier stop and let the rider carry it — can be well before that refill's `from`. Reading
+ * `from` there too would draw the rider sipping from a bottle somebody had already poured out and
+ * refilled: measured, on a 140 km ride with an izo bottle, a gel flask and one shop at km 60, as an
+ * izo load drawn 0→100 across a refill charged to km 60. So the second clause asks `carryStop` where
+ * that refill was actually done. With no stop list to ask — a hand-built call, or a plan with no
+ * stops at all — there is nowhere earlier it could have happened and the answer falls back to `from`,
+ * which is why the two-argument call still means exactly what it always did.
  *
  * **What it is for is the drinking, not the hole.** *"To rozciąganie to bardziej wizualnie ma
  * zadziałać, że ktoś ma dostarczać wodę regularnie a nie cały bidon w 15 min a potem 45 bez nawet
@@ -284,7 +331,8 @@ const SIPPED: Content[] = ['water', 'izo'];
  * sits behind a fill's end — two vessels pouring the same content over the same stretch — shortens
  * nothing.
  */
-export function stretch(fills: DraftFill[], D: number): DraftFill[] {
+export function stretch(fills: DraftFill[], D: number, stops: DraftStop[] = []): DraftFill[] {
+  const at = stops.map((s) => s.at);
   return fills.map((f) => {
     if (!SIPPED.includes(f.content)) return f;
     let cap = D;
@@ -293,7 +341,11 @@ export function stretch(fills: DraftFill[], D: number): DraftFill[] {
       // relay cannot produce, but a pair of top-ups poured at one stop could — leave each other
       // alone rather than one arbitrarily cutting the other off at zero length.
       if (o.from <= f.from) continue;
-      if (o.content === f.content || o.gid === f.gid) cap = Math.min(cap, o.from);
+      if (o.content === f.content) cap = Math.min(cap, o.from);
+      // `o` is a refill of this vessel, so `f.to` is the earliest the rider could have poured it —
+      // and only the vessel's *immediately* next fill can bind, since any later one is charged at or
+      // past that one's own `from`. So asking the wider window for the further fills costs nothing.
+      if (o.gid === f.gid) cap = Math.min(cap, carryStop(at, f.to, o.from) ?? o.from);
     }
     return { ...f, to: Math.max(f.to, cap) };
   });
@@ -543,19 +595,25 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
     }
   }
 
-  // --- The stops the plan actually has ------------------------------------------------------
+  // --- Where a bottle is opened again --------------------------------------------------------
   //
-  // Read back off the surviving fills rather than off the candidate list, so that the two
-  // directions the suites check — every refill has a stop, every stop serves something — hold even
-  // when a collapse above removed a load.
+  // One position per refill — a fill whose vessel has an earlier one, in ride order — plus one per
+  // `needsStop` product. Read back off the surviving fills rather than off the candidate list, so
+  // that a load the merge collapsed above takes its entry with it.
+  //
+  // This is not yet the plan's stop list; it is the widest that list could be, which is what the
+  // top-up pass below needs. `stopsNeeded` prunes it to the stops the plan actually has once every
+  // fill is in, and it has to be that way round: pruning first would offer the top-ups a shorter
+  // list and change what the plan delivers, and the only thing the carry rule is allowed to change
+  // is how many times the rider pulls over.
   const seen = new Set<string>();
-  const at = new Set<number>();
+  const opened = new Set<number>();
   for (const f of [...fills].sort((a, b) => a.from - b.from)) {
-    if (seen.has(f.gid)) at.add(f.from);
+    if (seen.has(f.gid)) opened.add(f.from);
     else seen.add(f.gid);
   }
-  for (const f of stopFoods) at.add(repOf(f.from));
-  const stops: DraftStop[] = [...at].sort((a, b) => a - b).map((x) => ({ at: x }));
+  for (const f of stopFoods) opened.add(repOf(f.from));
+  const stops: DraftStop[] = [...opened].sort((a, b) => a - b).map((x) => ({ at: x }));
 
   // --- Topping up vessels that are empty -----------------------------------------------------
   //
@@ -643,7 +701,46 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
   // land next to the fills they follow rather than in a block at the end.
   fills.sort((a, b) => a.from - b.from);
 
-  return { fills, foods, stops };
+  return {
+    fills,
+    foods,
+    stops: stopsNeeded(
+      fills,
+      stopFoods.map((f) => repOf(f.from)),
+    ),
+  };
+}
+
+/**
+ * Which of the kilometres a plan pours at the rider actually has to pull over at.
+ *
+ * **Filling a bottle and drinking from it are two different kilometres.** Every refill used to be
+ * charged to its own `from`, which quietly asserted that a bottle is topped up at the exact moment
+ * it is opened. It is not: the rider fills at a tap and opens the bottle tens of kilometres later,
+ * and an engine that cannot say so buys stops the plan does not need. So a refill is charged to any
+ * stop on the stretch its vessel is empty — see `carryStop` — and only when the plan has none there
+ * does it buy one of its own.
+ *
+ * Two phases, because the answer depends on what is already on the board when the question is asked.
+ * The `needsStop` products seed the set: their positions were fixed before `layout` was called and
+ * cannot move, and a refill has every right to be done at a shop the rider is standing in anyway.
+ * Then the refills are walked in **ride order**, each seeing the stops the ones before it had to buy
+ * — which is what lets one pull-over pay for a whole round of bottles.
+ *
+ * Both directions the suites check still hold by construction: every refill is served by a stop in
+ * its own carry window, and every stop is either a product's or the one a refill had to buy.
+ */
+function stopsNeeded(fills: DraftFill[], productStops: number[]): DraftStop[] {
+  const at = new Set<number>(productStops);
+  const emptyFrom = new Map<string, number>();
+  for (const f of [...fills].sort((a, b) => a.from - b.from)) {
+    const prev = emptyFrom.get(f.gid);
+    emptyFrom.set(f.gid, prev === undefined ? f.to : Math.max(prev, f.to));
+    // A vessel's first fill is its home load — mixed in the kitchen, so it buys nothing.
+    if (prev === undefined) continue;
+    if (carryStop(at, prev, f.from) === null) at.add(f.from);
+  }
+  return [...at].sort((a, b) => a - b).map((x) => ({ at: x }));
 }
 
 /**
@@ -661,5 +758,5 @@ export function layout(
   foods: DraftFood[],
 ): Draft {
   const draft = place(state, assignment, foods);
-  return { ...draft, fills: stretch(draft.fills, dist(state.route)) };
+  return { ...draft, fills: stretch(draft.fills, dist(state.route), draft.stops) };
 }

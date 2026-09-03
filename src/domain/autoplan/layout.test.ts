@@ -130,27 +130,38 @@ const froms = (fills: DraftFill[]) => fills.map((f) => f.from);
 const stopXs = (stops: { at: number }[]) => stops.map((s) => s.at);
 
 /**
- * The correspondence both scenario suites check, asserted here on `layout`'s own output: every
- * refill (a fill whose vessel has an earlier one, in ride order) starts exactly at a stop, and
- * every stop is either a refill or a `needsStop` product.
+ * The correspondence both directions, asserted here on `layout`'s own output: every refill (a fill
+ * whose vessel has an earlier one, in ride order) is served by a stop, and every stop is either a
+ * refill's or a `needsStop` product's.
+ *
+ * **Served, not started at.** A bottle is filled at a tap and opened later, so a refill only has to
+ * be *doable* at a stop the plan has: one anywhere on the stretch its vessel is empty, from where
+ * its previous load ran out to where this one starts being drunk. The stop it is charged to is the
+ * latest in that window — the shortest distance a full bottle is hauled — which is the same choice
+ * `carryStop` makes, restated here rather than imported so that this stays an assertion about the
+ * plan rather than a re-run of the code that built it.
  */
 function expectStopsMatchRefills(
   fills: DraftFill[],
   stops: { at: number }[],
   productStops: number[] = [],
 ): void {
-  const seen = new Set<string>();
-  const refillStarts: number[] = [];
+  const xs = stopXs(stops);
+  const served = new Set<number>(productStops);
+  const emptyFrom = new Map<string, number>();
   for (const f of [...fills].sort((a, b) => a.from - b.from)) {
-    if (seen.has(f.gid)) refillStarts.push(f.from);
-    else seen.add(f.gid);
+    const prev = emptyFrom.get(f.gid);
+    emptyFrom.set(f.gid, prev === undefined ? f.to : Math.max(prev, f.to));
+    if (prev === undefined) continue;
+    const window = xs.filter((x) => x >= prev && x <= f.from);
+    expect(
+      window,
+      `refill @${f.from} of ${f.gid} has no stop between ${prev} and ${f.from}`,
+    ).not.toHaveLength(0);
+    served.add(Math.max(...window));
   }
-  for (const x of refillStarts) {
-    expect(stopXs(stops), `refill @${x} has no stop`).toContain(x);
-  }
-  for (const s of stopXs(stops)) {
-    const served = refillStarts.includes(s) || productStops.includes(s);
-    expect(served, `stop @${s} serves nothing`).toBe(true);
+  for (const s of xs) {
+    expect(served.has(s), `stop @${s} serves nothing`).toBe(true);
   }
 }
 
@@ -439,7 +450,7 @@ describe('gel is refilled like anything else', () => {
   const gear = [vessel('a', 750, ['izo']), vessel('flask', 250, ['gel'])];
   const state = makeState(route, gear);
 
-  test('a second load of gel is a refill, and it costs a stop', () => {
+  test('a second load of gel is a refill, and both refills of the round share one stop', () => {
     const { fills, stops } = place(
       state,
       [
@@ -453,9 +464,17 @@ describe('gel is refilled like anything else', () => {
     expect(stream.map((f) => f.gid)).toEqual(['a', 'flask', 'a', 'flask']);
     expect(stream.map((f) => f.content)).toEqual(['izo', 'gel', 'izo', 'gel']);
     expect(froms(stream)).toEqual([0, 50, 100, 150]);
-    // The wrap onto `a` at 100 and the wrap onto the flask at 150 are both refills, and both are
-    // stops. The handover at 50 is the flask's home load and is free.
-    expect(stopXs(stops)).toEqual([100, 150]);
+    // The wrap onto `a` at 100 and the wrap onto the flask at 150 are both refills; the handover at
+    // 50 is the flask's home load and is free.
+    //
+    // They cost **one** stop between them, not two, and that is the point of the round-robin. The
+    // flask ran dry at 100 and does not pour again until 150, so the rider standing at the 100 km
+    // stop refilling the bottle mixes the flask's next dose there too and carries it — *"one stop
+    // tops up every bottle at once"*. This used to expect `[100, 150]`, which said the opposite:
+    // that a bottle is filled at the exact kilometre it is opened, so every refill in a round buys
+    // its own pull-over. Nothing about the plan changed — same four loads, same boundaries, same
+    // grams — only the count of times the rider has to stand still.
+    expect(stopXs(stops)).toEqual([100]);
     expect(stopXs(stops)).not.toContain(50);
     expectTiled(stream, dist(route));
     expectStopsMatchRefills(fills, stops);
@@ -982,6 +1001,105 @@ describe('needsStop products', () => {
   });
 });
 
+describe('a refill is done at a stop the plan already has', () => {
+  /**
+   * Filling a bottle and drinking from it are two different kilometres. A refill needs a tap, so it
+   * needs a stop — but it needs one *somewhere on the stretch its vessel is empty*, not one at the
+   * exact kilometre the bottle is opened. The rider fills at a shop and rides on with it.
+   *
+   * The kit is chosen so that nothing else can be doing the work. 140 km at 25 km/h is 5.6 h, so
+   * `cph` is 75; the 750 ml bottle of the 20 g/100 ml mix and the 250 ml flask of the 60 g/100 ml
+   * gel both hold 150 g, which is 50 km each. The relay therefore runs `a` 0→50, flask 50→100,
+   * `a` 100→140 — so `a` is empty over the whole of [50, 100]. Neither vessel may hold water and
+   * the carb stream already reaches the line, so the top-up pass pours nothing and cannot quietly
+   * refill the bottle behind this test's back.
+   */
+  const route = makeRoute({ distance: 140 });
+  // Carbs 0, so the shop is a stop and nothing else: it cannot move the gut gate and re-tile the
+  // relay underneath the assertions.
+  const FOOD_LIB: FoodLibEntry[] = [
+    { key: 'tap', pl: 'Woda ze sklepu', en: 'Shop water', carbs: 0, ml: 500, needsStop: true },
+  ];
+  const state = makeState(
+    route,
+    [vessel('a', 750, ['izo']), vessel('flask', 250, ['gel'])],
+    FOOD_LIB,
+  );
+  const assignment: VesselAssignment[] = [
+    { gid: 'a', content: 'izo', loads: 2 },
+    { gid: 'flask', content: 'gel', loads: 1 },
+  ];
+  const shop = (at: number): DraftFood => ({ key: 'tap', carbs: 0, ml: 500, from: at, to: at });
+  const relay: DraftFill[] = [
+    { gid: 'a', content: 'izo', from: 0, to: 50 },
+    { gid: 'flask', content: 'gel', from: 50, to: 100 },
+    { gid: 'a', content: 'izo', from: 100, to: 140 },
+  ];
+
+  test('the fixture: two 150 g loads with a gel between them, and no top-up anywhere', () => {
+    expect(dist(route)).toBe(140);
+    expect(carbsIn(state, 'a', 'izo')).toBe(150);
+    expect(carbsIn(state, 'flask', 'gel')).toBe(150);
+    expect(carbSpan(route, 150)).toBe(50);
+    const { fills } = place(state, assignment, []);
+    expectFillsClose(fills, relay);
+    // The last carb load runs onto the line, which is what switches the izo top-up off; and neither
+    // vessel allows water, so there is no water top-up to switch off in the first place.
+    expect(carbStreamOf(fills).at(-1)?.to).toBe(dist(route));
+  });
+
+  test('with no stop in the window, the refill buys one where the bottle is opened', () => {
+    const { fills, stops } = place(state, assignment, []);
+    expect(stopXs(stops)).toEqual([100]);
+    expectStopsMatchRefills(fills, stops);
+  });
+
+  test('a shop inside the window takes it over, and the plan costs no second stop', () => {
+    // km 60 is 10 km past where the bottle ran dry and 40 km before it is opened — well outside the
+    // merge window at either end, so nothing is being dragged onto anything here. The rider mixes
+    // at the shop and carries the bottle to 100.
+    expect(60 - 50).toBeGreaterThan(0);
+    expect(100 - 60).toBeGreaterThan(mergeWindowKm(dist(route)));
+    const { fills, stops } = place(state, assignment, [shop(60)]);
+    // Not one fill moved: same three loads, same boundaries, same grams as with no shop at all.
+    expectFillsClose(fills, relay);
+    expect(stopXs(stops)).toEqual([60]);
+    expectStopsMatchRefills(fills, stops, [60]);
+  });
+
+  test('a shop before the bottle ran dry does not, so the refill keeps its own stop', () => {
+    // At km 40 the bottle is still being drunk from, so it cannot be refilled there. The window is
+    // closed at both ends and 40 is outside it.
+    const { fills, stops } = place(state, assignment, [shop(40)]);
+    expectFillsClose(fills, relay);
+    expect(stopXs(stops)).toEqual([40, 100]);
+    expectStopsMatchRefills(fills, stops, [40]);
+  });
+
+  test('with two shops in the window the refill is charged to the later one', () => {
+    // Both are legal, so the choice is free and it is made for the rider: filling at 90 rather than
+    // 60 hauls the full bottle 30 km less far. `stretch` is where that choice becomes visible —
+    // the izo already in the bottle is drunk right up to the moment it is poured out.
+    const foods = [shop(60), shop(90)];
+    expect(stopXs(place(state, assignment, foods).stops)).toEqual([60, 90]);
+    expect(of(layout(state, assignment, foods).fills, 'izo')[0].to).toBe(90);
+  });
+
+  test('and the load before a carried refill is drunk only up to the stop it was filled at', () => {
+    // The hazard the carry rule opens, and the reason `stretch`'s vessel clause asks where the
+    // refill was *done* rather than reading its `from`. The izo has room to be sipped as far as
+    // km 100 — the flask's gel is a different lane and does not end its claim — but the bottle
+    // holding it was emptied and refilled at the shop at 60. Reading `from` drew it 0→100, which is
+    // the rider still drinking from a bottle somebody poured out 40 km earlier.
+    const { fills, stops } = layout(state, assignment, [shop(60)]);
+    expect(stopXs(stops)).toEqual([60]);
+    expect(of(fills, 'izo')[0]).toEqual({ gid: 'a', content: 'izo', from: 0, to: 60 });
+    // And with no shop the same load does stretch all the way to 100, because 100 is then where the
+    // bottle is actually filled. So the cap is the refill's stop, not a blanket shortening.
+    expect(of(layout(state, assignment, []).fills, 'izo')[0].to).toBe(100);
+  });
+});
+
 describe('a spent vessel is topped up at a stop that already exists', () => {
   /**
    * The flask's gel runs from 50 to 100 and the bottle's refill puts a stop at 100 anyway, so the
@@ -1278,6 +1396,36 @@ describe('a drink is stretched to the end of the room it has', () => {
       { gid: 'b', content: 'water', from: 120, to: 140 },
     ];
     expect(stretch(fills, D)[0]).toEqual({ gid: 'a', content: 'water', from: 0, to: 80 });
+  });
+
+  test('the vessel cap is where the bottle was filled, which a stop list can move earlier', () => {
+    // The bottle runs dry at 10 and holds izo again from 80. With no stop list to ask there is
+    // nowhere earlier the izo could have been poured in, so the cap is 80 — the two-argument call
+    // means exactly what it always did.
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 10 },
+      { gid: 'a', content: 'izo', from: 80, to: 100 },
+    ];
+    expect(stretch(fills, D)[0].to).toBe(80);
+    // Told that the rider stopped at 40 — inside [10, 80], the stretch over which the bottle is
+    // empty — the izo went in there and the water can only have been drunk that far.
+    expect(stretch(fills, D, [{ at: 40 }])[0].to).toBe(40);
+    // The latest such stop is the one the bottle was filled at, so an earlier one alongside it
+    // changes nothing.
+    expect(stretch(fills, D, [{ at: 20 }, { at: 40 }])[0].to).toBe(40);
+    // A stop before the bottle ran dry is not one it could have been filled at.
+    expect(stretch(fills, D, [{ at: 5 }])[0].to).toBe(80);
+  });
+
+  test('a lane is taken over when the other bottle is drunk from, not when it is filled', () => {
+    // The same-content clause keeps reading `from`, and this is why the two clauses ask different
+    // questions of the same fill. `b`'s water may well have been poured at the stop at 40, but the
+    // rider does not start drinking it until 80 — so `a`'s lane is his until then.
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 10 },
+      { gid: 'b', content: 'water', from: 80, to: 100 },
+    ];
+    expect(stretch(fills, D, [{ at: 40 }])[0].to).toBe(80);
   });
 
   test('water and izo are separate lanes, so neither caps the other', () => {

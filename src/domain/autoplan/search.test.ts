@@ -203,6 +203,73 @@ describe('the tier order is an escalation, not a preference', () => {
   });
 });
 
+describe('fewer stops wins when the objective cannot separate two plans', () => {
+  /**
+   * The owner's own 53 km ride, and the stop the planner used to buy for nothing. Two bidons and a
+   * gel flask on a hot afternoon: the gel covers the carbs on its own, so every plan here is green
+   * on that badge and the only question is how the four water loads are split between the bottles.
+   *
+   * Both splits below clear the hydration badge, so `toGreen` is 0 for each and the tie-break has
+   * the say. `g1:2 / g2:2` is the round-robin — g1, g2, g1, g2 — so g2 is empty from its first
+   * handover at ~22 km all the way to ~34 km where it comes back on: its refill can be poured at
+   * the same stop g1's was, and the ride costs **one** pull-over. `g1:3 / g2:1` comes back to g1
+   * twice running, with no gap in between for the second refill to have happened earlier, so it
+   * costs two. Same route, same bottles, same badges — one fewer time standing still.
+   *
+   * Both plans are built here with `layout()`, so nothing below takes a number from the search.
+   */
+  const gear: Vessel[] = [
+    { gid: 'g1', name: 'g1', vol: 710, allowed: ['water', 'izo'], gelParts: 1 },
+    { gid: 'g2', name: 'g2', vol: 630, allowed: ['water', 'izo'], gelParts: 1 },
+    { gid: 'g3', name: 'g3', vol: 250, allowed: ['gel'], gelParts: 6 },
+  ];
+  const state = makeState(
+    makeRoute({
+      distance: 53,
+      speed: 19,
+      weight: 78,
+      temp: 30,
+      preMealCarbs: 50,
+      preMealMinutes: 50,
+    }),
+    gear,
+  );
+  const plan = (g1: number, g2: number): Draft =>
+    layout(
+      state,
+      [
+        { gid: 'g1', content: 'water', loads: g1 },
+        { gid: 'g2', content: 'water', loads: g2 },
+        { gid: 'g3', content: 'gel', loads: 1 },
+      ],
+      [],
+    );
+  const roundRobin = plan(2, 2);
+  const backToG1 = plan(3, 1);
+
+  test('both splits are green on both badges, and the round-robin costs one stop instead of two', () => {
+    expect(score(state, roundRobin).toGreen).toBe(0);
+    expect(score(state, backToG1).toGreen).toBe(0);
+    expect(hydrationOf(state, roundRobin)).toBe('good');
+    expect(score(state, roundRobin).stops).toBe(1);
+    expect(score(state, backToG1).stops).toBe(2);
+    // Four loads placed either way, so the cheaper plan is cheaper on stops alone and not because
+    // a bottle was quietly dropped: 710 + 630 + 710 + 630 millilitres are on board.
+    const fills = roundRobin.fills.map((f, i) => ({ ...f, fid: i + 1 }));
+    expect(planSummary({ ...state, fills }).fluidPlanned).toBe(710 + 630 + 710 + 630);
+    // And the leg the second stop used to pay for is g2's, run to the finish line.
+    const water = roundRobin.fills
+      .filter((f) => f.content === 'water')
+      .sort((a, b) => a.from - b.from);
+    expect(water.map((f) => f.gid)).toEqual(['g1', 'g2', 'g1', 'g2']);
+    expect(water.at(-1)?.to).toBe(dist(state.route));
+  });
+
+  test('and the search picks it', () => {
+    expect(search(state)).toEqual(roundRobin);
+  });
+});
+
 describe('the selection is an offer', () => {
   test('an empty selection places no food', () => {
     for (const { state } of SHAPES) expect(search(state).foods).toEqual([]);
