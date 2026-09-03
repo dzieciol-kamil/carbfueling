@@ -26,6 +26,7 @@ import {
   allowedDeficitPct,
   planSummary,
   totalHours,
+  waterBalancePct,
 } from '../fuel';
 import type { Fill, FoodItem, PlanState } from '../types';
 import type { DraftFill, DraftFood, DraftStop } from './types';
@@ -83,6 +84,31 @@ function materialize(state: PlanState, draft: Draft): PlanState {
  * The four terms below reproduce the two badges' own green conditions exactly, so `toGreen === 0`
  * and "both badges green" are the same statement — `score.test.ts` pins that agreement.
  *
+ * **The two shortfall terms share one scale: the fraction of the way from green to the worst this
+ * ride could do.** The carb one gets that for free. `carbRateGph` cannot go below zero, so
+ * `(floor − rate) / floor` is at most 1 and 1 means "delivered nothing". The dryness term is not
+ * free: `deficit` is a percentage of body mass with no ceiling of its own, and dividing it by the
+ * allowance alone let it run far past 1 — on the owner's 194 km ride it read 4.37 against a carb
+ * term of 0.87, at which point hydration outweighs anything carbs can ever say. The loop duly threw
+ * 150 g of gel away to gain 250 ml of water (`carbRateGph` 44.0 → 34.5), because `fluidPlanned`
+ * skips gel and so a gel load pours no millilitres. Carbs are what autoplan is for; that trade is
+ * the objective being wrong, not the search. So the dryness term is divided by the distance from
+ * the allowance to the deficit of a rider who drank nothing, which is the sentence the carb term
+ * already says, and both land in [0, 1].
+ *
+ * Clamping the term at 1 was the alternative and it is worse. It preserves `toGreen === 0` just as
+ * well, but it flattens the objective exactly where the search needs a gradient: on that same ride
+ * the dryness term walks 3.34, 2.62, 1.90, 1.19 as loads are added, every one above 1, so under a
+ * clamp all four read the same and the loop cannot tell a plan carrying 3360 ml from one carrying
+ * 6060 ml. It would never start climbing toward water at all. Rescaling changes the unit and keeps
+ * the ordering; clamping throws the ordering away.
+ *
+ * Neither is a weight. The denominator is `fuel.ts`'s own `waterBalancePct` asked at
+ * `fluidPlanned: 0` — what this ride's arithmetic says, not a number anyone picked, with nothing in
+ * it to recalibrate. The two *overshoot* terms are deliberately left alone: a plan can carry
+ * arbitrarily much, so there is no worst case to divide by that would not be invented, and the
+ * search only ever reaches them by overrunning a target it was already climbing toward.
+ *
  * With one asymmetry worth knowing: under `CARB_GRADING_MIN_HOURS` of riding `coverageStatus`
  * answers `'unneeded'` rather than `'good'`, because carbs during exercise have no established
  * effect over that distance — the app greys the carb chart out. That is not a plan failing, there is
@@ -102,6 +128,14 @@ export function score(state: PlanState, draft: Draft): Score {
   // The largest deficit that still reads green at this temperature — `hydrationStatus`'s own limit.
   const allowedDeficit = allowedDeficitPct(state.route.temp);
   const deficit = Math.max(0, -s.waterBalancePct);
+  // The deficit of a rider who drank nothing: the far end of the dryness term, the way an empty
+  // plan's `carbRateGph` of 0 is the far end of the carb one. `fluidPlanned` cannot go below zero,
+  // so no plan is drier than this and the term cannot exceed 1.
+  const worstDeficit = -waterBalancePct({
+    sweatLoss: s.sweatLoss,
+    fluidPlanned: 0,
+    weight: state.route.weight,
+  });
 
   const toGreen =
     // Short of the carb badge's green floor.
@@ -109,8 +143,11 @@ export function score(state: PlanState, draft: Draft): Score {
     // Past the gut's ceiling — `coverageStatus`'s 'over' tier. Graded on the *planned* rate, since
     // `carbRateGph` is capped at what was needed and structurally cannot see an overshoot.
     penalty(s.carbPlannedRateGph - s.carbAbsCapGph, s.carbAbsCapGph) +
-    // Too dry.
-    penalty(deficit - allowedDeficit, allowedDeficit) +
+    // Too dry — on the same footing as the carb shortfall above, so that neither can shout the
+    // other down. A ride whose allowance already covers drinking nothing has a denominator of zero
+    // here, and a numerator that cannot be positive either, so `penalty` answering 0 is the honest
+    // answer and not just the safe one.
+    penalty(deficit - allowedDeficit, worstDeficit - allowedDeficit) +
     // Too wet — the EAH warning. `waterBalancePct` is signed, so this term only exists above zero.
     penalty(s.waterBalancePct - SURPLUS_WARN_PCT, SURPLUS_WARN_PCT);
 

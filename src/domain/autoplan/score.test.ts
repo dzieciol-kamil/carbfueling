@@ -17,6 +17,7 @@ import {
   hydrationStatus,
   planSummary,
   totalHours,
+  waterBalancePct,
 } from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type { PlanState, RouteInput, Vessel } from '../types';
@@ -180,10 +181,17 @@ describe('score', () => {
     test('too dry', () => {
       const s = summaryOf(TOO_DRY);
       const allowed = allowedDeficitPct(route.temp);
+      // The far end of the term's scale: what this rider's balance reads having drunk nothing.
+      // Asked of `fuel.ts` rather than restated, the same way every other expectation here is.
+      const worst = -waterBalancePct({
+        sweatLoss: s.sweatLoss,
+        fluidPlanned: 0,
+        weight: route.weight,
+      });
       expect(badges(TOO_DRY)).toEqual({ carbs: 'good', hydration: 'partial' });
       expect(-s.waterBalancePct).toBeGreaterThan(allowed);
       expect(score(state, TOO_DRY).toGreen).toBeCloseTo(
-        (-s.waterBalancePct - allowed) / allowed,
+        (-s.waterBalancePct - allowed) / (worst - allowed),
         12,
       );
     });
@@ -196,6 +204,20 @@ describe('score', () => {
         (s.waterBalancePct - SURPLUS_WARN_PCT) / SURPLUS_WARN_PCT,
         12,
       );
+    });
+
+    /**
+     * The two shortfall terms are on one scale, and this is the sentence that says so: an empty
+     * plan misses the whole of both, so each reads exactly 1 and the total is exactly 2. Without
+     * it nothing stops the dryness term from being renormalised back to something unbounded, which
+     * is what let the loop trade away carbs — the thing autoplan exists to deliver — to buy water.
+     * The two *overshoot* terms have no worst case to divide by and are deliberately not on it.
+     */
+    test('the two shortfall terms share one scale: an empty plan misses all of both', () => {
+      const s = summaryOf(EMPTY);
+      expect(s.carbRateGph).toBe(0);
+      expect(s.fluidPlanned).toBe(0);
+      expect(score(state, EMPTY).toGreen).toBeCloseTo(2, 12);
     });
   });
 
