@@ -7,9 +7,26 @@
  * The numbers are chosen so the arithmetic is round. At 25 km/h a ride over 2.5 h is `cph` 75, and
  * a 750 ml bottle of a 20 g/100 ml mix holds 150 g, so one load reaches exactly 50 km — which makes
  * a 200 km route exactly four loads long and every boundary a whole number.
+ *
+ * **Which stage each test asks.** `layout` is `place` followed by `stretch`, and the owner's reason
+ * for that split is that the stretch must not be able to cover for a placement bug — it closes holes,
+ * and a placement bug opens them. So every test about *where* something is put calls `place`: the
+ * relay, the merge, the stop list, the top-ups, the gut gate, the gel finish gap. Only the tests
+ * about the stretch itself — `where a stream ends`, and the block at the bottom of the file — call
+ * `layout` or `stretch` and assert on the finished plan.
  */
 import { describe, expect, test } from 'vitest';
-import { absCap, carbsFill, cph, dist, preRideGut, samples, sweat, totalHours } from '../fuel';
+import {
+  absCap,
+  carbsFill,
+  cph,
+  dist,
+  planSummary,
+  preRideGut,
+  samples,
+  sweat,
+  totalHours,
+} from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type {
   Content,
@@ -20,7 +37,7 @@ import type {
   RouteInput,
   Vessel,
 } from '../types';
-import { layout, mergeWindowKm } from './layout';
+import { layout, mergeWindowKm, place, stretch } from './layout';
 import type { VesselAssignment } from './layout';
 import type { DraftFill, DraftFood } from './types';
 
@@ -182,11 +199,11 @@ describe("the owner's zero-stop example", () => {
   });
 
   test('no stop at all', () => {
-    expect(layout(state, assignment, []).stops).toEqual([]);
+    expect(place(state, assignment, []).stops).toEqual([]);
   });
 
   test('the izo bottles hand over contiguously from 0 to the finish', () => {
-    const izo = of(layout(state, assignment, []).fills, 'izo');
+    const izo = of(place(state, assignment, []).fills, 'izo');
     expect(izo).toEqual([
       { gid: 'b1', content: 'izo', from: 0, to: 50 },
       { gid: 'b2', content: 'izo', from: 50, to: 100 },
@@ -198,7 +215,7 @@ describe("the owner's zero-stop example", () => {
     // exactly that between them, so the relay is at the finish before the flask's turn comes round.
     // Tiled per content — a full-route stream each — this same kit planned the flask's 150 g on
     // top of the bottles' 300, i.e. 450 g for a 300 g ride.
-    const { fills } = layout(state, assignment, []);
+    const { fills } = place(state, assignment, []);
     expect(carbsIn(state, 'flask', 'gel')).toBe(150);
     expect(of(fills, 'gel')).toEqual([]);
     expect(carbsRequired(route)).toBe(300);
@@ -209,7 +226,7 @@ describe("the owner's zero-stop example", () => {
     // 700 ml/h over 4 h is 2800 ml lost, of which the two bottles pour 1500 — so 1300 ml is
     // water's to cover, and a 2000 ml bladder more than sees the ride out. Matched against the
     // whole 2800 it was rate-matched down to 2000/700 × 25 = 71.4 km and poured on top of the izo.
-    const { fills } = layout(state, assignment, []);
+    const { fills } = place(state, assignment, []);
     expect(sweat(route)).toBe(700);
     expect(residualFluid(route, 1500)).toBe(1300);
     const water = of(fills, 'water');
@@ -225,7 +242,7 @@ describe("the owner's zero-stop example", () => {
     // Rule 5 in its negative direction. Nothing was ever poured into the flask, so it has no carb
     // duty to have finished; and with no stop anywhere on the route there would be nothing to top
     // it up at either, because a bottle earning its keep that way must not buy a stop to do it.
-    const { fills, stops } = layout(state, assignment, []);
+    const { fills, stops } = place(state, assignment, []);
     expect(stops).toEqual([]);
     expect(fills.filter((f) => f.gid === 'flask')).toHaveLength(0);
   });
@@ -245,7 +262,7 @@ describe('the first refill is the first stop', () => {
   ];
 
   test('one stop, at the third load’s start', () => {
-    const { fills, stops } = layout(state, assignment, []);
+    const { fills, stops } = place(state, assignment, []);
     const izo = of(fills, 'izo');
     expectFillsClose(izo, [
       { gid: 'a', content: 'izo', from: 0, to: 50 },
@@ -260,13 +277,13 @@ describe('the first refill is the first stop', () => {
   });
 
   test('the handover at km 50 is free — it is not a stop', () => {
-    const { stops } = layout(state, assignment, []);
+    const { stops } = place(state, assignment, []);
     expect(stopXs(stops)).not.toContain(50);
   });
 
   test('and b, empty from km 100, is topped up with water at that same stop', () => {
     // Rule 2: one stop tops up every bottle at once. `a` is refilled with izo, `b` with water.
-    const { fills } = layout(state, assignment, []);
+    const { fills } = place(state, assignment, []);
     const bWater = fills.filter((f) => f.gid === 'b' && f.content === 'water');
     expect(bWater).toHaveLength(1);
     expect(bWater[0].from).toBeCloseTo(100, 9);
@@ -310,7 +327,7 @@ describe('stops = max(0, L - V)', () => {
     }));
     const L = loads.reduce((a, b) => a + b, 0);
     const V = loads.length;
-    const { fills, stops } = layout(state, assignment, []);
+    const { fills, stops } = place(state, assignment, []);
     // Every assigned load was actually planned — otherwise the formula is being tested against a
     // truncated stream (see the next describe).
     expect(of(fills, 'izo')).toHaveLength(L);
@@ -329,7 +346,7 @@ describe('a load past the finish line is not planned', () => {
   const state = makeState(route, [vessel('a', 750, ['izo', 'water'])]);
 
   test('five loads over a four-load route give four fills and three stops', () => {
-    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 5 }], []);
+    const { fills, stops } = place(state, [{ gid: 'a', content: 'izo', loads: 5 }], []);
     const izo = of(fills, 'izo');
     expect(izo).toHaveLength(4);
     expect(froms(izo)).toEqual([0, 50, 100, 150]);
@@ -374,14 +391,14 @@ describe('the carb sources share one requirement', () => {
   });
 
   test('the carbs are covered once, by the sum of the sources', () => {
-    const { fills } = layout(state, assignment, []);
+    const { fills } = place(state, assignment, []);
     expect(carbsPlanned(state, fills)).toBeCloseTo(carbsRequired(route), 9);
     // And explicitly not the two-streams answer: this assertion is the one that used to fail.
     expect(carbsPlanned(state, fills)).toBeLessThan(1.5 * carbsRequired(route));
   });
 
   test('the relay interleaves izo and gel in rotation order', () => {
-    const { fills } = layout(state, assignment, []);
+    const { fills } = place(state, assignment, []);
     const stream = carbStreamOf(fills);
     expect(stream.map((f) => f.gid)).toEqual(['b1', 'flask1', 'b2']);
     expect(stream.map((f) => f.content)).toEqual(['izo', 'gel', 'izo']);
@@ -392,7 +409,7 @@ describe('the carb sources share one requirement', () => {
   });
 
   test('the carb stream is one contiguous chain, and it costs no stop', () => {
-    const { fills, stops } = layout(state, assignment, []);
+    const { fills, stops } = place(state, assignment, []);
     expectTiled(carbStreamOf(fills), dist(route));
     // Three vessels, one load each: the whole relay is its first pass, and a first pass is all
     // handovers.
@@ -400,7 +417,7 @@ describe('the carb sources share one requirement', () => {
   });
 
   test('the vessels the relay never reaches are not planned', () => {
-    const { fills } = layout(state, assignment, []);
+    const { fills } = place(state, assignment, []);
     // `flask2` never gets a turn, and neither bottle's second load does either.
     expect(fills.filter((f) => f.gid === 'flask2')).toHaveLength(0);
     expect(fills.filter((f) => f.gid === 'b1')).toHaveLength(1);
@@ -423,7 +440,7 @@ describe('gel is refilled like anything else', () => {
   const state = makeState(route, gear);
 
   test('a second load of gel is a refill, and it costs a stop', () => {
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 2 },
@@ -445,7 +462,7 @@ describe('gel is refilled like anything else', () => {
   });
 
   test('and it is still one requirement covered once between the two sources', () => {
-    const { fills } = layout(
+    const { fills } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 2 },
@@ -459,7 +476,7 @@ describe('gel is refilled like anything else', () => {
   test('the relay keeps coming back to the flask for as many loads as it was given', () => {
     // One bottle and three loads of gel: the bottle takes its single turn, and the flask takes the
     // three remaining passes — two of them refills, two stops.
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 1 },
@@ -488,10 +505,10 @@ describe('water is matched against what the izo does not supply', () => {
    */
   test('the same bottle goes further when there is izo on board', () => {
     const dry = makeState(route, [vessel('w', 900, ['water'])]);
-    const alone = layout(dry, [{ gid: 'w', content: 'water', loads: 2 }], []);
+    const alone = place(dry, [{ gid: 'w', content: 'water', loads: 2 }], []);
 
     const wet = makeState(route, [vessel('a', 750, ['izo']), vessel('w', 900, ['water'])]);
-    const withIzo = layout(
+    const withIzo = place(
       wet,
       [
         { gid: 'a', content: 'izo', loads: 2 },
@@ -513,7 +530,7 @@ describe('water is matched against what the izo does not supply', () => {
   test('and it still starts again at km 0, alongside the carb stream', () => {
     // The two needs are drunk at the same time. Sharing a total is not queueing behind one.
     const state = makeState(route, [vessel('a', 750, ['izo']), vessel('w', 900, ['water'])]);
-    const { fills } = layout(
+    const { fills } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 2 },
@@ -530,7 +547,7 @@ describe('water is matched against what the izo does not supply', () => {
     // four bottles' 3000 ml, not five bottles' 3750. 650 ml of the 2600 ml left is exactly 50 km;
     // counting the load that never happened would have made it 70.3.
     const state = makeState(route, [vessel('a', 750, ['izo']), vessel('w', 650, ['water'])]);
-    const { fills } = layout(
+    const { fills } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 5 },
@@ -564,8 +581,8 @@ describe('water is matched against what the izo does not supply', () => {
     expect(carbsIn(state, 'a', 'izo')).toBe(300);
     expect(residualFluid(route, 2 * 3000)).toBe(-400);
 
-    expect(() => layout(state, assignment, [])).not.toThrow();
-    const { fills } = layout(state, assignment, []);
+    expect(() => place(state, assignment, [])).not.toThrow();
+    const { fills } = place(state, assignment, []);
     expect(of(fills, 'water')).toHaveLength(0);
     expect(froms(of(fills, 'izo'))).toEqual([0, 100]);
   });
@@ -583,6 +600,12 @@ describe('where a stream ends', () => {
    * The arithmetic: this ride sweats 5600 ml, so 900 ml is rate-matched to 900/5600 × 200 = 32.14 km.
    * That is where the *first* of two loads ends, and it is where a single load used to end, leaving
    * the rider 168 km with an empty bidon.
+   *
+   * This used to be `place`'s own doing, as a `lastWater.to = D` written into the water stream. It is
+   * `stretch`'s now — the general rule says the same thing about every sipped fill — so the test asks
+   * `layout`, and asks `place` alongside it to pin which stage does what. The behaviour it was
+   * written to prove is unchanged and still asserted exactly: the last load reaches the finish, and
+   * the handover before it stays where the need line put it.
    */
   test('the water stream is rationed to the finish', () => {
     const state = makeState(route, [vessel('w', 900, ['water'])]);
@@ -595,6 +618,13 @@ describe('where a stream ends', () => {
     expectFillsClose(two.fills, [
       { gid: 'w', content: 'water', from: 0, to: waterSpan(route, 900) },
       { gid: 'w', content: 'water', from: waterSpan(route, 900), to: D },
+    ]);
+
+    // Placement on its own leaves the single load where the need line put it — 32.14 of 200 km — so
+    // the finish is the stretch's doing and nothing in `place` is quietly doing it twice.
+    const placedOne = place(state, [{ gid: 'w', content: 'water', loads: 1 }], []);
+    expectFillsClose(placedOne.fills, [
+      { gid: 'w', content: 'water', from: 0, to: waterSpan(route, 900) },
     ]);
   });
 
@@ -609,7 +639,7 @@ describe('where a stream ends', () => {
     expect(carbsIn(state, 'f', 'gel')).toBe(600);
     expect(carbSpan(route, 600)).toBe(D);
 
-    const { fills } = layout(state, [{ gid: 'f', content: 'gel', loads: 1 }], []);
+    const { fills } = place(state, [{ gid: 'f', content: 'gel', loads: 1 }], []);
     expectFillsClose(fills, [{ gid: 'f', content: 'gel', from: 0, to: 196 }]);
     expect(196).toBe(D * 0.98);
   });
@@ -618,7 +648,7 @@ describe('where a stream ends', () => {
   test('a gel load that ends well short is not moved', () => {
     const state = makeState(route, [vessel('f', 250, ['gel'])]);
     expect(carbSpan(route, carbsIn(state, 'f', 'gel'))).toBe(50);
-    const { fills } = layout(state, [{ gid: 'f', content: 'gel', loads: 1 }], []);
+    const { fills } = place(state, [{ gid: 'f', content: 'gel', loads: 1 }], []);
     expectFillsClose(fills, [{ gid: 'f', content: 'gel', from: 0, to: 50 }]);
   });
 
@@ -626,7 +656,7 @@ describe('where a stream ends', () => {
    *  them ends on the line rather than being pulled back the way the gel one is. */
   test('an izo load is left where the tiling put it', () => {
     const state = makeState(route, [vessel('a', 750, ['izo'])]);
-    const { fills } = layout(state, [{ gid: 'a', content: 'izo', loads: 4 }], []);
+    const { fills } = place(state, [{ gid: 'a', content: 'izo', loads: 4 }], []);
     expect(fills).toHaveLength(4);
     expect(fills[3].to).toBe(D);
   });
@@ -653,7 +683,7 @@ describe('merging nearby stops', () => {
     expect(residualFluid(route, 2 * 750)).toBe(4100);
     expect(waterSpanResidual(route, 902, 2 * 750)).toBe(44);
 
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 2 },
@@ -670,14 +700,29 @@ describe('merging nearby stops', () => {
       { gid: 'a', content: 'izo', from: 0, to: 44 },
       { gid: 'a', content: 'izo', from: 44, to: 100 },
     ]);
-    // The second water load is the stream's last, so it is rationed out to the finish rather than
-    // ending at the 88 km its own 902 ml would have been rate-matched to.
+    // Placement puts the second water load where its own 902 ml is rate-matched to: 44 km more, so
+    // 88. Running it out to the finish is `stretch`'s job and is asserted below, not here — this
+    // test is about the merge moving a boundary, and it must be able to fail on that alone.
     expectFillsClose(of(fills, 'water'), [
       { gid: 'w', content: 'water', from: 0, to: 44 },
-      { gid: 'w', content: 'water', from: 44, to: D },
+      { gid: 'w', content: 'water', from: 44, to: 2 * 44 },
     ]);
     for (const c of ['izo', 'water'] as Content[]) expectTiled(of(fills, c), D);
     expectStopsMatchRefills(fills, stops);
+
+    // The merged boundary survives the stretch — only the last load's `to` moves, out to the line.
+    const stretched = layout(
+      state,
+      [
+        { gid: 'a', content: 'izo', loads: 2 },
+        { gid: 'w', content: 'water', loads: 2 },
+      ],
+      [],
+    );
+    expectFillsClose(of(stretched.fills, 'water'), [
+      { gid: 'w', content: 'water', from: 0, to: 44 },
+      { gid: 'w', content: 'water', from: 44, to: D },
+    ]);
   });
 
   test('two refills further apart than the window stay two stops', () => {
@@ -687,7 +732,7 @@ describe('merging nearby stops', () => {
     expect(waterSpanResidual(route, 615, 2 * 750)).toBe(30);
     expect(50 - waterSpanResidual(route, 615, 2 * 750)).toBeGreaterThan(mergeWindowKm(D));
 
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 2 },
@@ -716,7 +761,7 @@ describe('merging nearby stops', () => {
     // The gap between the two refills — at `step` and at `2 × step` — is one step, inside the window.
     expect(step).toBeLessThan(mergeWindowKm(D));
 
-    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 3 }], []);
+    const { fills, stops } = place(state, [{ gid: 'a', content: 'izo', loads: 3 }], []);
     expect(fills).toHaveLength(2);
     expect(fills[0].from).toBe(0);
     expect(fills[0].to).toBeCloseTo(step, 9);
@@ -763,7 +808,7 @@ describe('the gut gate', () => {
     expect(curve[Math.round(start / step) - 1].gut).toBeGreaterThan(0);
     expect(curve[Math.round(start / step)].gut).toBe(0);
 
-    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 1 }], []);
+    const { fills, stops } = place(state, [{ gid: 'a', content: 'izo', loads: 1 }], []);
     expectFillsClose(fills, [
       {
         gid: 'a',
@@ -804,10 +849,12 @@ describe('the gut gate', () => {
     expect(curve[Math.round(start / step) - 1].gut).toBeGreaterThan(0);
     expect(curve[Math.round(start / step)].gut).toBe(0);
 
-    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 2 }], []);
-    // The hole between the two is the rule itself. The first load is deliberately *not* stretched
-    // across it: stretching would pour the same carbs over the stretch the gut had no room for,
-    // which is the delivery the gate exists to refuse.
+    const { fills, stops } = place(state, [{ gid: 'a', content: 'izo', loads: 2 }], []);
+    // The hole between the two is the rule itself: placement puts the second load at 53.75, not at
+    // the 50 the need line asked for. `stretch` later draws the first load across that hole — which
+    // is the owner's other rule and does *not* undo this one, because it pours the same grams over
+    // more kilometres and so arrives slower than the gut could take them anyway. That is pinned in
+    // `a drink is stretched to the end of the room it has`, on this very fixture.
     expectFillsClose(fills, [
       { gid: 'a', content: 'izo', from: 0, to: end },
       { gid: 'a', content: 'izo', from: start, to: start + end },
@@ -820,21 +867,24 @@ describe('the gut gate', () => {
     // The same 50 g of breakfast that holds the izo back to 15 km. Water carries no carbs, so it
     // neither joins the backlog nor waits for it — *"jak cukru jest dużo to można sięgnąć po samą
     // wodę w tym czasie"*. Both water loads sit where the residual fluid line put them, seam to
-    // seam from km 0, with the last one rationed to the finish as always.
+    // seam from km 0: no deferral anywhere in the stream, which is the whole of what this pins.
     const route = makeRoute({ preMealCarbs: 60, preMealMinutes: 30 });
     const D = dist(route);
     const state = makeState(route, [vessel('a', 750, ['izo']), vessel('w', 750, ['water'])]);
-    const { fills } = layout(
-      state,
-      [
-        { gid: 'a', content: 'izo', loads: 1 },
-        { gid: 'w', content: 'water', loads: 2 },
-      ],
-      [],
-    );
+    const assignment: VesselAssignment[] = [
+      { gid: 'a', content: 'izo', loads: 1 },
+      { gid: 'w', content: 'water', loads: 2 },
+    ];
+    const { fills } = place(state, assignment, []);
 
     const seam = waterSpanResidual(route, 750, 750);
     expectFillsClose(of(fills, 'water'), [
+      { gid: 'w', content: 'water', from: 0, to: seam },
+      { gid: 'w', content: 'water', from: seam, to: 2 * seam },
+    ]);
+    // Un-gated at both ends: the second load starts at the seam, and once stretched it runs to the
+    // line — the gate never touches the water stream at either stage.
+    expectFillsClose(of(layout(state, assignment, []).fills, 'water'), [
       { gid: 'w', content: 'water', from: 0, to: seam },
       { gid: 'w', content: 'water', from: seam, to: D },
     ]);
@@ -855,9 +905,9 @@ describe('needsStop products', () => {
   const food = (key: string, from: number): DraftFood => ({ key, carbs: 35, from, to: from });
 
   test('a product you buy is a stop; one you carried is not', () => {
-    const carried = layout(state, [], [food('banana', 47)]);
+    const carried = place(state, [], [food('banana', 47)]);
     expect(carried.stops).toEqual([]);
-    const bought = layout(state, [], [food('cola', 47)]);
+    const bought = place(state, [], [food('cola', 47)]);
     expect(bought.stops).toEqual([{ at: 47 }]);
   });
 
@@ -873,7 +923,7 @@ describe('needsStop products', () => {
     // under test — an immovable candidate wins its cluster — is the same from either side, and this
     // is the side the gate leaves reachable.
     const foods = [food('cola', 55)];
-    const { fills, stops } = layout(state, assignment, foods);
+    const { fills, stops } = place(state, assignment, foods);
     expect(stops).toEqual([{ at: 55 }]);
     expect(of(fills, 'izo')).toEqual([
       { gid: 'a', content: 'izo', from: 0, to: 55 },
@@ -905,7 +955,7 @@ describe('needsStop products', () => {
     // 13 km apart is outside the 10 km window, so neither candidate moves.
     expect(clear - 47).toBeGreaterThan(mergeWindowKm(dist(route)));
 
-    const { fills, stops } = layout(state, assignment, [food('cola', 47)]);
+    const { fills, stops } = place(state, assignment, [food('cola', 47)]);
     expectFillsClose(of(fills, 'izo'), [
       { gid: 'a', content: 'izo', from: 0, to: 50 },
       {
@@ -920,7 +970,7 @@ describe('needsStop products', () => {
   });
 
   test('one further away than the window keeps its own stop', () => {
-    const { fills, stops } = layout(state, assignment, [food('cola', 65)]);
+    const { fills, stops } = place(state, assignment, [food('cola', 65)]);
     expect(stopXs(stops)).toEqual([50, 65]);
     expect(froms(of(fills, 'izo'))).toEqual([0, 50]);
     expectStopsMatchRefills(fills, stops, [65]);
@@ -928,7 +978,7 @@ describe('needsStop products', () => {
 
   test('foods come back out exactly as they went in', () => {
     const foods = [food('cola', 47), food('banana', 120)];
-    expect(layout(state, assignment, foods).foods).toBe(foods);
+    expect(place(state, assignment, foods).foods).toBe(foods);
   });
 });
 
@@ -949,7 +999,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
   ];
 
   test('it does, when the plan already stops where the vessel is empty', () => {
-    const { fills, stops } = layout(state, assignment, []);
+    const { fills, stops } = place(state, assignment, []);
     expect(stops).toEqual([{ at: 100 }]);
     const topUp = fills.filter((f) => f.gid === 'flask' && f.content === 'water');
     expect(topUp).toHaveLength(1);
@@ -960,7 +1010,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
   });
 
   test('it does not, when the plan has no stop at all', () => {
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 1 },
@@ -979,7 +1029,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
       vessel('a', 750, ['izo', 'water']),
       vessel('flask', 250, ['gel']),
     ]);
-    const { fills } = layout(dry, assignment, []);
+    const { fills } = place(dry, assignment, []);
     expect(fills.filter((f) => f.gid === 'flask')).toHaveLength(1);
   });
 
@@ -991,7 +1041,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
       vessel('a', 750, ['izo']),
       vessel('flask', 250, ['gel', 'izo']),
     ]);
-    const { fills, stops } = layout(noWater, assignment, []);
+    const { fills, stops } = place(noWater, assignment, []);
     const own = fills.filter((f) => f.gid === 'flask');
     expect(own).toHaveLength(2);
     expect(own[0]).toEqual({ gid: 'flask', content: 'gel', from: 50, to: 100 });
@@ -1011,7 +1061,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
       vessel('a', 750, ['izo']),
       vessel('flask', 250, ['gel', 'water', 'izo']),
     ]);
-    const { fills } = layout(both, assignment, []);
+    const { fills } = place(both, assignment, []);
     const own = fills.filter((f) => f.gid === 'flask');
     expect(own).toHaveLength(2);
     expect(own[1].content).toBe('water');
@@ -1026,7 +1076,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
       vessel('a', 750, ['izo']),
       vessel('flask', 250, ['gel', 'izo']),
     ]);
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       noWater,
       [
         { gid: 'a', content: 'izo', loads: 3 },
@@ -1046,7 +1096,7 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
       { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
     ];
     const big = makeState(route, [vessel('flask', 500, ['gel', 'water'])], FOOD_LIB);
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       big,
       [{ gid: 'flask', content: 'gel', loads: 1 }],
       [{ key: 'cola', carbs: 35, from: 50, to: 50 }],
@@ -1071,20 +1121,20 @@ describe('illegal assignments throw', () => {
   ]);
 
   test('a content the vessel does not allow', () => {
-    expect(() => layout(state, [{ gid: 'bladder', content: 'izo', loads: 1 }], [])).toThrow(
+    expect(() => place(state, [{ gid: 'bladder', content: 'izo', loads: 1 }], [])).toThrow(
       /may not carry izo/,
     );
   });
 
   test('a vessel that is not in the gear', () => {
-    expect(() => layout(state, [{ gid: 'ghost', content: 'water', loads: 1 }], [])).toThrow(
+    expect(() => place(state, [{ gid: 'ghost', content: 'water', loads: 1 }], [])).toThrow(
       /not in the gear/,
     );
   });
 
   test('the same vessel assigned twice', () => {
     expect(() =>
-      layout(
+      place(
         state,
         [
           { gid: 'a', content: 'izo', loads: 1 },
@@ -1099,7 +1149,7 @@ describe('illegal assignments throw', () => {
     // The check runs over the whole assignment before any tiling, so a bad entry at the end
     // rejects the lot rather than leaving a half-built draft behind.
     expect(() =>
-      layout(
+      place(
         state,
         [
           { gid: 'a', content: 'izo', loads: 2 },
@@ -1114,12 +1164,12 @@ describe('illegal assignments throw', () => {
 describe('degenerate inputs', () => {
   test('an empty assignment plans nothing', () => {
     const state = makeState(makeRoute(), [vessel('a', 750, ['izo'])]);
-    expect(layout(state, [], [])).toEqual({ fills: [], foods: [], stops: [] });
+    expect(place(state, [], [])).toEqual({ fills: [], foods: [], stops: [] });
   });
 
   test('loads: 0 leaves the vessel at home', () => {
     const state = makeState(makeRoute(), [vessel('a', 750, ['izo']), vessel('b', 750, ['izo'])]);
-    const { fills, stops } = layout(
+    const { fills, stops } = place(
       state,
       [
         { gid: 'a', content: 'izo', loads: 0 },
@@ -1133,7 +1183,7 @@ describe('degenerate inputs', () => {
 
   test('every vessel at loads: 0 is the same as no assignment', () => {
     const state = makeState(makeRoute(), [vessel('a', 750, ['izo'])]);
-    expect(layout(state, [{ gid: 'a', content: 'izo', loads: 0 }], [])).toEqual({
+    expect(place(state, [{ gid: 'a', content: 'izo', loads: 0 }], [])).toEqual({
       fills: [],
       foods: [],
       stops: [],
@@ -1146,7 +1196,7 @@ describe('degenerate inputs', () => {
     const route = makeRoute({ distance: 0 });
     const state = makeState(route, [vessel('a', 750, ['izo'])]);
     expect(dist(route)).toBe(1);
-    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 3 }], []);
+    const { fills, stops } = place(state, [{ gid: 'a', content: 'izo', loads: 3 }], []);
     expect(fills).toEqual([{ gid: 'a', content: 'izo', from: 0, to: 1 }]);
     expect(stops).toEqual([]);
   });
@@ -1157,7 +1207,7 @@ describe('degenerate inputs', () => {
     const route = makeRoute({ distance: 0 });
     const state = makeState(route, [vessel('w', 750, ['water'])]);
     expect(fluidNeed(route)).toBe(0);
-    const { fills, stops } = layout(state, [{ gid: 'w', content: 'water', loads: 3 }], []);
+    const { fills, stops } = place(state, [{ gid: 'w', content: 'water', loads: 3 }], []);
     expect(fills).toEqual([{ gid: 'w', content: 'water', from: 0, to: 1 }]);
     expect(stops).toEqual([]);
   });
@@ -1165,7 +1215,7 @@ describe('degenerate inputs', () => {
   test('a vessel that holds nothing is skipped without stalling the relay', () => {
     const route = makeRoute();
     const state = makeState(route, [vessel('empty', 0, ['izo']), vessel('b', 750, ['izo'])]);
-    const { fills } = layout(
+    const { fills } = place(
       state,
       [
         { gid: 'empty', content: 'izo', loads: 1 },
@@ -1174,5 +1224,190 @@ describe('degenerate inputs', () => {
       [],
     );
     expect(fills).toEqual([{ gid: 'b', content: 'izo', from: 0, to: 50 }]);
+  });
+});
+
+/**
+ * The stretch, on its own and through `layout`.
+ *
+ * The pass is pure geometry over the other fills' `from`s — no need line, no vessel volume, no
+ * arithmetic from `fuel.ts` at all — so most of it is pinned on hand-built fill lists where the caps
+ * are visible by eye. The two tests that go through `layout` are the ones where the interaction with
+ * real placement is the point, and their spans are derived from `carbsFill`/`cph` like everything
+ * else in this file.
+ */
+describe('a drink is stretched to the end of the room it has', () => {
+  const D = 200;
+
+  test('a fill runs to its own vessel’s next fill — and a gel fill is that next fill', () => {
+    // Three clauses at once: the water is cut off where the bottle is refilled with something else,
+    // a gel fill counts for that because one bottle cannot hold two things, and the gel itself is
+    // not stretched — it is doses, not a lane.
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 20 },
+      { gid: 'a', content: 'gel', from: 60, to: 100 },
+    ];
+    expect(stretch(fills, D)).toEqual([
+      { gid: 'a', content: 'water', from: 0, to: 60 },
+      { gid: 'a', content: 'gel', from: 60, to: 100 },
+    ]);
+  });
+
+  test('a fill runs to the next fill of the same content in any vessel', () => {
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 20 },
+      { gid: 'b', content: 'water', from: 60, to: 80 },
+    ];
+    // The lane is taken over at 60, and `b`'s load is the last of it, so it runs to the line.
+    expect(stretch(fills, D)).toEqual([
+      { gid: 'a', content: 'water', from: 0, to: 60 },
+      { gid: 'b', content: 'water', from: 60, to: D },
+    ]);
+  });
+
+  test('the last fill of a lane runs to the finish', () => {
+    const fills: DraftFill[] = [{ gid: 'a', content: 'water', from: 40, to: 50 }];
+    expect(stretch(fills, D)).toEqual([{ gid: 'a', content: 'water', from: 40, to: D }]);
+  });
+
+  test('the earliest of the three caps is the one that binds', () => {
+    // Same content at 120, the vessel's own next fill at 80, the finish at 200: 80 wins.
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 10 },
+      { gid: 'a', content: 'izo', from: 80, to: 100 },
+      { gid: 'b', content: 'water', from: 120, to: 140 },
+    ];
+    expect(stretch(fills, D)[0]).toEqual({ gid: 'a', content: 'water', from: 0, to: 80 });
+  });
+
+  test('water and izo are separate lanes, so neither caps the other', () => {
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 20 },
+      { gid: 'b', content: 'izo', from: 60, to: 80 },
+    ];
+    // Both run to the line, straight past each other: the rider sips from both bottles at once,
+    // which is the whole point of laying fluid and carbs out as two independent needs.
+    expect(stretch(fills, D)).toEqual([
+      { gid: 'a', content: 'water', from: 0, to: D },
+      { gid: 'b', content: 'izo', from: 60, to: D },
+    ]);
+  });
+
+  test('a fill is never shortened, so a lane another vessel already covers is left alone', () => {
+    // `b`'s water starts inside `a`'s span, so the cap it puts on `a` sits behind where `a` already
+    // ends. The rule only ever moves a `to` later, so `a` keeps its 150.
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'water', from: 0, to: 150 },
+      { gid: 'b', content: 'water', from: 40, to: 60 },
+    ];
+    expect(stretch(fills, D)).toEqual([
+      { gid: 'a', content: 'water', from: 0, to: 150 },
+      { gid: 'b', content: 'water', from: 40, to: D },
+    ]);
+  });
+
+  test('izo stretches under a running gel stream — the lanes are independent', () => {
+    // The owner's explicit ruling, asked as a direct question: a gel running over the same
+    // kilometres does *not* count as "there is already something on that lane" for izo. Only
+    // another izo fill does, and this list has none.
+    const fills: DraftFill[] = [
+      { gid: 'a', content: 'izo', from: 0, to: 20 },
+      { gid: 'f', content: 'gel', from: 20, to: 180 },
+    ];
+    expect(stretch(fills, D)).toEqual([
+      { gid: 'a', content: 'izo', from: 0, to: D },
+      { gid: 'f', content: 'gel', from: 20, to: 180 },
+    ]);
+  });
+
+  /**
+   * **The stretch must not undo the gut gate.** `place` defers a carb load until `Sample.gut` has
+   * drained to zero; the stretch then pours an earlier load over more kilometres, and over the
+   * stretched tail the gut receives carbs where it previously received none. That is a real reason
+   * to check rather than to assume.
+   *
+   * It holds, and the reason it holds is the direction of the change: stretching a fill lowers its
+   * delivery rate, and a backlog only forms while delivery runs above `absCap`. The fixture is the
+   * one from `the gut gate` above — a 1.2 ratio puts `absCap` at 70 g/h under a 75 g/h need, so the
+   * first load is poured in faster than it can be taken and the second waits 3.75 km for the 10 g
+   * left over. After the stretch the first load covers the whole 53.75 km instead of 50, and the
+   * expectation below is not a number `layout` produced: it is the gate's own contract, zero, read
+   * off `fuel.ts`'s curve built from the *stretched* spans.
+   */
+  test('and it does not undo the gut gate', () => {
+    const route = makeRoute();
+    const state = makeState(route, [vessel('a', 750, ['izo'])], [], makeMix({ ratio: 1.2 }));
+    const assignment: VesselAssignment[] = [{ gid: 'a', content: 'izo', loads: 2 }];
+
+    const placed = place(state, assignment, []).fills;
+    const stretched = layout(state, assignment, []).fills;
+    // The gate did bite, and the stretch did close the hole it left — so neither half of this test
+    // is vacuous.
+    expect(placed[1].from).toBeGreaterThan(placed[0].to);
+    expect(stretched[0].to).toBeCloseTo(stretched[1].from, 9);
+
+    // For every carb load, the curve of the loads that precede it — at their final, stretched spans —
+    // must read an empty gut where that load begins. That is exactly what `carbGate` promised while
+    // it was placing them, re-asked after the spans moved.
+    stretched.forEach((f, i) => {
+      const curve = samples({
+        ...state,
+        fills: stretched.slice(0, i).map((g, j) => ({ ...g, fid: j + 1 })),
+      });
+      const at = curve.find((p) => p.x >= f.from);
+      expect(at?.gut).toBe(0);
+    });
+  });
+
+  describe('through `layout`, on a plan `place` actually builds', () => {
+    const route = makeRoute();
+    const RD = dist(route);
+    // 250 ml of the 20 g/100 ml mix is 50 g, which this 75 g/h ride burns in 16⅔ km. The flask's
+    // 1000 ml of 60 g/100 ml gel is 600 g — the whole ride — so it is rate-matched onto the line and
+    // pulled back to 196 by the gel finish gap.
+    const gear = [vessel('a', 250, ['izo', 'water']), vessel('f', 1000, ['gel'])];
+    const state = makeState(route, gear);
+    const assignment: VesselAssignment[] = [
+      { gid: 'a', content: 'izo', loads: 1 },
+      { gid: 'f', content: 'gel', loads: 1 },
+    ];
+
+    test('the izo runs the whole route underneath the gel', () => {
+      const izoSpan = carbSpan(route, carbsIn(state, 'a', 'izo'));
+      expect(izoSpan).toBeCloseTo(50 / 3, 9);
+      expect(carbSpan(route, carbsIn(state, 'f', 'gel'))).toBe(RD);
+
+      // Placement leaves the izo where the need line put it, with 183 km of empty bidon after it.
+      expectFillsClose(place(state, assignment, []).fills, [
+        { gid: 'a', content: 'izo', from: 0, to: izoSpan },
+        { gid: 'f', content: 'gel', from: izoSpan, to: RD * 0.98 },
+      ]);
+      // The stretch draws it out to the line: no other izo anywhere, no other fill in `a`, and the
+      // gel is neither.
+      expectFillsClose(layout(state, assignment, []).fills, [
+        { gid: 'a', content: 'izo', from: 0, to: RD },
+        { gid: 'f', content: 'gel', from: izoSpan, to: RD * 0.98 },
+      ]);
+    });
+
+    test('and it changes no total, no `from`, and no stop', () => {
+      const before = place(state, assignment, []);
+      const after = layout(state, assignment, []);
+      expect(after.fills.map((f) => f.from)).toEqual(before.fills.map((f) => f.from));
+      expect(after.stops).toEqual(before.stops);
+      expect(after.foods).toEqual(before.foods);
+
+      // `planSummary` reads volume through `volOf` and grams through `carbsFill`, and neither knows
+      // what a span is — so the plan the rider drinks is the same plan, poured more slowly.
+      const summarize = (d: typeof before) =>
+        planSummary({ ...state, fills: d.fills.map((f, i) => ({ ...f, fid: i + 1 })) });
+      const b = summarize(before);
+      const a = summarize(after);
+      expect(a.izoCarbs).toBe(b.izoCarbs);
+      expect(a.gelCarbs).toBe(b.gelCarbs);
+      expect(a.totalCarbs).toBe(b.totalCarbs);
+      expect(a.fluidPlanned).toBe(b.fluidPlanned);
+      expect(a.waterBalancePct).toBe(b.waterBalancePct);
+    });
   });
 });

@@ -7,6 +7,10 @@
  * `spans.ts` (which inverts the app's own need curve) or forced by one of the owner's rules. Two
  * calls with the same arguments give the same draft.
  *
+ * It runs in two stages, and `layout` is their composition: `place` puts everything where it goes,
+ * then `stretch` draws the sipped fills out over the room they have. The split is the owner's — see
+ * `place` — and it is what lets the placement rules be pinned without the stretch covering for them.
+ *
  * The rules it implements, in the owner's terms:
  *
  * **Handover is free; only a refill costs a stop.** Bottles hand over to each other. Vessel A runs
@@ -33,6 +37,13 @@
  * starts at the later of where the previous one ended and where the gut has drained empty. See
  * `gutClearKm`. Water is exempt: it carries no carbs, and *"jak cukru jest dużo to można sięgnąć po
  * samą wodę w tym czasie"* is exactly the gap this opens being drinkable.
+ *
+ * **A drink is sipped, so it is stretched to the end of the room it has.** A fill must not pour out
+ * early and leave its lane empty behind it — *"jak dokłada wodę albo izo, to niech rozciąga do końca
+ * wolnej przestrzeni, czyli do następnego napełnienia, chyba że w tym czasie jest już jakiś pojemnik
+ * z odpowiednio wodą lub izo"*. The point is not the hole, it is the drinking: *"to rozciąganie to
+ * bardziej wizualnie ma zadziałać, że ktoś ma dostarczać wodę regularnie a nie cały bidon w 15 min a
+ * potem 45 bez nawet kropli"*. See `SIPPED` and the pass that reads it.
  *
  * **Each need is covered once, by the sum of its sources.** There are two needs — carbs and fluid —
  * not three contents' worth of them. Carbs come from izo *and* gel, so every carb-carrying vessel
@@ -64,7 +75,8 @@
  * - **Gel dose placement (`Fill.pos`).** A gel flask is `x movable doses`, not a stream, and where
  *   those doses land is a separate, known piece of work. Until it exists a gel vessel is laid out
  *   as an ordinary stream — one continuous span per load — which is the same shape the chart
- *   already draws for a gel fill with no `pos`.
+ *   already draws for a gel fill with no `pos`. When it does land it lands in `place`, and `stretch`
+ *   will not need touching: gel is not a lane, so it is not stretched either way.
  * - **Choosing the assignment.** That is the search's job. `layout` is the function the search
  *   calls; it never second-guesses what it was handed. The one thing it adds on its own is the
  *   top-up above, and only into a vessel the assignment already spent, only at a stop the plan
@@ -218,7 +230,91 @@ function relay(legs: Leg[], D: number, gate: Gate = NO_GATE): Load[] {
 }
 
 /**
- * Lay `assignment` out into a draft plan.
+ * The contents that are *sipped*, and so are laid out as a lane rather than as a set of events.
+ *
+ * Water and izo are drunk continuously — a mouthful every few minutes for as long as the bottle
+ * lasts — so a span is the honest shape for one, and stretching that span means drinking it at a
+ * sane, even rate instead of in a hurry. **Gel is deliberately not in this list, and the reason is
+ * what the list is for**: *"żel się nie rozciąga, bo to punkty z dostarczaniem (łyk, przepijasz i
+ * chowasz), a nie pas jak woda czy izo"*. A gel dose is an event — a swig, washed down, put away —
+ * not a lane to sip along. Stretching one would model the rider holding a gel in his mouth for
+ * eleven kilometres, which is not a thing anybody does. So the omission is a design decision about
+ * what gel *is*, not a gap in the rule waiting to be tidied up by adding the third content.
+ */
+const SIPPED: Content[] = ['water', 'izo'];
+
+/**
+ * Stretch every sipped fill to the end of the room it has. The last pass over a plan, and the only
+ * one that moves a `to` without moving anything else.
+ *
+ * The owner's rule: *"jak dokłada wodę albo izo, to niech rozciąga do końca wolnej przestrzeni,
+ * czyli do następnego napełnienia, chyba że w tym czasie jest już jakiś pojemnik z odpowiednio wodą
+ * lub izo, tzn jak mamy bidon 1 i izo w środku a na tym pasie nie ma innego izo, to go rozciągnij do
+ * miejsca w którym ten bidon będzie uzupełniony przez coś innego"*. So a fill runs until the first
+ * of three things that ends its claim on the lane:
+ *
+ * ```
+ * to = max(to, min( the next fill of the same content, in any vessel   — the lane is taken over
+ *                 , this vessel's own next fill                        — the bottle holds something else
+ *                 , dist(route) ))                                     — the ride is over
+ * ```
+ *
+ * **What it is for is the drinking, not the hole.** *"To rozciąganie to bardziej wizualnie ma
+ * zadziałać, że ktoś ma dostarczać wodę regularnie a nie cały bidon w 15 min a potem 45 bez nawet
+ * kropli."* A fill's rate dropping below the need line over part of its span is therefore the rule
+ * working, not a regression to guard against — there is deliberately no term here that keeps a
+ * stretched span near what the need line asked for. `spans.ts` decides where a fill is *due*; this
+ * decides how slowly it may be drunk once it is there.
+ *
+ * **The three lanes are independent.** Water, izo and gel are separate lanes, and only a fill of the
+ * *same* content ends another's claim. Asked directly whether a gel stream running over the same
+ * kilometres counts as "there is already something on that lane" for izo, the owner ruled that it
+ * does not — so izo stretches on underneath a running gel, and only another izo stops it. A gel fill
+ * still caps a fill *in the same vessel*, because one bottle cannot hold two things at once; that is
+ * the second clause above, and it is about the vessel rather than about the lane.
+ *
+ * **Nothing else moves.** No `from`, no fill added or removed, no stop. The plan's totals are
+ * untouched: `planSummary` reads volume through `volOf` and grams through `carbsFill`, and both are
+ * span-independent. What changes is the *rate* of delivery, and so the gut curve and `carbRateGph`.
+ *
+ * **One pass, in any order.** Stretching one fill can never change another's cap, because every cap
+ * is a function of `from`s alone and this pass only ever writes `to`. So there is no fixed point to
+ * iterate to and no staging of "compute all the caps first" to get right — the answer is the same
+ * whatever order the list is walked in. `to` is only ever moved later (`max`), so a cap that already
+ * sits behind a fill's end — two vessels pouring the same content over the same stretch — shortens
+ * nothing.
+ */
+export function stretch(fills: DraftFill[], D: number): DraftFill[] {
+  return fills.map((f) => {
+    if (!SIPPED.includes(f.content)) return f;
+    let cap = D;
+    for (const o of fills) {
+      // Strictly later, so a fill never caps itself, and two fills that start together — which the
+      // relay cannot produce, but a pair of top-ups poured at one stop could — leave each other
+      // alone rather than one arbitrarily cutting the other off at zero length.
+      if (o.from <= f.from) continue;
+      if (o.content === f.content || o.gid === f.gid) cap = Math.min(cap, o.from);
+    }
+    return { ...f, to: Math.max(f.to, cap) };
+  });
+}
+
+/**
+ * Lay `assignment` out into a draft plan: the placement stage, everything except the stretch.
+ *
+ * Kept separate from `layout` on the owner's own instruction, and the reason is worth stating
+ * because it is not obvious: *"to ma być testowane przed rozciąganiem, żeby rozciąganie nie
+ * zaburzyło całego procesu układania elementów"*. The stretch closes holes; a placement bug opens
+ * them. If the only layout anybody ever asserts against is the stretched one, the two cancel and a
+ * placement regression becomes invisible — permanently, since nothing would ever fail. So placement
+ * is a function anyone can call and pin on its own, and `layout` below is the composition. Every
+ * test in `layout.test.ts` about *where* something is put — the relay, the merge, the top-ups, the
+ * gut gate, the gel finish gap — asserts on this, and only the tests about the stretch itself use
+ * `layout`.
+ *
+ * That boundary is also where the known piece of future work lands: gel is laid out here as an
+ * ordinary stream, and the owner describes it as movable doses. Whenever that changes it changes
+ * *this* function, and `stretch` neither knows nor cares.
  *
  * **Illegal assignments throw.** A vessel asked to carry a content its `allowed` list does not
  * permit, an unknown `gid`, or the same `gid` assigned twice are all rejected with an error rather
@@ -230,11 +326,7 @@ function relay(legs: Leg[], D: number, gate: Gate = NO_GATE): Load[] {
  * error — that is a legal way to say a vessel is left at home, and neither is `loads: 2` on a gel
  * vessel: gel is refilled like anything else.
  */
-export function layout(
-  state: PlanState,
-  assignment: VesselAssignment[],
-  foods: DraftFood[],
-): Draft {
+export function place(state: PlanState, assignment: VesselAssignment[], foods: DraftFood[]): Draft {
   const { route, gear, foodLib } = state;
   const D = dist(route);
 
@@ -349,8 +441,7 @@ export function layout(
   // No gate here, and that is the other half of the owner's rule rather than an omission: water
   // carries no carbs, so it neither fills the stomach's sugar backlog nor has to wait for it to
   // clear — *"jak cukru jest dużo to można sięgnąć po samą wodę w tym czasie, jeżeli mamy za mało w
-  // ogólnym rachunku"*. The water stream keeps starting at km 0 and running seam to seam, `woda do
-  // końca` and all.
+  // ogólnym rachunku"*. The water stream keeps starting at km 0 and running seam to seam.
   const waterStream = relay(
     assignment
       .filter((a) => a.content === 'water')
@@ -365,16 +456,14 @@ export function layout(
     D,
   );
 
-  // **Water is rationed to the finish.** Rate-matching is the right span for a load that hands over
-  // to another one; it is the wrong span for the *last* water load, because there is nothing after
-  // it. The owner's rule is *"woda do końca"*: a bottle holding less than the ride demands gets
-  // spread over the whole route rather than drunk out early. Without this, a 350 ml bottle on a
-  // 15 km ride is laid out 0→5.9 and the rider spends nine kilometres with an empty bidon.
+  // *"Woda do końca"* used to be stated right here, as `lastWater.to = D` — the last load of the
+  // water stream rationed across the rest of the route rather than drunk out early, so that a 350 ml
+  // bottle on a 15 km ride is not laid out 0→5.9 with nine kilometres of empty bidon after it. It is
+  // gone from this stage because `stretch` now says the same thing about every sipped fill, and two
+  // mechanisms stating one rule is how they drift apart. The general rule is also the stricter of
+  // the two: it stops the last water load where another vessel picks the lane up, which the blanket
+  // `= D` would have run straight past.
   //
-  // Only the last load moves, so every handover before it stays exactly where the need line put it.
-  const lastWater = waterStream[waterStream.length - 1];
-  if (lastWater) lastWater.to = D;
-
   // The two needs are drunk at the same time, so the water stream starts again at km 0 rather than
   // queueing behind the carb one.
   const streams = [carbStream, waterStream].filter((s) => s.length > 0);
@@ -555,4 +644,22 @@ export function layout(
   fills.sort((a, b) => a.from - b.from);
 
   return { fills, foods, stops };
+}
+
+/**
+ * A decision, laid out and then stretched. The function the search calls.
+ *
+ * Two stages, in this order and no other: `place` decides *where* every fill, stop and dose goes,
+ * and `stretch` decides how far the sipped ones are drawn out once they are there. The stretch is
+ * structurally last and reads nothing but the finished fill list, so no earlier pass can be
+ * reasoning about a span it then changes underneath them — and nothing it does can hide a mistake
+ * `place` made, because `place` is asserted on directly.
+ */
+export function layout(
+  state: PlanState,
+  assignment: VesselAssignment[],
+  foods: DraftFood[],
+): Draft {
+  const draft = place(state, assignment, foods);
+  return { ...draft, fills: stretch(draft.fills, dist(state.route)) };
 }
