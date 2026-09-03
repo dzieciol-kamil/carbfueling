@@ -998,20 +998,35 @@ export function samples(state: PlanState): Sample[] {
     if (n < 2 || dt <= 0) return cumulative.map(() => 0);
     const raw = new Array<number>(n).fill(0);
     for (let i = 1; i < n; i++) raw[i] = (cumulative[i] - cumulative[i - 1]) / dt;
-    raw[0] = raw[1];
 
+    // Index 0 has no interval behind it, so two different things land on it and they have to be
+    // told apart. The *continuous* rate at the start of the ride is `raw[1]`, and using it as the
+    // filter's resting state is what keeps a bottle poured from km 0 reading its full rate from the
+    // first pixel instead of ramping up through a warm-up curve that means nothing (see above).
+    // `cumulative[0]` is the other thing: fluid already swallowed at the start line — a bolus with
+    // no interval to spread across. `fracFood` puts a product at `from = 0` wholly into sample 0,
+    // so a cola drunk on the line used to disappear from this curve altogether: every later
+    // difference is zero, and a resting state copied from `raw[1]` looks straight past it. It was
+    // in `ml`, in the totals and in the rider's stomach, and only the rate chart pretended
+    // otherwise. So it enters here as an impulse riding on the resting rate, which is exactly how
+    // the same cola drunk a kilometre later enters at its own index — and the two now draw the
+    // same bump.
+    const resting = raw[1];
+    raw[0] = resting + cumulative[0] / dt;
+
+    // Both passes start *at* the resting rate and filter index 0 like any other, so with nothing at
+    // the origin (`cumulative[0] === 0`, every ride that does not start with a swallow) the first
+    // step is a no-op and the output is unchanged.
     const pass1 = new Array<number>(n);
-    let ema = raw[0];
-    pass1[0] = ema;
-    for (let i = 1; i < n; i++) {
+    let ema = resting;
+    for (let i = 0; i < n; i++) {
       ema += fluidAlpha * (raw[i] - ema);
       pass1[i] = ema;
     }
 
     const pass2 = new Array<number>(n);
-    ema = pass1[0];
-    pass2[0] = ema;
-    for (let i = 1; i < n; i++) {
+    ema = resting;
+    for (let i = 0; i < n; i++) {
       ema += fluidAlpha * (pass1[i] - ema);
       pass2[i] = ema;
     }
