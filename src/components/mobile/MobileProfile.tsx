@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { absCap } from '../../domain/fuel';
 import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { LANGS, t } from '../../i18n/strings';
@@ -14,6 +14,20 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { usePlanFileTransfer } from '../usePlanFileTransfer';
 import { MobileStepper } from './MobileStepper';
+
+/** Shared by the three plan-data buttons; `flex: 1` lets the pair below share one row. */
+const planBtnStyle: CSSProperties = {
+  flex: 1,
+  border: '1px solid var(--chip-border)',
+  background: '#fff',
+  color: 'var(--ink)',
+  borderRadius: 10,
+  padding: '11px 12px',
+  fontFamily: 'Archivo, sans-serif',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+};
 
 export function MobileProfile() {
   const lang = useAppStore((s) => s.ui.lang);
@@ -32,7 +46,9 @@ export function MobileProfile() {
   const cap = absCap(mix, 0, 0, intensity);
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
+  const clearPlan = useAppStore((s) => s.clearPlan);
   const {
     fileInputRef,
     planFeedback,
@@ -172,41 +188,16 @@ export function MobileProfile() {
         <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
           {strings.planDataHint}
         </p>
+        {/* "Start over" leads here as it does on the desktop card, but on its own row: three
+            labels across a phone would wrap mid-word. */}
+        <button type="button" onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
+          {strings.clearPlanButton}
+        </button>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
-            onClick={handleExport}
-            style={{
-              flex: 1,
-              border: '1px solid var(--chip-border)',
-              background: '#fff',
-              color: 'var(--ink)',
-              borderRadius: 10,
-              padding: '11px 12px',
-              fontFamily: 'Archivo, sans-serif',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={handleExport} style={planBtnStyle}>
             {strings.exportPlanButton}
           </button>
-          <button
-            type="button"
-            onClick={handleImportPick}
-            style={{
-              flex: 1,
-              border: '1px solid var(--chip-border)',
-              background: '#fff',
-              color: 'var(--ink)',
-              borderRadius: 10,
-              padding: '11px 12px',
-              fontFamily: 'Archivo, sans-serif',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={handleImportPick} style={planBtnStyle}>
             {strings.importPlanButton}
           </button>
         </div>
@@ -485,6 +476,20 @@ export function MobileProfile() {
           confirmLabel={strings.importPlanConfirmConfirm}
           onCancel={cancelImport}
           onConfirm={confirmImport}
+        />
+      )}
+
+      {clearConfirmOpen && (
+        <ConfirmDialog
+          title={strings.clearPlanConfirmTitle}
+          body={strings.clearPlanConfirmBody}
+          cancelLabel={strings.clearPlanConfirmCancel}
+          confirmLabel={strings.clearPlanConfirmConfirm}
+          onCancel={() => setClearConfirmOpen(false)}
+          onConfirm={() => {
+            clearPlan();
+            setClearConfirmOpen(false);
+          }}
         />
       )}
     </div>
