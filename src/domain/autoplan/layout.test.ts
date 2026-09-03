@@ -9,7 +9,7 @@
  * a 200 km route exactly four loads long and every boundary a whole number.
  */
 import { describe, expect, test } from 'vitest';
-import { carbsFill, cph, dist, sweat, totalHours } from '../fuel';
+import { absCap, carbsFill, cph, dist, preRideGut, samples, sweat, totalHours } from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type {
   Content,
@@ -729,6 +729,121 @@ describe('merging nearby stops', () => {
   });
 });
 
+describe('the gut gate', () => {
+  /**
+   * *"Nie dokładać następnego jak krzywa cukru w żołądku nie spadnie do 0"* — a load waits for the
+   * stomach, not only for the need line.
+   *
+   * Every expectation here is the same two-step derivation: what `fuel.ts`'s own gut lane does to a
+   * plan built by hand in the test, and then where `layout` puts the load that has to wait for it.
+   * The physical arithmetic is written out beside each one, because reading the zero off the lane
+   * and nothing else would only mirror the engine's own search instead of checking it.
+   *
+   * One thing is worth stating once, because all three depend on it: `samples()` draws 161 points,
+   * so on a 200 km route the lane is read every 1.25 km and a clearance always lands on one of those
+   * points. The gut is clamped at zero (`stepStomachBuffer` takes `min(buf, capPerStep)`), so it
+   * touches the axis rather than crossing it and the point it touches at *is* the answer.
+   */
+
+  test('the first load waits out the pre-ride meal', () => {
+    // 60 g eaten half an hour before the start, digesting at 20 g/h, leaves 50 g on board at km 0.
+    const route = makeRoute({ preMealCarbs: 60, preMealMinutes: 30 });
+    const state = makeState(route, [vessel('a', 750, ['izo'])]);
+    expect(preRideGut(route)).toBe(50);
+
+    // Nothing is placed yet, so the ceiling the gate reads is `absCap` with no izo/gel split known —
+    // the izo ratio alone. 50 g at 90 g/h is 0.5556 h, which at 25 km/h is 13.89 km; the lane only
+    // says so at its next point, 15.0.
+    const cap = absCap(state.mix);
+    expect(cap).toBe(90);
+    const curve = samples(state);
+    const step = curve[1].x - curve[0].x;
+    const start = Math.ceil(((preRideGut(route) / cap) * route.speed) / step) * step;
+    expect(start).toBeCloseTo(15, 9);
+    expect(curve[Math.round(start / step) - 1].gut).toBeGreaterThan(0);
+    expect(curve[Math.round(start / step)].gut).toBe(0);
+
+    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 1 }], []);
+    expectFillsClose(fills, [
+      {
+        gid: 'a',
+        content: 'izo',
+        from: start,
+        to: start + carbSpan(route, carbsIn(state, 'a', 'izo')),
+      },
+    ]);
+    // Waiting is not a refill, so it costs no stop: the bottle was mixed in the kitchen either way.
+    expect(stops).toEqual([]);
+  });
+
+  test('a load is not placed while the gut still holds the one before it', () => {
+    // A 1.2 malto:fructose ratio puts `absCap` at 70 g/h, under the 75 g/h this ride asks for, so a
+    // load matched against the need line is poured in faster than it can be taken: the first bottle
+    // leaves a backlog behind precisely because it was the right size for the need line.
+    const route = makeRoute();
+    const state = makeState(route, [vessel('a', 750, ['izo'])], [], makeMix({ ratio: 1.2 }));
+    const carbs = carbsIn(state, 'a', 'izo');
+    const end = carbSpan(route, carbs);
+    const cap = absCap(state.mix, carbs, 0);
+    expect(cap).toBe(70);
+    expect(cap).toBeLessThan(cph(route));
+
+    // Over its own span the load delivers `carbs` and the gut takes `cap / cph` of them, so it ends
+    // holding the rest: 10 g, another 10/70 h — 3.57 km — of absorption, which the lane reports at
+    // 53.75.
+    const backlog = carbs * (1 - cap / cph(route));
+    expect(backlog).toBeCloseTo(10, 9);
+    const curve = samples({
+      ...state,
+      fills: [{ fid: 1, gid: 'a', content: 'izo', from: 0, to: end }],
+    });
+    const step = curve[1].x - curve[0].x;
+    const start = Math.ceil((end + (backlog / cap) * route.speed) / step) * step;
+    expect(start).toBeCloseTo(53.75, 9);
+    expect(curve[Math.round(end / step)].gut).toBeCloseTo(backlog, 6);
+    expect(curve[Math.round(start / step) - 1].gut).toBeGreaterThan(0);
+    expect(curve[Math.round(start / step)].gut).toBe(0);
+
+    const { fills, stops } = layout(state, [{ gid: 'a', content: 'izo', loads: 2 }], []);
+    // The hole between the two is the rule itself. The first load is deliberately *not* stretched
+    // across it: stretching would pour the same carbs over the stretch the gut had no room for,
+    // which is the delivery the gate exists to refuse.
+    expectFillsClose(fills, [
+      { gid: 'a', content: 'izo', from: 0, to: end },
+      { gid: 'a', content: 'izo', from: start, to: start + end },
+    ]);
+    expect(stopXs(stops)).toHaveLength(1);
+    expect(stopXs(stops)[0]).toBeCloseTo(start, 9);
+  });
+
+  test('the water stream is not gated', () => {
+    // The same 50 g of breakfast that holds the izo back to 15 km. Water carries no carbs, so it
+    // neither joins the backlog nor waits for it — *"jak cukru jest dużo to można sięgnąć po samą
+    // wodę w tym czasie"*. Both water loads sit where the residual fluid line put them, seam to
+    // seam from km 0, with the last one rationed to the finish as always.
+    const route = makeRoute({ preMealCarbs: 60, preMealMinutes: 30 });
+    const D = dist(route);
+    const state = makeState(route, [vessel('a', 750, ['izo']), vessel('w', 750, ['water'])]);
+    const { fills } = layout(
+      state,
+      [
+        { gid: 'a', content: 'izo', loads: 1 },
+        { gid: 'w', content: 'water', loads: 2 },
+      ],
+      [],
+    );
+
+    const seam = waterSpanResidual(route, 750, 750);
+    expectFillsClose(of(fills, 'water'), [
+      { gid: 'w', content: 'water', from: 0, to: seam },
+      { gid: 'w', content: 'water', from: seam, to: D },
+    ]);
+    // And the izo alongside it did wait, so this is the two rules in one plan rather than a route
+    // the gate happened not to bite on.
+    expect(of(fills, 'izo')[0].from).toBeCloseTo(15, 9);
+  });
+});
+
 describe('needsStop products', () => {
   const FOOD_LIB: FoodLibEntry[] = [
     { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
@@ -747,16 +862,60 @@ describe('needsStop products', () => {
   });
 
   test('a refill near one is pulled onto it, because the product cannot move', () => {
-    // The cola is bought at km 47 and the izo refill was computed at 50 — 3 km apart, inside the
-    // window. The product's position is the caller's and comes back untouched, so the boundary is
-    // the one that gives way.
-    const foods = [food('cola', 47)];
+    // The izo refill is due at km 50 and the cola is bought at 55 — 5 km apart, inside the window.
+    // The product's position is the caller's and comes back untouched, so the boundary is the one
+    // that gives way, and the load behind it stretches to meet it.
+    //
+    // This used to read the merge from the other side, a cola at 47 pulling the boundary back to it.
+    // The gut gate rules that arrangement out and the test below is what it does instead: a bought
+    // product is 35 g of sugar, and 35 g takes about as long to clear as the merge window is wide,
+    // so a product *before* a boundary now pushes it away rather than attracting it. The mechanism
+    // under test — an immovable candidate wins its cluster — is the same from either side, and this
+    // is the side the gate leaves reachable.
+    const foods = [food('cola', 55)];
     const { fills, stops } = layout(state, assignment, foods);
-    expect(stops).toEqual([{ at: 47 }]);
+    expect(stops).toEqual([{ at: 55 }]);
     expect(of(fills, 'izo')).toEqual([
-      { gid: 'a', content: 'izo', from: 0, to: 47 },
-      { gid: 'a', content: 'izo', from: 47, to: 100 },
+      { gid: 'a', content: 'izo', from: 0, to: 55 },
+      { gid: 'a', content: 'izo', from: 55, to: 100 },
     ]);
+    expectStopsMatchRefills(fills, stops, [55]);
+  });
+
+  test('a product before a boundary defers it instead, so each keeps its own stop', () => {
+    // The cola at 47 lands while the first bottle is still pouring, and the load behind it may not
+    // start until that 35 g has cleared. Derived from `fuel.ts`'s own gut lane, asked about a plan
+    // built here by hand — the first load and the cola, nothing else.
+    const curve = samples({
+      ...state,
+      fills: [{ fid: 1, gid: 'a', content: 'izo', from: 0, to: 50 }],
+      foods: [{ id: 1, key: 'cola', name: 'Cola', carbs: 35, from: 47, to: 47 }],
+    });
+    const step = curve[1].x - curve[0].x;
+    const i = curve.findIndex((s) => s.x >= 50 && s.gut <= 0);
+    const clear = curve[i].x;
+    // The arithmetic behind that index, so the number is checkable without the search: the cola's
+    // 35 g arrive against a 90 g/h ceiling that the izo is already using 75 g/h of, so 3 km of
+    // overlap eat 1.8 g of it and the remaining 33.2 g need another 9.2 km at the full ceiling once
+    // the bottle runs dry at 50 — 59.2 km, which the 1.25 km lane reports at 60.
+    expect(absCap(state.mix)).toBe(90);
+    expect(step).toBeCloseTo(1.25, 9);
+    expect(curve[i - 1].gut).toBeGreaterThan(0);
+    expect(clear).toBeCloseTo(60, 9);
+    // 13 km apart is outside the 10 km window, so neither candidate moves.
+    expect(clear - 47).toBeGreaterThan(mergeWindowKm(dist(route)));
+
+    const { fills, stops } = layout(state, assignment, [food('cola', 47)]);
+    expectFillsClose(of(fills, 'izo'), [
+      { gid: 'a', content: 'izo', from: 0, to: 50 },
+      {
+        gid: 'a',
+        content: 'izo',
+        from: clear,
+        to: clear + carbSpan(route, carbsIn(state, 'a', 'izo')),
+      },
+    ]);
+    expect(stopXs(stops)).toEqual([47, clear]);
     expectStopsMatchRefills(fills, stops, [47]);
   });
 

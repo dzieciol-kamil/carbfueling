@@ -26,6 +26,14 @@
  * loads (free handovers) and the wrap back onto `g1` at 101 is the first refill, hence the first
  * stop.
  *
+ * **Nothing is poured in while the stomach is still full.** A span computed off the need line says
+ * when the rider *wants* the next load; it says nothing about whether he can take it. The owner's
+ * rule closes that gap — *"nie patrzeć tylko na linię zapotrzebowania, ale też czy jest wypełniony
+ * żołądek i nie dokładać następnego jak krzywa cukru w żołądku nie spadnie do 0"* — so a carb load
+ * starts at the later of where the previous one ended and where the gut has drained empty. See
+ * `gutClearKm`. Water is exempt: it carries no carbs, and *"jak cukru jest dużo to można sięgnąć po
+ * samą wodę w tym czasie"* is exactly the gap this opens being drinkable.
+ *
  * **Each need is covered once, by the sum of its sources.** There are two needs — carbs and fluid —
  * not three contents' worth of them. Carbs come from izo *and* gel, so every carb-carrying vessel
  * joins **one** relay and their spans tile the carb requirement once between them; that is what
@@ -64,7 +72,8 @@
  * - **Placing food.** `foods` is an input and comes back out untouched. All this module does with it
  *   is read which of its entries are `needsStop` products, because buying one is a stop.
  */
-import { carbsFill, dist, sweat, totalHours } from '../fuel';
+import { carbsFill, dist, samples, sweat, totalHours } from '../fuel';
+import type { Sample } from '../fuel';
 import type { Content, Fill, PlanState, Vessel } from '../types';
 import { carbSpanEndKm, waterSpanEndKm } from './spans';
 import type { Draft } from './score';
@@ -127,18 +136,66 @@ function loadSpanEnd(state: PlanState, vessel: Vessel, content: Content, from: n
 /** A position that wants a stop, and whether it is free to move to get one. */
 type Candidate = { at: number; movable: boolean };
 
+/**
+ * The km at or after `from` at which the gut has emptied, read off `fuel.ts`'s own gut curve.
+ *
+ * `curve` is what `samples()` answered for the plan as it stands, so this is the top chart's `gut`
+ * lane and nothing else: no drain rate is restated here, no `absCap` is recomputed, no second
+ * stomach model exists to disagree with the one the app draws. All this function does is find where
+ * that lane touches zero.
+ *
+ * **Zero is exact, and the curve touches it rather than crossing it — so there is neither an
+ * epsilon nor an interpolation to choose.** `stepStomachBuffer` clears `min(buf, capPerStep)` of the
+ * backlog, so the step that finishes the backlog computes `buf - buf` and the sample reads exactly
+ * `0`; the step after it takes `min(0, cap)` and reads `0` again. The buffer is never negative, so
+ * the zero always lands *on* a sample and `gut > 0` is a real predicate about the model rather than
+ * a tolerance anyone picked. Interpolating between the last positive sample and the first zero was
+ * the alternative considered, and it is arithmetically the same point: with the far end at exactly
+ * zero the interpolation parameter is always 1. What the grid does cost is resolution — the answer
+ * is quantised to the 161-point profile, 1.2 km on a 194 km route — and that is the price of reading
+ * the app's own curve instead of building a continuous copy of it here, which is the one thing this
+ * engine must not do.
+ *
+ * The gut being empty *before* the load came due is not a deferral at all, hence the two early
+ * returns: a load waits only for a backlog that is still there when its turn arrives.
+ *
+ * A gut that never empties again answers with the finish line, which is the honest reading — there
+ * is nowhere left on this route to start another load — and `relay`'s own `x >= D` guard then drops
+ * it rather than planning a fill of no length.
+ */
+function gutClearKm(curve: Sample[], from: number): number {
+  let i = 0;
+  while (i < curve.length && (curve[i].x < from || curve[i].gut > 0)) i++;
+  if (i >= curve.length) return curve[curve.length - 1].x;
+  if (i === 0) return from;
+  if (!(curve[i - 1].gut > 0)) return from;
+  return curve[i].x;
+}
+
 /** One vessel's part in a relay: how many turns it takes, and how far each turn reaches. */
 type Leg = { a: VesselAssignment; turns: number; spanEnd: (from: number) => number };
 
 /**
- * Run `legs` as a round-robin relay from km 0, each load starting where the last one ended.
+ * Where the next load may start, given the ones already placed. See `carbGate` in `layout`.
+ */
+type Gate = (from: number, placed: Load[]) => number;
+
+/** No gate at all: the load starts the moment the one before it ended. */
+const NO_GATE: Gate = (from) => from;
+
+/**
+ * Run `legs` as a round-robin relay from km 0, each load starting where the last one ended — or
+ * where `gate` lets it, if that is later.
  *
  * A vessel takes its turn in pass `r` only if it was given more than `r` turns, so the first pass
  * is the home loads — free handovers — and every later turn is a refill. A load that reaches
  * nowhere (an empty vessel, or a stream with nothing left to cover) is not a fill and must not
  * stall the relay: it is skipped without consuming the vessel's turn as "used".
+ *
+ * The gate moves `x` rather than only the load about to be placed, so a deferral is permanent: the
+ * relay never walks back to fill in a gap it was told the rider could not absorb.
  */
-function relay(legs: Leg[], D: number): Load[] {
+function relay(legs: Leg[], D: number, gate: Gate = NO_GATE): Load[] {
   const rounds = Math.max(0, ...legs.map((l) => l.turns));
   const used = new Set<string>();
   const stream: Load[] = [];
@@ -147,6 +204,8 @@ function relay(legs: Leg[], D: number): Load[] {
     for (const leg of legs) {
       if (x >= D) break;
       if (leg.turns <= r) continue;
+      x = Math.max(x, gate(x, stream));
+      if (x >= D) break;
       const to = Math.min(D, leg.spanEnd(x));
       if (!(to > x)) continue;
       const { gid, content } = leg.a;
@@ -190,6 +249,50 @@ export function layout(
     vesselOf.set(a.gid, v);
   }
 
+  // --- The gut gate ---------------------------------------------------------------------------
+  //
+  // The owner's rule: the next carb load waits for the stomach to clear. `Sample.gut` is a property
+  // of the *whole* plan, so the curve this reads is rebuilt from the loads placed so far — plus
+  // `foods`, which are fixed before `layout` is called and load the gut exactly as a bottle does.
+  // That is sound because the gut at km `x` depends only on what arrived before `x`, and everything
+  // before the load being placed is already final.
+  //
+  // With one bias worth naming: `absCap()` blends izo's and gel's malto:fructose ratios by how many
+  // grams of each the *plan* carries, and a partial plan carries fewer. On the owner's 194 km kit
+  // (izo `ratio` 1.2, gel 2) the partial curve reads 70 g/h where the finished plan reads 85, so the
+  // gut appears to drain slower and each load is deferred a little further than the finished plan
+  // would justify — conservative, in the direction the ruling is pushing. Laying the whole stream
+  // out first and iterating the deferrals to a fixed point is the other shape, and it would read the
+  // finished plan's cap; it was rejected on structure rather than on a measurement, because it gates
+  // every load against a curve built from load positions the same pass is about to move, so only the
+  // last iteration means anything and nothing guarantees it arrives inside the iteration cap. The
+  // pass below has no convergence to fail and gates every load on intake that is already settled,
+  // paying for that with a cap that is one plan behind. Nobody has measured the two against each
+  // other on the scenario suites.
+  //
+  // The curve is a function of the loads placed, so it is rebuilt when that list grows and not once
+  // per attempted load: `samples()` is the expensive call in this file.
+  const gutFoods = foods.map((f, i) => ({ ...f, id: i + 1, name: f.key }));
+  let curve: Sample[] | null = null;
+  let curveFor = -1;
+  const carbGate: Gate = (from, placed) => {
+    if (curve === null || curveFor !== placed.length) {
+      curve = samples({
+        ...state,
+        fills: placed.map((f, i) => ({
+          fid: i + 1,
+          gid: f.gid,
+          content: f.content,
+          from: f.from,
+          to: f.to,
+        })),
+        foods: gutFoods,
+      });
+      curveFor = placed.length;
+    }
+    return gutClearKm(curve, from);
+  };
+
   // --- Tile the carb stream ------------------------------------------------------------------
   //
   // izo and gel are two sources of one need, so they share one relay and tile the carb requirement
@@ -209,6 +312,7 @@ export function layout(
         };
       }),
     D,
+    carbGate,
   );
 
   // --- Tile the water stream, against what the izo leaves unmet -------------------------------
@@ -242,6 +346,11 @@ export function layout(
     return waterSpanEndKm(route, from, (ml * fluidNeed) / residualFluid);
   };
 
+  // No gate here, and that is the other half of the owner's rule rather than an omission: water
+  // carries no carbs, so it neither fills the stomach's sugar backlog nor has to wait for it to
+  // clear — *"jak cukru jest dużo to można sięgnąć po samą wodę w tym czasie, jeżeli mamy za mało w
+  // ogólnym rachunku"*. The water stream keeps starting at km 0 and running seam to seam, `woda do
+  // końca` and all.
   const waterStream = relay(
     assignment
       .filter((a) => a.content === 'water')
@@ -313,27 +422,35 @@ export function layout(
 
   // --- Rewrite the boundaries the merge moved -----------------------------------------------
   //
-  // A stream is a chain of boundaries, and a fill is the gap between two of them, so moving a
-  // refill's start automatically shortens or lengthens its neighbour instead of tearing a hole:
-  // `fill[i].from === fill[i-1].to` holds by construction, before and after. (That is contiguity
-  // *along the stream*, not per vessel — a relay is precisely a vessel whose own fills are not
-  // adjacent.) The rest of the stream is deliberately **not** re-tiled from the new boundary: the
-  // move is absorbed by the two fills either side of it, because re-tiling would shift every later
-  // boundary and could undo merges already made further down the route.
+  // A water stream is still a chain — each load begins where the last ended — and moving a refill's
+  // start there shortens or lengthens its neighbour instead of tearing a hole. The carb stream is
+  // no longer a chain: the gut gate leaves deliberate holes in it, so a load carries its own `to`
+  // and a move is absorbed only where the two loads were actually glued together. Across a gate's
+  // gap there is nothing to absorb it — stretching a load over a stretch the gut ruled out would
+  // pour exactly the delivery the gate exists to refuse — so the hole simply changes width.
+  //
+  // The rest of the stream is deliberately **not** re-tiled from the new boundary: the move is
+  // absorbed by the two loads either side of it, because re-tiling would shift every later boundary
+  // and could undo merges already made further down the route.
   const fills: DraftFill[] = [];
   for (const stream of streams) {
     const n = stream.length;
-    const b = stream.map((f) => f.from);
-    b.push(stream[n - 1].to);
-    // `b[0]` is 0 and is never a refill — the first load of a stream is some vessel's first.
-    for (let i = 1; i < n; i++) if (stream[i].refill) b[i] = repOf(b[i]);
-    // A merge onto a *later* product can push a boundary past the one after it. Clamping keeps the
-    // chain ordered; the fill it collapses is a load whose whole span was swallowed by the merge,
-    // which delivers nothing over no distance and so is not planned.
-    for (let i = 1; i <= n; i++) b[i] = Math.min(D, Math.max(b[i], b[i - 1]));
+    const from = stream.map((f) => f.from);
+    const to = stream.map((f) => f.to);
+    // `from[0]` is 0 and is never a refill — the first load of a stream is some vessel's first.
+    for (let i = 1; i < n; i++) if (stream[i].refill) from[i] = repOf(from[i]);
+    for (let i = 1; i < n; i++) {
+      // A merge onto a *later* product can push a boundary past the one after it, and one onto an
+      // earlier product can pull it back before its predecessor. Clamping keeps the stream ordered;
+      // the load it collapses is one whose whole span was swallowed by the merge, which delivers
+      // nothing over no distance and so is not planned.
+      from[i] = Math.min(D, Math.max(from[i], from[i - 1]));
+      to[i - 1] = stream[i].from === stream[i - 1].to ? from[i] : Math.min(to[i - 1], from[i]);
+    }
     for (let i = 0; i < n; i++) {
-      if (b[i + 1] <= b[i]) continue;
-      fills.push({ gid: stream[i].gid, content: stream[i].content, from: b[i], to: b[i + 1] });
+      to[i] = Math.min(D, Math.max(to[i], from[i]));
+      if (to[i] <= from[i]) continue;
+      fills.push({ gid: stream[i].gid, content: stream[i].content, from: from[i], to: to[i] });
     }
   }
 
