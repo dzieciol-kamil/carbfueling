@@ -18,6 +18,15 @@ const CHART_HEIGHT = 300;
 const CHART_PB = 22;
 const ELEVATION_SHARE = 0.62;
 
+/**
+ * The explanatory column to the left of the chart, and the gap between it and the plot. The header
+ * row above reserves the same two widths for its title, so the plan buttons begin exactly where the
+ * chart does rather than trailing the word "Planning" — which is why these are named rather than
+ * repeated: the two rows cannot drift apart.
+ */
+const SIDE_COL_W = 168;
+const SIDE_COL_GAP = 12;
+
 const legendItemStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -115,9 +124,11 @@ export function ChartCard() {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SIDE_COL_GAP, flexWrap: 'wrap' }}>
           <div
             style={{
+              width: SIDE_COL_W,
+              flex: `0 0 ${SIDE_COL_W}px`,
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: '0.1em',
@@ -126,12 +137,13 @@ export function ChartCard() {
           >
             {strings.curve}
           </div>
-          <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
-            <StartOverIcon />
-            <span>{strings.clearPlanButton}</span>
-          </button>
           <div style={{ position: 'relative' }}>
+            {/* All three share one gap, so the row reads as a single group of actions. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
+                <StartOverIcon />
+                <span>{strings.clearPlanButton}</span>
+              </button>
               <button onClick={handleExport} style={planBtnStyle}>
                 <DownloadIcon />
                 <span>{strings.exportPlanButton}</span>
@@ -202,11 +214,11 @@ export function ChartCard() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: SIDE_COL_GAP }}>
         <div
           style={{
-            width: 168,
-            flex: '0 0 168px',
+            width: SIDE_COL_W,
+            flex: `0 0 ${SIDE_COL_W}px`,
             height: CHART_HEIGHT,
             display: 'flex',
             flexDirection: 'column',
