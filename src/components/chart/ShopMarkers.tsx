@@ -49,21 +49,24 @@ function lineStyle(
 }
 
 /**
- * Transparent bridge between the pin and the name field floating 38px above it. Hover lives on the
- * pin's container, and `pointerleave` fires the moment the cursor is over neither the container nor
- * a descendant — which is exactly what the empty strip between the two used to be, so the field
+ * Transparent bridge between the pin and the name field floating above it. Hover lives on the pin's
+ * container, and `pointerleave` fires the moment the cursor is over neither the container nor a
+ * descendant — which is exactly what the empty strip between the two used to be, so the field
  * vanished on the way to it and could never be clicked. A descendant spanning that strip keeps the
- * pointer inside the chain. Only rendered while the cluster is already open, so it never sits over
- * the chart otherwise; below the field and the remove button (both z-index 3) so they stay clickable.
+ * pointer inside the chain.
+ *
+ * Covers the 19px gap only (the field ends at -19), not the field's own band: everything this box
+ * spans stops being clickable while a pin is hovered, and it sits above the chart's legend row.
+ * Only rendered while the cluster is already open, so it is absent the rest of the time.
  */
 function hoverBridgeStyle(show: boolean): CSSProperties {
   return {
     position: 'absolute',
     left: '50%',
-    top: -38,
+    top: -20,
     transform: 'translateX(-50%)',
     width: 76,
-    height: 38,
+    height: 20,
     zIndex: 2,
     pointerEvents: 'auto',
     display: show ? 'block' : 'none',

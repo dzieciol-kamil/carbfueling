@@ -66,8 +66,10 @@ export function PrintSheet() {
                     {group.vessel} · {contentLabel(group.content, lang)}
                     {group.content === 'gel' && group.parts > 1 ? ` ${group.parts}×` : ''}
                   </div>
-                  {group.ranges.map((range) => (
-                    <div key={range} className="print-strip__at">
+                  {/* Keyed by index, not by the label: positions are rounded for display, so two
+                      short consecutive legs (10.2–10.4 and 10.4–10.6) both read "10–10". */}
+                  {group.ranges.map((range, i) => (
+                    <div key={i} className="print-strip__at">
                       {range}
                     </div>
                   ))}
@@ -96,8 +98,10 @@ export function PrintSheet() {
               {strip.stops.map((group) => (
                 <div key={group.id} className="print-strip__item">
                   <div className="print-strip__label">{group.name}</div>
-                  {group.ats.map((at) => (
-                    <div key={at} className="print-strip__at">
+                  {/* Same rounding trap as the legs above: two stops dragged to 100.2 and 100.4
+                      both print "100". */}
+                  {group.ats.map((at, i) => (
+                    <div key={i} className="print-strip__at">
                       {at}
                     </div>
                   ))}
@@ -192,12 +196,16 @@ function CombinedBlock({
   // The group carries raw vessel names, and two bottles called "Bidon" are indistinguishable on
   // paper — rebuild the list from the disambiguated labels. Deduplicated, because a batch is
   // usually one bottle refilled several times, and "Bidon 2, Bidon 2, Bidon 2" says nothing.
+  // A fill whose vessel was deleted has no name to contribute; dropped rather than left as an
+  // empty entry that prints as a trailing comma, matching how printStrip() drops orphan fills.
   const names = [
     ...new Set(
-      group.fillIds.map((fid) => {
-        const gid = fills.find((f) => f.fid === fid)?.gid;
-        return (gid && labels.get(gid)) || '';
-      }),
+      group.fillIds
+        .map((fid) => {
+          const gid = fills.find((f) => f.fid === fid)?.gid;
+          return (gid && labels.get(gid)) || '';
+        })
+        .filter(Boolean),
     ),
   ];
 
