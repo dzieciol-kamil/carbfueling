@@ -201,6 +201,21 @@ describe('planCoursePoints — gel, food and stops', () => {
     expect(points.every((p) => p.type === 'Food')).toBe(true);
   });
 
+  test('a single-dose flask says just the word, and never asks to be refilled', () => {
+    const points = planCoursePoints(
+      input({
+        gear: [vessel({ gid: 'g', name: 'Flakon', allowed: ['gel'], gelParts: 1 })],
+        fills: [fill({ gid: 'g', content: 'gel', from: 40, to: 80 })],
+      }),
+    );
+
+    // A one-shot gel has one part, like a bottle does — routing on that instead of on content sent
+    // it down the ladder and prompted "napełnij" under a water icon.
+    expect(points).toEqual([
+      { km: 40, kind: 'gel', name: 'Zel', note: 'Żel · Flakon', type: 'Food' },
+    ]);
+  });
+
   test('food carries its carbs in the note', () => {
     const points = planCoursePoints(input({ foods: [food()] }));
 
@@ -346,6 +361,18 @@ describe('buildTcx', () => {
     expect(times.every(Number.isFinite)).toBe(true);
     const trackTimes = times.slice(0, track.length);
     expect(trackTimes).toEqual([...trackTimes].sort((a, b) => a - b));
+  });
+
+  test('keeps trackpoint times climbing across a stop the ride recorded', () => {
+    // A recorded ride sits at a traffic light: ten points at one position, so one cumulative
+    // distance and, from distance alone, one repeated timestamp — which is what a TCX reader
+    // chokes on. Sorted order is not enough to catch it; duplicates are sorted.
+    const stalled = [...line(20), ...Array(10).fill(line(1)[0]), ...line(20)];
+    const out = buildTcx({ points: [], track: stalled, route, name: 'x' });
+    const times = [...out.matchAll(/<Time>([^<]*)<\/Time>/g)].map((m) => Date.parse(m[1]));
+
+    expect(times).toHaveLength(stalled.length);
+    for (let i = 1; i < times.length; i++) expect(times[i]).toBeGreaterThan(times[i - 1]);
   });
 
   test('places a course point on the track at its share of the ride', () => {

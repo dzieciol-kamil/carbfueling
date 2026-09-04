@@ -26,9 +26,11 @@ export function useCourseDownload() {
     try {
       await saveTextFile(xml, courseFileName(route.gpxName), 'application/vnd.garmin.tcx+xml');
     } catch {
-      // saveTextFile already swallows the rider dismissing the native picker; what is left is a
-      // genuine write failure, which the browser reports itself. Nothing useful to add here, and
-      // the GPX row has no feedback slot to add it to.
+      // saveTextFile already swallows the rider dismissing the native picker, so what reaches here
+      // is a real write failure — a read-only folder, a revoked permission, a full disk — and the
+      // browser shows nothing for those. The rider taps and no file appears. Reporting it needs a
+      // feedback slot the GPX row does not have; usePlanFileTransfer next door has one
+      // ('export-error') worth copying when this row grows one.
     }
   };
 

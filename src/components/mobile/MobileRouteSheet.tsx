@@ -345,6 +345,13 @@ export function MobileRouteSheet() {
               {strings.gpxOn}
             </button>
           </div>
+          {/* Said in the sheet rather than as a `title`: there is no hover on a phone, so a greyed
+              button would otherwise never explain itself. */}
+          {!courseReady && (
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-3)' }}>
+              {strings.gpxDownloadHint}
+            </p>
+          )}
           <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-3)' }}>
             {strings.routeSheetGpxNote}
           </p>

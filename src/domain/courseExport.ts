@@ -158,7 +158,11 @@ export function planCoursePoints({
   const codes = new Map(gear.map((v, i) => [v.gid, `B${i + 1}`]));
   const out: CoursePoint[] = [];
 
-  for (const group of groupBySpan(fills.filter((f) => partsOf(f, gear) === 1 && f.to > f.from))) {
+  // Split on what is in the vessel, not on how many doses it holds: a gel flask set to a single
+  // dose has one part like a bottle does, and sending it down the bottle branch would prompt for
+  // "refill" under a water icon on what is actually one shot of gel.
+  const sipped = fills.filter((f) => f.content !== 'gel' && f.to > f.from);
+  for (const group of groupBySpan(sipped)) {
     const { from, to } = group[0];
     const joined = group.map((f) => codes.get(f.gid) ?? '?').join('+');
     // Three or more bottles on one span blow the 10-character banner, so they lose their numbers;
@@ -182,18 +186,19 @@ export function planCoursePoints({
     out.push({ ...at(0), kind: 'empty', note: `${named} · 0%` });
   }
 
-  // A gel flask is a run of discrete doses at positions the rider can drag, not something sipped —
-  // so it gets one prompt per dose instead of a percentage ladder.
-  for (const f of fills) {
+  // Gel is a run of discrete doses at positions the rider can drag, not something sipped — so it
+  // gets one prompt per dose instead of a percentage ladder. A single-dose flask says just "Żel":
+  // "1/1" is a fraction that tells the rider nothing.
+  for (const f of fills.filter((f) => f.content === 'gel')) {
     const n = partsOf(f, gear);
-    if (n <= 1) continue;
     const named = labels.get(f.gid) ?? '?';
     partArray(f, gear).forEach((km, k) => {
+      const dose = n > 1 ? `${strings.gel} ${k + 1}/${n}` : strings.gel;
       out.push({
         km,
         kind: 'gel',
-        name: shortName(`${strings.gel} ${k + 1}/${n}`),
-        note: `${strings.gel} ${k + 1}/${n} · ${named}`,
+        name: shortName(dose),
+        note: `${dose} · ${named}`,
         type: 'Food',
       });
     });
@@ -272,7 +277,8 @@ export interface TcxInput {
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const stamp = (hours: number) => new Date(COURSE_EPOCH + hours * 3600_000).toISOString();
+const atEpoch = (hours: number) => COURSE_EPOCH + hours * 3600_000;
+const stamp = (hours: number) => new Date(atEpoch(hours)).toISOString();
 
 /** The file's name without its extension — `.gpx` is about the file, not about the ride. */
 const baseName = (name: string | null) => (name ?? '').replace(/\.[^.]*$/, '');
@@ -329,10 +335,16 @@ export function buildTcx({ points, track, route, name }: TcxInput): string {
   lines.push('</Lap>');
 
   lines.push('<Track>');
+  // A recorded ride stands still at every traffic light, so runs of points share one position and
+  // one cumulative distance — and a time derived from distance alone repeats across the whole run.
+  // TCX readers expect trackpoint times to advance, so a stalled point borrows the next second;
+  // as soon as the ride moves again the distance-derived time overtakes this floor by itself.
+  let previousMs = -Infinity;
   track.forEach((p, i) => {
     const hours = timeAtDistance(route, totalKm > 0 ? (cum[i] / totalKm) * planKm : 0);
+    previousMs = Math.max(atEpoch(hours), previousMs + 1000);
     lines.push(
-      `<Trackpoint><Time>${stamp(hours)}</Time><Position>${coord(p)}</Position>` +
+      `<Trackpoint><Time>${new Date(previousMs).toISOString()}</Time><Position>${coord(p)}</Position>` +
         `<AltitudeMeters>${p.ele}</AltitudeMeters>` +
         `<DistanceMeters>${Math.round(cum[i] * 1000)}</DistanceMeters></Trackpoint>`,
     );
