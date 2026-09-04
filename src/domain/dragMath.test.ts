@@ -17,6 +17,7 @@ import {
   resizeFillRight,
   resizeFoodLeft,
   resizeFoodRight,
+  scalePlan,
 } from './dragMath';
 import type { Fill, FoodItem, ShopStop, Vessel } from './types';
 
@@ -184,6 +185,56 @@ describe('rescalePositions', () => {
 
   test('returns undefined when there are no positions to rescale', () => {
     expect(rescalePositions(undefined, 0, 100, 0, 50)).toBeUndefined();
+  });
+});
+
+describe('scalePlan', () => {
+  const foods: FoodItem[] = [{ id: 1, key: 'gel', name: 'Gel', carbs: 25, from: 80, to: 80 }];
+  const shops: ShopStop[] = [{ id: 1, at: 68, name: 'Shop' }];
+
+  test('keeps every item at the same fraction of the route', () => {
+    const fills = [fill({ from: 34, to: 68, pos: [34, 51, 68] })];
+    const out = scalePlan(100, 50, fills, foods, shops);
+    expect(out.fills[0]).toMatchObject({ from: 17, to: 34, pos: [17, 25.5, 34] });
+    expect(out.foods[0]).toMatchObject({ from: 40, to: 40 });
+    expect(out.shops[0]).toMatchObject({ at: 34 });
+  });
+
+  test('stretches as well as shrinks', () => {
+    const out = scalePlan(50, 100, [fill({ from: 10, to: 20 })], [], []);
+    expect(out.fills[0]).toMatchObject({ from: 20, to: 40 });
+  });
+
+  test('returns the very same arrays when the distance did not move', () => {
+    const fills = [fill({ from: 10, to: 20 })];
+    const out = scalePlan(100, 100, fills, foods, shops);
+    expect(out.fills).toBe(fills);
+    expect(out.foods).toBe(foods);
+    expect(out.shops).toBe(shops);
+  });
+
+  test('round-trips: restoring the old distance restores the plan', () => {
+    const fills = [fill({ from: 34, to: 68, pos: [34, 51, 68] })];
+    const shrunk = scalePlan(100, 37, fills, foods, shops);
+    const back = scalePlan(37, 100, shrunk.fills, shrunk.foods, shrunk.shops);
+    expect(back.fills[0].from).toBeCloseTo(34, 9);
+    expect(back.fills[0].to).toBeCloseTo(68, 9);
+    expect(back.fills[0].pos?.[1]).toBeCloseTo(51, 9);
+    expect(back.foods[0].from).toBeCloseTo(80, 9);
+    expect(back.shops[0].at).toBeCloseTo(68, 9);
+  });
+
+  test('composes: two steps land where the single equivalent step does', () => {
+    const fills = [fill({ from: 34, to: 68 })];
+    const stepwise = scalePlan(5, 50, scalePlan(100, 5, fills, [], []).fills, [], []);
+    const direct = scalePlan(100, 50, fills, [], []);
+    expect(stepwise.fills[0].from).toBeCloseTo(direct.fills[0].from, 9);
+    expect(stepwise.fills[0].to).toBeCloseTo(direct.fills[0].to, 9);
+  });
+
+  test('does not round — a fraction of a km survives so repeated edits do not drift', () => {
+    const out = scalePlan(100, 30, [fill({ from: 0, to: 68 })], [], []);
+    expect(out.fills[0].to).toBeCloseTo(20.4, 9);
   });
 });
 

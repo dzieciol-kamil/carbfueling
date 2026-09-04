@@ -8,6 +8,7 @@ import {
   gaps,
   moveListItem,
   nextShopAt,
+  scalePlan,
 } from '../domain/dragMath';
 import { startFillOf } from '../domain/combinedRefill';
 import { dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
@@ -49,10 +50,20 @@ function defaultAutoView(): 'desktop' | 'mobile' {
     : 'desktop';
 }
 
-// A route edit (shorter distance, fewer hours, switching mode, a shorter GPX
-// track...) can pull the plan's distance domain in under fills/foods/shops
-// placed further out — clamp them back onto the route instead of letting
-// them render off the end of the chart.
+// A route edit (a different distance, fewer hours, another sport, switching mode, a fresh GPX
+// track...) moves the plan's distance domain under the fills/foods/shops placed on it. Every
+// such edit goes through here, which rescales them proportionally so each keeps its place
+// *along the effort* — see `scalePlan` for why proportional rather than clamped.
+function withRoute(
+  s: { route: RouteInput; fills: Fill[]; foods: FoodItem[]; shops: ShopStop[] },
+  route: RouteInput,
+) {
+  return { route, ...scalePlan(dist(s.route), dist(route), s.fills, s.foods, s.shops) };
+}
+
+// Imported backups carry no previous domain to scale from — their positions are already
+// expressed in their own route's km. Clamp instead, purely defensively, in case the file
+// predates a since-changed placement rule and holds something off the end of its own route.
 function reconcileToRoute(route: RouteInput, fills: Fill[], foods: FoodItem[], shops: ShopStop[]) {
   const distanceKm = dist(route);
   return {
@@ -290,55 +301,44 @@ export const useAppStore = create<AppState>()(
       nextFoodKey: 1,
       nextShopId: 1,
 
-      setMode: (mode) =>
-        set((s) => {
-          const route = { ...s.route, mode };
-          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
-        }),
+      setMode: (mode) => set((s) => withRoute(s, { ...s.route, mode })),
       setSport: (sport) =>
         set((s) =>
           s.route.sport === sport
             ? {}
-            : { route: { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] } },
+            : withRoute(s, { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] }),
         ),
-      // Distance/hours/minutes are edited through free-typing number fields, which
-      // commit a value on every keystroke (for live chart feedback) — reconciling
-      // fills/foods/shops right here would clamp them against transient in-progress
-      // digits (e.g. typing "50" over "90" passes through "5"), destructively
-      // collapsing them before the final value ever lands. Reconcile once the field
-      // is actually committed instead — see reconcilePlan, wired to onCommit.
-      setDistance: (n) => set((s) => ({ route: { ...s.route, distance: clamp(n, 0, 2000) } })),
+      // Distance/hours/minutes are edited through free-typing number fields, which commit a
+      // value on every keystroke (for live chart feedback), so these rescale against transient
+      // in-progress digits too — e.g. typing "50" over "90" passes through "5". That is safe
+      // precisely because scaling composes: 90→5→50 lands exactly where 90→50 does.
+      setDistance: (n) => set((s) => withRoute(s, { ...s.route, distance: clamp(n, 0, 2000) })),
       setSpeed: (n) => set((s) => ({ route: { ...s.route, speed: clamp(n, 0, 100) } })),
-      setHours: (n) => set((s) => ({ route: { ...s.route, hours: clamp(n, 0, 999) } })),
+      setHours: (n) => set((s) => withRoute(s, { ...s.route, hours: clamp(n, 0, 999) })),
       // Deliberately unclamped — see normalizeHoursMinutes, applied on commit via reconcilePlan.
-      setMinutes: (n) => set((s) => ({ route: { ...s.route, minutes: n } })),
-      reconcilePlan: () =>
-        set((s) => {
-          const route = normalizeHoursMinutes(s.route);
-          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
-        }),
+      setMinutes: (n) => set((s) => withRoute(s, { ...s.route, minutes: n })),
+      reconcilePlan: () => set((s) => withRoute(s, normalizeHoursMinutes(s.route))),
       setWeight: (n) => set((s) => ({ route: { ...s.route, weight: clamp(n, 20, 300) } })),
       setPreMealCarbs: (n) =>
         set((s) => ({ route: { ...s.route, preMealCarbs: clamp(n, 0, 500) } })),
       setPreMealMinutes: (n) =>
         set((s) => ({ route: { ...s.route, preMealMinutes: clamp(n, 0, 1440) } })),
-      setIntensity: (i) => set((s) => ({ route: { ...s.route, intensity: i } })),
+      setIntensity: (i) => set((s) => withRoute(s, { ...s.route, intensity: i })),
       setTemp: (n) => set((s) => ({ route: { ...s.route, temp: n } })),
       toggleGpx: () => set((s) => ({ route: { ...s.route, useGpx: !s.route.useGpx } })),
       loadGpxFromFile: async (file) => {
         try {
           const { track, distanceKm, fileName } = await loadGpxFile(file);
-          set((s) => {
-            const route: RouteInput = {
+          set((s) =>
+            withRoute(s, {
               ...s.route,
               gpxTrack: track,
               gpxName: fileName,
               gpxError: null,
               useGpx: true,
               distance: distanceKm,
-            };
-            return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
-          });
+            }),
+          );
         } catch {
           set((s) => ({ route: { ...s.route, gpxError: 'gpxBad' } }));
         }
