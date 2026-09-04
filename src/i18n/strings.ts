@@ -320,6 +320,11 @@ export interface StringTable {
   importPlanSuccess: string;
   exportPlanError: string;
   clearPlanButton: string;
+  printPlanButton: string;
+  printStripBottles: string;
+  printStripFood: string;
+  printStripStops: string;
+  printCutHint: string;
   clearPlanConfirmTitle: string;
   clearPlanConfirmBody: string;
   clearPlanConfirmCancel: string;
@@ -715,6 +720,11 @@ export const STR: Record<Lang, StringTable> = {
     importPlanSuccess: 'Plan zaimportowany.',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     clearPlanButton: 'Od nowa',
+    printPlanButton: 'Drukuj',
+    printStripBottles: 'Bidony',
+    printStripFood: 'Jedzenie',
+    printStripStops: 'Postoje',
+    printCutHint: 'Wytnij i przyklej na górnej rurze',
     clearPlanConfirmTitle: 'Zacząć od nowa?',
     clearPlanConfirmBody:
       'Usunie napełnienia, produkty i postoje z trasy. Trasa, sprzęt i mieszanka zostają bez zmian. Tej zmiany nie da się cofnąć.',
@@ -1109,6 +1119,11 @@ export const STR: Record<Lang, StringTable> = {
     importPlanSuccess: 'Plan imported.',
     exportPlanError: 'Could not save the file. Please try again.',
     clearPlanButton: 'Start over',
+    printPlanButton: 'Print',
+    printStripBottles: 'Bottles',
+    printStripFood: 'Food',
+    printStripStops: 'Stops',
+    printCutHint: 'Cut out and tape to your top tube',
     clearPlanConfirmTitle: 'Start over?',
     clearPlanConfirmBody:
       "This removes fills, food and stops from your route. Your route, gear and mix stay as they are. This can't be undone.",

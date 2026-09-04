@@ -7,6 +7,7 @@ import { FoodLibraryChips } from '../FoodLibraryChips';
 import { LanesSection } from '../lanes/LanesSection';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { PrintIcon } from '../print/PrintIcon';
 import { usePlanFileTransfer } from '../usePlanFileTransfer';
 import { ShopMarkers } from './ShopMarkers';
 import { TimelineSection } from '../timeline/TimelineSection';
@@ -151,6 +152,10 @@ export function ChartCard() {
               <button onClick={handleImportPick} style={planBtnStyle}>
                 <UploadIcon />
                 <span>{strings.importPlanButton}</span>
+              </button>
+              <button onClick={() => window.print()} style={planBtnStyle}>
+                <PrintIcon />
+                <span>{strings.printPlanButton}</span>
               </button>
             </div>
             <input

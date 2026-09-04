@@ -4,6 +4,7 @@ import { ChartHelpModal } from './components/chart/ChartHelpModal';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileApp } from './components/mobile/MobileApp';
+import { PrintSheet } from './components/print/PrintSheet';
 import { FoodPanel } from './components/panels/FoodPanel';
 import { GearPanel } from './components/panels/GearPanel';
 import { MixPanel } from './components/panels/MixPanel';
@@ -66,46 +67,59 @@ function App() {
   if (!isDesktopView(viewMode, autoView)) {
     return (
       <>
-        <MobileApp />
-        <TourOverlay />
-        <ChartHelpModal desktop={false} />
+        <div className="app-shell">
+          <MobileApp />
+          <TourOverlay />
+          <ChartHelpModal desktop={false} />
+        </div>
+        <PrintSheet />
       </>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        padding: '14px 24px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 16,
-      }}
-    >
-      <Header />
-      {panel === 'gear' && <GearPanel />}
-      {panel === 'mix' && <MixPanel />}
-      {panel === 'food' && <FoodPanel />}
-      {panel === 'settings' && <SettingsPanel />}
+    <>
       <div
-        style={{ width: '100%', maxWidth: 1420, display: 'flex', flexDirection: 'column', gap: 16 }}
+        className="app-shell"
+        style={{
+          minHeight: '100vh',
+          padding: '14px 24px 40px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+        }}
       >
+        <Header />
+        {panel === 'gear' && <GearPanel />}
+        {panel === 'mix' && <MixPanel />}
+        {panel === 'food' && <FoodPanel />}
+        {panel === 'settings' && <SettingsPanel />}
         <div
-          data-tour="route-summary"
-          style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}
+          style={{
+            width: '100%',
+            maxWidth: 1420,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
         >
-          <RoutePanel />
-          <SummaryCards />
+          <div
+            data-tour="route-summary"
+            style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}
+          >
+            <RoutePanel />
+            <SummaryCards />
+          </div>
+          <ChartCard />
+          <RecipesSection />
         </div>
-        <ChartCard />
-        <RecipesSection />
+        <Footer />
+        <TourOverlay />
+        <ChartHelpModal desktop />
       </div>
-      <Footer />
-      <TourOverlay />
-      <ChartHelpModal desktop />
-    </div>
+      <PrintSheet />
+    </>
   );
 }
 
