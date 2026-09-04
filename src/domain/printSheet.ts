@@ -93,7 +93,7 @@ export function vesselLabels(gear: Vessel[]): Map<string, string> {
   return labels;
 }
 
-function foodName(item: FoodItem, foodLib: FoodLibEntry[], lang: Lang): string {
+export function foodName(item: FoodItem, foodLib: FoodLibEntry[], lang: Lang): string {
   const entry = foodLib.find((x) => x.key === item.key);
   return (entry && (entry[lang] || entry.en)) || item.name || '—';
 }

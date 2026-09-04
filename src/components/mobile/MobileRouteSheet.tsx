@@ -4,6 +4,7 @@ import { paceToSpeed, prof, speedToPace } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
 import { t, type StringTable } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { useCourseDownload } from '../useCourseDownload';
 import { InfoPopover } from '../ui/InfoPopover';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { SportSwitch } from '../ui/SportSwitch';
@@ -72,6 +73,7 @@ export function MobileRouteSheet() {
   const setTemp = useAppStore((s) => s.setTemp);
   const toggleGpx = useAppStore((s) => s.toggleGpx);
   const loadGpxFromFile = useAppStore((s) => s.loadGpxFromFile);
+  const { ready: courseReady, download: downloadCourse } = useCourseDownload();
   const reconcilePlan = useAppStore((s) => s.reconcilePlan);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const strings = t(lang);
@@ -280,6 +282,25 @@ export function MobileRouteSheet() {
             </span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => void downloadCourse()}
+              disabled={!courseReady}
+              style={{
+                flex: 1,
+                border: '1px solid var(--chip-border)',
+                background: '#fff',
+                color: 'var(--ink-soft)',
+                borderRadius: 10,
+                padding: '11px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: courseReady ? 'pointer' : 'default',
+                opacity: courseReady ? 1 : 0.45,
+              }}
+            >
+              {strings.routeSheetDownloadFile}
+            </button>
             <label
               style={{
                 flex: 1,

@@ -31,6 +31,25 @@ describe('parseGpxXml', () => {
     expect(result.ele[0]).toBeCloseTo(100, 6);
   });
 
+  test('keeps the original coordinates, rounded, for writing course files', () => {
+    const result = parseGpxXml(trkGpx(linePoints(8)));
+
+    expect(result.pts).toHaveLength(8);
+    expect(result.pts[0]).toEqual({ lat: 50, lon: 19, ele: 100 });
+    expect(result.pts[7]).toEqual({ lat: 50.07, lon: 19, ele: 170 });
+  });
+
+  test('thins a dense track to the cap, keeping the first and last points', () => {
+    const raw = linePoints(7001);
+    const result = parseGpxXml(trkGpx(raw));
+
+    expect(result.pts.length).toBeLessThanOrEqual(3000);
+    expect(result.pts.length).toBeGreaterThan(2000);
+    expect(result.pts[0]).toMatchObject({ lat: raw[0].lat });
+    // Thinning by a whole step would otherwise stop short of the finish and cut the route's end.
+    expect(result.pts[result.pts.length - 1]).toMatchObject({ lat: raw[7000].lat });
+  });
+
   test('throws when there are too few points', () => {
     expect(() => parseGpxXml(trkGpx(linePoints(3)))).toThrow();
   });

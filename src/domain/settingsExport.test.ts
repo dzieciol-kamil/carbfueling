@@ -164,6 +164,47 @@ describe('settingsExport', () => {
     expect(result.ok).toBe(true);
   });
 
+  test('carries the track coordinates through a round trip', () => {
+    const pts = [
+      { lat: 52.1, lon: 20.5, ele: 100 },
+      { lat: 52.2, lon: 20.6, ele: 120 },
+    ];
+    const file = buildSettingsExport(
+      makeData({ route: { ...makeData().route, gpxTrack: { id: 1, ele: [10, 20], pts } } }),
+    );
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.data.route.gpxTrack?.pts).toEqual(pts);
+  });
+
+  test('rejects track coordinates that are off the globe', () => {
+    const file = buildSettingsExport(
+      makeData({
+        route: {
+          ...makeData().route,
+          gpxTrack: { id: 1, ele: [10], pts: [{ lat: 952, lon: 20, ele: 0 }] },
+        },
+      }),
+    );
+    expect(parseSettingsImport(serializeSettingsExport(file)).ok).toBe(false);
+  });
+
+  test('rejects a track beyond the point cap the app itself thins to', () => {
+    const file = buildSettingsExport(
+      makeData({
+        route: {
+          ...makeData().route,
+          gpxTrack: {
+            id: 1,
+            ele: [10],
+            pts: Array.from({ length: 3001 }, () => ({ lat: 52, lon: 20, ele: 0 })),
+          },
+        },
+      }),
+    );
+    expect(parseSettingsImport(serializeSettingsExport(file)).ok).toBe(false);
+  });
+
   test('rejects an import array beyond the sane length limit', () => {
     const file = buildSettingsExport(makeData());
     const fills = Array.from({ length: 501 }, (_, i) => ({

@@ -24,6 +24,9 @@ export const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
 // rendering all of it (chart, Schedule list, recipe cards).
 const MAX_IMPORT_ARRAY_LENGTH = 500;
 
+// Matches the thinning cap in gpx.ts, so a track this app wrote always survives a round trip.
+const MAX_IMPORT_TRACK_POINTS = 3000;
+
 // Default for `sport` on old exports (added after `sport` became part of `RouteInput`).
 const DEFAULT_SPORT: Sport = 'cycling';
 
@@ -139,8 +142,24 @@ function isValidRoute(v: unknown): v is RouteInput {
     if (!isFiniteNumber(v.gpxTrack.id) || !Array.isArray(v.gpxTrack.ele)) return false;
     if (!isInRange(v.gpxTrack.ele.length, 1, MAX_IMPORT_ARRAY_LENGTH)) return false;
     if (!v.gpxTrack.ele.every((n) => typeof n === 'number')) return false;
+    if (v.gpxTrack.pts !== undefined && !isValidTrackPoints(v.gpxTrack.pts)) return false;
   }
   return true;
+}
+
+// The coordinates behind the course export. Held to their own, much larger cap than the lists
+// above: this one is a track the app never renders element by element, and thinning it to 500
+// would cut corners a head unit has to navigate. Absent on exports written before course export
+// existed, hence `undefined` being acceptable.
+function isValidTrackPoints(v: unknown): boolean {
+  if (!Array.isArray(v) || !isInRange(v.length, 1, MAX_IMPORT_TRACK_POINTS)) return false;
+  return v.every(
+    (p) =>
+      isRecord(p) &&
+      isInRange(p.lat, -90, 90) &&
+      isInRange(p.lon, -180, 180) &&
+      isFiniteNumber(p.ele),
+  );
 }
 
 function isValidMix(v: unknown): v is MixSettings {
