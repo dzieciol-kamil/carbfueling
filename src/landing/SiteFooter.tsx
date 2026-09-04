@@ -13,7 +13,7 @@ import { absCap } from '../domain/fuel';
 import { DEFAULT_MIX } from '../domain/types';
 import { t, type Lang } from '../i18n/strings';
 import { faqHref } from '../urls';
-import { CoffeeIcon, GitHubIcon } from '../components/Footer';
+import { CoffeeIcon, GitHubIcon } from '../components/ui/BrandIcons';
 
 interface SiteFooterProps {
   lang: Lang;
