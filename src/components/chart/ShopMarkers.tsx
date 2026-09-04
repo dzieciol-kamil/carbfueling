@@ -48,6 +48,28 @@ function lineStyle(
   };
 }
 
+/**
+ * Transparent bridge between the pin and the name field floating 38px above it. Hover lives on the
+ * pin's container, and `pointerleave` fires the moment the cursor is over neither the container nor
+ * a descendant — which is exactly what the empty strip between the two used to be, so the field
+ * vanished on the way to it and could never be clicked. A descendant spanning that strip keeps the
+ * pointer inside the chain. Only rendered while the cluster is already open, so it never sits over
+ * the chart otherwise; below the field and the remove button (both z-index 3) so they stay clickable.
+ */
+function hoverBridgeStyle(show: boolean): CSSProperties {
+  return {
+    position: 'absolute',
+    left: '50%',
+    top: -38,
+    transform: 'translateX(-50%)',
+    width: 76,
+    height: 38,
+    zIndex: 2,
+    pointerEvents: 'auto',
+    display: show ? 'block' : 'none',
+  };
+}
+
 function nameInputStyle(show: boolean): CSSProperties {
   return {
     position: 'absolute',
@@ -155,6 +177,7 @@ export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }:
                   opacity={on || dragging ? 1 : 0.75}
                 />
               </svg>
+              <div style={hoverBridgeStyle(on && !dragging)} onPointerDown={stopPointerDown} />
               <button
                 onClick={() => removeShop(shop.id)}
                 onPointerDown={stopPointerDown}

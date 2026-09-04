@@ -3,68 +3,14 @@ import {
   combineNeedsConfirm,
   combinedGroups,
   type CombinedGroup,
-  type ContainerPour,
 } from '../../domain/combinedRefill';
-import {
-  carbsFill,
-  citricAmount,
-  fmtFruitFractionPct,
-  fmtX,
-  honeyGramsFromCarbs,
-  mixSplit,
-  partsOf,
-  rangeLabel,
-  type CitricAmount,
-} from '../../domain/fuel';
-import type {
-  CitricSource,
-  Fill,
-  MixSettings,
-  RouteInput,
-  Vessel,
-  XUnit,
-} from '../../domain/types';
-import { fruitNoun, t, type Lang } from '../../i18n/strings';
+import { partsOf, rangeLabel } from '../../domain/fuel';
+import type { Fill, MixSettings, RouteInput, Vessel, XUnit } from '../../domain/types';
+import { t, type Lang } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { sourceColor } from '../chart/theme';
-
-function contentLabel(content: CombinedGroup['content'], lang: Lang): string {
-  const strings = t(lang);
-  if (content === 'water') return strings.water;
-  if (content === 'gel') return strings.gel;
-  if (content === 'mixed') return strings.combineMixedLabel;
-  return strings.izo;
-}
-
-function citricSourceLineLabel(source: CitricSource, strings: ReturnType<typeof t>): string {
-  switch (source) {
-    case 'lemon':
-      return strings.citricSourceLemon;
-    case 'lemonJuice':
-      return strings.citricSourceLemonJuice;
-    case 'lime':
-      return strings.citricSourceLime;
-    case 'limeJuice':
-      return strings.citricSourceLimeJuice;
-    default:
-      return strings.citric;
-  }
-}
-
-function citricValueLabel(citric: CitricAmount, source: CitricSource, lang: Lang): string {
-  if (citric.unit === 'g') return `${citric.amount.toFixed(2)} g`;
-  if (citric.unit === 'ml') return `${citric.amount.toFixed(1)} ml`;
-  const species = source === 'lime' ? 'lime' : 'lemon';
-  return `${fmtFruitFractionPct(citric.amount)} ${fruitNoun(species, citric.amount, lang)}`;
-}
-
-function pourLine(pour: ContainerPour, content: CombinedGroup['content']): string {
-  const pct = Math.round(pour.fraction * 100);
-  const vol = `${Math.round(pour.volumeMl)} ml`;
-  if (content === 'water') return `${pour.vesselName}: ${pct}% → ${vol}`;
-  return `${pour.vesselName}: ${pct}% → ${pour.carbsG.toFixed(0)} g, ${vol}`;
-}
+import { combinedGroupLines, contentLabel, fillRecipeLines, pourLine } from './recipeLines';
 
 const cardStyle: CSSProperties = {
   border: '1px solid var(--border-soft)',
@@ -236,36 +182,7 @@ export function RecipesSection() {
 
 function CombinedGroupBlock({ group, lang }: { group: CombinedGroup; lang: Lang }) {
   const strings = t(lang);
-  const citric = citricAmount(group.citricG, group.citricSource);
-  const lines: { k: string; v: string }[] =
-    group.content === 'water'
-      ? [{ k: strings.waterFill, v: `${group.volumeMl} ml` }]
-      : [
-          { k: strings.carbsIn, v: `${group.carbsG.toFixed(0)} g` },
-          ...(group.ratioPreset === 'honey' || group.ratioPreset === 'sugar'
-            ? [
-                {
-                  k:
-                    group.ratioPreset === 'honey'
-                      ? strings.ratioLabelHoney
-                      : strings.ratioLabelSugar,
-                  v:
-                    group.ratioPreset === 'honey'
-                      ? `${honeyGramsFromCarbs(group.carbsG).toFixed(0)} g`
-                      : `${group.carbsG.toFixed(0)} g`,
-                },
-              ]
-            : [
-                { k: strings.malto, v: `${group.maltoG.toFixed(1)} g` },
-                { k: strings.fructose, v: `${group.fructoseG.toFixed(1)} g` },
-              ]),
-          { k: strings.salt, v: `${group.saltG.toFixed(2)} g` },
-          {
-            k: citricSourceLineLabel(group.citricSource, strings),
-            v: citricValueLabel(citric, group.citricSource, lang),
-          },
-          { k: strings.waterFill, v: `${group.volumeMl} ml` },
-        ];
+  const lines = combinedGroupLines(group, lang);
 
   return (
     <div style={fillBlockStyle}>
@@ -414,51 +331,8 @@ function FillRecipe({
   onToggleCombine,
 }: FillRecipeProps) {
   const strings = t(lang);
-  const carbs = carbsFill(fill, [vessel], mix);
   const n = partsOf(fill, [vessel]);
-  const ratio = fill.content === 'gel' ? mix.gelRatio : mix.ratio;
-  const split = mixSplit(carbs, ratio || 2);
-  const preset = fill.content === 'gel' ? mix.gelRatioPreset : mix.ratioPreset;
-  const citricSource = fill.content === 'gel' ? mix.gelCitricSource : mix.citricSource;
-  const citricGrams = (vessel.vol / 100) * (fill.content === 'gel' ? mix.gelCitric : mix.citric);
-  const citric = citricAmount(citricGrams, citricSource);
-
-  const lines: { k: string; v: string }[] =
-    fill.content === 'water'
-      ? [{ k: strings.waterFill, v: `${vessel.vol} ml` }]
-      : [
-          { k: strings.carbsIn, v: `${carbs.toFixed(0)} g` },
-          ...(preset === 'honey' || preset === 'sugar'
-            ? [
-                {
-                  k: preset === 'honey' ? strings.ratioLabelHoney : strings.ratioLabelSugar,
-                  v:
-                    preset === 'honey'
-                      ? `${honeyGramsFromCarbs(carbs).toFixed(0)} g`
-                      : `${carbs.toFixed(0)} g`,
-                },
-              ]
-            : [
-                { k: strings.malto, v: `${split.malto.toFixed(1)} g` },
-                { k: strings.fructose, v: `${split.fructose.toFixed(1)} g` },
-              ]),
-          {
-            k: strings.salt,
-            v: `${((vessel.vol / 100) * (fill.content === 'gel' ? mix.gelSalt : mix.salt)).toFixed(2)} g`,
-          },
-          {
-            k: citricSourceLineLabel(citricSource, strings),
-            v: citricValueLabel(citric, citricSource, lang),
-          },
-          { k: strings.waterFill, v: `${vessel.vol} ml` },
-        ];
-  if (fill.content === 'gel' && n > 1)
-    lines.push({
-      k: strings.perPortion,
-      v: `${(carbs / n).toFixed(0)} g / ${Math.round(vessel.vol / n)} ml`,
-    });
-  if (index > 0)
-    lines.push({ k: strings.refillAt + fmtX(fill.from, true, route, xUnit), v: `#${index + 1}` });
+  const lines = fillRecipeLines({ fill, index, vessel, route, mix, xUnit, lang });
 
   return (
     <div style={fillBlockStyle}>

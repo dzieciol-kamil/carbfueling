@@ -383,6 +383,30 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
               gap: 10,
             }}
           >
+            {/* The name could only ever be typed while adding the stop (MobileShopSheet); an
+                existing one had no field to rename it in, on this screen or any other. */}
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.shopSheetName}</span>
+              <input
+                type="text"
+                value={shop.name}
+                maxLength={10}
+                placeholder={strings.shopDefaultName}
+                onChange={(e) => updateShop(shop.id, { name: e.target.value })}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  border: '1px solid var(--chip-border)',
+                  borderRadius: 9,
+                  padding: '9px 11px',
+                  fontFamily: 'Archivo, sans-serif',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: '#fff',
+                }}
+              />
+            </label>
+
             <MobileStepper
               label="na"
               value={shop.at}
