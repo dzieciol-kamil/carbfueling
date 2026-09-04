@@ -8,7 +8,7 @@ import {
   useAppStore,
   type ViewMode,
 } from '../../store/appStore';
-import { CoffeeIcon, GitHubIcon } from '../Footer';
+import { CoffeeIcon, GitHubIcon } from '../ui/BrandIcons';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
