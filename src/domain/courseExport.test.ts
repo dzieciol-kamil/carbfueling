@@ -281,18 +281,26 @@ describe('planCoursePoints — gel, food and stops', () => {
 
     // Counted in ride order, not in the order the markers happened to be dragged in.
     expect(points).toMatchObject([
-      { km: 20, name: 'Stop(1/2)', note: 'Sklep · 1/2', type: 'Generic' },
-      { km: 60, name: 'Stop(2/2)', note: 'Żabka · 2/2', type: 'Generic' },
+      { km: 20, name: 'Stop 1/2', note: 'Sklep · 1/2', type: 'Generic' },
+      { km: 60, name: 'Stop 2/2', note: 'Żabka · 2/2', type: 'Generic' },
     ]);
   });
 
-  test('a double-digit stop count drops the brackets rather than the digits', () => {
-    const shops = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, at: i + 1, name: 'S' }));
-    const points = planCoursePoints(input({ shops }));
+  // One shape whatever the count: three stops read like twelve, and the longest a plan can produce
+  // still lands inside the ten-character cap.
+  test('the stop format does not change as the ride gets more stops', () => {
+    const nameAt = (total: number, i: number) =>
+      planCoursePoints(
+        input({
+          shops: Array.from({ length: total }, (_, n) => ({ id: n, at: n + 1, name: 'S' })),
+        }),
+      )[i].name;
 
-    expect(points[0].name).toBe('Stop 1/12');
-    expect(points[11].name).toBe('Stop 12/12');
-    expect(points.every((p) => p.name.length <= 10)).toBe(true);
+    expect(nameAt(3, 0)).toBe('Stop 1/3');
+    expect(nameAt(12, 0)).toBe('Stop 1/12');
+    expect(nameAt(12, 11)).toBe('Stop 12/12');
+    expect(nameAt(99, 98)).toBe('Stop 99/99');
+    expect('Stop 99/99'.length).toBeLessThanOrEqual(10);
   });
 });
 
@@ -333,7 +341,7 @@ describe('planCoursePoints — merging', () => {
     );
 
     const atSixty = points.filter((p) => Math.abs(p.km - 60) < 0.5);
-    expect(atSixty.map((p) => p.name).sort()).toEqual(['B1(I)100%', 'Stop(1/1)']);
+    expect(atSixty.map((p) => p.name).sort()).toEqual(['B1(I)100%', 'Stop 1/1']);
   });
 
   // Two bottles on genuinely different legs whose checkpoints collide at km 30: one a quarter left,

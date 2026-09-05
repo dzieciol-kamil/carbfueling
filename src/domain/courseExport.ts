@@ -245,23 +245,22 @@ export function planCoursePoints({
     });
   }
 
-  // "Stop(1/4)" — which stop this is out of how many, which is what the rider wants to know at a
+  // "Stop 1/4" — which stop this is out of how many, which is what the rider wants to know at a
   // stop and something no other prompt says. The name they typed goes in the note instead: on the
   // banner it would crowd out the count, and "Sklep" alone never told them how many were left.
   // Ordered by kilometre so the count follows the ride, not the order the markers were dragged in.
-  // "Stop" is left untranslated: "Postoj(1/4)" is eleven characters, one over the cap.
+  // "Stop" is left untranslated: "Postoj 1/4" would fit, but "Postojow"/"Postoje" would not, and an
+  // English word every rider reads beats a Polish one that breaks at the next count.
+  //
+  // One shape for every ride, brackets or not: "Stop(1/12)" fits at exactly ten characters while
+  // "Stop(10/12)" does not, so bracketing would have to change format partway down a route.
   const ordered = [...shops].sort((a, b) => a.at - b.at);
-  // Whether the count is bracketed is decided once for the whole ride, off the longest count it
-  // will produce, rather than per stop. "Stop(1/12)" fits at exactly ten characters while
-  // "Stop(10/12)" does not, so deciding one at a time would bracket the early stops of a route and
-  // not its later ones.
-  const bracketed = `Stop(${ordered.length}/${ordered.length})`.length <= NAME_MAX;
   ordered.forEach((s, i) => {
     const count = `${i + 1}/${ordered.length}`;
     out.push({
       km: s.at,
       kind: 'stop',
-      name: shortName(bracketed ? `Stop(${count})` : `Stop ${count}`),
+      name: shortName(`Stop ${count}`),
       note: `${s.name} · ${count}`,
       type: 'Generic',
     });
