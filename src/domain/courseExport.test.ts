@@ -89,7 +89,7 @@ describe('planCoursePoints — bottle levels', () => {
     const points = planCoursePoints(input({ fills: [fill()] }));
 
     // No refill point: the leg starts at the start line, where "fill your bottles" is not news.
-    expect(named(points)).toEqual(['B1 75%', 'B1 50%', 'B1 25%', 'B1 0%']);
+    expect(named(points)).toEqual(['B1(I)75%', 'B1(I)50%', 'B1(I)25%', 'B1(I)0%']);
     expect(points.map((p) => Math.round(p.km))).toEqual([25, 50, 75, 100]);
     expect(points.every((p) => p.type === 'Water')).toBe(true);
   });
@@ -97,7 +97,7 @@ describe('planCoursePoints — bottle levels', () => {
   test('a leg that starts mid-ride opens with a refill prompt', () => {
     const points = planCoursePoints(input({ fills: [fill({ from: 40, to: 80 })] }));
 
-    expect(named(points)).toEqual(['B1 100%', 'B1 75%', 'B1 50%', 'B1 25%', 'B1 0%']);
+    expect(named(points)).toEqual(['B1(I)100%', 'B1(I)75%', 'B1(I)50%', 'B1(I)25%', 'B1(I)0%']);
     expect(points[0].kind).toBe('refill');
     expect(points[0].note).toBe('Bidon (Izo) · 100% (napełnij)');
     expect(points[0].km).toBe(40);
@@ -153,10 +153,14 @@ describe('planCoursePoints — checkpoints follow effort, not distance', () => {
   });
 });
 
-describe('planCoursePoints — bottles that drain together', () => {
+describe('planCoursePoints — one ladder per bottle', () => {
   const gear = [vessel({ gid: 'a' }), vessel({ gid: 'b', vol: 500 })];
 
-  test('two bottles on the same span share one set of prompts', () => {
+  // Two bottles over one leg sit at the same percentage all ride, and used to share a single
+  // prompt for exactly that reason. Once the banner started naming the contents they stopped being
+  // the same message — "reach for the water" and "reach for the izo" — and a banner can only show
+  // one, so both now fire.
+  test('two bottles on the same span each get their own prompts', () => {
     const points = planCoursePoints(
       input({
         gear,
@@ -164,15 +168,24 @@ describe('planCoursePoints — bottles that drain together', () => {
       }),
     );
 
-    expect(named(points)).toEqual(['B1+B2 75%', 'B1+B2 50%', 'B1+B2 25%', 'B1+B2 0%']);
-    // Duplicate names get numbered, the same way the printed strip numbers them.
-    expect(points[0].note).toBe('Bidon 1 (Woda), Bidon 2 (Izo) · 75%');
+    expect(named(points)).toEqual([
+      'B1(W)75%',
+      'B2(I)75%',
+      'B1(W)50%',
+      'B2(I)50%',
+      'B1(W)25%',
+      'B2(I)25%',
+      'B1(W)0%',
+      'B2(I)0%',
+    ]);
+    expect(points[0].note).toBe('Bidon 1 (Woda) · 75%');
+    expect(points[1].note).toBe('Bidon 2 (Izo) · 75%');
   });
 
-  // Taken off a real plan in the running app: a water bottle and an izo bottle filled at the same
-  // stop and drained over the same leg, whose ends differ by 135 m because the bars were dragged
-  // rather than typed. Grouping on exact spans split these into two identical ladders.
-  test('bottles whose spans differ only by drag noise still share one set of prompts', () => {
+  // Real spans off the running app: two bottles filled at one stop, ends 135 m apart because the
+  // bars were dragged rather than typed. Each ladder is now computed from its own bottle's span, so
+  // the near-miss costs nothing at all.
+  test('drag noise does not blur one bottle into the other', () => {
     const points = planCoursePoints(
       input({
         gear,
@@ -183,8 +196,10 @@ describe('planCoursePoints — bottles that drain together', () => {
       }),
     );
 
-    expect(named(points)).toEqual(['B1+B2 75%', 'B1+B2 50%', 'B1+B2 25%', 'B1+B2 0%']);
-    expect(points[0].note).toBe('Bidon 1 (Woda), Bidon 2 (Izo) · 75%');
+    const half = points.filter((p) => p.name.endsWith('50%'));
+    expect(half.map((p) => p.name)).toEqual(['B1(W)50%', 'B2(I)50%']);
+    expect(half[0].km).toBeCloseTo(22.824742268041238 / 2, 6);
+    expect(half[1].km).toBeCloseTo(22.96 / 2, 6);
   });
 
   test('bottles on different spans keep their own prompts', () => {
@@ -195,11 +210,11 @@ describe('planCoursePoints — bottles that drain together', () => {
       }),
     );
 
-    expect(named(points)).toContain('B1 25%');
-    expect(named(points)).toContain('B2 25%');
+    expect(named(points)).toContain('B1(I)25%');
+    expect(named(points)).toContain('B2(I)25%');
   });
 
-  test('three bottles on one span drop their numbers rather than overflow the banner', () => {
+  test('a third bottle is just a third ladder — nothing has to be abbreviated away', () => {
     const points = planCoursePoints(
       input({
         gear: [...gear, vessel({ gid: 'c' })],
@@ -207,8 +222,9 @@ describe('planCoursePoints — bottles that drain together', () => {
       }),
     );
 
-    expect(named(points)).toEqual(['B* 75%', 'B* 50%', 'B* 25%', 'B* 0%']);
-    expect(points[0].note).toBe('Bidon 1 (Izo), Bidon 2 (Izo), Bidon 3 (Izo) · 75%');
+    expect(points).toHaveLength(12);
+    expect(named(points).slice(0, 3)).toEqual(['B1(I)75%', 'B2(I)75%', 'B3(I)75%']);
+    expect(named(points).every((n) => n.length <= 10)).toBe(true);
   });
 });
 
@@ -221,7 +237,7 @@ describe('planCoursePoints — gel, food and stops', () => {
       }),
     );
 
-    expect(named(points)).toEqual(['Zel 1/3', 'Zel 2/3', 'Zel 3/3']);
+    expect(named(points)).toEqual(['B1(Z)1/3', 'B1(Z)2/3', 'B1(Z)3/3']);
     expect(points.map((p) => p.km)).toEqual([0, 45, 90]);
     expect(points.every((p) => p.type === 'Food')).toBe(true);
     // Same shape as a bottle's note: vessel, contents, then where you are in it.
@@ -239,7 +255,7 @@ describe('planCoursePoints — gel, food and stops', () => {
     // A one-shot gel has one part, like a bottle does — routing on that instead of on content sent
     // it down the ladder and prompted "napełnij" under a water icon.
     expect(points).toEqual([
-      { km: 40, kind: 'gel', name: 'Zel', note: 'Flakon (Żel)', type: 'Food' },
+      { km: 40, kind: 'gel', name: 'B1(Z)', note: 'Flakon (Żel)', type: 'Food', gid: 'g' },
     ]);
   });
 
@@ -250,15 +266,53 @@ describe('planCoursePoints — gel, food and stops', () => {
     expect(points[0]).toMatchObject({ km: 30, name: 'Baton', note: 'Baton · 25 g', type: 'Food' });
   });
 
-  test('stops keep the name the rider typed', () => {
-    const points = planCoursePoints(input({ shops: [{ id: 1, at: 60, name: 'Żabka' }] }));
+  // A stop is a stop on the banner whatever the rider called it: what they want there is which
+  // stop this is out of how many, and the name they typed never told them that. It survives in the
+  // note. "Stop" stays untranslated because "Postoj(1/4)" is one character over the cap.
+  test('a stop says which one it is, not what it was named', () => {
+    const points = planCoursePoints(
+      input({
+        shops: [
+          { id: 1, at: 60, name: 'Żabka' },
+          { id: 2, at: 20, name: 'Sklep' },
+        ],
+      }),
+    );
 
-    expect(points[0]).toMatchObject({ km: 60, name: 'Zabka', note: 'Żabka', type: 'Generic' });
+    // Counted in ride order, not in the order the markers happened to be dragged in.
+    expect(points).toMatchObject([
+      { km: 20, name: 'Stop(1/2)', note: 'Sklep · 1/2', type: 'Generic' },
+      { km: 60, name: 'Stop(2/2)', note: 'Żabka · 2/2', type: 'Generic' },
+    ]);
+  });
+
+  test('a double-digit stop count drops the brackets rather than the digits', () => {
+    const shops = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, at: i + 1, name: 'S' }));
+    const points = planCoursePoints(input({ shops }));
+
+    expect(points[0].name).toBe('Stop 1/12');
+    expect(points[11].name).toBe('Stop 12/12');
+    expect(points.every((p) => p.name.length <= 10)).toBe(true);
   });
 });
 
 describe('planCoursePoints — merging', () => {
-  test('a bottle running dry where the next one is filled becomes one prompt', () => {
+  // The only merge left: one bottle emptied and refilled at the same stop is one instruction.
+  test('a bottle running dry where it is refilled becomes one prompt', () => {
+    const points = planCoursePoints(
+      input({
+        fills: [fill({ fid: 1, to: 50 }), fill({ fid: 2, from: 50, to: 100 })],
+      }),
+    );
+
+    const atFifty = points.filter((p) => Math.abs(p.km - 50) < 0.5);
+    expect(atFifty).toHaveLength(1);
+    // The refill outranks the empty mark, so that is what the device shows.
+    expect(atFifty[0].name).toBe('B1(I)100%');
+    expect(atFifty[0].note).toBe('Bidon (Izo) · 100% (napełnij) | Bidon (Izo) · 0%');
+  });
+
+  test('one bottle running dry as a different one is filled stays two prompts', () => {
     const points = planCoursePoints(
       input({
         gear: [vessel({ gid: 'a' }), vessel({ gid: 'b' })],
@@ -267,13 +321,10 @@ describe('planCoursePoints — merging', () => {
     );
 
     const atFifty = points.filter((p) => Math.abs(p.km - 50) < 0.5);
-    expect(atFifty).toHaveLength(1);
-    // The refill outranks the empty mark, so that is what the device shows.
-    expect(atFifty[0].name).toBe('B2 100%');
-    expect(atFifty[0].note).toBe('Bidon 2 (Izo) · 100% (napełnij) | Bidon 1 (Izo) · 0%');
+    expect(atFifty.map((p) => p.name).sort()).toEqual(['B1(I)0%', 'B2(I)100%']);
   });
 
-  test('a refill at a stop shows the refill, with the stop named in the note', () => {
+  test('a refill at a stop fires as both, since each says something the other does not', () => {
     const points = planCoursePoints(
       input({
         fills: [fill({ from: 60, to: 100 })],
@@ -282,15 +333,12 @@ describe('planCoursePoints — merging', () => {
     );
 
     const atSixty = points.filter((p) => Math.abs(p.km - 60) < 0.5);
-    expect(atSixty).toHaveLength(1);
-    expect(atSixty[0].name).toBe('B1 100%');
-    expect(atSixty[0].note).toContain('Sklep');
+    expect(atSixty.map((p) => p.name).sort()).toEqual(['B1(I)100%', 'Stop(1/1)']);
   });
 
-  // Two bottles on genuinely different legs, whose checkpoints happen to collide: at km 30 one is
-  // a quarter left and the other a half. Joined with the same ' · ' that separates the parts inside
-  // a note, the result read as one flat run of four fragments with no way to tell whose 50% it was.
-  test('keeps two bottles at different levels legible when their prompts collide', () => {
+  // Two bottles on genuinely different legs whose checkpoints collide at km 30: one a quarter left,
+  // the other a half. Nothing collapses them any more, so each keeps its own banner.
+  test('two bottles at different levels in the same place stay two prompts', () => {
     const points = planCoursePoints(
       input({
         gear: [vessel({ gid: 'a' }), vessel({ gid: 'b' })],
@@ -301,10 +349,8 @@ describe('planCoursePoints — merging', () => {
       }),
     );
 
-    const collision = points.find((p) => p.km === 30);
-    expect(collision?.note).toBe('Bidon 1 (Woda) · 25% | Bidon 2 (Izo) · 50%');
-    // The banner has room for one of them, so it shows the one the cluster leads with.
-    expect(collision?.name).toBe('B1 25%');
+    const collision = points.filter((p) => p.km === 30);
+    expect(collision.map((p) => p.name)).toEqual(['B1(W)25%', 'B2(I)50%']);
   });
 
   test('points further apart than the tolerance stay separate', () => {
@@ -441,7 +487,7 @@ describe('buildTcx', () => {
       input({ route, shops: [{ id: 1, at: 10, name: 'Lidl & Co' }] }),
     );
     const out = buildTcx({ points: withAmp, track, route, name: 'x' });
-    expect(out).toContain('<Notes>Lidl &amp; Co</Notes>');
+    expect(out).toContain('<Notes>Lidl &amp; Co · 1/1</Notes>');
     expect(out).not.toContain('Lidl & Co');
   });
 

@@ -11,6 +11,12 @@
 // it is still XML, so no binary FIT encoder. FIT would be the fully native answer and remains the
 // upgrade path if a device turns out to want it.
 //
+// Those ten characters are the whole message. When a course point fires, an Edge shows a banner
+// with the point's *name* for two or three seconds; there is no sign it ever shows `<Notes>`. So the
+// name carries everything that has to reach a rider at speed — which bottle, what is in it, how
+// full it should be, packed as "B1(W)25%" — and the note carries the readable version for whoever
+// opens the file afterwards. (Banner behaviour is from riders' own reports, not Garmin's docs.)
+//
 // TCX schema constraints that shape the code below (TrainingCenterDatabase v2):
 //   - `CoursePoint/Name` is capped at 10 characters, which is why every point carries a terse
 //     ASCII `name` for the device banner and a full `note` for `<Notes>`.
@@ -53,10 +59,9 @@ import { t, type Lang } from '../i18n/strings';
 const LEVELS = [0.75, 0.5, 0.25];
 
 /**
- * Points closer together than this collapse into one. Two bottles refilled at the same stop, a
- * bottle running dry exactly where the next one is filled, a gel taken at a shop — all of these
- * land on the same kilometre, and firing three prompts in a row there trains the rider to ignore
- * them.
+ * How close two prompts about the same vessel have to be before they become one. A bottle drains to
+ * nothing and is refilled at the same stop; the two positions differ by metres because the bars
+ * were dragged, not typed. "Empty" and "fill it" back to back is one instruction, not two.
  */
 const MERGE_TOLERANCE_KM = 0.4;
 
@@ -116,6 +121,8 @@ export interface CoursePoint {
   /** The readable version, in the rider's language, written to `<Notes>`. */
   note: string;
   type: TcxPointType;
+  /** Which vessel this is about, where that applies — the only thing prompts merge across. */
+  gid?: string;
 }
 
 export interface CoursePlanInput {
@@ -145,36 +152,6 @@ export function ascii(s: string): string {
 
 const shortName = (s: string) => ascii(s).slice(0, NAME_MAX).trim() || '?';
 
-/**
- * Fills that drain as one. A fill empties linearly in effort over its own span, and nothing else
- * about it enters that calculation — not its content, not the bottle's size. So two bottles
- * covering the same span sit at the same percentage for the whole ride, whatever is in them, and
- * a prompt for the second one would repeat the first word for word.
- */
-function groupBySpan(fills: Fill[]): Fill[][] {
-  const groups: Fill[][] = [];
-  for (const f of [...fills].sort((a, b) => a.from - b.from || a.to - b.to)) {
-    // Near-equal, not equal: real spans come out of dragging a bar or out of autoplan, so two
-    // bottles filled at the same stop and drained over the same leg land on 22.82 and 22.96 rather
-    // than on one number. Anything inside the merge tolerance would have collapsed into a single
-    // prompt further down anyway, so it belongs in one group here.
-    //
-    // The cost is that the group's percentage is read off the first fill's span, so the others are
-    // slightly off. Measured at the worst case — both starting together, ends a full tolerance
-    // apart — where the prompt says 50%: a 40 km leg puts the other bottle at 50.5%, a 10 km leg at
-    // 51.9%, a 2 km leg at 58.3%. Single percentage points on any leg long enough to sip over, and
-    // bottles genuinely at different levels are far enough apart to keep their own ladders.
-    const open = groups.find(
-      (g) =>
-        Math.abs(g[0].from - f.from) <= MERGE_TOLERANCE_KM &&
-        Math.abs(g[0].to - f.to) <= MERGE_TOLERANCE_KM,
-    );
-    if (open) open.push(f);
-    else groups.push([f]);
-  }
-  return groups;
-}
-
 export function planCoursePoints({
   route,
   gear,
@@ -192,6 +169,11 @@ export function planCoursePoints({
   // enum offers only Water and Food, so every sipped fill is Water and the icon just means "drink".
   const contentName = (content: Content) =>
     content === 'water' ? strings.water : content === 'gel' ? strings.gel : strings.izo;
+  // And on the banner, that same word squeezed to its initial: "B1(W)25%" spends two characters
+  // saying whether to reach for water or for the bottle with the carbs in it. Taken from the
+  // rider's own language, so Polish reads W/I/Z and English W/I/G — each self-consistent, which
+  // matters more than the two agreeing with each other.
+  const letter = (content: Content) => ascii(contentName(content)).charAt(0).toUpperCase();
   // A slot number rather than an initial: two bottles the rider named "Bidon" and "Bukłak" would
   // both shorten to "B", and the readable name is in the note anyway.
   const codes = new Map(gear.map((v, i) => [v.gid, `B${i + 1}`]));
@@ -200,21 +182,22 @@ export function planCoursePoints({
   // Split on what is in the vessel, not on how many doses it holds: a gel flask set to a single
   // dose has one part like a bottle does, and sending it down the bottle branch would prompt for
   // "refill" under a water icon on what is actually one shot of gel.
-  const sipped = fills.filter((f) => f.content !== 'gel' && f.to > f.from);
-  for (const group of groupBySpan(sipped)) {
-    const { from, to } = group[0];
-    const joined = group.map((f) => codes.get(f.gid) ?? '?').join('+');
-    // Three or more bottles on one span blow the 10-character banner, so they lose their numbers;
-    // the note still lists every one of them by name.
-    const code = joined.length <= 5 ? joined : 'B*';
-    const named = group
-      .map((f) => `${labels.get(f.gid) ?? '?'} (${contentName(f.content)})`)
-      .join(', ');
+  //
+  // Every bottle gets its own ladder, even when two of them cover the same leg and therefore sit at
+  // the same percentage all ride. They used to share one prompt, on the grounds that the second
+  // would repeat the first word for word — which stopped being true once the banner started naming
+  // the contents. "B1(W)75%" and "B2(I)75%" are two different instructions, and a banner can only
+  // show one of them, so they are two prompts.
+  for (const f of fills.filter((f) => f.content !== 'gel' && f.to > f.from)) {
+    const { from, to } = f;
+    const tag = `${codes.get(f.gid) ?? '?'}(${letter(f.content)})`;
+    const named = `${labels.get(f.gid) ?? '?'} (${contentName(f.content)})`;
     const at = (level: number) => ({
       km:
         level === 1 ? from : level === 0 ? to : distanceAtEff(route, effAt(route, from, to, level)),
-      name: `${code} ${Math.round(level * 100)}%`,
+      name: `${tag}${Math.round(level * 100)}%`,
       type: 'Water' as const,
+      gid: f.gid,
     });
 
     // Skipped at the start line, where "fill your bottles" is not news.
@@ -233,17 +216,20 @@ export function planCoursePoints({
   for (const f of fills.filter((f) => f.content === 'gel')) {
     const n = partsOf(f, gear);
     const named = labels.get(f.gid) ?? '?';
+    const code = codes.get(f.gid) ?? '?';
+    const tag = `${code}(${letter(f.content)})`;
     partArray(f, gear).forEach((km, k) => {
-      // Same shape as a bottle's note — vessel, then what is in it, then where you are in it — so
-      // the two kinds of prompt read alike on the device. The banner still leads with "Zel", which
-      // says more in ten characters than a slot number would.
-      const dose = n > 1 ? ` · ${k + 1}/${n}` : '';
+      // Same shape as a bottle, banner and note alike — vessel, what is in it, where you are in it.
+      // The fraction counts doses rather than a level, which the (Z)/(G) in the middle is what
+      // distinguishes: "B3(Z)3/4" is the third of four gels, not a flask three-quarters full.
+      const dose = n > 1 ? `${k + 1}/${n}` : '';
       out.push({
         km,
         kind: 'gel',
-        name: shortName(n > 1 ? `${strings.gel} ${k + 1}/${n}` : strings.gel),
-        note: `${named} (${contentName(f.content)})${dose}`,
+        name: shortName(`${tag}${dose}`),
+        note: `${named} (${contentName(f.content)})${dose ? ` · ${dose}` : ''}`,
         type: 'Food',
+        gid: f.gid,
       });
     });
   }
@@ -259,9 +245,27 @@ export function planCoursePoints({
     });
   }
 
-  for (const s of shops) {
-    out.push({ km: s.at, kind: 'stop', name: shortName(s.name), note: s.name, type: 'Generic' });
-  }
+  // "Stop(1/4)" — which stop this is out of how many, which is what the rider wants to know at a
+  // stop and something no other prompt says. The name they typed goes in the note instead: on the
+  // banner it would crowd out the count, and "Sklep" alone never told them how many were left.
+  // Ordered by kilometre so the count follows the ride, not the order the markers were dragged in.
+  // "Stop" is left untranslated: "Postoj(1/4)" is eleven characters, one over the cap.
+  const ordered = [...shops].sort((a, b) => a.at - b.at);
+  // Whether the count is bracketed is decided once for the whole ride, off the longest count it
+  // will produce, rather than per stop. "Stop(1/12)" fits at exactly ten characters while
+  // "Stop(10/12)" does not, so deciding one at a time would bracket the early stops of a route and
+  // not its later ones.
+  const bracketed = `Stop(${ordered.length}/${ordered.length})`.length <= NAME_MAX;
+  ordered.forEach((s, i) => {
+    const count = `${i + 1}/${ordered.length}`;
+    out.push({
+      km: s.at,
+      kind: 'stop',
+      name: shortName(bracketed ? `Stop(${count})` : `Stop ${count}`),
+      note: `${s.name} · ${count}`,
+      type: 'Generic',
+    });
+  });
 
   return fitBudget(mergeNearby(out.filter((p) => p.km >= 0 && p.km <= dist(route))));
 }
@@ -293,10 +297,16 @@ function effAt(route: RouteInput, from: number, to: number, level: number): numb
 function mergeNearby(points: CoursePoint[]): CoursePoint[] {
   const clusters: CoursePoint[][] = [];
   for (const p of [...points].sort((a, b) => a.km - b.km)) {
-    const open = clusters[clusters.length - 1];
-    // Measured against the cluster's first point, not its last, so a dense run of prompts can't
-    // chain into one cluster spanning kilometres.
-    if (open && p.km - open[0].km <= MERGE_TOLERANCE_KM) open.push(p);
+    // Only a vessel's own prompts collapse: one bottle running dry exactly where it is refilled is
+    // one thing to do, not two. Everything else stays separate — two bottles both due at 75% are
+    // two instructions, and a stop is a third, so they fire as three prompts rather than one banner
+    // that can name only one of them. Measured against the cluster's first point, not its last, so
+    // a dense run cannot chain into one cluster spanning kilometres.
+    const open =
+      p.gid === undefined
+        ? undefined
+        : clusters.find((c) => c[0].gid === p.gid && p.km - c[0].km <= MERGE_TOLERANCE_KM);
+    if (open) open.push(p);
     else clusters.push([p]);
   }
 
