@@ -270,7 +270,7 @@ describe('planCoursePoints — merging', () => {
     expect(atFifty).toHaveLength(1);
     // The refill outranks the empty mark, so that is what the device shows.
     expect(atFifty[0].name).toBe('B2 100%');
-    expect(atFifty[0].note).toBe('Bidon 2 (Izo) · 100% (napełnij) · Bidon 1 (Izo) · 0%');
+    expect(atFifty[0].note).toBe('Bidon 2 (Izo) · 100% (napełnij) | Bidon 1 (Izo) · 0%');
   });
 
   test('a refill at a stop shows the refill, with the stop named in the note', () => {
@@ -285,6 +285,26 @@ describe('planCoursePoints — merging', () => {
     expect(atSixty).toHaveLength(1);
     expect(atSixty[0].name).toBe('B1 100%');
     expect(atSixty[0].note).toContain('Sklep');
+  });
+
+  // Two bottles on genuinely different legs, whose checkpoints happen to collide: at km 30 one is
+  // a quarter left and the other a half. Joined with the same ' · ' that separates the parts inside
+  // a note, the result read as one flat run of four fragments with no way to tell whose 50% it was.
+  test('keeps two bottles at different levels legible when their prompts collide', () => {
+    const points = planCoursePoints(
+      input({
+        gear: [vessel({ gid: 'a' }), vessel({ gid: 'b' })],
+        fills: [
+          fill({ fid: 1, gid: 'a', content: 'water', to: 40 }),
+          fill({ fid: 2, gid: 'b', to: 60 }),
+        ],
+      }),
+    );
+
+    const collision = points.find((p) => p.km === 30);
+    expect(collision?.note).toBe('Bidon 1 (Woda) · 25% | Bidon 2 (Izo) · 50%');
+    // The banner has room for one of them, so it shows the one the cluster leads with.
+    expect(collision?.name).toBe('B1 25%');
   });
 
   test('points further apart than the tolerance stay separate', () => {

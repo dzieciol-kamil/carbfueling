@@ -61,6 +61,15 @@ const LEVELS = [0.75, 0.5, 0.25];
 const MERGE_TOLERANCE_KM = 0.4;
 
 /**
+ * Joins the notes of points that collapsed into one. Deliberately not the ' · ' that separates the
+ * parts *inside* a single note: with the same separator at both levels,
+ * "Bidon 1 (Woda) · 25% · Bidon 2 (Izo) · 50%" reads as one flat run of four fragments and there is
+ * no telling where the first bottle's statement ends and the second begins — which is precisely the
+ * case where the two bottles are at different levels and the rider has to tell them apart.
+ */
+const NOTE_JOIN = ' | ';
+
+/**
  * Ceiling on how many prompts the file carries. Garmin's limit counts every turn it generates for
  * the route as well as the points we write — an Edge holds about 200 in total, most watches 50 —
  * and a device that goes over drops points on its own, "keeping the most critical ones" by its
@@ -148,9 +157,13 @@ function groupBySpan(fills: Fill[]): Fill[][] {
     // Near-equal, not equal: real spans come out of dragging a bar or out of autoplan, so two
     // bottles filled at the same stop and drained over the same leg land on 22.82 and 22.96 rather
     // than on one number. Anything inside the merge tolerance would have collapsed into a single
-    // prompt further down anyway, so it belongs in one group here — at the cost of the group's
-    // percentage being read off the first fill's span, which on a very short leg is a nudge off
-    // for the others.
+    // prompt further down anyway, so it belongs in one group here.
+    //
+    // The cost is that the group's percentage is read off the first fill's span, so the others are
+    // slightly off. Measured at the worst case — both starting together, ends a full tolerance
+    // apart — where the prompt says 50%: a 40 km leg puts the other bottle at 50.5%, a 10 km leg at
+    // 51.9%, a 2 km leg at 58.3%. Single percentage points on any leg long enough to sip over, and
+    // bottles genuinely at different levels are far enough apart to keep their own ladders.
     const open = groups.find(
       (g) =>
         Math.abs(g[0].from - f.from) <= MERGE_TOLERANCE_KM &&
@@ -293,7 +306,7 @@ function mergeNearby(points: CoursePoint[]): CoursePoint[] {
     const notes = [lead.note, ...rest.map((p) => p.note)].filter(
       (n, i, all) => all.indexOf(n) === i,
     );
-    return { ...lead, km: cluster[0].km, note: notes.join(' · ') };
+    return { ...lead, km: cluster[0].km, note: notes.join(NOTE_JOIN) };
   });
 }
 
