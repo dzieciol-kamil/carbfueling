@@ -63,6 +63,23 @@ export const articleImgStyle: CSSProperties = {
 
 export const articleLinkStyle: CSSProperties = { fontSize: 15, fontWeight: 600 };
 
+/** For the literal strings a device shows, e.g. "B1(W)25%" — the same mono face the app uses for
+ *  file names and numbers, slightly down-sized so it sits on the paragraph's line rather than
+ *  towering over it. */
+export const articleCodeStyle: CSSProperties = {
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: '0.92em',
+};
+
+/** The citation line at the foot of an article. Quieter than the body on purpose: a link to a
+ *  manufacturer's help page is a footnote, not a paragraph of the article. */
+export const articleSourcesStyle: CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.6,
+  color: 'var(--muted)',
+  marginBottom: 16,
+};
+
 export function FaqLayout({
   lang,
   slug,
