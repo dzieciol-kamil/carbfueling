@@ -224,6 +224,8 @@ describe('planCoursePoints — gel, food and stops', () => {
     expect(named(points)).toEqual(['Zel 1/3', 'Zel 2/3', 'Zel 3/3']);
     expect(points.map((p) => p.km)).toEqual([0, 45, 90]);
     expect(points.every((p) => p.type === 'Food')).toBe(true);
+    // Same shape as a bottle's note: vessel, contents, then where you are in it.
+    expect(points[1].note).toBe('Flakon (Żel) · 2/3');
   });
 
   test('a single-dose flask says just the word, and never asks to be refilled', () => {
@@ -237,7 +239,7 @@ describe('planCoursePoints — gel, food and stops', () => {
     // A one-shot gel has one part, like a bottle does — routing on that instead of on content sent
     // it down the ladder and prompted "napełnij" under a water icon.
     expect(points).toEqual([
-      { km: 40, kind: 'gel', name: 'Zel', note: 'Żel · Flakon', type: 'Food' },
+      { km: 40, kind: 'gel', name: 'Zel', note: 'Flakon (Żel)', type: 'Food' },
     ]);
   });
 

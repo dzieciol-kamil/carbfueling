@@ -221,12 +221,15 @@ export function planCoursePoints({
     const n = partsOf(f, gear);
     const named = labels.get(f.gid) ?? '?';
     partArray(f, gear).forEach((km, k) => {
-      const dose = n > 1 ? `${strings.gel} ${k + 1}/${n}` : strings.gel;
+      // Same shape as a bottle's note — vessel, then what is in it, then where you are in it — so
+      // the two kinds of prompt read alike on the device. The banner still leads with "Zel", which
+      // says more in ten characters than a slot number would.
+      const dose = n > 1 ? ` · ${k + 1}/${n}` : '';
       out.push({
         km,
         kind: 'gel',
-        name: shortName(dose),
-        note: `${dose} · ${named}`,
+        name: shortName(n > 1 ? `${strings.gel} ${k + 1}/${n}` : strings.gel),
+        note: `${named} (${contentName(f.content)})${dose}`,
         type: 'Food',
       });
     });
