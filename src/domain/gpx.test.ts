@@ -50,6 +50,47 @@ describe('parseGpxXml', () => {
     expect(result.pts[result.pts.length - 1]).toMatchObject({ lat: raw[7000].lat });
   });
 
+  test('reads a TCX course, so the file the app exports can be loaded back in', () => {
+    const body = linePoints(8)
+      .map(
+        (p) =>
+          `<Trackpoint><Time>2020-01-01T06:00:00.000Z</Time>` +
+          `<Position><LatitudeDegrees>${p.lat}</LatitudeDegrees>` +
+          `<LongitudeDegrees>${p.lon}</LongitudeDegrees></Position>` +
+          `<AltitudeMeters>${p.ele}</AltitudeMeters></Trackpoint>`,
+      )
+      .join('');
+    const xml = `<?xml version="1.0"?><TrainingCenterDatabase><Courses><Course><Track>${body}</Track></Course></Courses></TrainingCenterDatabase>`;
+    const result = parseGpxXml(xml);
+
+    expect(result.ele[0]).toBeCloseTo(100, 6);
+    expect(result.ele[400]).toBeCloseTo(170, 6);
+    expect(result.pts).toHaveLength(8);
+  });
+
+  test('reads a TCX whose elements are namespace-qualified', () => {
+    const body = linePoints(8)
+      .map(
+        (p) =>
+          `<ns:Trackpoint><ns:Position><ns:LatitudeDegrees>${p.lat}</ns:LatitudeDegrees>` +
+          `<ns:LongitudeDegrees>${p.lon}</ns:LongitudeDegrees></ns:Position>` +
+          `<ns:AltitudeMeters>${p.ele}</ns:AltitudeMeters></ns:Trackpoint>`,
+      )
+      .join('');
+    const result = parseGpxXml(`<?xml version="1.0"?><ns:Track>${body}</ns:Track>`);
+
+    expect(result.pts).toHaveLength(8);
+    expect(result.pts[0]).toEqual({ lat: 50, lon: 19, ele: 100 });
+  });
+
+  test('prefers the GPX track when a file somehow carries both', () => {
+    const gpx = trkGpx(linePoints(8));
+    const tcx = `<Trackpoint><Position><LatitudeDegrees>10</LatitudeDegrees><LongitudeDegrees>10</LongitudeDegrees></Position></Trackpoint>`;
+    const result = parseGpxXml(gpx.replace('</gpx>', `${tcx}</gpx>`));
+
+    expect(result.pts[0]).toEqual({ lat: 50, lon: 19, ele: 100 });
+  });
+
   test('throws when there are too few points', () => {
     expect(() => parseGpxXml(trkGpx(linePoints(3)))).toThrow();
   });

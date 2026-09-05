@@ -39,6 +39,33 @@ function extractPoints(xml: string, tag: 'trkpt' | 'rtept'): RawPoint[] {
   return points;
 }
 
+/**
+ * The same track out of a TCX file, where a point's position hangs in child elements rather than
+ * in attributes. Here because the course export writes TCX: a file this app hands the rider has to
+ * be one it will take back, and "load" would otherwise reject what "download" just produced. It
+ * also picks up TCX straight from Garmin Connect or RideWithGPS, courses and recorded activities
+ * alike, since both wrap their points in the same `<Track>`.
+ *
+ * The optional `ns:` prefix is not decoration — plenty of exporters namespace-qualify every
+ * element, and an unprefixed pattern would silently read those files as empty.
+ */
+function extractTcxPoints(xml: string): RawPoint[] {
+  const points: RawPoint[] = [];
+  const re = /<(?:[A-Za-z0-9_-]+:)?Trackpoint\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?Trackpoint>/g;
+  const child = (body: string, tag: string) =>
+    parseFloat(body.match(new RegExp(`<(?:[A-Za-z0-9_-]+:)?${tag}>([^<]*)</`))?.[1] ?? '');
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml))) {
+    const lat = child(m[1], 'LatitudeDegrees');
+    const lon = child(m[1], 'LongitudeDegrees');
+    const ele = child(m[1], 'AltitudeMeters');
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      points.push({ lat, lon, ele: Number.isFinite(ele) ? ele : 0 });
+    }
+  }
+  return points;
+}
+
 type LatLon = { lat: number; lon: number };
 
 /** Great-circle distance in km. */
@@ -86,9 +113,15 @@ const roundPoint = (p: RawPoint): GpxPoint => ({
   ele: Math.round(p.ele * 10) / 10,
 });
 
+/**
+ * Reads a route out of a GPX or TCX file. Named for GPX because everything around it is — the
+ * store's `gpxTrack`, the UI's "Profil GPX" — and renaming only the parser would make the seam
+ * harder to follow, not easier. The formats are tried in turn: a GPX track, a GPX route, then TCX.
+ */
 export function parseGpxXml(xml: string): GpxParseResult {
   const track = extractPoints(xml, 'trkpt');
-  const raw = track.length ? track : extractPoints(xml, 'rtept');
+  const route = track.length ? track : extractPoints(xml, 'rtept');
+  const raw = route.length ? route : extractTcxPoints(xml);
   if (raw.length < 8) throw new Error('too few points');
 
   const cum = cumulativeKm(raw);

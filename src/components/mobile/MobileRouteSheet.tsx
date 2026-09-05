@@ -319,7 +319,7 @@ export function MobileRouteSheet() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".gpx,application/gpx+xml"
+                accept=".gpx,.tcx,application/gpx+xml,application/vnd.garmin.tcx+xml"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   e.target.value = '';

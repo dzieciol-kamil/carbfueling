@@ -8,6 +8,7 @@ import {
   type CoursePoint,
 } from './courseExport';
 import { eff } from './fuel';
+import { parseGpxXml } from './gpx';
 import type { Fill, FoodItem, GpxPoint, RouteInput, Vessel } from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -68,7 +69,8 @@ function line(n: number, eleAt: (i: number) => number = () => 100): GpxPoint[] {
   return Array.from({ length: n }, (_, i) => ({
     lat: 52,
     lon: 20 + i * 0.01,
-    ele: eleAt(i),
+    // Rounded the way a stored track always is, so a round trip compares like with like.
+    ele: Math.round(eleAt(i) * 10) / 10,
   }));
 }
 
@@ -400,6 +402,23 @@ describe('buildTcx', () => {
 
   test('the same plan exports byte-identical, so a re-download is not a new file', () => {
     expect(buildTcx({ points, track, route, name: route.gpxName ?? '' })).toBe(xml);
+  });
+});
+
+describe('round trip', () => {
+  test('the exported course loads back in as the same route', () => {
+    const track = line(120, (i) => 100 + Math.sin(i / 8) * 60);
+    const source = makeRoute({ gpxName: 'ride.gpx' });
+    const xml = buildTcx({ points: [], track, route: source, name: 'ride.gpx' });
+
+    const reparsed = parseGpxXml(xml);
+
+    expect(reparsed.pts).toHaveLength(track.length);
+    expect(reparsed.pts[0]).toEqual(track[0]);
+    expect(reparsed.pts[track.length - 1]).toEqual(track[track.length - 1]);
+    // The distance the file declares and the one recomputed from its own points agree.
+    const declared = Number(xml.match(/<DistanceMeters>(\d+)<\/DistanceMeters>/)?.[1]);
+    expect(reparsed.distanceKm * 1000).toBeCloseTo(declared, 0);
   });
 });
 
