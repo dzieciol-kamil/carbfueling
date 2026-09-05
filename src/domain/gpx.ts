@@ -96,7 +96,11 @@ export function cumulativeKm(pts: LatLon[]): number[] {
  * resolve, and it roughly halves what the thinned track costs in localStorage.
  */
 function thinTrack(raw: RawPoint[]): GpxPoint[] {
-  const step = Math.ceil(raw.length / MAX_TRACK_POINTS);
+  // Divided by one less than the cap, because the finish line is appended afterwards and has to fit
+  // under it too. Dividing by the cap itself lets the loop fill all 3000 slots and the append push
+  // the total to 3001 — which `settingsExport` then rejects, refusing the rider's whole backup over
+  // a single point. A 6000-point file did exactly that.
+  const step = Math.ceil(raw.length / (MAX_TRACK_POINTS - 1));
   const out: GpxPoint[] = [];
   for (let i = 0; i < raw.length; i += step) out.push(roundPoint(raw[i]));
   const last = raw[raw.length - 1];

@@ -320,6 +320,30 @@ describe('planCoursePoints — merging', () => {
     expect(atFifty[0].note).toBe('Bidon (Izo) · 100% (napełnij) | Bidon (Izo) · 0%');
   });
 
+  // Doses are draggable, so a rider can put two of them 200 m apart. Keying the merge on the vessel
+  // alone swallowed the second one and told them to take a single gel where the plan says two.
+  test('gel doses close together are still one prompt each', () => {
+    const points = planCoursePoints(
+      input({
+        gear: [vessel({ gid: 'g', name: 'Flakon', allowed: ['gel'], gelParts: 4 })],
+        fills: [
+          fill({ gid: 'g', content: 'gel', from: 60, to: 60.7, pos: [60, 60.2, 60.5, 60.7] }),
+        ],
+      }),
+    );
+
+    expect(named(points)).toEqual(['B1(Z)1/4', 'B1(Z)2/4', 'B1(Z)3/4', 'B1(Z)4/4']);
+  });
+
+  // 25% and 0% land inside the tolerance on any leg under about 1.6 km. Merging them left the
+  // lower-priority "empty" visible only inside the note, so the banner never said the bottle was
+  // done — on the one surface the rider actually reads.
+  test('a short leg still says when the bottle is empty', () => {
+    const points = planCoursePoints(input({ fills: [fill({ from: 0, to: 1.2 })] }));
+
+    expect(named(points)).toContain('B1(I)0%');
+  });
+
   test('one bottle running dry as a different one is filled stays two prompts', () => {
     const points = planCoursePoints(
       input({

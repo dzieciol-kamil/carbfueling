@@ -176,6 +176,12 @@ export function planCoursePoints({
   const letter = (content: Content) => ascii(contentName(content)).charAt(0).toUpperCase();
   // A slot number rather than an initial: two bottles the rider named "Bidon" and "Bukłak" would
   // both shorten to "B", and the readable name is in the note anyway.
+  //
+  // Deliberately not the same numbering as `vesselLabels`, which only numbers names that repeat. On
+  // gear of [Bidon, Bukłak, Bidon] the last vessel is "B3" on the banner and "Bidon 2" in the note
+  // and on the printed sheet. Each is right for its own surface — the banner needs a position it
+  // can spell in two characters, the note and the sheet need to agree with each other — and making
+  // them one would cost the banner either its brevity or its uniqueness.
   const codes = new Map(gear.map((v, i) => [v.gid, `B${i + 1}`]));
   const out: CoursePoint[] = [];
 
@@ -293,18 +299,23 @@ function effAt(route: RouteInput, from: number, to: number, level: number): numb
   return a + (1 - level) * (eff(route, to) - a);
 }
 
+/** The two ends of a bottle's leg, and the only kinds that ever share a prompt. */
+const pairable = (p: CoursePoint) => p.kind === 'refill' || p.kind === 'empty';
+
 function mergeNearby(points: CoursePoint[]): CoursePoint[] {
   const clusters: CoursePoint[][] = [];
   for (const p of [...points].sort((a, b) => a.km - b.km)) {
-    // Only a vessel's own prompts collapse: one bottle running dry exactly where it is refilled is
-    // one thing to do, not two. Everything else stays separate — two bottles both due at 75% are
-    // two instructions, and a stop is a third, so they fire as three prompts rather than one banner
-    // that can name only one of them. Measured against the cluster's first point, not its last, so
-    // a dense run cannot chain into one cluster spanning kilometres.
-    const open =
-      p.gid === undefined
-        ? undefined
-        : clusters.find((c) => c[0].gid === p.gid && p.km - c[0].km <= MERGE_TOLERANCE_KM);
+    // Exactly one pair collapses: a bottle running dry where that same bottle is refilled, which is
+    // one thing to do rather than two. Nothing else does — two bottles both due at 75% are two
+    // instructions, a stop is a third, and two gel doses dragged 200 m apart are two gels to
+    // swallow. Keying this on the vessel alone once ate the second dose of a four-dose flask and
+    // told the rider to take one. Measured against the cluster's first point, not its last, so a
+    // dense run cannot chain into one cluster spanning kilometres.
+    const open = pairable(p)
+      ? clusters.find(
+          (c) => pairable(c[0]) && c[0].gid === p.gid && p.km - c[0].km <= MERGE_TOLERANCE_KM,
+        )
+      : undefined;
     if (open) open.push(p);
     else clusters.push([p]);
   }
@@ -456,12 +467,18 @@ export function buildTcx({ points, track, route, name, notes, version, lang }: T
   lines.push('<Track>');
   // A recorded ride stands still at every traffic light, so runs of points share one position and
   // one cumulative distance — and a time derived from distance alone repeats across the whole run.
-  // TCX readers expect trackpoint times to advance, so a stalled point borrows the next second;
-  // as soon as the ride moves again the distance-derived time overtakes this floor by itself.
+  // TCX readers expect trackpoint times to advance, so a stalled point borrows the next millisecond
+  // and the ride's own time overtakes that floor as soon as it moves again.
+  //
+  // A millisecond rather than a second because this clock has to stay next to two others that are
+  // not bumped: the course points' own times and the lap's TotalTimeSeconds, both straight from
+  // `timeAtDistance`. A café stop in an imported recording is hundreds of co-located points, which
+  // at a second apiece would push every later trackpoint minutes ahead of the plan and past the
+  // lap's declared total. At a millisecond the whole drift cannot exceed three seconds.
   let previousMs = -Infinity;
   track.forEach((p, i) => {
     const hours = timeAtDistance(route, totalKm > 0 ? (cum[i] / totalKm) * planKm : 0);
-    previousMs = Math.max(atEpoch(hours), previousMs + 1000);
+    previousMs = Math.max(atEpoch(hours), previousMs + 1);
     lines.push(
       `<Trackpoint><Time>${new Date(previousMs).toISOString()}</Time><Position>${coord(p)}</Position>` +
         `<AltitudeMeters>${p.ele}</AltitudeMeters>` +

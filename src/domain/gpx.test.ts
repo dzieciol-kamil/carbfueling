@@ -91,6 +91,16 @@ describe('parseGpxXml', () => {
     expect(result.pts[0]).toEqual({ lat: 50, lon: 19, ele: 100 });
   });
 
+  // The append of the finish line used to push the total to 3001 for 78 different input sizes under
+  // 40k — 6000 among them — and settings import rejects a whole backup one point over the cap.
+  test('never exceeds the cap, whatever the file size', () => {
+    for (const n of [2999, 3000, 3001, 5999, 6000, 6001, 8999, 9000, 11998, 12000, 40000]) {
+      const result = parseGpxXml(trkGpx(linePoints(n)));
+      expect(result.pts.length, `${n} points in`).toBeLessThanOrEqual(3000);
+      expect(result.pts[result.pts.length - 1].lat).toBeCloseTo(linePoints(n)[n - 1].lat, 5);
+    }
+  });
+
   test('throws when there are too few points', () => {
     expect(() => parseGpxXml(trkGpx(linePoints(3)))).toThrow();
   });
