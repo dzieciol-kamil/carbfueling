@@ -1,4 +1,4 @@
-import { buildTcx, courseFileName, planCoursePoints } from '../domain/courseExport';
+import { buildTcx, courseFileName, courseNotes, planCoursePoints } from '../domain/courseExport';
 import { useAppStore } from '../store/appStore';
 import { saveTextFile } from '../utils/fileSave';
 
@@ -7,6 +7,7 @@ import { saveTextFile } from '../utils/fileSave';
 // own buttons because their markup differs. Same split as usePlanFileTransfer.ts next door.
 export function useCourseDownload() {
   const route = useAppStore((s) => s.route);
+  const mix = useAppStore((s) => s.mix);
   const gear = useAppStore((s) => s.gear);
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
@@ -22,7 +23,8 @@ export function useCourseDownload() {
   const download = async () => {
     if (!track || track.length < 2) return;
     const points = planCoursePoints({ route, gear, fills, foods, foodLib, shops, lang });
-    const xml = buildTcx({ points, track, route, name: route.gpxName ?? 'course' });
+    const notes = courseNotes({ route, mix, gear, fills, foods, foodLib }, shops, lang);
+    const xml = buildTcx({ points, track, route, name: route.gpxName ?? 'course', notes });
     try {
       await saveTextFile(xml, courseFileName(route.gpxName), 'application/vnd.garmin.tcx+xml');
     } catch {

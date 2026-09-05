@@ -19,10 +19,29 @@
 //   - Every `Trackpoint` needs a `<Time>`, so the file is stamped with a synthetic ride starting at
 //     `COURSE_EPOCH`, paced by the plan's own time model.
 
-import { dist, distanceAtEff, eff, partArray, partsOf, timeAtDistance } from './fuel';
+import {
+  dist,
+  distanceAtEff,
+  eff,
+  fmtHM,
+  partArray,
+  partsOf,
+  planSummary,
+  timeAtDistance,
+  totalHours,
+} from './fuel';
 import { cumulativeKm } from './gpx';
 import { foodName, vesselLabels } from './printSheet';
-import type { Fill, FoodItem, FoodLibEntry, GpxPoint, RouteInput, ShopStop, Vessel } from './types';
+import type {
+  Fill,
+  FoodItem,
+  FoodLibEntry,
+  GpxPoint,
+  PlanState,
+  RouteInput,
+  ShopStop,
+  Vessel,
+} from './types';
 import { t, type Lang } from '../i18n/strings';
 
 /**
@@ -272,6 +291,35 @@ export interface TcxInput {
   route: RouteInput;
   /** Course name, usually the GPX file's name; folded and truncated to what the schema allows. */
   name: string;
+  /** Goes into the course's `<Notes>`. Optional so `buildTcx` stays testable without a full plan. */
+  notes?: string;
+}
+
+/**
+ * The whole plan in five lines, for the course's `<Notes>`.
+ *
+ * `Course/Notes` is an optional, unbounded `xsd:string` in the v2 schema — unlike the names around
+ * it, which are length-capped tokens — so there is room and nothing to escape past the usual XML
+ * entities. What there is *no* evidence for is anyone displaying it: Garmin's own page on importing
+ * a third-party course documents the name and the course type and never mentions notes or a
+ * description. Treat this as the plan travelling with the file for whoever opens it later, not as
+ * something that will show up on a head unit.
+ *
+ * Not ASCII-folded, unlike the point names: this field is a plain string, not a `Token_t`.
+ */
+export function courseNotes(state: PlanState, shops: ShopStop[], lang: Lang): string {
+  const strings = t(lang);
+  const { route } = state;
+  const summary = planSummary(state);
+  const hours = totalHours(route);
+  const perHour = (total: number) => (hours > 0 ? Math.round(total / hours) : 0);
+
+  return [
+    `Carb Fueling · ${Math.round(dist(route))} km · ${fmtHM(hours)}`,
+    `${strings.carbCardTitle}: ${Math.round(summary.totalCarbs)} g (${perHour(summary.totalCarbs)} g/h)`,
+    `${strings.legFluid}: ${Math.round(summary.fluidPlanned)} ml (${perHour(summary.fluidPlanned)} ml/h)`,
+    `${strings.printStripStops}: ${shops.length}`,
+  ].join('\n');
 }
 
 const esc = (s: string) =>
@@ -306,7 +354,7 @@ function positionAt(track: GpxPoint[], cum: number[], frac: number): GpxPoint {
   };
 }
 
-export function buildTcx({ points, track, route, name }: TcxInput): string {
+export function buildTcx({ points, track, route, name, notes }: TcxInput): string {
   const cum = cumulativeKm(track);
   const totalKm = cum[cum.length - 1];
   const planKm = dist(route);
@@ -350,6 +398,9 @@ export function buildTcx({ points, track, route, name }: TcxInput): string {
     );
   });
   lines.push('</Track>');
+
+  // Between Track and CoursePoint, which is where the schema's sequence puts it.
+  if (notes) lines.push(`<Notes>${esc(notes)}</Notes>`);
 
   for (const point of points) {
     const p = positionAt(track, cum, planKm > 0 ? point.km / planKm : 0);

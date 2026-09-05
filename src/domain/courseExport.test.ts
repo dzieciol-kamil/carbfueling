@@ -3,13 +3,21 @@ import {
   ascii,
   buildTcx,
   courseFileName,
+  courseNotes,
   planCoursePoints,
   type CoursePlanInput,
   type CoursePoint,
 } from './courseExport';
 import { eff } from './fuel';
 import { parseGpxXml } from './gpx';
-import type { Fill, FoodItem, GpxPoint, RouteInput, Vessel } from './types';
+import {
+  DEFAULT_MIX,
+  type Fill,
+  type FoodItem,
+  type GpxPoint,
+  type RouteInput,
+  type Vessel,
+} from './types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
   return {
@@ -402,6 +410,49 @@ describe('buildTcx', () => {
 
   test('the same plan exports byte-identical, so a re-download is not a new file', () => {
     expect(buildTcx({ points, track, route, name: route.gpxName ?? '' })).toBe(xml);
+  });
+});
+
+describe('courseNotes', () => {
+  const state = {
+    route: makeRoute(),
+    mix: DEFAULT_MIX,
+    gear: [vessel()],
+    fills: [fill()],
+    foods: [food()],
+    foodLib: [],
+  };
+
+  test('summarises the plan in the rider language', () => {
+    const notes = courseNotes(state, [{ id: 1, at: 50, name: 'Sklep' }], 'pl');
+    const rows = notes.split('\n');
+
+    expect(rows[0]).toBe('Carb Fueling · 100 km · 4:00');
+    expect(rows[1]).toMatch(/^Węglowodany: \d+ g \(\d+ g\/h\)$/);
+    expect(rows[2]).toMatch(/^Płyny: \d+ ml \(\d+ ml\/h\)$/);
+    expect(rows[3]).toBe('Postoje: 1');
+  });
+
+  test('speaks English too, reusing the labels the rest of the app uses', () => {
+    const rows = courseNotes(state, [], 'en').split('\n');
+
+    expect(rows[1]).toMatch(/^Carbs: /);
+    expect(rows[2]).toMatch(/^Fluids: /);
+    expect(rows[3]).toBe('Stops: 0');
+  });
+
+  test('rides into the file between the track and the course points', () => {
+    const notes = courseNotes(state, [], 'pl');
+    const xml = buildTcx({ points: [], track: line(20), route: makeRoute(), name: 'x', notes });
+
+    expect(xml.indexOf('</Track>')).toBeLessThan(xml.indexOf('<Notes>'));
+    expect(xml).toContain('<Notes>Carb Fueling · 100 km · 4:00\n');
+  });
+
+  test('is left out entirely when there is nothing to say', () => {
+    expect(buildTcx({ points: [], track: line(20), route: makeRoute(), name: 'x' })).not.toContain(
+      '<Notes>',
+    );
   });
 });
 
