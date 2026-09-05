@@ -33,6 +33,7 @@ import {
 import { cumulativeKm } from './gpx';
 import { foodName, vesselLabels } from './printSheet';
 import type {
+  Content,
   Fill,
   FoodItem,
   FoodLibEntry,
@@ -172,6 +173,12 @@ export function planCoursePoints({
 }: CoursePlanInput): CoursePoint[] {
   const strings = t(lang);
   const labels = vesselLabels(gear);
+  // What is in the vessel, said in the note. The level ladder is deliberately content-blind — a
+  // fill drains the same whatever it holds — but the rider still has to know whether this prompt
+  // means plain water or the bottle carrying the carbs, and `PointType` cannot say: the schema's
+  // enum offers only Water and Food, so every sipped fill is Water and the icon just means "drink".
+  const contentName = (content: Content) =>
+    content === 'water' ? strings.water : content === 'gel' ? strings.gel : strings.izo;
   // A slot number rather than an initial: two bottles the rider named "Bidon" and "Bukłak" would
   // both shorten to "B", and the readable name is in the note anyway.
   const codes = new Map(gear.map((v, i) => [v.gid, `B${i + 1}`]));
@@ -187,7 +194,9 @@ export function planCoursePoints({
     // Three or more bottles on one span blow the 10-character banner, so they lose their numbers;
     // the note still lists every one of them by name.
     const code = joined.length <= 5 ? joined : 'B*';
-    const named = group.map((f) => labels.get(f.gid) ?? '?').join(', ');
+    const named = group
+      .map((f) => `${labels.get(f.gid) ?? '?'} (${contentName(f.content)})`)
+      .join(', ');
     const at = (level: number) => ({
       km:
         level === 1 ? from : level === 0 ? to : distanceAtEff(route, effAt(route, from, to, level)),
@@ -293,6 +302,43 @@ export interface TcxInput {
   name: string;
   /** Goes into the course's `<Notes>`. Optional so `buildTcx` stays testable without a full plan. */
   notes?: string;
+  /** `__APP_VERSION__`, passed in rather than read here so this module stays free of build globals. */
+  version?: string;
+  /** Two-letter ISO 639-1 code for `<LangID>`; the rider's UI language. */
+  lang?: Lang;
+}
+
+/** Our own part number slot. See `authorBlock` for why it is not a real one. */
+const PART_NUMBER = '000-00000-00';
+
+/**
+ * The `<Author>` block: who wrote this file. Optional in the schema, and it sits after `Courses`,
+ * which is where the root's sequence puts it. `Application_t` then makes `Build`, `LangID` and
+ * `PartNumber` all mandatory, so the block is all-or-nothing.
+ *
+ * It names *this* app, not Garmin Connect. The schema documents `PartNumber` as "the formatted
+ * XXX-XXXXX-XX **Garmin part number** of a PC application" — an identifier Garmin assigns to its
+ * own software, and `006-D2449-00` is Connect's. Copying Connect's name and number would make every
+ * course this app writes claim Garmin produced it, so anyone tracing a malformed file would be sent
+ * to the wrong author. We have no assigned number, so the slot holds a neutral placeholder that
+ * satisfies the pattern (`[\p{Lu}\d]{3}-[\p{Lu}\d]{5}-[\p{Lu}\d]{2}`, digits allowed) and claims
+ * nothing.
+ */
+function authorBlock(version: string, lang: Lang): string {
+  const [major = 0, minor = 0, patch = 0] = version.split('.').map((n) => Number(n) || 0);
+  return [
+    '<Author xsi:type="Application_t">',
+    '<Name>Carb Fueling</Name>',
+    '<Build><Version>',
+    `<VersionMajor>${major}</VersionMajor>`,
+    `<VersionMinor>${minor}</VersionMinor>`,
+    `<BuildMajor>${patch}</BuildMajor>`,
+    '<BuildMinor>0</BuildMinor>',
+    '</Version></Build>',
+    `<LangID>${lang}</LangID>`,
+    `<PartNumber>${PART_NUMBER}</PartNumber>`,
+    '</Author>',
+  ].join('\n');
 }
 
 /**
@@ -354,7 +400,7 @@ function positionAt(track: GpxPoint[], cum: number[], frac: number): GpxPoint {
   };
 }
 
-export function buildTcx({ points, track, route, name, notes }: TcxInput): string {
+export function buildTcx({ points, track, route, name, notes, version, lang }: TcxInput): string {
   const cum = cumulativeKm(track);
   const totalKm = cum[cum.length - 1];
   const planKm = dist(route);
@@ -414,6 +460,7 @@ export function buildTcx({ points, track, route, name, notes }: TcxInput): strin
   }
 
   lines.push('</Course></Courses>');
+  if (version) lines.push(authorBlock(version, lang ?? 'en'));
   lines.push('</TrainingCenterDatabase>');
   return lines.join('\n');
 }

@@ -99,15 +99,30 @@ describe('planCoursePoints — bottle levels', () => {
 
     expect(named(points)).toEqual(['B1 100%', 'B1 75%', 'B1 50%', 'B1 25%', 'B1 0%']);
     expect(points[0].kind).toBe('refill');
-    expect(points[0].note).toBe('Bidon · 100% (napełnij)');
+    expect(points[0].note).toBe('Bidon (Izo) · 100% (napełnij)');
     expect(points[0].km).toBe(40);
+  });
+
+  // Reported off a real export: a flask filled with izo produced "Flask · 50%" and PointType Water,
+  // and nothing anywhere said what was in it. The enum has no third option — only Water and Food —
+  // so the type stays Water and the content is named in the note instead.
+  test('names what is in the vessel, which the point type cannot express', () => {
+    const points = planCoursePoints(
+      input({
+        gear: [vessel({ gid: 'f', name: 'Flask' })],
+        fills: [fill({ gid: 'f', content: 'izo' })],
+      }),
+    );
+
+    expect(points[1].note).toBe('Flask (Izo) · 50%');
+    expect(points[1].type).toBe('Water');
   });
 
   test('the note carries the readable level and the name carries the terse one', () => {
     const points = planCoursePoints(input({ fills: [fill()] }));
 
-    expect(points[0].note).toBe('Bidon · 75%');
-    expect(points[3].note).toBe('Bidon · 0%');
+    expect(points[0].note).toBe('Bidon (Izo) · 75%');
+    expect(points[3].note).toBe('Bidon (Izo) · 0%');
   });
 });
 
@@ -151,7 +166,7 @@ describe('planCoursePoints — bottles that drain together', () => {
 
     expect(named(points)).toEqual(['B1+B2 75%', 'B1+B2 50%', 'B1+B2 25%', 'B1+B2 0%']);
     // Duplicate names get numbered, the same way the printed strip numbers them.
-    expect(points[0].note).toBe('Bidon 1, Bidon 2 · 75%');
+    expect(points[0].note).toBe('Bidon 1 (Woda), Bidon 2 (Izo) · 75%');
   });
 
   // Taken off a real plan in the running app: a water bottle and an izo bottle filled at the same
@@ -169,7 +184,7 @@ describe('planCoursePoints — bottles that drain together', () => {
     );
 
     expect(named(points)).toEqual(['B1+B2 75%', 'B1+B2 50%', 'B1+B2 25%', 'B1+B2 0%']);
-    expect(points[0].note).toBe('Bidon 1, Bidon 2 · 75%');
+    expect(points[0].note).toBe('Bidon 1 (Woda), Bidon 2 (Izo) · 75%');
   });
 
   test('bottles on different spans keep their own prompts', () => {
@@ -193,7 +208,7 @@ describe('planCoursePoints — bottles that drain together', () => {
     );
 
     expect(named(points)).toEqual(['B* 75%', 'B* 50%', 'B* 25%', 'B* 0%']);
-    expect(points[0].note).toBe('Bidon 1, Bidon 2, Bidon 3 · 75%');
+    expect(points[0].note).toBe('Bidon 1 (Izo), Bidon 2 (Izo), Bidon 3 (Izo) · 75%');
   });
 });
 
@@ -253,7 +268,7 @@ describe('planCoursePoints — merging', () => {
     expect(atFifty).toHaveLength(1);
     // The refill outranks the empty mark, so that is what the device shows.
     expect(atFifty[0].name).toBe('B2 100%');
-    expect(atFifty[0].note).toBe('Bidon 2 · 100% (napełnij) · Bidon 1 · 0%');
+    expect(atFifty[0].note).toBe('Bidon 2 (Izo) · 100% (napełnij) · Bidon 1 (Izo) · 0%');
   });
 
   test('a refill at a stop shows the refill, with the stop named in the note', () => {
@@ -452,6 +467,51 @@ describe('courseNotes', () => {
   test('is left out entirely when there is nothing to say', () => {
     expect(buildTcx({ points: [], track: line(20), route: makeRoute(), name: 'x' })).not.toContain(
       '<Notes>',
+    );
+  });
+});
+
+describe('buildTcx — author', () => {
+  const withAuthor = buildTcx({
+    points: [],
+    track: line(20),
+    route: makeRoute(),
+    name: 'x',
+    version: '1.14.0',
+    lang: 'pl',
+  });
+
+  test('names this app, and does not borrow Garmin Connect identity', () => {
+    expect(withAuthor).toContain('<Author xsi:type="Application_t">');
+    expect(withAuthor).toContain('<Name>Carb Fueling</Name>');
+    // The part number namespace is Garmin's to assign; 006-D2449-00 is Connect's own.
+    expect(withAuthor).not.toContain('Connect Api');
+    expect(withAuthor).not.toContain('006-D2449-00');
+  });
+
+  test('splits the app version across the schema fields', () => {
+    expect(withAuthor).toContain('<VersionMajor>1</VersionMajor>');
+    expect(withAuthor).toContain('<VersionMinor>14</VersionMinor>');
+    expect(withAuthor).toContain('<BuildMajor>0</BuildMajor>');
+  });
+
+  test('carries the two-letter language the schema asks for, and a well-formed part number', () => {
+    expect(withAuthor).toContain('<LangID>pl</LangID>');
+    expect(withAuthor.match(/<PartNumber>([^<]*)</)?.[1]).toMatch(
+      /^[A-Z0-9]{3}-[A-Z0-9]{5}-[A-Z0-9]{2}$/,
+    );
+  });
+
+  test('sits after the courses, where the root sequence puts it', () => {
+    expect(withAuthor.indexOf('</Courses>')).toBeLessThan(withAuthor.indexOf('<Author'));
+    expect(withAuthor.indexOf('<Author')).toBeLessThan(
+      withAuthor.indexOf('</TrainingCenterDatabase>'),
+    );
+  });
+
+  test('is left out when no version is supplied', () => {
+    expect(buildTcx({ points: [], track: line(20), route: makeRoute(), name: 'x' })).not.toContain(
+      '<Author',
     );
   });
 });

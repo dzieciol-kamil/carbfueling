@@ -24,7 +24,15 @@ export function useCourseDownload() {
     if (!track || track.length < 2) return;
     const points = planCoursePoints({ route, gear, fills, foods, foodLib, shops, lang });
     const notes = courseNotes({ route, mix, gear, fills, foods, foodLib }, shops, lang);
-    const xml = buildTcx({ points, track, route, name: route.gpxName ?? 'course', notes });
+    const xml = buildTcx({
+      points,
+      track,
+      route,
+      name: route.gpxName ?? 'course',
+      notes,
+      version: __APP_VERSION__,
+      lang,
+    });
     try {
       await saveTextFile(xml, courseFileName(route.gpxName), 'application/vnd.garmin.tcx+xml');
     } catch {
