@@ -133,6 +133,9 @@ export interface StringTable {
   gpxOn: string;
   gpxPick: string;
   gpxBad: string;
+  gpxDownload: string;
+  gpxDownloadHint: string;
+  courseRefill: string;
   shot: string;
   sipped: string;
   water: string;
@@ -280,6 +283,7 @@ export interface StringTable {
   routeSheetGpxSection: string;
   routeSheetGpxNote: string;
   routeSheetLoadFile: string;
+  routeSheetDownloadFile: string;
   routeSheetDone: string;
   shopSheetTitle: string;
   shopSheetKm: string;
@@ -477,7 +481,10 @@ export const STR: Record<Lang, StringTable> = {
     gpxFile: 'track.gpx (demo)',
     gpxOn: 'Wł.',
     gpxPick: 'Wczytaj',
-    gpxBad: 'Nie udało się odczytać pliku GPX.',
+    gpxBad: 'Nie udało się odczytać tego pliku. Wczytaj plik GPX lub TCX z trasą.',
+    gpxDownload: 'Pobierz',
+    gpxDownloadHint: 'Wczytaj plik GPX, żeby pobrać kurs z planem.',
+    courseRefill: 'napełnij',
     shot: 'jednorazowo',
     sipped: 'popijane',
     water: 'Woda',
@@ -674,6 +681,7 @@ export const STR: Record<Lang, StringTable> = {
     routeSheetGpxNote:
       'Włączony profil zmienia zapotrzebowanie na podjazdach. Ikona oka nad wykresem pokazuje sam profil.',
     routeSheetLoadFile: 'Wczytaj plik',
+    routeSheetDownloadFile: 'Pobierz plik',
     routeSheetDone: 'Gotowe',
     shopSheetTitle: 'PUNKT ORIENTACYJNY',
     shopSheetKm: 'Kilometr',
@@ -880,7 +888,10 @@ export const STR: Record<Lang, StringTable> = {
     gpxFile: 'track.gpx (demo)',
     gpxOn: 'On',
     gpxPick: 'Load',
-    gpxBad: 'Could not read that GPX file.',
+    gpxBad: 'Could not read that file. Load a GPX or TCX route.',
+    gpxDownload: 'Download',
+    gpxDownloadHint: 'Load a GPX file to download the course with your plan.',
+    courseRefill: 'refill',
     shot: 'shot',
     sipped: 'sipped',
     water: 'Water',
@@ -1074,6 +1085,7 @@ export const STR: Record<Lang, StringTable> = {
     routeSheetGpxNote:
       'An enabled profile changes the requirement on climbs. The eye icon above the chart shows the profile itself.',
     routeSheetLoadFile: 'Load file',
+    routeSheetDownloadFile: 'Download file',
     routeSheetDone: 'Done',
     shopSheetTitle: 'LANDMARK',
     shopSheetKm: 'Kilometer',

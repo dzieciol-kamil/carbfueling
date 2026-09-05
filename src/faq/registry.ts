@@ -221,4 +221,18 @@ export const ARTICLES: FaqArticleMeta[] = [
         'Sufit wchłaniania jelita nie zmienia się między bieganiem a rowerem — ale Twój praktyczny cel powinien. Oto dlaczego.',
     },
   },
+  {
+    slug: 'plan-on-your-bike-computer',
+    datePublished: '2026-09-05',
+    en: {
+      title: 'Getting your fueling plan onto your bike computer',
+      description:
+        'Why the download is a .tcx course file rather than GPX, and how to read a prompt like B1(W)25% at speed.',
+    },
+    pl: {
+      title: 'Jak przenieść plan na licznik rowerowy',
+      description:
+        'Dlaczego pobierasz plik .tcx, a nie GPX, i jak w trakcie jazdy odczytać komunikat w rodzaju B1(W)25%.',
+    },
+  },
 ];

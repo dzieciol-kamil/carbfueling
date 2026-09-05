@@ -34,6 +34,19 @@ export interface RouteInput {
 export interface GpxTrack {
   id: number;
   ele: number[];
+  /**
+   * The original track's coordinates, thinned to `MAX_TRACK_POINTS` — what a course file needs to
+   * be navigable, which the `ele` resample above can't provide (it is evenly spaced in distance and
+   * carries no position at all). Optional because plans saved before course export existed have no
+   * coordinates stored; the export is offered only once the rider loads their GPX again.
+   */
+  pts?: GpxPoint[];
+}
+
+export interface GpxPoint {
+  lat: number;
+  lon: number;
+  ele: number;
 }
 
 export interface MixSettings {

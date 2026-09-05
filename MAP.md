@@ -29,7 +29,9 @@ moved, trust the filesystem over this file and update it.
   - `planner/` — **autoplan v2** (service model + DP stop skeleton, in progress on `feat/autoplan`):
     `types.ts`, `services.ts` (services→fills conversion), `skeleton.ts` (L1 stop-skeleton search),
     `assignWater.ts` (L2 water service assignment).
-  - `gpx.ts` — GPX file parsing.
+  - `gpx.ts` — GPX file parsing (elevation resample + the thinned coordinates course export needs).
+  - `courseExport.ts` — the plan written back out as a Garmin TCX course: bottle-level, gel, food
+    and stop prompts as `<CoursePoint>`s on the rider's own track.
   - `dragMath.ts` — drag-and-drop geometry for lanes/timeline.
   - `laneLayout.ts` — lane layout calculations.
   - `settingsExport.ts` — settings import/export.
@@ -63,5 +65,6 @@ moved, trust the filesystem over this file and update it.
   `src/domain/planner/` (v2, current work — see `docs/backlog.md` and `docs/adr/` for design context).
 - App state / persistence → `src/store/appStore.ts`.
 - Any user-visible text → `src/i18n/strings.ts`.
+- Exporting the plan to a bike computer → `src/domain/courseExport.ts` + `src/components/useCourseDownload.ts`.
 - Mobile UI → `src/components/mobile/`.
 - Desktop UI → `src/components/panels/` + `src/components/chart/` + `src/components/lanes/`.
