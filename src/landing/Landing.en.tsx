@@ -200,7 +200,8 @@ body { padding-top: var(--landing-header-h); }
   border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
   padding: 7px 13px; font-size: 12px; font-weight: 600; color: var(--ink);
 }
-.site-footer-pill-coffee { gap: 9px; padding: 9px 16px; font-size: 13.5px; color: var(--gel); }
+.site-footer-pill-coffee { color: var(--gel); }
+.site-footer-pill-sponsor { color: #db2777; }
 .site-footer-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; box-sizing: border-box;
