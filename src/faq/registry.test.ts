@@ -31,7 +31,7 @@ describe('ARTICLES registry', () => {
     }
   });
 
-  it('ships exactly the 17 articles scoped for this round', () => {
+  it('ships exactly the 18 articles scoped for this round', () => {
     expect(ARTICLES.map((a) => a.slug).sort()).toEqual(
       [
         'bonk-crisis',
@@ -48,6 +48,7 @@ describe('ARTICLES registry', () => {
         'malto-fructose-blend',
         'pace-power-absorption',
         'plan-on-your-bike-computer',
+        'rice-cake-bars',
         'running-vs-cycling-carbs',
         'sodium-electrolytes-cycling',
         'what-the-chart-shows',

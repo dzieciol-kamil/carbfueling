@@ -1,4 +1,4 @@
-import { calculatorHref, assetHref } from '../../urls';
+import { faqHref, calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -24,8 +24,11 @@ export default function CarbTransporterMixEn() {
         and causes bloating or cramps.
       </p>
       <p style={articleTextStyle}>
-        GLUT5 handles fructose on a separate route, good for about another 30g per hour. Mix
-        fructose into your carb source, and you're using both doors at once. That's why
+        GLUT5 handles fructose on a separate route, good for about another 30g per hour (see{' '}
+        <a href={faqHref('en', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
+          how to train your gut to raise your carb tolerance
+        </a>
+        ). Mix fructose into your carb source, and you're using both doors at once. That's why
         glucose-fructose blends push the realistic ceiling up to around 90g per hour.
       </p>
       <p style={articleTextStyle}>

@@ -14,12 +14,7 @@ export default function CarbsPerHourByIntensityPl() {
       <p style={articleTextStyle}>
         Przy spokojnym wyjeździe krótszym niż godzina węglowodany właściwie nie mają znaczenia.
         Zapasy glikogenu — cukru zmagazynowanego w mięśniach i wątrobie — w zupełności wystarczają
-        na taki wysiłek same w sobie, więc ważniejsze jest wtedy nawodnienie niż dostarczanie
-        węglowodanów. Jeśli jednak jedziesz ostro, a nie spokojnie — interwały, krótki wyścig,
-        szybki wspólny przejazd — Carb Fueling i tak zasugeruje podaż zależną od intensywności, w
-        tym samym zakresie co kolejny przedział niżej: nawet krótki, intensywny wysiłek może
-        skorzystać na uzupełnieniu poziomu cukru we krwi, nie tylko na oszczędzaniu glikogenu
-        mięśniowego.
+        na taki wysiłek, więc ważniejsze jest wtedy nawodnienie niż dostarczanie węglowodanów.
       </p>
       <p style={articleTextStyle}>
         Gdy wyjazd wydłuża się do 1–2,5 godziny, węglowodany zaczynają mieć realny sens. Przydatny
@@ -37,16 +32,16 @@ export default function CarbsPerHourByIntensityPl() {
         .
       </p>
       <p style={articleTextStyle}>
-        Intensywność decyduje o tym, jak pilnie musisz zbliżać się do górnej granicy tego zakresu.
-        Spokojny, długi wyjazd często pozwala trzymać się bliżej dolnej granicy nawet po wielu
-        godzinach, bo glikogen zużywa się wolniej. Ostry wysiłek albo tempo wyścigowe spala glikogen
-        znacznie szybciej i przy tym samym czasie jazdy premiuje wyższą podaż węglowodanów.
+        Intensywność decyduje o tym, jak pilnie musisz zbliżać się do górnej granicy zakresu
+        wchłaniania. Spokojny, długi wyjazd często pozwala trzymać się bliżej dolnej granicy nawet
+        po wielu godzinach, bo glikogen zużywa się wolniej. Ostry wysiłek albo tempo wyścigowe spala
+        glikogen znacznie szybciej i przy tym samym czasie wymaga wyższej podaży węglowodanów.
       </p>
       <p style={articleTextStyle}>
-        Prosty sposób na ocenę intensywności bez pomiaru mocy czy tętna: czy jeszcze rozmawiasz?
-        Niska oznacza, że swobodnie rozmawiasz pełnymi zdaniami. Średnia — że rozmawiasz, ale
-        pojedynczymi zdaniami. Wysoka — że ledwo mówisz, skupiony na oddechu. Tej samej skali używa
-        ustawienie intensywności w Carb Fueling.
+        Prosty sposób na ocenę intensywności bez pomiaru mocy czy tętna, to zadanie sobie pytania:
+        czy możesz rozmawiać? Niska oznacza, że swobodnie rozmawiasz pełnymi zdaniami. Średnia — że
+        rozmawiasz, ale pojedynczymi zdaniami. Wysoka — że ledwo mówisz, skupiony na oddechu. Tej
+        samej skali używa ustawienie intensywności w Carb Fueling.
       </p>
       <p style={articleTextStyle}>
         Masa ciała i stopień wytrenowania też przesuwają dokładną liczbę — więksi rowerzyści albo

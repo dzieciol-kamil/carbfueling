@@ -35,8 +35,8 @@ export default function BonkCrisisPl() {
       <p style={articleTextStyle}>
         Sygnał ostrzegawczy widać zanim to nastąpi: rosnąca luka między "spalone" a "dostarczone" na
         osi czasu. Carb Fueling rysuje obie linie podczas planowania trasy, więc widzisz otwierającą
-        się lukę i możesz zareagować — wcześniejszy posiłek, mocniejszy miks albo trochę wolniejsze
-        tempo — zanim zrobi się z tego kryzys.
+        się lukę i możesz zareagować — wcześniejszy posiłek, bardziej skoncentrowaną mieszankę
+        węglowodanów albo trochę wolniejsze tempo — zanim zrobi się z tego kryzys.
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>
