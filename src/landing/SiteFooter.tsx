@@ -13,7 +13,7 @@ import { absCap } from '../domain/fuel';
 import { DEFAULT_MIX } from '../domain/types';
 import { t, type Lang } from '../i18n/strings';
 import { faqHref } from '../urls';
-import { CoffeeIcon, GitHubIcon } from '../components/ui/BrandIcons';
+import { CoffeeIcon, GitHubIcon, HeartIcon } from '../components/ui/BrandIcons';
 
 interface SiteFooterProps {
   lang: Lang;
@@ -62,6 +62,15 @@ export default function SiteFooter({ lang }: SiteFooterProps) {
                 title={strings.ftRepo}
               >
                 <GitHubIcon />
+              </a>
+              <a
+                className="site-footer-pill site-footer-pill-sponsor"
+                href="https://github.com/sponsors/dzieciol-kamil"
+                target="_blank"
+                rel="noopener"
+              >
+                <HeartIcon />
+                <span>{strings.ftSponsor}</span>
               </a>
             </div>
             <div className="site-footer-row">

@@ -14,12 +14,20 @@ export function GitHubIcon() {
   );
 }
 
+export function HeartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor" aria-hidden="true">
+      <path d="M12 21s-6.716-4.35-9.428-8.06C.79 10.42 1.05 6.9 3.6 5.06c2.19-1.58 5-.99 6.4 1.02.7 1 .7 1 1 1s.3 0 1-1c1.4-2.01 4.21-2.6 6.4-1.02 2.55 1.84 2.81 5.36 1.03 7.88C18.716 16.65 12 21 12 21Z" />
+    </svg>
+  );
+}
+
 export function CoffeeIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width={18}
-      height={18}
+      width={14}
+      height={14}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.8}

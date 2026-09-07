@@ -8,7 +8,7 @@ import {
   useAppStore,
   type ViewMode,
 } from '../../store/appStore';
-import { CoffeeIcon, GitHubIcon } from '../ui/BrandIcons';
+import { CoffeeIcon, GitHubIcon, HeartIcon } from '../ui/BrandIcons';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
@@ -323,6 +323,26 @@ export function MobileProfile() {
             }}
           >
             <GitHubIcon />
+          </a>
+          <a
+            href="https://github.com/sponsors/dzieciol-kamil"
+            target="_blank"
+            rel="noopener"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              border: '1px solid var(--chip-border)',
+              background: '#fff',
+              borderRadius: 999,
+              padding: '7px 13px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#db2777',
+            }}
+          >
+            <HeartIcon />
+            <span>{strings.ftSponsor}</span>
           </a>
           <a
             href="mailto:carbfueling@gmail.com"

@@ -4,7 +4,7 @@ import { t } from '../i18n/strings';
 import { hasPlanData, useAppStore } from '../store/appStore';
 import { TourReplayConfirm } from './tour/TourReplayConfirm';
 import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
-import { CoffeeIcon, GitHubIcon } from './ui/BrandIcons';
+import { CoffeeIcon, GitHubIcon, HeartIcon } from './ui/BrandIcons';
 
 const replayButtonStyle: CSSProperties = {
   display: 'inline-flex',
@@ -156,6 +156,26 @@ export function Footer() {
               >
                 <GitHubIcon />
               </a>
+              <a
+                href="https://github.com/sponsors/dzieciol-kamil"
+                target="_blank"
+                rel="noopener"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  border: '1px solid var(--chip-border)',
+                  background: '#fff',
+                  borderRadius: 999,
+                  padding: '7px 13px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#db2777',
+                }}
+              >
+                <HeartIcon />
+                <span>{strings.ftSponsor}</span>
+              </a>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <a
@@ -191,12 +211,12 @@ export function Footer() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 9,
+                  gap: 8,
                   border: '1px solid var(--chip-border)',
                   background: '#fff',
                   borderRadius: 999,
-                  padding: '9px 16px',
-                  fontSize: 13.5,
+                  padding: '7px 13px',
+                  fontSize: 12,
                   fontWeight: 600,
                   color: 'var(--gel)',
                 }}
