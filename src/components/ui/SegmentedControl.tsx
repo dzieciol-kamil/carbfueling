@@ -82,7 +82,7 @@ export function SegmentedTrack({
             left: indicator.left,
             width: indicator.width,
             borderRadius: 7,
-            background: '#fff',
+            background: 'var(--surface)',
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
             transition:
               'left 200ms cubic-bezier(0.22,0.9,0.3,1), width 200ms cubic-bezier(0.22,0.9,0.3,1)',

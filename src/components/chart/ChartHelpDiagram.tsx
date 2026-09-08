@@ -67,7 +67,7 @@ function pathFrom(pts: [number, number][]): string {
 function marker(n: number, x: number, y: number, color: string) {
   return (
     <g key={'m' + n}>
-      <circle cx={x} cy={y} r={9} fill="#fff" stroke={color} strokeWidth={1.6} />
+      <circle cx={x} cy={y} r={9} fill="var(--surface)" stroke={color} strokeWidth={1.6} />
       <text
         x={x}
         y={y + 4}
@@ -118,7 +118,7 @@ function htmlMarker(n: number, leftPct: number, topPct: number, color: string) {
         width: 22,
         height: 22,
         borderRadius: '50%',
-        background: '#fff',
+        background: 'var(--surface)',
         border: `1.6px solid ${color}`,
         color,
         fontSize: 11,
@@ -210,7 +210,7 @@ function fluidDiagram(strings: StringTable) {
       <path
         d={pathFrom(NEED_PTS)}
         fill="none"
-        stroke="#A8AEA9"
+        stroke="var(--muted-4)"
         strokeWidth={2}
         strokeDasharray="6 5"
       />

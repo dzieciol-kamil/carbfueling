@@ -41,7 +41,7 @@ const planBtnStyle: CSSProperties = {
   alignItems: 'center',
   gap: 7,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: 999,
   padding: '7px 12px',
   fontFamily: 'Archivo, sans-serif',
@@ -109,7 +109,7 @@ export function ChartCard() {
   return (
     <div
       style={{
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '20px 24px 18px',
@@ -173,14 +173,14 @@ export function ChartCard() {
                   left: 0,
                   minWidth: 220,
                   maxWidth: 280,
-                  background: '#fff',
+                  background: 'var(--surface)',
                   border: '1px solid var(--border)',
                   borderRadius: 10,
                   padding: '9px 12px',
                   boxShadow: '0 14px 34px rgba(0,0,0,0.14)',
                   fontSize: 12,
                   lineHeight: 1.5,
-                  color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
+                  color: planFeedback === 'import-success' ? 'var(--muted-2)' : 'var(--danger)',
                   zIndex: 60,
                 }}
               >
@@ -231,17 +231,17 @@ export function ChartCard() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
             {showGutLane && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
+              <span style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted-4)' }}>
                 {strings.gutHint}
               </span>
             )}
             {yMode === 'rate' && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
+              <span style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted-4)' }}>
                 {strings.curveHint}
               </span>
             )}
             {yMode === 'fluid' && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
+              <span style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted-4)' }}>
                 {strings.capNoteFluid}
               </span>
             )}
@@ -258,7 +258,7 @@ export function ChartCard() {
                 {legMain}
               </span>
               <span style={legendItemStyle}>
-                <span style={{ width: 14, height: 0, borderTop: '2px dashed #A8AEA9' }} />
+                <span style={{ width: 14, height: 0, borderTop: '2px dashed var(--muted-4)' }} />
                 {legNeed}
               </span>
               <span style={legendItemStyle}>
@@ -289,7 +289,7 @@ export function ChartCard() {
                 height: 20,
                 borderRadius: '50%',
                 border: '1px solid var(--chip-border)',
-                background: '#fff',
+                background: 'var(--surface)',
                 color: 'var(--muted)',
                 fontSize: 11,
                 fontWeight: 700,
@@ -328,8 +328,8 @@ export function ChartCard() {
               height: 24,
               borderRadius: 7,
               cursor: 'pointer',
-              border: '1px dashed #B9C0B7',
-              background: '#F7F8F5',
+              border: '1px dashed var(--border-dashed)',
+              background: 'var(--surface-soft)',
               color: 'var(--ink-soft)',
               fontSize: 13,
               fontWeight: 700,
