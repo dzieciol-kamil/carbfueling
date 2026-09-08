@@ -52,9 +52,9 @@ export default function PlanOnYourBikeComputerPl() {
       </ul>
       <p style={articleTextStyle}>
         Punkty nie leżą w równych odstępach. Bidon opróżnia się nie z kilometrami, tylko z wysiłkiem
-        — na podjeździe pijesz szybciej, na zjeździe wolniej. Jeśli trudna część trasy jest na
-        początku, "została ćwiartka" przypadnie przed trzema czwartymi odcinka. Bierze się to wprost
-        z profilu wysokości Twojej trasy, tego samego, który{' '}
+        — na podjeździe pijesz częściej, na zjeździe rzadziej. Jeśli trudna część trasy jest na
+        początku, informacja: "została ćwiartka", przypadnie przed trzema czwartymi odcinka. Bierze
+        się to wprost z profilu wysokości Twojej trasy, tego samego, który{' '}
         <a href={faqHref('pl', 'what-the-chart-shows')} style={articleLinkStyle}>
           napędza zapotrzebowanie na wykresie
         </a>
@@ -63,7 +63,8 @@ export default function PlanOnYourBikeComputerPl() {
       <p style={articleTextStyle}>
         Poziomy idą co ćwiartkę: jadąc trzydzieści na godzinę i tak nie ocenisz bidonu dokładniej.
         Przy dwóch bidonach dostajesz w tym samym miejscu dwa osobne paski, bo pasek mieści jedną
-        nazwę naraz. Na postoju, gdzie dolewasz oba i bierzesz żel, zapika kilka razy pod rząd.
+        nazwę naraz. Na postoju, gdzie dolewasz oba i bierzesz żel, pojawi się kilka powiadomień pod
+        rząd.
       </p>
       <p style={articleTextStyle}>
         Plik zapisuje się w TCX, nie w GPX. Waypoint w GPX to pinezka na mapie — Garmin Connect

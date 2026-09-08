@@ -52,8 +52,8 @@ export default function PlanOnYourBikeComputerEn() {
       </ul>
       <p style={articleTextStyle}>
         The points aren't evenly spaced. A bottle drains with effort, not with distance — you drink
-        faster climbing and slower descending. If the hard kilometres come early, "a quarter left"
-        lands before the three-quarter mark of the leg. That comes straight off your route's
+        more often climbing and less often descending. If the hard kilometres come early, "a quarter
+        left" lands before the three-quarter mark of the leg. That comes straight off your route's
         elevation profile, the same one that{' '}
         <a href={faqHref('en', 'what-the-chart-shows')} style={articleLinkStyle}>
           drives the demand line on the chart
@@ -63,8 +63,8 @@ export default function PlanOnYourBikeComputerEn() {
       <p style={articleTextStyle}>
         Levels step in quarters: at thirty kilometres an hour you can't read a bottle any finer than
         that anyway. Two bottles means two separate banners in the same spot, because a banner holds
-        one name at a time. At a stop where you refill both and take a gel, it'll beep several times
-        over.
+        one name at a time. At a stop where you refill both and take a gel, you'll get several
+        notifications in a row.
       </p>
       <p style={articleTextStyle}>
         The file saves as TCX, not GPX. A waypoint in a GPX file is a pin on a map — Garmin Connect
