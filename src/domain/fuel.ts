@@ -534,6 +534,23 @@ export function distanceAtTime(route: RouteInput, hours: number): number {
   return P.pts[i].x + (P.pts[i + 1].x - P.pts[i].x) * segFrac;
 }
 
+/**
+ * Inverse of `eff`: the distance at which the ride has accumulated `e` units of effort. Mirrors
+ * `distanceAtTime` above, which inverts `cumTime` the same way. Needed to answer "where is the
+ * bottle three-quarters full?" — a fill drains linearly in effort, not in kilometres, so on a
+ * climb that point sits earlier than the leg's plain distance fraction would put it.
+ */
+export function distanceAtEff(route: RouteInput, e: number): number {
+  const P = prof(route);
+  if (e <= 0) return 0;
+  if (e >= P.cum[P.N]) return P.D;
+  let i = 0;
+  while (i < P.N && P.cum[i + 1] < e) i++;
+  const segSpan = P.cum[i + 1] - P.cum[i] || 1;
+  const segFrac = (e - P.cum[i]) / segSpan;
+  return P.pts[i].x + (P.pts[i + 1].x - P.pts[i].x) * segFrac;
+}
+
 function effTotal(route: RouteInput): number {
   const P = prof(route);
   return P.cum[P.N] || 1;

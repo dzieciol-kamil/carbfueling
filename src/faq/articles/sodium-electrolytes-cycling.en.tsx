@@ -1,5 +1,11 @@
-import { calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import { calculatorHref, faqHref } from '../../urls';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function SodiumElectrolytesCyclingEn() {
   return (
@@ -35,9 +41,12 @@ export default function SodiumElectrolytesCyclingEn() {
       <p style={articleTextStyle}>
         If you fall into one of those higher-risk groups, you don't need to guess. Riders who know
         they're heavy or salty sweaters, or who are riding long in hot conditions, can add
-        electrolyte tablets or extra salt to their mix or diet. Two simple ways to check where you
-        stand: look for salt residue after a ride, or do a sweat-rate weigh-in test (weighing
-        yourself before and after a steady-effort hour, as described in the hydration FAQ).
+        electrolyte tablets or extra salt to their bottle or gel. Two simple ways to check where you
+        stand: look for salt residue after a ride, or do a{' '}
+        <a href={faqHref('en', 'hydration-water-per-hour')} style={articleLinkStyle}>
+          sweat-rate weigh-in test
+        </a>{' '}
+        (weighing yourself before and after a steady-effort hour).
       </p>
       <p style={articleTextStyle}>
         The takeaway isn't "always add extra sodium." It's "know your own sweat profile and adjust
@@ -53,6 +62,18 @@ export default function SodiumElectrolytesCyclingEn() {
         you can't buy or add to a drink. Roughly, each 0.1g of salt per 100ml of drink delivers
         about 390mg of sodium per liter. So if you're aiming for, say, 700mg of sodium per liter,
         that's about 0.18g of salt per 100ml.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/27478425/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Lara et al., J Int Soc Sports Nutr 2016
+        </a>{' '}
+        (sweat sodium range across 157 marathoners: roughly 160-2200mg/l, split into
+        low/typical/salty sweaters).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

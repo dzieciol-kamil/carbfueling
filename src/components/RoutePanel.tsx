@@ -3,6 +3,7 @@ import { paceToSpeed, prof, speedToPace } from '../domain/fuel';
 import type { Intensity, RouteInput } from '../domain/types';
 import { t, type StringTable } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
+import { useCourseDownload } from './useCourseDownload';
 import { InfoPopover } from './ui/InfoPopover';
 import { NumberInput } from './ui/NumberInput';
 import { SegmentedControl } from './ui/SegmentedControl';
@@ -142,6 +143,7 @@ export function RoutePanel() {
   const setPreMealMinutes = useAppStore((s) => s.setPreMealMinutes);
   const toggleGpx = useAppStore((s) => s.toggleGpx);
   const loadGpxFromFile = useAppStore((s) => s.loadGpxFromFile);
+  const { ready: courseReady, download: downloadCourse } = useCourseDownload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const strings = t(lang);
 
@@ -422,6 +424,27 @@ export function RoutePanel() {
           +{elevationGain(route)} m
         </span>
         <span style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+          <button
+            type="button"
+            onClick={() => void downloadCourse()}
+            disabled={!courseReady}
+            title={courseReady ? undefined : strings.gpxDownloadHint}
+            style={{
+              border: '1px solid var(--chip-border)',
+              background: '#fff',
+              color: 'var(--ink-soft)',
+              borderRadius: 8,
+              padding: '6px 11px',
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: 'Archivo, sans-serif',
+              cursor: courseReady ? 'pointer' : 'default',
+              opacity: courseReady ? 1 : 0.45,
+              flex: '0 0 auto',
+            }}
+          >
+            {strings.gpxDownload}
+          </button>
           <label
             style={{
               border: '1px solid var(--chip-border)',
@@ -440,7 +463,7 @@ export function RoutePanel() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".gpx,application/gpx+xml"
+              accept=".gpx,.tcx,application/gpx+xml,application/vnd.garmin.tcx+xml"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 e.target.value = '';

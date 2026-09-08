@@ -18,6 +18,23 @@ const CHROME: Record<Lang, { back: string; index: string; brand: string; open: s
   },
 };
 
+/** Every article is written in Polish first, then carried into other languages by machine
+ *  translation with no native-speaker pass yet. Shown in the footer for any language that isn't
+ *  the Polish source — omitted (no key) for a language once a human has signed off on its copy.
+ *  Add a translated entry here when a new locale ships; nothing else in this file needs to
+ *  change. */
+const MT_NOTICE: Partial<Record<Lang, ReactNode>> = {
+  en: (
+    <>
+      This page was machine-translated and hasn't been checked by a native English speaker yet. The
+      numbers are verified — the wording might not be. Something sound off?{' '}
+      <a href="mailto:carbfueling@gmail.com">Email me</a> or{' '}
+      <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">open an issue</a> — even
+      two fixed sentences help.
+    </>
+  ),
+};
+
 // The landing header, rebuilt here in inline styles: these pages ship no stylesheet of their
 // own beyond renderPage.mjs's ROOT_STYLE, and the landing's own rules live inside
 // Landing.*.tsx's landingCss, which FAQ pages never load. Values copied from there. The one
@@ -62,6 +79,23 @@ export const articleImgStyle: CSSProperties = {
 };
 
 export const articleLinkStyle: CSSProperties = { fontSize: 15, fontWeight: 600 };
+
+/** For the literal strings a device shows, e.g. "B1(W)25%" — the same mono face the app uses for
+ *  file names and numbers, slightly down-sized so it sits on the paragraph's line rather than
+ *  towering over it. */
+export const articleCodeStyle: CSSProperties = {
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: '0.92em',
+};
+
+/** The citation line at the foot of an article. Quieter than the body on purpose: a link to a
+ *  manufacturer's help page is a footnote, not a paragraph of the article. */
+export const articleSourcesStyle: CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.6,
+  color: 'var(--muted)',
+  marginBottom: 16,
+};
 
 export function FaqLayout({
   lang,
@@ -139,16 +173,17 @@ export function FaqLayout({
           background: 'var(--bg)',
           padding: '20px 24px',
           borderTop: '1px solid var(--border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 14,
-          flexWrap: 'wrap',
           fontSize: 12,
           color: 'var(--muted)',
         }}
       >
-        <a href={indexHref}>{c.index}</a>
-        <a href={calculatorHref(lang)}>{c.back}</a>
+        {MT_NOTICE[lang] && <p style={{ margin: '0 0 14px', maxWidth: 640 }}>{MT_NOTICE[lang]}</p>}
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
+        >
+          <a href={indexHref}>{c.index}</a>
+          <a href={calculatorHref(lang)}>{c.back}</a>
+        </div>
       </footer>
     </div>
   );

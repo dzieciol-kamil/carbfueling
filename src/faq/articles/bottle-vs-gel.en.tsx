@@ -4,9 +4,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 export default function BottleVsGelEn() {
   return (
     <FaqLayout lang="en" slug="bottle-vs-gel">
-      <h1 style={articleH1Style}>
-        Bottle or gel? When each carb-delivery format actually pays off
-      </h1>
+      <h1 style={articleH1Style}>Bottle or gel? When and what to choose</h1>
       <p style={articleTextStyle}>
         Carbs can reach your body in a few different forms: dissolved in a bottle, packed into a
         gel, or eaten as solid food. Each format has a real trade-off. Picking the right one for the
@@ -16,9 +14,9 @@ export default function BottleVsGelEn() {
         A bottle mix is the easiest format to fuel with continuously. You sip at your own pace, and
         each sip delivers carbs and fluid together, which is efficient on hot rides where you need
         both anyway. The catch is that one bottle holds one concentration. Once it's mixed, you
-        can't change it mid-ride, and once it's empty, refilling it needs a plan — a shop, a support
-        stop, or water you carry to mix a new batch. If you want the logistics side of that worked
-        out, we cover it in a separate article on{' '}
+        can't change it mid-ride, and once it's empty, refilling it needs a plan — a shop or a
+        support stop. If you want the logistics side of that worked out, we cover it in a separate
+        article on{' '}
         <a href={faqHref('en', 'bottle-refill-planning')} style={articleLinkStyle}>
           planning bottle refills
         </a>
@@ -37,22 +35,23 @@ export default function BottleVsGelEn() {
         Solid food is the format people forget to plan around, but it earns its place on longer,
         steadier rides. Chewing and slower digestion aren't a problem when your intensity is low
         enough — and real food adds taste and texture that a ride made only of sweet gels and sports
-        drink can't. On very long days, that variety helps you keep eating even when your appetite
-        for sugar drops. The downside is intensity and terrain: it's hard to chew and swallow while
-        pushing hard, and awkward to eat at all on technical, bumpy terrain where you need both
-        hands on the bar.
+        drink can't. On very long days, that variety matters a lot, because it "resets" the sweet
+        taste in your mouth and lets you keep taking in carbs even when you have no appetite left
+        for sugar. The catch is intensity and terrain: it's hard to chew and swallow while pushing
+        hard, and awkward to eat at all on technical, bumpy terrain where you need both hands on the
+        bar.
       </p>
       <p style={articleTextStyle}>
         In practice, most riders don't pick one format for the whole ride — they blend them. A
-        bottle carries the steady baseline, sipped throughout. A gel is the fast top-up before a
-        hard effort, like a long climb or an attack, when you want carbs in quickly without stopping
-        to drink from a bottle. Solid food fills the calm, steady stretches, where chewing costs you
-        nothing and a change of taste keeps you eating.
+        bottle is the base, the steady baseline, sipped throughout. A gel is the fast top-up before
+        a hard effort, like a long climb or an attack, when you want carbs in quickly without
+        stopping to drink from a bottle. Solid food fills the calm, steady stretches, where chewing
+        costs you nothing and a change of taste helps you stomach another gel later on.
       </p>
       <p style={articleTextStyle}>
-        Carb Fueling lets you plan with all three formats in one place. Add bottle mix, gel, and
-        food entries to your plan, and it shows you whether the combination actually covers your
-        hourly carb need — hour by hour, not just as a ride total.
+        Carb Fueling lets you plan with all three formats in one place. Add a carb bottle, a gel, or
+        a banana to your plan, and it shows you whether the combination actually covers your hourly
+        carb need — hour by hour, not just as a ride total.
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

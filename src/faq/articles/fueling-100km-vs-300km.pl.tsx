@@ -23,23 +23,26 @@ export default function Fueling100kmVs300kmPl() {
         zabraknie węglowodanów za wcześnie i nogi odczują to na ostatnich kilometrach.
       </p>
       <p style={articleTextStyle}>
-        Jazda ultra — 8 godzin i więcej, czyli to, w co potrafi się zamienić dzień na 300 km — to
-        już inna historia. Całkowity wydatek energetyczny w ciągu dnia jest ogromny, ale średnia
+        Jazda ultra — 8 godzin i więcej, czyli to, w co potrafi się zamienić dzień z 300 km trasą —
+        to już inna historia. Całkowity wydatek energetyczny w ciągu dnia jest ogromny, ale średnia
         intensywność naturalnie spada, im dłużej jesteś w trasie. Niższa intensywność oznacza, że
         organizm potrzebuje trochę mniej węglowodanów na godzinę niż wcześniej, co nieco odciąża
         problem samego sufitu wchłaniania. Większym wyzwaniem stają się za to inne rzeczy: godziny
         ciągłego jedzenia i picia męczą żołądek, a ten sam żel czy napój, który smakował dobrze w
         drugiej godzinie, w ósmej potrafi być nie do przełknięcia. To zjawisko czasem nazywa się
-        zmęczeniem smakowym. Prawdziwe jedzenie i słone przekąski — ciastka ryżowe, kanapki, słone
-        smakołyki — zaczynają mieć dużo większe znaczenie, po prostu dlatego, że dają podniebieniu
-        odpocząć.
+        zmęczeniem smakowym. Prawdziwe jedzenie i słone przekąski —{' '}
+        <a href={faqHref('pl', 'rice-cake-bars')} style={articleLinkStyle}>
+          ciastka ryżowe
+        </a>
+        , kanapki, słone smakołyki — zaczynają mieć dużo większe znaczenie, po prostu dlatego, że
+        dają podniebieniu odpocząć.
       </p>
       <p style={articleTextStyle}>
         Logistyka też skaluje się inaczej. Wyjazd na 100 km często da się zrobić w pełni z własnych
         zapasów — wszystko wozisz w bidonach i kieszeniach od startu i nigdzie nie musisz się
         zatrzymywać. Przy 300 km to zwykle się nie uda: nikt nie zabiera ze sobą jedzenia i picia na
-        8 i więcej godzin już na pierwszym obrocie pedałów. Jazdy ultra opierają się na zaplanowanym
-        zaopatrzeniu, więc warto{' '}
+        8 i więcej godzin już od startu. Jazdy ultra opierają się na zaplanowanym zaopatrzeniu, więc
+        warto{' '}
         <a href={faqHref('pl', 'bottle-refill-planning')} style={articleLinkStyle}>
           rozpisać sobie punkty uzupełniania
         </a>{' '}
@@ -49,16 +52,14 @@ export default function Fueling100kmVs300kmPl() {
         Tempo i zmęczenie działają na Ciebie razem, dlatego jedna stała liczba gramów węglowodanów
         na godzinę tego nie odda. Kiedy w końcówce długiej trasy zwalniasz, zapotrzebowanie na
         węglowodany spada wraz z intensywnością — ale zmęczenie potrafi w tym samym czasie zabić
-        apetyt i spowolnić trawienie. Dobry plan musi reagować w obie strony: obniżać cel, gdy
-        jedziesz wolniej, ale też rozpoznać moment, w którym organizm po prostu nie ma ochoty jeść,
-        i dostosować się do tego, zamiast trzymać się sztywnej liczby.
+        apetyt i spowolnić trawienie.
       </p>
       <p style={articleTextStyle}>
         Przy naprawdę długich wyzwaniach — zawodach ultra, bikepackingach ciągnących się po nocach —
         dochodzi jeszcze sen i ciemność. Dyscyplina jedzenia i picia łatwo się rozjeżdża, gdy jesteś
         zmęczony, a zaplanowaną przekąskę łatwo przegapić, gdy na rowerze jedziesz w połowie śpiąc.
-        Warto rozpisać fueling na nocne godziny z wyprzedzeniem, zamiast liczyć na to, że sam sobie
-        o nim przypomnisz.
+        Warto rozpisać dawkowanie węglowodanów na nocne godziny z wyprzedzeniem, zamiast liczyć na
+        to, że sam sobie o nim przypomnisz, kiedy myślisz tylko o łóżku i poduszce.
       </p>
       <p style={articleTextStyle}>
         Carb Fueling pozwala zaplanować trasę zarówno na podstawie czasu jazdy, jak i trasy z

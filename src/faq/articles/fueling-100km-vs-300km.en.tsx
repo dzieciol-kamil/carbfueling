@@ -32,8 +32,12 @@ export default function Fueling100kmVs300kmEn() {
         absorption-ceiling problem a bit. The bigger challenges become different: hours of
         continuous eating and drinking wear down your gut, and the same gel or drink mix that tasted
         fine at hour two can become hard to stomach by hour eight. This is sometimes called flavor
-        fatigue. Real food and savory options — rice cakes, sandwiches, salty snacks — start to
-        matter a lot more, simply because they give your palate a break.
+        fatigue. Real food and savory options —{' '}
+        <a href={faqHref('en', 'rice-cake-bars')} style={articleLinkStyle}>
+          rice cakes
+        </a>
+        , sandwiches, salty snacks — start to matter a lot more, simply because they give your
+        palate a break.
       </p>
       <p style={articleTextStyle}>
         Logistics scale differently too. A 100 km ride can often be fully self-sufficient — you
