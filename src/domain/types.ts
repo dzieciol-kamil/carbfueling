@@ -108,6 +108,7 @@ export interface FoodLibEntry {
   key: string;
   pl: string;
   en: string;
+  de: string;
   carbs: number;
   ml?: number;
   cont?: boolean;

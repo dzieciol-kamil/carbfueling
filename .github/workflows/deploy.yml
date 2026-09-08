@@ -63,7 +63,7 @@ jobs:
           npx vite build --base=/preview/
           BASE=/preview node scripts/build-static.mjs
           sed -i 's#<head>#<head>\n    <meta name="robots" content="noindex, nofollow" />#' \
-            "dist/en/calculator/index.html" "dist/pl/calculator/index.html"
+            "dist/en/calculator/index.html" "dist/pl/calculator/index.html" "dist/de/calculator/index.html"
           mkdir -p "$RUNNER_TEMP/site/preview"
           cp -r dist/. "$RUNNER_TEMP/site/preview/"
 

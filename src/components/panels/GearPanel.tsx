@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Content } from '../../domain/types';
-import { t } from '../../i18n/strings';
+import { t, type Lang } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { sourceColor } from '../chart/theme';
 import { NumberInput } from '../ui/NumberInput';
@@ -23,7 +23,7 @@ const stepBtnStyle: CSSProperties = {
   flex: '0 0 auto',
 };
 
-function contentLabel(content: Content, lang: 'pl' | 'en'): string {
+function contentLabel(content: Content, lang: Lang): string {
   const strings = t(lang);
   return content === 'water' ? strings.water : content === 'gel' ? strings.gel : strings.izo;
 }

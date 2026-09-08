@@ -49,8 +49,8 @@ function App() {
 
   useEffect(() => {
     const onPopState = () => {
-      const match = location.pathname.match(/\/(en|pl)\//);
-      if (match) setLang(match[1] as 'en' | 'pl');
+      const match = location.pathname.match(/\/(en|pl|de)\//);
+      if (match) setLang(match[1] as 'en' | 'pl' | 'de');
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);

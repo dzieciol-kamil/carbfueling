@@ -46,7 +46,7 @@ function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
     fills: [{ fid: 1, gid: 'g1', content: 'izo', from: 0, to: 50 }],
     foods: [{ id: 101, key: 'gel', name: 'Energy gel', carbs: 22, from: 10, to: 10 }],
     shops: [{ id: 1, at: 40, name: 'Shop' }],
-    foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 }],
+    foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', carbs: 22 }],
     ui: { lang: 'en', viewMode: 'auto', xUnit: 'km', yMode: 'rate' },
     nextGid: 2,
     nextFid: 2,
@@ -98,7 +98,7 @@ describe('settingsExport', () => {
     const badFiles = [
       { ...file, data: { ...file.data, route: undefined } },
       { ...file, data: { ...file.data, gear: [{ gid: 'g1' }] } },
-      { ...file, data: { ...file.data, ui: { ...file.data.ui, lang: 'de' } } },
+      { ...file, data: { ...file.data, ui: { ...file.data.ui, lang: 'fr' } } },
       {
         ...file,
         data: { ...file.data, fills: [{ fid: 1, gid: 'g1', content: 'soda', from: 0, to: 1 }] },

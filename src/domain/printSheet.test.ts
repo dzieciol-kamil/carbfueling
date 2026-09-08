@@ -153,7 +153,7 @@ describe('printStrip — bottles', () => {
 });
 
 describe('printStrip — food', () => {
-  const lib: FoodLibEntry[] = [{ key: 'bar', pl: 'Baton', en: 'Bar', carbs: 25 }];
+  const lib: FoodLibEntry[] = [{ key: 'bar', pl: 'Baton', en: 'Bar', de: 'Riegel', carbs: 25 }];
 
   test('the name comes from the library in the active language', () => {
     const strip = printStrip(input({ foods: [food()], foodLib: lib, lang: 'pl' }));
@@ -164,7 +164,7 @@ describe('printStrip — food', () => {
     const strip = printStrip(
       input({
         foods: [food()],
-        foodLib: [{ key: 'bar', pl: '', en: 'Bar', carbs: 25 }],
+        foodLib: [{ key: 'bar', pl: '', en: 'Bar', de: '', carbs: 25 }],
         lang: 'pl',
       }),
     );

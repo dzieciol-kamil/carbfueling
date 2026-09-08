@@ -27,6 +27,7 @@ describe('calculatorHref', () => {
   test('per language', () => {
     expect(calculatorHref('en')).toBe('__BASE__/en/calculator/');
     expect(calculatorHref('pl')).toBe('__BASE__/pl/calculator/');
+    expect(calculatorHref('de')).toBe('__BASE__/de/calculator/');
   });
 });
 
@@ -34,6 +35,7 @@ describe('landingHref', () => {
   test('per language', () => {
     expect(landingHref('en')).toBe('__BASE__/en/');
     expect(landingHref('pl')).toBe('__BASE__/pl/');
+    expect(landingHref('de')).toBe('__BASE__/de/');
   });
 });
 
@@ -62,6 +64,11 @@ describe('nextLangPath', () => {
 
   test('is a no-op when already at the target language — the pushState guard relies on this', () => {
     expect(nextLangPath('/pl/calculator/', 'pl')).toBe('/pl/calculator/');
+  });
+
+  test('swaps to and from German too', () => {
+    expect(nextLangPath('/en/calculator/', 'de')).toBe('/de/calculator/');
+    expect(nextLangPath('/de/calculator/', 'en')).toBe('/en/calculator/');
   });
 });
 

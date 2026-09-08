@@ -1,49 +1,33 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Lang } from '../i18n/strings';
-import { assetHref, calculatorHref, faqHref, landingHref, FAQ_LANGS, type FaqLang } from '../urls';
+import { LANGS, t, type Lang } from '../i18n/strings';
+import { assetHref, calculatorHref, faqHref, landingHref } from '../urls';
 import LangMenu from '../static/LangMenu';
 
-/** FAQ chrome copy, kept local to the FAQ subsystem rather than in the calculator's
- *  `i18n/strings.ts` — the FAQ supports a wider language set (`FaqLang`) than the calculator
- *  does (`Lang`), since a FAQ-only language doesn't need the calculator's full string table. */
-const CHROME: Record<
-  FaqLang,
-  { back: string; index: string; brand: string; open: string; tagline: string; langName: string }
-> = {
+const CHROME: Record<Lang, { back: string; index: string; brand: string; open: string }> = {
   en: {
     back: '← Back to the calculator',
     index: 'More FAQ articles',
     brand: 'Carb Fueling',
     open: 'Open the calculator →',
-    tagline: 'carbohydrate & hydration planner',
-    langName: 'English',
   },
   pl: {
     back: '← Wróć do kalkulatora',
     index: 'Więcej artykułów FAQ',
     brand: 'Carb Fueling',
     open: 'Otwórz kalkulator →',
-    tagline: 'planer węglowodanów i nawodnienia',
-    langName: 'Polski',
   },
   de: {
     back: '← Zurück zum Rechner',
     index: 'Weitere FAQ-Artikel',
     brand: 'Carb Fueling',
     open: 'Rechner öffnen →',
-    tagline: 'Kohlenhydrat- und Flüssigkeitsplaner',
-    langName: 'Deutsch',
   },
 };
-
-/** The calculator only ships in `Lang` (`en`/`pl`) — a FAQ language without a calculator of
- *  its own (currently `de`) falls back to the English calculator/landing page. */
-const CALCULATOR_LANG: Record<FaqLang, Lang> = { en: 'en', pl: 'pl', de: 'en' };
 
 /** `<title>`/meta description for the FAQ index page itself, per language. Read by
  *  `scripts/build-static.mjs` — colocated here with the rest of the FAQ's own chrome copy
  *  rather than duplicated in the build script. */
-export const FAQ_INDEX_META: Record<FaqLang, { title: string; description: string }> = {
+export const FAQ_INDEX_META: Record<Lang, { title: string; description: string }> = {
   en: {
     title: 'FAQ — Carb Fueling',
     description: 'Answers about carb and hydration strategy for long bike rides.',
@@ -64,7 +48,7 @@ export const FAQ_INDEX_META: Record<FaqLang, { title: string; description: strin
  *  the Polish source — omitted (no key) for a language once a human has signed off on its copy.
  *  Add a translated entry here when a new locale ships; nothing else in this file needs to
  *  change. */
-const MT_NOTICE: Partial<Record<FaqLang, ReactNode>> = {
+const MT_NOTICE: Partial<Record<Lang, ReactNode>> = {
   en: (
     <>
       This page was machine-translated and hasn't been checked by a native English speaker yet. The
@@ -144,7 +128,7 @@ export function FaqLayout({
   slug,
   children,
 }: {
-  lang: FaqLang;
+  lang: Lang;
   /** The article this page renders, so the language switch lands on its translation rather
    *  than dumping the reader back at the index. Omitted by the FAQ index itself. */
   slug?: string;
@@ -152,7 +136,6 @@ export function FaqLayout({
 }) {
   const c = CHROME[lang];
   const indexHref = faqHref(lang);
-  const calcLang = CALCULATOR_LANG[lang];
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -178,24 +161,24 @@ export function FaqLayout({
         }}
       >
         <a
-          href={landingHref(calcLang)}
+          href={landingHref(lang)}
           style={{ display: 'flex', alignItems: 'baseline', gap: 12, color: 'var(--ink)' }}
         >
           <span className="faq-wordmark" style={headerWordmark}>
             CARB FUELING
           </span>
           <span className="faq-tagline" style={headerTagline}>
-            {c.tagline}
+            {t(lang).tagline}
           </span>
         </a>
         <div className="faq-actions">
           <LangMenu
-            langs={FAQ_LANGS}
+            langs={LANGS}
             current={lang}
             hrefFor={(code) => faqHref(code, slug)}
-            labelFor={(code) => ({ short: code.toUpperCase(), name: CHROME[code].langName })}
+            labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
           />
-          <a href={calculatorHref(calcLang)} style={ctaButton}>
+          <a href={calculatorHref(lang)} style={ctaButton}>
             {c.open}
           </a>
         </div>
@@ -230,7 +213,7 @@ export function FaqLayout({
           style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
         >
           <a href={indexHref}>{c.index}</a>
-          <a href={calculatorHref(calcLang)}>{c.back}</a>
+          <a href={calculatorHref(lang)}>{c.back}</a>
         </div>
       </footer>
     </div>
