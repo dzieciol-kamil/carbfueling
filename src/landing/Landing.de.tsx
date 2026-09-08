@@ -511,7 +511,8 @@ export default function LandingDe() {
             <h2 className="landing-q">
               Schon mal bei einer Fahrt oder einem <br />
               langen Lauf eingebrochen — und dir <br />
-              gewünscht, du hättest es kommen sehen?
+              gewünscht, du hättest es kommen <br />
+              sehen?
             </h2>
             <figure className="landing-shot">
               <figcaption className="landing-cap">

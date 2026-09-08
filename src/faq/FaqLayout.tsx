@@ -145,7 +145,7 @@ export function FaqLayout({
         className="faq-header"
         style={{
           position: 'relative',
-          zIndex: 1,
+          zIndex: 2,
           // Every number here is the landing header's, down to the 61px height: the two bars
           // sit at the same place on screen, so following a link between the pages doesn't
           // shift the wordmark. Opaque for the same reason the landing's is — the photograph
