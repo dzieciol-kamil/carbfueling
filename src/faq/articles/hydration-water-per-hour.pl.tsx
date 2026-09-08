@@ -93,7 +93,7 @@ export default function HydrationWaterPerHourPl() {
         >
           Sawka, Cheuvront, Kenefick, Sports Med 2015
         </a>{' '}
-        (próg 27°C temperatury skóry, powyżej którego odwodnienie zaczyna kosztować wynik).
+        (próg 27°C temperatury skóry, powyżej którego odwodnienie zaczyna wpływać na wynik).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

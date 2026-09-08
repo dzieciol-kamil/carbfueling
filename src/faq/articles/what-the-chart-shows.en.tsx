@@ -12,10 +12,10 @@ export default function WhatTheChartShowsEn() {
     <FaqLayout lang="en" slug="what-the-chart-shows">
       <h1 style={articleH1Style}>What the chart actually shows: from bottle to bloodstream</h1>
       <p style={articleTextStyle}>
-        Every point on the chart starts with one simple fact: what you actually ate or drank at that
-        moment on the route. This is intake — the raw input to everything else. A gel, a sip from
-        your bottle, a banana at a rest stop. The chart records it exactly where it happened on the
-        route, not as one total for the whole ride.
+        Every point on the chart corresponds to what you plan to eat or drink at that point on the
+        route. A gel, a sip of water or mix from your bottle, a banana at a rest stop. The chart
+        records it exactly where it's set to happen on the route, not as one total for the whole
+        ride.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/intake-vessels.jpg')}
@@ -25,8 +25,9 @@ export default function WhatTheChartShowsEn() {
       <p style={articleTextStyle}>
         Food and drink don't turn into usable fuel the moment they reach your mouth. They land in
         your stomach and gut first, and digest gradually. There's a real lag between eating
-        something and your body being able to use it. The chart shows this honestly — carbs sit in
-        your gut for a while, waiting, instead of becoming available the instant you swallow them.
+        something and your body being able to use it. The chart shows this whole process — carbs sit
+        in your gut for a while, waiting, instead of becoming available the instant you swallow
+        them.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/gut-strip.jpg')}

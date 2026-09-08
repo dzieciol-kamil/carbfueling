@@ -42,9 +42,10 @@ export default function HoneySugarDiyMixPl() {
         Tym, co tracisz przy domowym miksie, jest wygoda i powtarzalność dawki. Miarka z gotowego
         produktu za każdym razem daje tę samą ilość; ważenie cukru czy miodu ręcznie łatwiej lekko
         zaburzyć. Gotowe mieszanki są też zwykle testowane pod kątem osmolalności — czyli stężenia
-        roztworu — tak żeby dobrze leżały w żołądku. Zbyt stężony domowy miks może wywołać dokładnie
-        te wzdęcia i skurcze, których chcesz uniknąć, więc trzymaj umiarkowane stężenie i przetestuj
-        je na treningu, zanim zdasz się na nie w długim wyścigu.
+        roztworu — tak żeby nie było potrzeby ściągania dodatkowej wody do jelita, by ją wchłonąć.
+        Zbyt stężony domowy miks może wywołać dokładnie te wzdęcia i skurcze, których chcesz
+        uniknąć, więc trzymaj umiarkowane stężenie i przetestuj je na treningu, zanim zdasz się na
+        nie w długim wyścigu.
       </p>
       <p style={articleTextStyle}>
         Nic z tego nie czyni domowego miksu gorszą opcją. To realna, dużo tańsza alternatywa dla

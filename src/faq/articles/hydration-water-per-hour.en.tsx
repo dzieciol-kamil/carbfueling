@@ -91,7 +91,7 @@ export default function HydrationWaterPerHourEn() {
         >
           Sawka, Cheuvront, Kenefick, Sports Med 2015
         </a>{' '}
-        (the 27°C skin-temperature threshold above which dehydration starts costing performance).
+        (the 27°C skin-temperature threshold above which dehydration starts affecting performance).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

@@ -16,8 +16,8 @@ export default function RunningVsCyclingCarbsEn() {
       <p style={articleTextStyle}>
         Runners often assume their gut is worse at handling carbs than a cyclist's. The research
         says something more specific: your absorption machinery doesn't actually change between the
-        two sports. What changes is how much abuse it's taking at the same time — and that's why the
-        same on-paper numbers can play out very differently on foot.
+        two sports. What changes is how much mechanical load the runner takes on at the same time —
+        and that's why the same on-paper numbers can play out very differently in practice.
       </p>
       <p style={articleTextStyle}>
         Start with the part that stays the same. Studies comparing exogenous carb oxidation directly
@@ -63,9 +63,9 @@ export default function RunningVsCyclingCarbsEn() {
         the mechanical stressor is simply absent from that training. See{' '}
         <a href={faqHref('en', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
           training your gut
-        </a>{' '}
-        for the general approach; for running specifically, the progression needs to happen on runs,
-        not just on the bike, before you trust the number on race day.
+        </a>
+        . In practice, this means that if you want to raise your carb tolerance for running, you
+        need to do the progression and train your gut while running, not just on the bike.
       </p>
       <p style={articleSourcesStyle}>
         Sources:{' '}

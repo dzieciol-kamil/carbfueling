@@ -43,7 +43,7 @@ export default function SodiumElectrolytesCyclingPl() {
       <p style={articleTextStyle}>
         Jeśli należysz do jednej z tych grup podwyższonego ryzyka, nie musisz zgadywać. Osoby, które
         wiedzą, że mocno lub słono się pocą, albo jadą długo w upale, mogą dodać tabletki
-        elektrolitowe lub trochę soli do bidonu lub diety. Dwa proste sposoby, żeby zorientować się,
+        elektrolitowe lub trochę soli do bidonu lub żelu. Dwa proste sposoby, żeby zorientować się,
         jak to wygląda u Ciebie: sprawdzenie, czy po treningu zostaje nalot soli, albo{' '}
         <a href={faqHref('pl', 'hydration-water-per-hour')} style={articleLinkStyle}>
           test wagowy tempa pocenia

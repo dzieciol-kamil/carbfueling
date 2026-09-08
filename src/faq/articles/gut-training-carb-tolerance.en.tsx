@@ -37,11 +37,23 @@ export default function GutTrainingCarbToleranceEn() {
         an easy training spin.
       </p>
       <p style={articleTextStyle}>
-        Also practice with the exact products and mix you plan to use on race day. A gel or drink
-        that sits fine in training might not be the one you actually use in the race, and swapping
-        at the last minute removes the benefit of all your practice. Flavor fatigue is real too — a
-        flavor that tastes fine for one hour can become hard to stomach after three or four, so it
-        helps to test that during long training rides as well.
+        Also practice with the exact products and mix (the maltodextrin-fructose ratio) you plan to
+        use on race day. A gel or drink that sits fine in training might not be the one you actually
+        use in the race, and swapping products or mix at the last minute removes the benefit of all
+        your practice.
+      </p>
+      <p style={articleTextStyle}>
+        Flavor fatigue is real too — a flavor that tastes fine for one hour can become hard to
+        stomach after three or four, so it helps to test that during long training rides as well.
+        You could try mixing things up, e.g.{' '}
+        <a href={faqHref('en', 'diy-flavor-additives')} style={articleLinkStyle}>
+          with different flavor additives
+        </a>
+        , or bring along something more neutral-tasting, like{' '}
+        <a href={faqHref('en', 'rice-cake-bars')} style={articleLinkStyle}>
+          rice cakes
+        </a>
+        .
       </p>
       <p style={articleTextStyle}>
         A few common causes of stomach trouble are worth ruling out before you blame the carbs

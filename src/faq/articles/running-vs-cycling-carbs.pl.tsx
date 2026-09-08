@@ -16,9 +16,9 @@ export default function RunningVsCyclingCarbsPl() {
       <p style={articleTextStyle}>
         Biegacze często zakładają, że ich jelito gorzej radzi sobie z węglowodanami niż jelito
         rowerzysty. Badania mówią coś bardziej precyzyjnego: mechanizm wchłaniania faktycznie nie
-        zmienia się między tymi dwoma sportami. Zmienia się to, ile obciążenia dostaje w tym samym
-        czasie — i dlatego te same liczby na papierze mogą wyglądać zupełnie inaczej w praktyce, na
-        nogach.
+        zmienia się między tymi dwoma sportami. Zmienia się to, ile obciążenia mechanicznego dostaje
+        w tym samym czasie biegacz — i dlatego te same liczby na papierze mogą wyglądać zupełnie
+        inaczej w praktyce.
       </p>
       <p style={articleTextStyle}>
         Zacznijmy od tego, co się nie zmienia. Badania porównujące bezpośrednio utlenianie
@@ -47,8 +47,8 @@ export default function RunningVsCyclingCarbsPl() {
         Liczby to potwierdzają. Badania zawodów ultra pokazują dolegliwości żołądkowo-jelitowe u
         70-85% biegaczy podczas wieloetapowych lub 24-godzinnych startów. Porównywalne badania
         rowerzystów nie wykazały żadnego związku między tym, co jedli lub pili, a wystąpieniem
-        objawów żołądkowych. Ten sam fueling, podobna intensywność, zupełnie inny wynik — bo sam
-        sport jest częścią obciążenia, nie tylko wysiłek.
+        objawów żołądkowych. Taka sama podaż węglowodanów, podobna intensywność, zupełnie inny wynik
+        — bo sam sport jest częścią obciążenia, nie tylko wysiłek.
       </p>
       <p style={articleTextStyle}>
         Praktyczny wniosek nie brzmi "jedz mniej, bo Twoje jelito jest słabsze". Brzmi raczej "jedz
@@ -63,12 +63,12 @@ export default function RunningVsCyclingCarbsPl() {
       <p style={articleTextStyle}>
         To też powód, dla którego trening jelita nie przenosi się idealnie między sportami. Żołądek,
         który spokojnie znosi 80 g/h na rowerze, w ogóle nie był testowany pod kątem wstrząsów przy
-        bieganiu — bodziec mechaniczny po prostu nie występuje w takim treningu. Zobacz{' '}
+        bieganiu — bodziec mechaniczny po prostu nie występuje w takim treningu. Zobacz, jak wygląda{' '}
         <a href={faqHref('pl', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
           trening jelita
-        </a>{' '}
-        po ogólne podejście; w przypadku biegania progresja musi odbywać się na bieganiu, a nie
-        tylko na rowerze, zanim zaufasz liczbie w dniu startu.
+        </a>
+        . W praktyce oznacza to, że jeśli chcesz zwiększyć tolerancję na węglowodany podczas biegu,
+        musisz robić progresję i trenować jelito w czasie biegania, a nie tylko na rowerze.
       </p>
       <p style={articleSourcesStyle}>
         Źródła:{' '}

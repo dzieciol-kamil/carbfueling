@@ -41,7 +41,7 @@ export default function SodiumElectrolytesCyclingEn() {
       <p style={articleTextStyle}>
         If you fall into one of those higher-risk groups, you don't need to guess. Riders who know
         they're heavy or salty sweaters, or who are riding long in hot conditions, can add
-        electrolyte tablets or extra salt to their mix or diet. Two simple ways to check where you
+        electrolyte tablets or extra salt to their bottle or gel. Two simple ways to check where you
         stand: look for salt residue after a ride, or do a{' '}
         <a href={faqHref('en', 'hydration-water-per-hour')} style={articleLinkStyle}>
           sweat-rate weigh-in test

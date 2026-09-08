@@ -50,8 +50,8 @@ export default function MaltoFructoseBlendPl() {
       </p>
       <p style={articleTextStyle}>
         Dlatego warto zaglądać do składu żelu czy proszku, a nie tylko na hasła na opakowaniu.
-        "Węglowodany złożone" albo "energia o powolnym uwalnianiu" na froncie nic nie mówią o tym,
-        czy w środku jest sama maltodekstryna, czy mieszanka maltodekstryny z fruktozą — a to
+        Napisy "węglowodany złożone" albo "energia o powolnym uwalnianiu" na opakowaniu nie mówią o
+        tym, czy w środku jest sama maltodekstryna, czy mieszanka maltodekstryny z fruktozą — a to
         właśnie ta różnica decyduje, ile faktycznie wchłoniesz w ciągu godziny.
       </p>
       <p style={articleSourcesStyle}>

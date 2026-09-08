@@ -21,9 +21,10 @@ export default function PacePowerAbsorptionPl() {
       </p>
       <p style={articleTextStyle}>
         Ustawienie intensywności w Carb Fueling (niska, średnia, wysoka) zmienia właśnie stronę
-        zapotrzebowania — szacuje, ile węglowodanów na godzinę spala dana trasa przy danym tempie.
-        To jednak tylko połowa obrazu. Druga połowa to sufit wchłaniania Twojego jelita — osobny
-        limit, wyznaczany przez transportery cukru w ścianie jelita, opisany w artykule o tym,{' '}
+        zapotrzebowania — szacuje, ile węglowodanów na godzinę spalasz na danej trasie przy danym
+        tempie. To jednak tylko połowa obrazu. Druga połowa to sufit wchłaniania Twojego jelita —
+        osobny limit, wyznaczany przez transportery cukru w ścianie jelita, opisany w artykule o
+        tym,{' '}
         <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego nie wchłoniesz więcej niż ok. 90 g węglowodanów na godzinę
         </a>
