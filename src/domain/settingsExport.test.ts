@@ -47,7 +47,7 @@ function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
     foods: [{ id: 101, key: 'gel', name: 'Energy gel', carbs: 22, from: 10, to: 10 }],
     shops: [{ id: 1, at: 40, name: 'Shop' }],
     foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', carbs: 22 }],
-    ui: { lang: 'en', viewMode: 'auto', xUnit: 'km', yMode: 'rate' },
+    ui: { lang: 'en', viewMode: 'auto', themeMode: 'auto', xUnit: 'km', yMode: 'rate' },
     nextGid: 2,
     nextFid: 2,
     nextFoodId: 102,
@@ -214,6 +214,13 @@ describe('settingsExport', () => {
 
   test('rejects a sport value outside the known set', () => {
     const data = makeData({ route: { ...makeData().route, sport: 'triathlon' as never } });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
+  test('rejects a themeMode value outside the known set', () => {
+    const data = makeData({ ui: { ...makeData().ui, themeMode: 'purple' as never } });
     const file = buildSettingsExport(data);
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
