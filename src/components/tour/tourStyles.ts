@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 
 export const tourGhostBtn: CSSProperties = {
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   color: 'var(--ink-soft)',
   borderRadius: 8,
   padding: '7px 12px',
@@ -13,9 +13,9 @@ export const tourGhostBtn: CSSProperties = {
 };
 
 export const tourPrimaryBtn: CSSProperties = {
-  border: '1px solid var(--ink)',
-  background: 'var(--ink)',
-  color: '#fff',
+  border: '1px solid var(--selected-bg)',
+  background: 'var(--selected-bg)',
+  color: 'var(--on-brand)',
   borderRadius: 8,
   padding: '7px 14px',
   fontSize: 12,

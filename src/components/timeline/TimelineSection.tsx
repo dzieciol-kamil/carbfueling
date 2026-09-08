@@ -33,8 +33,8 @@ function rowStyle(active: boolean): CSSProperties {
     padding: '8px 10px',
     margin: '0 -10px',
     borderRadius: 8,
-    borderBottom: '1px solid #F4F5F1',
-    background: active ? '#F2F5EF' : 'transparent',
+    borderBottom: '1px solid var(--border-soft)',
+    background: active ? 'var(--surface-soft)' : 'transparent',
   };
 }
 
@@ -86,8 +86,8 @@ export function TimelineSection() {
           justifyContent: 'space-between',
           gap: 12,
           padding: '10px 14px',
-          border: '1px solid #E9EBE6',
-          background: timelineOpen ? '#F6F7F4' : '#fff',
+          border: '1px solid var(--border)',
+          background: timelineOpen ? 'var(--surface-soft)' : 'var(--surface)',
           borderRadius: 11,
           cursor: 'pointer',
           fontFamily: 'Archivo, sans-serif',
@@ -285,9 +285,9 @@ function VesselGroup({
         style={{
           marginTop: 8,
           width: '100%',
-          border: '1px dashed ' + (can ? '#C9CEC7' : '#E6E8E2'),
-          background: can ? '#F7F8F5' : '#FBFCFA',
-          color: can ? 'var(--ink-soft)' : '#B7BCB6',
+          border: '1px dashed ' + (can ? 'var(--border-dashed)' : 'var(--border)'),
+          background: can ? 'var(--surface-soft)' : 'var(--surface-soft)',
+          color: can ? 'var(--ink-soft)' : 'var(--muted-4)',
           borderRadius: 9,
           padding: '8px 14px',
           fontSize: 12,
@@ -410,7 +410,7 @@ function FoodGroup({ foods, foodLib, route, xUnit, lang, hoverKey, setHoverKey }
         style={{
           marginTop: 8,
           width: '100%',
-          color: '#9AA09B',
+          color: 'var(--muted-3)',
           fontSize: 11,
           fontFamily: 'Archivo, sans-serif',
           padding: '6px 0',

@@ -23,10 +23,13 @@ const cardHeadStyle: CSSProperties = {
   justifyContent: 'space-between',
   gap: 10,
   padding: '10px 14px',
-  background: '#F4F5F2',
+  background: 'var(--surface-soft)',
   borderBottom: '1px solid var(--border-soft)',
 };
-const fillBlockStyle: CSSProperties = { padding: '10px 0', borderBottom: '1px solid #F2F3EF' };
+const fillBlockStyle: CSSProperties = {
+  padding: '10px 0',
+  borderBottom: '1px solid var(--border-soft)',
+};
 
 export function RecipesSection() {
   const route = useAppStore((s) => s.route);
@@ -60,7 +63,7 @@ export function RecipesSection() {
   return (
     <div
       style={{
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '20px 24px',
@@ -98,7 +101,7 @@ export function RecipesSection() {
             alignItems: 'center',
             gap: 8,
             border: '1px solid var(--chip-border)',
-            background: '#fff',
+            background: 'var(--surface)',
             borderRadius: 9,
             padding: '7px 12px',
             fontFamily: 'Archivo, sans-serif',
@@ -363,7 +366,7 @@ function FillRecipe({
             fontWeight: 700,
             padding: '3px 8px',
             borderRadius: 999,
-            color: '#fff',
+            color: 'var(--on-brand)',
             background: sourceColor(fill.content),
             whiteSpace: 'nowrap',
           }}
