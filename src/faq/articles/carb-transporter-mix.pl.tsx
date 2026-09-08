@@ -1,9 +1,10 @@
-import { calculatorHref, assetHref } from '../../urls';
+import { faqHref, calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
   articleImgStyle,
   articleLinkStyle,
+  articleSourcesStyle,
   articleTextStyle,
 } from '../FaqLayout';
 
@@ -14,7 +15,7 @@ export default function CarbTransporterMixPl() {
         Dlaczego nie wchłoniesz więcej niż ok. 90 g węglowodanów na godzinę?
       </h1>
       <p style={articleTextStyle}>
-        Jelito wchłania cukier dwoma osobnymi "drzwiami" — a właściwie dwoma różnymi białkami
+        Jelito wchłania cukier dwoma osobnymi kanałami — a właściwie dwoma różnymi białkami
         transportowymi wbudowanymi w ścianę jelita. Glukoza korzysta z jednego, nazywanego SGLT1,
         fruktoza z drugiego, GLUT5. To fizycznie osobne systemy, więc każdy ma swój niezależny limit
         prędkości.
@@ -26,8 +27,12 @@ export default function CarbTransporterMixPl() {
         twardy sufit. Nadmiar zalega w żołądku i kończy się wzdęciami albo skurczami.
       </p>
       <p style={articleTextStyle}>
-        Fruktoza korzysta z transportera GLUT5, na osobnej trasie dobrej na kolejne ok. 30 g na
-        godzinę. Dodając fruktozę do miksu, otwierasz obie bramki naraz — dlatego mieszanki
+        Fruktoza korzysta z transportera GLUT5, osobny kanał, który wysyca się przy ok. 30 g na
+        godzinę (zobacz{' '}
+        <a href={faqHref('pl', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
+          jak wytrenować jelito, żeby zwiększyć tolerancję na węglowodany
+        </a>
+        ). Dodając fruktozę do miksu, otwierasz obie bramki naraz — dlatego mieszanki
         glukozowo-fruktozowe podnoszą realny sufit do ok. 90 g na godzinę.
       </p>
       <p style={articleTextStyle}>
@@ -46,13 +51,24 @@ export default function CarbTransporterMixPl() {
         style={articleImgStyle}
       />
       <p style={articleTextStyle}>
-        Proporcja ma znaczenie. Za dużo fruktozy i marnujesz zapas drzwi od glukozy; za mało i
-        marnujesz zapas drzwi od fruktozy. Proporcja 2:1 (glukoza do fruktozy wagowo) to dobry punkt
-        startowy dla większości rowerzystów — to domyślny miks "Izo" w Carb Fueling.
+        Proporcja ma znaczenie. Za dużo fruktozy i marnujesz zapas kanału od glukozy; za mało i
+        marnujesz zapas kanału od fruktozy. Proporcja 2:1 (glukoza do fruktozy wagowo) to dobry
+        punkt startowy dla większości rowerzystów — to domyślny miks "Izo" w Carb Fueling.
       </p>
       <p style={articleTextStyle}>
         Carb Fueling liczy Twój indywidualny sufit na podstawie ustawionej proporcji i pokazuje go
         na bieżąco przy zmianie miksu.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20574242/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Curr Opin Clin Nutr Metab Care 2010
+        </a>{' '}
+        (wielokrotnie transportowalne węglowodany, utlenianie do ok. 105 g/h).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

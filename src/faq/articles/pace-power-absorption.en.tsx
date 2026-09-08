@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function PacePowerAbsorptionEn() {
   return (
@@ -59,6 +65,18 @@ export default function PacePowerAbsorptionEn() {
         many carbs your ride demands, and your mix ratio sets the ceiling for how many you can
         absorb. Seeing both together makes it obvious when a plan is asking more of your gut than it
         can deliver.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/28589631/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Costa et al., Aliment Pharmacol Ther 2017
+        </a>{' '}
+        (systematic review: at high exercise intensity, blood is redirected away from the gut,
+        slowing gastric emptying and absorption).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

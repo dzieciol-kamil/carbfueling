@@ -4,9 +4,7 @@ import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '.
 export default function BottleVsGelPl() {
   return (
     <FaqLayout lang="pl" slug="bottle-vs-gel">
-      <h1 style={articleH1Style}>
-        Bidon czy żel? Kiedy opłaca się każda forma dostarczania węglowodanów
-      </h1>
+      <h1 style={articleH1Style}>Bidon czy żel? Kiedy i co wybrać</h1>
       <p style={articleTextStyle}>
         Węglowodany możesz dostarczyć organizmowi na kilka sposobów: rozpuszczone w bidonie,
         skoncentrowane w żelu albo zjedzone jako zwykłe jedzenie. Każda forma ma swoje plusy i
@@ -17,9 +15,8 @@ export default function BottleVsGelPl() {
         Bidon najłatwiej pije się na bieżąco. Popijasz w swoim tempie, a każdy łyk dostarcza od razu
         węglowodany i płyny — to bardzo wygodne w upale, kiedy i tak potrzebujesz jednego i
         drugiego. Problem w tym, że jeden bidon to jedno stężenie. Raz zmieszany, nie zmienisz go w
-        trakcie jazdy, a gdy się skończy, uzupełnienie wymaga planu — sklepu, punktu wsparcia albo
-        wody, którą wieziesz, żeby zmieszać kolejną porcję. Logistykę tego tematu opisujemy osobno w
-        artykule o{' '}
+        trakcie jazdy, a gdy się skończy, uzupełnienie wymaga planu — sklepu albo pit stopu.
+        Logistykę tego tematu opisujemy osobno w artykule o{' '}
         <a href={faqHref('pl', 'bottle-refill-planning')} style={articleLinkStyle}>
           planowaniu uzupełniania bidonów
         </a>
@@ -39,21 +36,24 @@ export default function BottleVsGelPl() {
         dłuższych, spokojniejszych odcinkach. Żucie i wolniejsze trawienie nie przeszkadzają, gdy
         intensywność jest odpowiednio niska — a prawdziwe jedzenie daje smak i teksturę, których nie
         zapewnią same słodkie żele i napój izotoniczny. Na bardzo długich dystansach ta różnorodność
-        pomaga jeść dalej, nawet gdy ochota na słodycz spada. Minus to intensywność i teren — trudno
-        żuć i przełykać, jadąc mocno, a na technicznym, wyboistym terenie, gdzie obie ręce potrzebne
-        są na kierownicy, jedzenie czegokolwiek robi się niewygodne.
+        jest bardzo ważna, bo "resetuje" słodki posmak w ustach i pozwala dostarczać kolejne porcje
+        węglowodanów, nawet gdy nie mamy już ochoty na słodycze. Problemem może być intensywność i
+        teren — trudno żuć i przełykać, jadąc mocno, a na technicznym, wyboistym terenie, gdzie obie
+        ręce potrzebne są na kierownicy, jedzenie czegokolwiek robi się niewygodne.
       </p>
       <p style={articleTextStyle}>
         W praktyce większość rowerzystów nie wybiera jednej formy na cały wyścig, tylko łączy je.
-        Bidon to stały fundament, popijany przez cały czas. Żel to szybkie doładowanie przed trudnym
-        momentem — długim podjazdem czy atakiem — kiedy chcesz szybko dostarczyć węglowodany bez
-        odrywania się od jazdy na picie z bidonu. Jedzenie stałe wypełnia spokojne, równe odcinki,
-        gdzie żucie nic nie kosztuje, a zmiana smaku pomaga jeść dalej.
+        Bidon to baza, stały fundament, popijany przez cały czas. Żel to szybkie doładowanie przed
+        trudnym momentem — długim podjazdem czy atakiem — kiedy chcesz szybko dostarczyć węglowodany
+        bez odrywania się od jazdy na picie z bidonu. Jedzenie stałe wypełnia spokojne, równe
+        odcinki, gdzie żucie nic nie kosztuje, a zmiana smaku pomaga przywrócić możliwość zjedzenia
+        kolejnego żelu.
       </p>
       <p style={articleTextStyle}>
-        Carb Fueling pozwala zaplanować wszystkie trzy formy naraz. Dodaj do planu wpisy z bidonem,
-        żelem i jedzeniem, a aplikacja pokaże Ci, czy taka kombinacja rzeczywiście pokrywa Twoje
-        zapotrzebowanie na węglowodany w każdej godzinie — nie tylko w sumie na całą trasę.
+        Carb Fueling pozwala zaplanować wszystkie trzy formy naraz. Dodaj do planu bidon z
+        węglowodanami, żel, czy banana, a aplikacja pokaże Ci, czy taka kombinacja rzeczywiście
+        pokrywa Twoje zapotrzebowanie na węglowodany w każdej godzinie — nie tylko w sumie na całą
+        trasę.
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

@@ -18,8 +18,10 @@ export default function BonkCrisisEn() {
       <p style={articleTextStyle}>
         Your muscles burn carbs at a rate set by your effort: harder pace, faster burn. Your gut can
         only deliver carbs at its own rate, capped by the absorption ceiling (see{' '}
-        <a href={faqHref('en', 'carb-transporter-mix')}>why you can't absorb more than ~90g/h</a>).
-        If burn rate stays above delivery rate for long enough, your glycogen stores — the carb
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
+          why you can't absorb more than ~90g/h
+        </a>
+        ). If burn rate stays above delivery rate for long enough, your glycogen stores — the carb
         reserve in muscle and liver — run down. Once that reserve is close to empty, your body can't
         keep up the power output: pace collapses fast, along with focus and coordination. That's the
         bonk.
@@ -32,8 +34,8 @@ export default function BonkCrisisEn() {
       <p style={articleTextStyle}>
         The warning sign is visible before it happens: a widening gap between "carbs burned" and
         "carbs delivered" on a timeline. Carb Fueling plots both as you build a route, so you can
-        see the gap opening and fix it — earlier feeds, a stronger mix, or a slightly easier pace —
-        before it turns into a crisis.
+        see the gap opening and fix it — earlier feeds, a more concentrated carb mix, or a slightly
+        easier pace — before it turns into a crisis.
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

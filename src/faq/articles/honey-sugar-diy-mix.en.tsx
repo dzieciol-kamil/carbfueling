@@ -42,9 +42,10 @@ export default function HoneySugarDiyMixEn() {
         What you do give up with a DIY mix is convenience and consistency. A pre-measured scoop from
         a branded product gives you the same dose every time; weighing out sugar or honey by hand is
         easier to get slightly wrong. Commercial mixes are also usually tested for osmolality — how
-        concentrated the solution is — so it sits well in your stomach. A DIY mix that's too
-        concentrated can cause the same bloating and cramping you're trying to avoid, so keep it
-        moderate and test it in training before relying on it during a long ride or race.
+        concentrated the solution is — so there's no need to pull extra water into your gut to
+        absorb it. A DIY mix that's too concentrated can cause the same bloating and cramping you're
+        trying to avoid, so keep it moderate and test it in training before relying on it during a
+        long ride or race.
       </p>
       <p style={articleTextStyle}>
         None of this makes a DIY mix a downgrade. It's a genuinely viable, much cheaper option for a
