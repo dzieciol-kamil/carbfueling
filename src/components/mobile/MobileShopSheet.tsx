@@ -9,7 +9,7 @@ const sheetStyle: CSSProperties = {
   right: 0,
   bottom: 0,
   zIndex: 31,
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: '22px 22px 0 0',
   padding: '8px 18px 24px',
   boxShadow: '0 -12px 40px rgba(0,0,0,0.18)',
@@ -30,7 +30,7 @@ const inputStyle: CSSProperties = {
   fontFamily: 'Archivo, sans-serif',
   fontSize: 14,
   fontWeight: 600,
-  background: '#fff',
+  background: 'var(--surface)',
 };
 
 export function MobileShopSheet() {
@@ -106,7 +106,7 @@ export function MobileShopSheet() {
               height: 34,
               border: '1px solid var(--chip-border)',
               borderRadius: 10,
-              background: '#fff',
+              background: 'var(--surface)',
               cursor: 'pointer',
             }}
           >
@@ -148,8 +148,8 @@ export function MobileShopSheet() {
             onClick={submit}
             style={{
               marginTop: 4,
-              background: valid ? 'var(--ink)' : '#E6E8E2',
-              color: valid ? '#fff' : '#B7BCB6',
+              background: valid ? 'var(--selected-bg)' : 'var(--border)',
+              color: valid ? 'var(--on-brand)' : 'var(--muted-4)',
               border: 'none',
               borderRadius: 12,
               padding: 15,

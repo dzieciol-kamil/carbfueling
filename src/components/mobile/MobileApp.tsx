@@ -36,7 +36,7 @@ const TABS: { tab: MobileTab; icon: ReactNode }[] = [
 ];
 
 function iconStyle(active: boolean): CSSProperties {
-  return { color: active ? 'var(--ink)' : '#B0B5B0' };
+  return { color: active ? 'var(--ink)' : 'var(--muted-4)' };
 }
 function labelStyle(active: boolean): CSSProperties {
   return {
@@ -44,7 +44,7 @@ function labelStyle(active: boolean): CSSProperties {
     fontWeight: 600,
     whiteSpace: 'nowrap',
     letterSpacing: '-0.01em',
-    color: active ? 'var(--ink)' : '#9AA09B',
+    color: active ? 'var(--ink)' : 'var(--muted-3)',
   };
 }
 
@@ -100,7 +100,7 @@ export function MobileApp() {
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 11,
               color: 'var(--muted)',
-              background: '#fff',
+              background: 'var(--surface)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}

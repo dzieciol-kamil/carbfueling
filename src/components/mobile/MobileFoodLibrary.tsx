@@ -23,7 +23,7 @@ const fieldBoxStyle: CSSProperties = {
   border: '1px solid var(--chip-border)',
   borderRadius: 10,
   padding: '0 10px',
-  background: '#fff',
+  background: 'var(--surface)',
   height: 44,
 };
 const numberInputStyle: CSSProperties = {
@@ -72,7 +72,7 @@ export function MobileFoodLibrary() {
               style={{
                 border: '1px solid var(--chip-border)',
                 borderRadius: 13,
-                background: '#F9FAF7',
+                background: 'var(--surface-soft)',
                 padding: 10,
                 display: 'flex',
                 flexDirection: 'column',
@@ -95,7 +95,7 @@ export function MobileFoodLibrary() {
                     fontFamily: 'Archivo, sans-serif',
                     fontSize: 14,
                     fontWeight: 600,
-                    background: '#fff',
+                    background: 'var(--surface)',
                     boxSizing: 'border-box',
                   }}
                 />
@@ -152,8 +152,8 @@ export function MobileFoodLibrary() {
                     padding: '0 10px',
                     borderRadius: 10,
                     border: '1px solid ' + (entry.cont ? 'var(--ink)' : 'var(--chip-border)'),
-                    background: entry.cont ? 'var(--ink)' : '#fff',
-                    color: entry.cont ? '#fff' : 'var(--muted-2)',
+                    background: entry.cont ? 'var(--selected-bg)' : 'var(--surface)',
+                    color: entry.cont ? 'var(--on-brand)' : 'var(--muted-2)',
                     fontSize: 10,
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -169,7 +169,7 @@ export function MobileFoodLibrary() {
                     height: 44,
                     border: 'none',
                     background: 'transparent',
-                    color: '#B0B5B0',
+                    color: 'var(--muted-4)',
                     cursor: 'pointer',
                     fontSize: 14,
                     marginLeft: 'auto',
@@ -187,10 +187,10 @@ export function MobileFoodLibrary() {
         type="button"
         onClick={addFoodLibEntry}
         style={{
-          border: '1px dashed #C9CEC7',
+          border: '1px dashed var(--border-dashed)',
           borderRadius: 11,
           padding: 12,
-          background: '#F7F8F5',
+          background: 'var(--surface-soft)',
           fontSize: 13,
           fontWeight: 600,
           color: 'var(--ink-soft)',
