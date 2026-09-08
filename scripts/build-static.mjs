@@ -125,14 +125,14 @@ async function main() {
     });
 
     for (const article of ARTICLES) {
-      const modPath = path.join(rootDir, 'src/faq/articles', `${article.slug}.${lang}.tsx`);
+      const modPath = path.join(rootDir, 'src/faq/articles', lang, `${article.slug}.tsx`);
       if (!existsSync(modPath)) {
         throw new Error(
           `build-static: missing component ${modPath} for registry slug "${article.slug}" (${lang})`,
         );
       }
       const { default: ArticleComponent } = await server.ssrLoadModule(
-        `/src/faq/articles/${article.slug}.${lang}.tsx`,
+        `/src/faq/articles/${lang}/${article.slug}.tsx`,
       );
       const articleUrlPath = strip(faqHref(lang, article.slug));
       pages.push({
