@@ -105,7 +105,7 @@ const inputStyle: CSSProperties = {
   fontFamily: "'JetBrains Mono', monospace",
   fontSize: 15,
   fontWeight: 600,
-  background: '#fff',
+  background: 'var(--surface)',
 };
 
 const labelStyle: CSSProperties = {
@@ -160,7 +160,7 @@ export function RoutePanel() {
         // it's the sole item and grows to fill the full width per issue #68.
         flex: '1 0 760px',
         boxSizing: 'border-box',
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '16px 20px',
@@ -425,7 +425,7 @@ export function RoutePanel() {
           <label
             style={{
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               color: 'var(--ink-soft)',
               borderRadius: 8,
               padding: '6px 11px',
@@ -453,8 +453,8 @@ export function RoutePanel() {
             onClick={toggleGpx}
             style={{
               border: '1px solid ' + (route.useGpx ? 'var(--ink)' : 'var(--chip-border)'),
-              background: route.useGpx ? 'var(--ink)' : '#fff',
-              color: route.useGpx ? '#fff' : 'var(--muted-2)',
+              background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
+              color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
               borderRadius: 8,
               padding: '6px 11px',
               fontSize: 11,

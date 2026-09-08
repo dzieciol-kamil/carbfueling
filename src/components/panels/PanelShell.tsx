@@ -22,7 +22,7 @@ export function PanelShell({ title, onClose, children }: PanelShellProps) {
           width: '43%',
           minWidth: 560,
           maxWidth: 820,
-          background: '#fff',
+          background: 'var(--surface)',
           borderLeft: '1px solid var(--border)',
           boxShadow: '-24px 0 60px rgba(0,0,0,0.18)',
           display: 'flex',
@@ -45,7 +45,7 @@ export function PanelShell({ title, onClose, children }: PanelShellProps) {
             onClick={onClose}
             style={{
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 8,
               width: 30,
               height: 30,

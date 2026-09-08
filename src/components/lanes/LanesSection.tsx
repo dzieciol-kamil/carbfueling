@@ -71,9 +71,9 @@ function addButtonStyle(hasGap: boolean): CSSProperties {
     height: 24,
     borderRadius: 7,
     cursor: hasGap ? 'pointer' : 'not-allowed',
-    border: '1px dashed ' + (hasGap ? '#B9C0B7' : '#E6E8E2'),
-    background: hasGap ? '#F7F8F5' : '#FBFCFA',
-    color: hasGap ? 'var(--ink-soft)' : '#C9CEC7',
+    border: '1px dashed ' + (hasGap ? 'var(--border-dashed)' : 'var(--border)'),
+    background: hasGap ? 'var(--surface-soft)' : 'var(--surface-soft)',
+    color: hasGap ? 'var(--ink-soft)' : 'var(--border-dashed)',
     fontSize: 13,
     fontWeight: 700,
     lineHeight: 1,
@@ -116,7 +116,7 @@ export function LanesSection() {
                 {(vessel.allowed || []).map((k) => contentLabelFor(k, strings)).join(' / ')}
               </span>
             </div>
-            <div style={trackStyle('#F4F5F2')}>
+            <div style={trackStyle('var(--track)')}>
               {vesselFills.length === 0 && hasGap && (
                 <span style={emptyTrackHintStyle}>{strings.emptyLaneHint}</span>
               )}
@@ -149,7 +149,7 @@ export function LanesSection() {
             </span>
             <span style={subStyle}>{i === 0 ? strings.foodLaneSub : ''}</span>
           </div>
-          <div style={trackStyle('#FAF3EF')}>
+          <div style={trackStyle('var(--surface-warm)')}>
             {row.map((fd) => (
               <FoodBar key={fd.id} food={fd} distanceKm={distanceKm} />
             ))}

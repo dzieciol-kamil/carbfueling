@@ -35,10 +35,10 @@ function FaqLink({ slug, children }: { slug: string; children: ReactNode }) {
 }
 
 const sectionCardStyle: CSSProperties = {
-  border: '1px solid #E9EBE5',
+  border: '1px solid var(--border)',
   borderRadius: 12,
   padding: '12px 14px 14px',
-  background: '#FBFCFA',
+  background: 'var(--surface-soft)',
   marginBottom: 10,
 };
 const blockHeaderStyle: CSSProperties = { fontSize: 13, fontWeight: 700, marginBottom: 10 };
@@ -55,7 +55,7 @@ const inputBoxStyle: CSSProperties = {
   border: '1px solid var(--chip-border)',
   borderRadius: 8,
   padding: '6px 10px',
-  background: '#fff',
+  background: 'var(--surface)',
 };
 const miniInputStyle: CSSProperties = {
   width: 46,
@@ -385,7 +385,7 @@ export function MixPanel() {
           onClick={resetMix}
           style={{
             border: '1px solid var(--chip-border)',
-            background: '#fff',
+            background: 'var(--surface)',
             borderRadius: 8,
             padding: '5px 10px',
             fontFamily: 'Archivo, sans-serif',
@@ -464,7 +464,7 @@ export function MixPanel() {
               onClick={clearCombinedFills}
               style={{
                 border: '1px solid var(--chip-border)',
-                background: '#fff',
+                background: 'var(--surface)',
                 borderRadius: 7,
                 padding: '4px 9px',
                 fontFamily: 'Archivo, sans-serif',
@@ -485,7 +485,7 @@ export function MixPanel() {
               fontSize: 11,
               lineHeight: 1.5,
               color: 'var(--muted-2)',
-              background: '#F4F5F2',
+              background: 'var(--surface-soft)',
               border: '1px solid var(--chip-border)',
               borderRadius: 8,
               padding: '7px 9px',
