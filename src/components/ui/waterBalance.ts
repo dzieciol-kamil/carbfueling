@@ -10,12 +10,24 @@ import type { Lang } from '../../i18n/strings';
  * running dry or over-drinking — the plan is heading for. A true minus sign (U+2212), not a
  * hyphen, so it lines up with the digits in the monospace face.
  */
+/** The decimal separator each supported language reads numbers with. Add a `case` here — not a
+ *  branch elsewhere — when a new language ships; `default` covers every comma-decimal language
+ *  already added and any not listed yet, so it only needs a case when a language uses `.`. */
+function decimalSeparator(lang: Lang): '.' | ',' {
+  switch (lang) {
+    case 'en':
+      return '.';
+    default:
+      return ',';
+  }
+}
+
 export function fmtWaterBalance(pct: number, lang: Lang): string {
   // Anything under 0.05% rounds to "0.0", and "−0,0%" reads like a bug rather than a balanced plan.
   const rounded = Math.abs(pct) < 0.05 ? 0 : pct;
   const sign = rounded > 0 ? '+' : rounded < 0 ? '−' : '';
-  const digits = Math.abs(rounded).toFixed(1);
-  return sign + (lang === 'pl' ? digits.replace('.', ',') : digits) + '%';
+  const digits = Math.abs(rounded).toFixed(1).replace('.', decimalSeparator(lang));
+  return sign + digits + '%';
 }
 
 /**

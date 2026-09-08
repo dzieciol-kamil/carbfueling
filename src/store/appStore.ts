@@ -34,8 +34,17 @@ import {
 } from '../domain/types';
 
 function defaultLang(): Lang {
-  const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
-  return browserLang.toLowerCase().startsWith('pl') ? 'pl' : 'en';
+  const browserLang = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : '';
+  // Add a `case` here, not a new branch, when a language ships — `default` (English) covers
+  // every browser locale that isn't one of ours yet.
+  switch (browserLang.slice(0, 2)) {
+    case 'pl':
+      return 'pl';
+    case 'de':
+      return 'de';
+    default:
+      return 'en';
+  }
 }
 
 export const DESKTOP_BREAKPOINT = 770;
@@ -256,11 +265,11 @@ const defaultShops: ShopStop[] = [];
 const defaultCombinedFillIds: number[] = [];
 
 const defaultFoodLib: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
-  { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 },
-  { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
-  { key: 'ricecake', pl: 'Rice cake', en: 'Rice cake', carbs: 30 },
+  { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', de: 'Energiegel', carbs: 22 },
+  { key: 'chew', pl: 'Żelki', en: 'Chews', de: 'Kaubonbons', carbs: 30, cont: true, span: 18 },
+  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', carbs: 35, ml: 330 },
+  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', carbs: 23 },
+  { key: 'ricecake', pl: 'Rice cake', en: 'Rice cake', de: 'Rice Cake', carbs: 30 },
 ];
 
 export const useAppStore = create<AppState>()(
@@ -647,7 +656,10 @@ export const useAppStore = create<AppState>()(
         set((s) => {
           const name = t(s.ui.lang).newFood;
           return {
-            foodLib: [...s.foodLib, { key: 'u' + s.nextFoodKey, pl: name, en: name, carbs: 25 }],
+            foodLib: [
+              ...s.foodLib,
+              { key: 'u' + s.nextFoodKey, pl: name, en: name, de: name, carbs: 25 },
+            ],
             nextFoodKey: s.nextFoodKey + 1,
           };
         }),

@@ -1,7 +1,15 @@
 import type { CSSProperties } from 'react';
 import { carbsFill, dist, rangeLabel } from '../../domain/fuel';
 import { gaps } from '../../domain/dragMath';
-import type { Fill, FoodItem, MixSettings, RouteInput, Vessel, XUnit } from '../../domain/types';
+import type {
+  Fill,
+  FoodItem,
+  FoodLibEntry,
+  MixSettings,
+  RouteInput,
+  Vessel,
+  XUnit,
+} from '../../domain/types';
 import { t, type Lang } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { CHART_COLORS, sourceColor } from '../chart/theme';
@@ -11,11 +19,7 @@ function contentLabel(content: Fill['content'], lang: Lang): string {
   return content === 'water' ? strings.water : content === 'gel' ? strings.gel : strings.izo;
 }
 
-function foodName(
-  fd: FoodItem,
-  foodLib: { key: string; pl: string; en: string }[],
-  lang: Lang,
-): string {
+function foodName(fd: FoodItem, foodLib: FoodLibEntry[], lang: Lang): string {
   const entry = foodLib.find((x) => x.key === fd.key);
   return (entry && (entry[lang] || entry.en)) || fd.name || '—';
 }
@@ -300,7 +304,7 @@ function VesselGroup({
 
 interface FoodGroupProps {
   foods: FoodItem[];
-  foodLib: { key: string; pl: string; en: string }[];
+  foodLib: FoodLibEntry[];
   route: RouteInput;
   xUnit: XUnit;
   lang: Lang;

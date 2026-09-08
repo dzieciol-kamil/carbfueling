@@ -11,7 +11,6 @@ import { renderPage, renderRedirectStub, SITE } from './renderPage.mjs';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(rootDir, 'dist');
 const BASE = process.env.BASE ?? '';
-const LANGS = ['en', 'pl'];
 // One predicate, spelled once: a build with a base path is the /preview deploy, and it must
 // be excluded from the index and from the sitemap together. These two were separate
 // expressions (`BASE !== ''` and `!BASE`); equivalent, but the spec is emphatic about this
@@ -24,9 +23,38 @@ const isPreview = BASE !== '';
 const SITEMAP_PRIORITY = new Map([
   ['/en/', '1.0'],
   ['/pl/', '1.0'],
+  ['/de/', '1.0'],
   ['/en/calculator/', '0.9'],
   ['/pl/calculator/', '0.9'],
+  ['/de/calculator/', '0.9'],
 ]);
+
+// SEO title/description for the landing pages, per language. `description` feeds the meta/og/
+// twitter tags; `jsonLdDescription` is worded slightly differently on purpose (see the existing
+// en/pl copy) for the JSON-LD structured-data block.
+const LANDING_META = {
+  en: {
+    title: 'Carb Fueling — carbohydrate & hydration planner',
+    description:
+      'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time. Free, no account, runs in your browser.',
+    jsonLdDescription:
+      'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time.',
+  },
+  pl: {
+    title: 'Carb Fueling — planer węglowodanów i nawodnienia',
+    description:
+      'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je w czasie. Za darmo, bez konta, działa w przeglądarce.',
+    jsonLdDescription:
+      'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je na bidony, flaszki i jedzenie w czasie.',
+  },
+  de: {
+    title: 'Carb Fueling — Kohlenhydrat- und Flüssigkeitsplaner',
+    description:
+      'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie über die Zeit verteilst. Kostenlos, kein Konto, läuft im Browser.',
+    jsonLdDescription:
+      'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie auf Flaschen, Flasks und Essen über die Zeit verteilst.',
+  },
+};
 
 async function writeSitemap(pages) {
   const templatePath = path.join(rootDir, 'public/sitemap.xml');
@@ -49,8 +77,8 @@ async function main() {
   });
 
   const { ARTICLES } = await server.ssrLoadModule('/src/faq/registry.ts');
-  const { calculatorHref, faqHref, landingHref, FAQ_LANGS } =
-    await server.ssrLoadModule('/src/urls.ts');
+  const { calculatorHref, faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
+  const { LANGS } = await server.ssrLoadModule('/src/i18n/strings.ts');
   const { FAQ_INDEX_META } = await server.ssrLoadModule('/src/faq/FaqLayout.tsx');
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
   // used *inside* a React component's own JSX (that markup ends up in bodyHtml, which goes
@@ -65,31 +93,24 @@ async function main() {
 
   // Landing pages
   for (const lang of LANGS) {
-    const altLang = lang === 'pl' ? 'en' : 'pl';
-    const modPath = lang === 'pl' ? '/src/landing/Landing.pl.tsx' : '/src/landing/Landing.en.tsx';
-    const { default: LandingComponent } = await server.ssrLoadModule(modPath);
+    const otherLangs = LANGS.filter((l) => l !== lang);
+    const meta = LANDING_META[lang];
+    const { default: LandingComponent } = await server.ssrLoadModule(
+      `/src/landing/Landing.${lang}.tsx`,
+    );
     pages.push({
       outPath: path.join(distDir, lang, 'index.html'),
       urlPath: strip(landingHref(lang)),
-      alternates: [{ lang: altLang, path: strip(landingHref(altLang)) }],
+      alternates: otherLangs.map((l) => ({ lang: l, path: strip(landingHref(l)) })),
       lang,
-      title:
-        lang === 'pl'
-          ? 'Carb Fueling — planer węglowodanów i nawodnienia'
-          : 'Carb Fueling — carbohydrate & hydration planner',
-      description:
-        lang === 'pl'
-          ? 'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je w czasie. Za darmo, bez konta, działa w przeglądarce.'
-          : 'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time. Free, no account, runs in your browser.',
+      title: meta.title,
+      description: meta.description,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         name: 'Carb Fueling',
         url: `${SITE}${strip(landingHref(lang))}`,
-        description:
-          lang === 'pl'
-            ? 'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je na bidony, flaszki i jedzenie w czasie.'
-            : 'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time.',
+        description: meta.jsonLdDescription,
         applicationCategory: 'SportsApplication',
         operatingSystem: 'Any (runs in a web browser)',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -98,10 +119,9 @@ async function main() {
     });
   }
 
-  // FAQ pages (index + articles) — a wider language set than the landing/calculator (FAQ_LANGS
-  // vs LANGS), since a FAQ-only language doesn't need a full calculator translation.
-  for (const lang of FAQ_LANGS) {
-    const otherFaqLangs = FAQ_LANGS.filter((l) => l !== lang);
+  // FAQ pages (index + articles)
+  for (const lang of LANGS) {
+    const otherFaqLangs = LANGS.filter((l) => l !== lang);
 
     const indexModPath = `/src/faq/FaqIndex.${lang}.tsx`;
     const { default: IndexComponent } = await server.ssrLoadModule(indexModPath);
@@ -175,7 +195,7 @@ async function main() {
       base: BASE,
       noindex: isPreview,
       canonicalOverride: `${SITE}/en/`,
-      langRedirectTarget: '/pl/',
+      langRedirectTargets: { pl: '/pl/', de: '/de/' },
     }),
     'utf-8',
   );
@@ -198,8 +218,8 @@ async function main() {
   }
 
   if (!isPreview) {
-    // The calculator's two pages come from Vite, not from this script, so they never enter
-    // `pages` — and without these two entries the site's main destination would be missing
+    // The calculator's pages come from Vite, not from this script, so they never enter
+    // `pages` — and without these entries the site's main destination would be missing
     // from the sitemap entirely (on master the calculator *was* the sitemap). Only `urlPath`
     // is read here, so a bare object is all an entry needs.
     await writeSitemap([

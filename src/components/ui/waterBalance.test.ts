@@ -17,6 +17,11 @@ describe('fmtWaterBalance', () => {
     expect(fmtWaterBalance(2.23, 'pl')).toBe('+2,2%');
     expect(fmtWaterBalance(-1.5, 'pl')).toBe('−1,5%');
   });
+
+  test('German also gets a decimal comma', () => {
+    expect(fmtWaterBalance(2.23, 'de')).toBe('+2,2%');
+    expect(fmtWaterBalance(-1.5, 'de')).toBe('−1,5%');
+  });
 });
 
 describe('balanceBarGeometry', () => {

@@ -20,9 +20,9 @@ export default function LangMenu<Code extends string>({
   /** Where each language's entry points — the same page in that language. */
   hrefFor: (lang: Code) => string;
   /** Short code + full name shown for a given language — kept as a prop rather than an
-   *  internal lookup so this component doesn't have to know which language list it's
-   *  serving: the calculator's full set (via `i18n/strings.ts`'s `t()`) for the landing
-   *  pages, or the FAQ's own, wider set for FAQ pages (see `FaqLayout.tsx`). */
+   *  internal lookup so this component doesn't have to know the label text itself: landing
+   *  pages resolve it via `i18n/strings.ts`'s `t()`, FAQ pages via their own local map in
+   *  `FaqLayout.tsx` (its chrome copy, not the calculator's `StringTable`). */
   labelFor: (lang: Code) => { short: string; name: string };
 }) {
   const c = labelFor(current);

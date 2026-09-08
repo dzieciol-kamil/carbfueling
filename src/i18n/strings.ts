@@ -1,7 +1,7 @@
 // Alphabetical by code, and kept that way as languages are added: this array's order is the
 // order every language list renders in — the calculator's dropdown (Header.tsx), the mobile
 // profile, and the static pages' switch (src/static/LangMenu.tsx).
-export const LANGS = ['en', 'pl'] as const;
+export const LANGS = ['de', 'en', 'pl'] as const;
 export type Lang = (typeof LANGS)[number];
 
 export interface StringTable {
@@ -1143,6 +1143,411 @@ export const STR: Record<Lang, StringTable> = {
     waterBalanceAria: 'What the fluid balance means',
     waterBalanceLabel: 'Fluid balance as % of body mass',
   },
+  de: {
+    tagline: 'Kohlenhydrat- und Flüssigkeitsplaner',
+    desktop: 'Desktop',
+    mobile: 'Telefon',
+    routeCycling: 'Radstrecke',
+    routeRunning: 'Laufstrecke',
+    byRoute: 'Distanz + Tempo',
+    byTime: 'Zeit',
+    distance: 'Distanz',
+    speed: 'Ø Geschwindigkeit',
+    sportCycling: 'Rad',
+    sportRunning: 'Lauf',
+    pace: 'Tempo (min/km)',
+    hours: 'Stunden',
+    minutes: 'Minuten',
+    duration: 'Dauer',
+    weight: 'Gewicht',
+    preMealCarbs: 'Kohlenhydrate vor dem Start',
+    preMealMinutes: 'Zeit vor dem Start',
+    intensity: 'Intensität',
+    intensityHint:
+      'Niedrig = du kannst dich entspannt in ganzen Sätzen unterhalten. Mittel = du redest noch, aber in kurzen Sätzen. Hoch = du kannst kaum sprechen, konzentriert auf die Atmung. Davon hängt ab, wie viele Kohlenhydrate pro Stunde die App einplant — und bei Hoch sinkt zusätzlich, wie viel dein Darm tatsächlich aufnehmen kann.',
+    intensityInfoBtnLabel: 'Intensität erklären',
+    low: 'Niedrig',
+    medium: 'Mittel',
+    high: 'Hoch',
+    temp: 'Temperatur',
+    carbsPerHour: 'Bedarf',
+    gear: 'Meine Ausrüstung',
+    settings: 'Einstellungen',
+    profile: 'Profil',
+    addGear: 'Flasche hinzufügen',
+    savedLocally: 'Lokal gespeichert',
+    canCarry: 'Kann enthalten:',
+    gelPartsLabel: 'Portionen',
+    gearHint:
+      'Name, Fassungsvermögen und Inhalt dieser Flasche. Gel wird in so viele Portionen aufgeteilt, wie du hier festlegst.',
+    settingsHint:
+      'Alles wird in diesem Browser gespeichert (localStorage) — kein Konto, kein Backend.',
+    curve: 'Planung',
+    gutHint:
+      'Das ist dein Magen: Der obere Streifen zeigt, was gerade drin liegt und wie schnell es verdaut wird, bis zur Kapazitätsgrenze.',
+    curveHint:
+      'Die dicke durchgezogene Linie zeigt, wie schnell du tatsächlich Kohlenhydrate aufnimmst — rostrote Flächen sind Stunden, in denen du weniger aufnimmst, als du brauchst.',
+    absorbed: 'Aufgenommen',
+    gutLane: 'Im Magen',
+    need: 'Bedarf',
+    timeline: 'Zeitplan',
+    axisTime: 'Stunden',
+    gutOver: 'Zu viel auf einmal — ',
+    gutAt: ' g liegen im Magen gegen ',
+    dry: 'Versorgungslücke: ',
+    dryAt: ' ohne Kohlenhydrate, gegen ',
+    carbMode: 'Kohlenhydrate (g/h)',
+    fluidMode: 'Flüssigkeit (ml/h)',
+    tDry: 'Längste Lücke',
+    legFluid: 'Flüssigkeit',
+    legSweat: 'Schweiß',
+    legCap: 'Aufnahmeobergrenze',
+    capNote: 'Aufnahmeobergrenze: ',
+    capNote2:
+      ' — so viel nimmt dein Darm maximal pro Stunde auf, egal wie viel du isst; der Überschuss verschwindet nicht, sondern wartet im Magen. Sie steigt, wenn du Glukose und Fruktose mischst, da sie über getrennte Wege aufgenommen werden (Glukose ca. 60 g/h, Fruktose legt ca. 30 g/h obendrauf) — deshalb wird sie aus deinem Verhältnis Maltodextrin:Fruktose berechnet (Jeukendrup, Übersichtsarbeiten 2010–2014).',
+    capNoteFluid:
+      'Aufnahmeobergrenze: ca. 900 ml/h — so schnell gibt der Magen unter Belastung im Schnitt Flüssigkeit an den Darm weiter (gestrichelte Linie); real schwankt das je nach Intensität und Darmtraining um einige hundert ml. Oberhalb dieses Tempos wird die Linie zunehmend gelb, dann orange und rot — ein Signal für steigendes Risiko, kein harter Grenzwert. In die Flüssigkeitssumme zählt trotzdem nur, was der Magen bis zum Ende der Strecke tatsächlich weitergeben konnte.',
+    tAbsorbed: 'Aufgenommen',
+    tCap: 'Aufnahmeobergrenze',
+    tGutPeak: 'Max. im Magen',
+    timelineHint:
+      'Nur zur Ansicht — Position, Bereich und Inhalt jeder Nachfüllung stellst du oben im Diagramm ein.',
+    dragHint:
+      'Balken überlappen nie — ein gezogener Balken verkürzt sich, wenn die Lücke eng wird. Gel-Portionsmarken lassen sich einzeln verschieben.',
+    addFuel: 'Essen hinzufügen:',
+    removeItem: 'Entfernen',
+    addShopStop: 'Stopp hinzufügen',
+    addFillTo: 'Füllung hinzufügen zu ',
+    emptyLaneHint: 'Klick auf +, um eine Füllung hinzuzufügen',
+    coverage: 'Bedarfsdeckung',
+    summary: 'Zusammenfassung',
+    hydration: 'Flüssigkeitszufuhr',
+    sweatLoss: 'Verlust',
+    planned: 'Geplant',
+    needSum: 'Bedarf',
+    recipes: 'Flaschenrezepte',
+    recipesHint: 'Gramm zum Abmessen für jede Füllung — pro Flasche, Flask oder Glas.',
+    ratio: 'Maltodextrin : Fruktose',
+    mixRatioHint:
+      'Maltodextrin und Fruktose werden über zwei getrennte Wege im Darm aufgenommen — kombiniert nimmt dein Körper dadurch mehr Kohlenhydrate pro Stunde auf als mit Maltodextrin allein. Das Standardverhältnis ist 2:1, aber normaler Zucker (natürlich etwa 1:1 Glukose zu Fruktose) oder Honig (etwa 0,8:1) erzielen einen ähnlichen Effekt — sie sind fertige, natürliche Entsprechungen derselben Mischung. Bei einem gut trainierten Darm funktioniert auch ein Verhältnis von 1,2:1 gut.',
+    mixSugarBlendHeader: 'Zuckermischung — Verhältnis Maltodextrin zu Fruktose',
+    mixSugarAmountIzo: 'Wie viel Zucker (insgesamt) im Getränk sein soll',
+    mixSugarAmountGel: 'Wie viel Zucker (insgesamt) im Gel sein soll',
+    mixSaltAmount: 'Mineralsalz-Ausgleich: Salz',
+    ratioLabelSugar: 'Zucker',
+    ratioLabelHoney: 'Honig',
+    concLabel: 'Kohlenhydrate',
+    saltLabel: 'Salz',
+    citricLabel: 'Zitronensäure',
+    citricSourceLabel: 'Säure',
+    mixFlavorHeader: 'Geschmackszusatz zur Reduzierung der Süße',
+    mixCitricHint:
+      'Zitronensäure ist reine Geschmackssache — sie beeinflusst nicht die Aufnahmegeschwindigkeit der Kohlenhydrate.',
+    citricSourceCitric: 'Zitronensäure',
+    citricSourceLemon: 'Zitrone',
+    citricSourceLime: 'Limette',
+    citricSourceLemonJuice: 'Zitronensaft',
+    citricSourceLimeJuice: 'Limettensaft',
+    citricFieldLemon: 'Frische Zitrone',
+    citricFieldLime: 'Frische Limette',
+    citricFieldLemonJuice: 'Zitronensaft (Flasche)',
+    citricFieldLimeJuice: 'Limettensaft (Flasche)',
+    gelConcLabel: 'Kohlenhydrate',
+    per100: 'g/100 ml',
+    per100Ml: 'ml/100 ml',
+    per100Fruit: '%/100 ml',
+    mixIzo: 'Getränk',
+    mixGel: 'Gel',
+    target: 'Ziel',
+    mobileNotesTitle: 'Mobile Regeln',
+    tCarbs: 'Kohlenhydrate gesamt',
+    tTarget: 'Ziel',
+    tGap: 'Differenz',
+    tKcal: 'Energie',
+    tDrink: 'Aus Getränken',
+    tSolid: 'Aus Nahrung',
+    tRefills: 'Nachfüllungen',
+    tPortions: 'Gel-Portionen',
+    tabPlan: 'Plan',
+    tabGear: 'Ausrüstung',
+    tabFood: 'Produkte',
+    tabMe: 'Ich',
+    ok: 'Die Zufuhr folgt dem Bedarf gleichmäßig. Größter Einbruch: ',
+    low2: 'Zu wenig Kohlenhydrate — füge im zweiten Streckenteil ein Element hinzu.',
+    over: 'Über dem Bedarf — Risiko für Magenprobleme.',
+    dip: ' g unter der Kurve bei ca. ',
+    hydOk: 'Die Flüssigkeitszufuhr deckt den Verlust. Gleichmäßig trinken.',
+    hydLow: 'Plane eine Nachfüllung oder eine zusätzliche Flasche.',
+    gpx: 'GPX-Profil',
+    gpxFile: 'track.gpx (demo)',
+    gpxOn: 'An',
+    gpxPick: 'Laden',
+    gpxBad: 'Die GPX-Datei konnte nicht gelesen werden.',
+    shot: 'Shot',
+    sipped: 'schluckweise',
+    water: 'Wasser',
+    izo: 'Izo',
+    gel: 'Gel',
+    fill: 'Füllung',
+    refills: 'Nachfüllungen',
+    addFill: '+ auffüllen, wenn leer',
+    noRoom: 'keine freie Lücke',
+    foodLane: 'Nahrung / Extras',
+    foodLaneSub: 'können sich überschneiden',
+    addFoodHint: 'aus der Liste unter dem Diagramm wählen',
+    portions: 'Portionen',
+    malto: 'Maltodextrin',
+    fructose: 'Fruktose',
+    salt: 'Salz',
+    citric: 'Zitronensäure',
+    waterFill: 'Wasser',
+    carbsIn: 'Kohlenhydrate',
+    perPortion: 'Pro Portion',
+    refillAt: 'Nachfüllung bei ',
+    langName: 'Deutsch',
+    langShort: 'DE',
+    itemsSuffix: 'Elemente',
+    newVessel: 'Neue Flasche',
+    viewLabel: 'Anzeigemodus',
+    viewAuto: 'Auto',
+    autoDetected: 'automatisch erkannt: ',
+    viewModeConfirmTitle: 'Diese Ansicht erzwingen?',
+    viewModeConfirmBody:
+      'Das Layout passt sich nicht mehr automatisch an dein Gerät an. Du kannst das jederzeit an derselben Stelle wieder ändern.',
+    viewModeConfirmCancel: 'Abbrechen',
+    viewModeConfirmConfirm: 'Erzwingen',
+    mixSection: 'Getränkemischung',
+    editInSettings: 'Mischungseinstellungen',
+    ratioCustom: 'benutzerdefiniert',
+    resetDefaults: 'Auf Standard zurücksetzen',
+    foodSection: 'Nahrung & Extras',
+    addFoodItem: 'Produkt hinzufügen',
+    newFood: 'Neues Produkt',
+    fName: 'Produkt',
+    fCarbs: 'Kohlenhydrate (g)',
+    fMl: 'Flüssigkeit (ml)',
+    fCont: 'verteilt',
+    fContHeader: 'Freisetzung',
+    foodSectionHint:
+      'Deine Produktliste — diese Buttons erscheinen unter dem Diagramm. Gib nur die Kohlenhydrate pro Portion an (nicht das Gewicht des Riegels) und eventuelle Flüssigkeit.',
+    foodContHint:
+      'Wenn du „verteilt“ aktivierst, erscheint das Produkt langsam im Diagramm, verteilt über mehrere Kilometer — eine Banane isst du sofort, Gummibärchen knabberst du dagegen unterwegs.',
+    mixHintPre: 'Hier legst du fest, woraus dein Getränk und Gel bestehen — ',
+    mixHintLink1: 'Zuckerverhältnis',
+    mixHintMid1: ' (auch normaler ',
+    mixHintLink2: 'Zucker oder Honig',
+    mixHintMid2: ' funktioniert), ',
+    mixHintLink3: 'Salz',
+    mixHintMid3: ' und ein ',
+    mixHintLink4: 'Geschmackszusatz',
+    mixHintPost:
+      '. Die Werte gibst du pro 100 ml an, daraus werden die Gramm für jede Füllung im Plan berechnet.',
+    notes: [
+      {
+        title: 'Eine Spur pro Flasche',
+        body: 'Große Flasche, kleine Flasche, Flask — jede hat ihre eigene Spur, Gel kann also nicht in der Izo-Flasche landen.',
+      },
+      {
+        title: 'Nachfüllen, sobald leer',
+        body: 'Füllungen überlappen sich nie: Ein Balken endet an seinem Nachbarn, und + fügt eine Nachfüllung in eine freie Lücke ein.',
+      },
+      {
+        title: 'Essen getrennt',
+        body: 'Banane und Gummibärchen dürfen sich überlappen, ein alkoholfreies Bier nimmst du einmalig an der Station — deshalb haben sie ihre eigene Spur.',
+      },
+      {
+        title: 'Rezept pro Flasche',
+        body: 'Die Karte „Flaschenrezepte“ berechnet Gramm für Maltodextrin, Fruktose, Salz und Säure für jede einzelne Füllung.',
+      },
+    ],
+    ftAboutBody:
+      'Carb Fueling berechnet, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf die Strecke mitnimmst — aus Distanz, Tempo, Gewicht, Intensität und Temperatur — und verteilt sie dann zeitlich auf Flaschen, Flasks und Essen. Dein Plan, deine Ausrüstung und deine Produktliste bleiben in diesem Browser gespeichert.',
+    ftSources2: 'Schweißverlust: eine Schätzung aus Gewicht, Intensität und Temperatur.',
+    ftPrivacy:
+      'Kein Konto, kein Server, keine Cookies. Anonyme, cookiefreie Besucherzählung (GoatCounter) — kein seitenübergreifendes Tracking.',
+    ftLegal: 'Haftungsausschluss',
+    ftLegalBody:
+      'Dies ist ein Hilfsmittel für Aufklärung und Planung — keine medizinische, ernährungswissenschaftliche oder trainingsbezogene Beratung und kein Ersatz für eine Fachperson. Alle Werte sind Schätzungen auf Basis gemittelter Modelle; dein tatsächlicher Bedarf, deine Magen-Darm-Toleranz, dein Hydratationsstatus und deine Reaktion auf Belastung können davon erheblich abweichen. Du nutzt die App in eigener Verantwortung und ausschließlich auf eigenes Risiko. Der Autor übernimmt keine Haftung für gesundheitliche Folgen, Verletzungen, Schäden, Verluste oder Entscheidungen, die auf Grundlage dieser Ergebnisse getroffen werden — insbesondere übernimmt er keine Verantwortung für deine Gesundheit oder dein Leben. Wenn du eine Erkrankung hast (u. a. Diabetes, Nieren-, Herz- oder Magen-Darm-Erkrankungen), Medikamente einnimmst, schwanger bist oder dich auf einen langen oder sehr intensiven Wettkampf vorbereitest, besprich deinen Ernährungsplan mit ärztlichem Fachpersonal oder einer Sporternährungsberatung. Ignoriere keine Symptome: Bei Schwindel, Übelkeit, Verwirrtheit, Krämpfen oder Verdacht auf Hyponatriämie brich die Belastung ab und hol dir Hilfe. Die App wird „wie besehen“ bereitgestellt, ohne jegliche Gewährleistung.',
+    ftLinks: 'Mitwirken',
+    ftFaq: 'FAQ',
+    ftIssues: 'Ideen & Fehler → GitHub Issues',
+    ftRepo: 'Quellcode auf GitHub',
+    ftSupport: 'Spendier mir einen Kaffee',
+    ftSponsor: 'Unterstützen',
+    ftContact: 'Kontakt aufnehmen',
+    ftCopyright: '© 2026 Carb Fueling · Open Source',
+    tourWelcomeTitle: 'Willkommen bei Carb Fueling',
+    tourWelcomeBody:
+      'In ein paar Schritten zeigen wir dir, wie du Kohlenhydrate und Flüssigkeit für deine Strecke planst und wie du das Ergebnis liest. Dauert etwa eine Minute.',
+    tourRouteTitle: 'Strecke & Ergebnis',
+    tourRouteBody:
+      'Hier beschreibst du deine Fahrt — Distanz und Tempo oder eine Dauer — sowie die Bedingungen (Intensität, Temperatur, Mahlzeit vor dem Start). Die Karten daneben zeigen, ob dein Plan deinen Kohlenhydrat- und Flüssigkeitsbedarf deckt. Du kannst auch eine eigene GPX-Datei laden — dann passen sich Tempo und Bedarf an das echte Profil deiner Strecke an (Anstiege und Abfahrten) statt an einen Durchschnittswert.',
+    tourRouteBodyMobile:
+      'Die Strecke bearbeitest du über den Button oben am Bildschirm — Distanz und Tempo oder eine Dauer, plus Bedingungen (Intensität, Temperatur, Mahlzeit vor dem Start) und das Laden einer GPX-Datei. Diese Karten zeigen, ob dein Plan deinen Kohlenhydrat- und Flüssigkeitsbedarf deckt.',
+    tourChartTitle: 'Das Diagramm: Zufuhr gegen Bedarf',
+    tourChartBody:
+      'Die Zahlen links sind die Skala: Gramm Kohlenhydrate pro Stunde (g/h). Die durchgezogene Linie zeigt, wie viel du tatsächlich lieferst, die gestrichelte, wie viel du brauchst. Die gepunktete waagerechte Linie ist das Aufnahmelimit: So viel nimmt dein Darm pro Stunde maximal auf, egal wie viel du isst — der Rest wartet im Magen. Der Balken über dem Diagramm ist genau dieser Magen: Er zeigt, was gerade verdaut wird. Wir haben eine Beispielflasche hinzugefügt, damit du siehst, wie das in der Praxis aussieht.',
+    tourChartBodyMobile:
+      'Die durchgezogene Linie zeigt, wie viele Kohlenhydrate pro Stunde du tatsächlich lieferst, die gestrichelte, wie viel du brauchst. Die gepunktete waagerechte Linie ist das Aufnahmelimit: So viel nimmt dein Darm pro Stunde maximal auf, egal wie viel du isst — der Rest wartet im Magen. Der obere Teil des Diagramms ist genau dieser Magen: Er zeigt, was gerade verdaut wird. Fahre mit dem Finger über das Diagramm, um genaue Werte an jeder Stelle der Strecke abzulesen. Wir haben eine Beispielflasche hinzugefügt, damit du siehst, wie das in der Praxis aussieht.',
+    tourFillTitle: 'Eine Flasche: verschieben, anpassen, Inhalt ändern',
+    tourFillBody:
+      'Dieser Balken ist die Flasche, die wir gerade hinzugefügt haben. Du kannst die Mitte greifen und entlang der Strecke verschieben, oder den linken oder rechten Rand, um den Abschnitt, auf dem du daraus trinkst, zu verkürzen oder zu verlängern. Beim Darüberfahren mit der Maus erscheinen Buttons zum Wechseln des Inhalts (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt. Probier das nach dem Schließen der Tour aus.',
+    tourFillBodyMobile:
+      'Das ist die Flasche, die wir gerade hinzugefügt haben. Tippe darauf, um die Bearbeitung zu öffnen — mit den Buttons „von“ und „bis“ verschiebst du sie entlang der Strecke oder änderst die Länge des Abschnitts, und die Buttons daneben wechseln den Inhalt (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt.',
+    tourAddFillTitle: 'Weitere Füllung hinzufügen',
+    tourAddFillBody:
+      'Dieser „+“-Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons unter dem Diagramm fügen mit einem Klick eine weitere Position hinzu.',
+    tourAddFillBodyMobile:
+      'Dieser Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons weiter unten fügen mit einem Tipp eine weitere Position hinzu.',
+    tourAddShopTitle: 'Versorgungspunkte',
+    tourAddShopBody:
+      'Dieser „+“ fügt im Diagramm eine Markierung für einen Versorgungspunkt hinzu (z. B. einen Laden) — du kannst sie an eine beliebige Stelle der Strecke ziehen, um zu markieren, bei welchem Kilometer du zusätzliches Essen oder Trinken einplanst.',
+    tourAddShopBodyMobile:
+      'Dieser Button öffnet ein kleines Formular für einen Versorgungspunkt — du gibst den Kilometer und einen Namen ein (z. B. einen Laden), um zu markieren, wo du zusätzliches Essen oder Trinken einplanst.',
+    tourClosingTitle: 'Das ist erstmal alles',
+    tourClosingBody:
+      'Rezepte zum Nachfüllen deiner Flaschen und Füllungen findest du unter dem Diagramm. Ausrüstung, Mischung, Produkte und Einstellungen (Gewicht, Anzeigemodus) findest du im Header. Diese Tour kannst du jederzeit über den Button in der Fußzeile erneut starten. Willst du mehr wissen? Die FAQ findest du auch dort.',
+    tourClosingBodyMobile:
+      'Rezepte zum Nachfüllen von Flaschen findest du hinter dem Button „Flaschenrezepte“ in der Planliste. Einstellungen und Sprache änderst du im Tab „Ich“, Mischungsverhältnisse und verfügbare Flaschen in den Tabs „Mischung“ und „Ausrüstung“. Diese Tour kannst du jederzeit über den Button im Tab „Ich“ erneut starten. Willst du mehr wissen? Die FAQ findest du auch im Tab „Ich“.',
+    tourNext: 'Weiter',
+    tourBack: 'Zurück',
+    tourSkip: 'Überspringen',
+    tourFinish: 'Fertig',
+    tourStepLabel: 'Schritt',
+    tourReplayButton: 'Tour erneut zeigen',
+    tourConfirmTitle: 'Tour erneut starten?',
+    tourConfirmBody:
+      'Die Tour lädt Beispieldaten (eine Strecke und eine Flasche) anstelle deines aktuellen Plans. Das kann nicht rückgängig gemacht werden.',
+    tourConfirmCancel: 'Abbrechen',
+    tourConfirmStart: 'Tour starten',
+    tabMix: 'Mix',
+    editRoutePrefix: 'Strecke bearbeiten:',
+    narrationRate:
+      'Wie viele Kohlenhydrate du pro Stunde tatsächlich aufnimmst (Linie) im Vergleich zum Bedarf (gestrichelt). Gepunktet ist die Aufnahmeobergrenze.',
+    narrationFluid:
+      'Wie viel Flüssigkeit du pro Stunde trinkst (Linie) im Vergleich zum Schweißverlust (gestrichelt).',
+    narrationProfile: 'Streckenprofil — Höhe über dem Meeresspiegel. Anstiege erhöhen den Bedarf.',
+    scrubHint: 'Ziehen zum Ablesen',
+    legendGpx: 'Ziel',
+    chartHelpBtnLabel: 'Diagramm erklären',
+    chartHelpTitle: 'So liest du dieses Diagramm',
+    chartHelpFullTour: 'Zeig mir die ganze Tour',
+    chartHelpScrubNote:
+      'Ziehe mit dem Finger über das Diagramm, um genaue Werte an jedem Punkt der Strecke zu sehen.',
+    chartHelpAxisNote: 'Genaue Werte zeigen die Zahlen an der linken und unteren Achse.',
+    chartHelpAbsorbedBody:
+      'Das erhöht langsam die Menge an Kohlenhydraten, die deinem Körper zur Verfügung steht. Beim Planen der Strecke versuchst du, diese Linie so nah wie möglich am Bedarf zu halten. Die Farbe der Linie ändert sich je nachdem, was du gegessen hast.',
+    chartHelpNeedBody:
+      'So viele Kohlenhydrate verlangt die Strecke in dieser Stunde von dir — während der Belastung solltest du genau diese Menge aufnehmen.',
+    chartHelpCapBody:
+      'Das Maximum, das dein Darm pro Stunde aufnehmen kann, egal wie viel du isst oder trinkst.',
+    chartHelpGutBody:
+      'Was du isst oder trinkst, gelangt in deinen Magen und wird dort langsam verdaut.',
+    chartHelpDeficitLabel: 'Defizit',
+    chartHelpDeficitBody: 'Hier nimmst du weniger auf, als du brauchst — Risiko eines Einbruchs.',
+    chartHelpFluidAbsorbedBody: 'Wie viel du in dieser Stunde tatsächlich trinkst.',
+    chartHelpFluidCapBody:
+      'Ungefähr, wie schnell der Magen Flüssigkeit an den Darm weitergibt. Darüber wechselt die Linie von Gelb über Orange zu Rot — steigendes Risiko eines Rückstaus, keine harte Grenze.',
+    chartHelpSweatBody: 'Wie viel du über Schweiß verlierst — dein Flüssigkeitsbedarf.',
+    foodSection2: 'Essen',
+    gearHintMobile:
+      'Was an deinem Rad montiert ist. Volumen und erlaubter Inhalt bestimmen, wie viele Kohlenhydrate in eine Füllung passen.',
+    mixHintMobile:
+      'Zusammensetzung von Izo und Gel. Änderungen berechnen die Gramm pro Füllung und die Aufnahmeobergrenze neu.',
+    absCapNoteMobile:
+      'Bei diesem Verhältnis liegt die Grenze bei {cap} g/h — die gepunktete Linie im Diagramm.',
+    gelPartsStepper: 'Gel-Portionen pro Füllung',
+    foodStepwise: 'über Zeit',
+    foodAddProduct: '+ Produkt hinzufügen',
+    meWeight: 'Gewicht',
+    meApp: 'App',
+    meLanguage: 'Sprache',
+    meView: 'Anzeigemodus',
+    mixSheetTitle: 'Flaschenrezepte',
+    mixSheetSubtitle: 'Gramm zum Abmessen für jede Füllung',
+    mixSheetEmpty: 'Keine Füllungen · —',
+    mixRowSugar: 'Kohlenhydrate',
+    mixRowMalto: 'Maltodextrin',
+    mixRowFructose: 'Fruktose',
+    mixRowSalt: 'Salz',
+    mixRowCitric: 'Zitronensäure',
+    mixRowWater: 'Wasser',
+    routeSheetTitleCycling: 'RADSTRECKE & BEDINGUNGEN',
+    routeSheetTitleRunning: 'LAUFSTRECKE & BEDINGUNGEN',
+    routeSheetPreStart: 'VOR DEM START',
+    routeSheetIntensity: 'Intensität',
+    routeSheetTemp: 'Temperatur',
+    routeSheetGpxSection: 'GPX-PROFIL',
+    routeSheetGpxNote:
+      'Ein aktiviertes Profil verändert den Bedarf an Anstiegen. Das Augensymbol über dem Diagramm zeigt das Profil selbst.',
+    routeSheetLoadFile: 'Datei laden',
+    routeSheetDone: 'Fertig',
+    shopSheetTitle: 'ORIENTIERUNGSPUNKT',
+    shopSheetKm: 'Kilometer',
+    shopSheetName: 'Name',
+    shopSheetAdd: 'Hinzufügen',
+    shopDefaultName: 'Laden',
+    combineFillCheckbox: 'Zusammen vorbereiten',
+    combineSectionTitle: 'Gemeinsame Portion',
+    combineSectionHint:
+      'Wähle die Füllungen aus, die du zusammen vorbereitest (beliebige Flasche, beliebiger Zeitpunkt), um eine gemeinsame Portion statt einzelner Rezepte zu sehen.',
+    combineBottles: 'Flaschen',
+    combineNote: 'In der gemeinsamen Portion oben enthalten.',
+    combineMixedLabel: 'Izo + Gel',
+    combinePourLabel: 'Wie viel kommt in welche Flasche',
+    combineCrossTypeConfirmTitle: 'Izo und Gel zu einer Portion zusammenfassen?',
+    combineCrossTypeConfirmBody:
+      'Diese gemeinsame Portion übernimmt das Malto:Fruktose-Verhältnis, das Salz und den Zitronensäure-Anteil (Menge und Quelle) aus deinen Izo-Einstellungen. Die eigenen Gel-Werte bleiben gespeichert, gelten aber nicht, solange kombiniert ist — bearbeite sie stattdessen unter Izo. Die Gel-Konzentration (g/100 ml) wird weiterhin separat eingestellt.',
+    combineCrossTypeConfirmCancel: 'Abbrechen',
+    gelLockedNote:
+      'Du hast eine gemeinsame Portion — Verhältnis, Salz und Zitronensäure des Gels werden von Izo übernommen, bearbeite sie dort.',
+    unlockGelButton: 'Entsperren',
+    combineCrossTypeConfirmConfirm: 'Zusammenfassen',
+    bidonComposition: 'FLASCHENREZEPTE',
+    perFillGrams: 'Gramm pro Füllung ›',
+    addLandmark: 'Orientierungspunkt hinzufügen',
+    noGap: 'keine freie Lücke',
+    noRoomHint: 'Kein Platz',
+    rateInSegmentSuffix: ' g/h in diesem Abschnitt',
+    eatenOnceLabel: 'einmalig gegessen',
+    carbCardTitle: 'Kohlenhydrate',
+    inPlanSuffix: '× im Plan',
+    planDataSection: 'Plandaten',
+    planDataHint:
+      'Speichere deinen gesamten Plan (Strecke, Ausrüstung, Mix, Produkte, Läden) in einer Datei oder lade eine Sicherung auf einem anderen Gerät.',
+    exportPlanButton: 'Plan herunterladen',
+    importPlanButton: 'Plan laden',
+    importPlanConfirmTitle: 'Aktuellen Plan ersetzen?',
+    importPlanConfirmBody:
+      'Der Import überschreibt deine aktuelle Strecke, Ausrüstung, Mix, Produkte und Läden mit den Daten aus der Datei. Das kann nicht rückgängig gemacht werden.',
+    importPlanConfirmCancel: 'Abbrechen',
+    importPlanConfirmConfirm: 'Importieren',
+    importPlanError:
+      'Datei konnte nicht gelesen werden — prüfe, ob es sich um einen gültigen Carb-Fueling-Planexport handelt.',
+    importPlanSuccess: 'Plan importiert.',
+    exportPlanError: 'Datei konnte nicht gespeichert werden. Bitte versuche es erneut.',
+    clearPlanButton: 'Neu starten',
+    printPlanButton: 'Drucken',
+    printStripBottles: 'Flaschen',
+    printStripFood: 'Essen',
+    printStripStops: 'Stopps',
+    printCutHint: 'Ausschneiden und ans Oberrohr kleben',
+    clearPlanConfirmTitle: 'Neu starten?',
+    clearPlanConfirmBody:
+      'Das entfernt Füllungen, Essen und Stopps von deiner Strecke. Strecke, Ausrüstung und Mix bleiben unverändert. Das kann nicht rückgängig gemacht werden.',
+    clearPlanConfirmCancel: 'Abbrechen',
+    clearPlanConfirmConfirm: 'Neu starten',
+    recoveryLabel: 'Regeneration',
+    recoveryHint:
+      'Die Menge an Kohlenhydraten, die du nach der Fahrt essen solltest, um die Glykogenspeicher der Muskeln aufzufüllen.',
+    carbRateHint:
+      'Die Farbe des Balkens zeigt deine tatsächliche Zufuhrrate (g/h) im Vergleich zu dem, was diese Strecke wirklich braucht — nicht den Prozentsatz darüber. Er wird grün, sobald du lieferst, was die Strecke braucht; liegt der Bedarf über etwa 40 g/h, reicht es, 40 g/h zu erreichen, da mehr Kohlenhydrate darüber hinaus kaum noch helfen. Unter 1h Fahr- oder Laufzeit wird der Balken grau, weil Kohlenhydrate über so kurze Zeit ohnehin kaum eine Rolle spielen. Dunkelrot bedeutet, dass die geplante Rate über dem liegt, was dein Darm tatsächlich aufnehmen kann — der Überschuss bleibt im Magen und zieht Wasser, was bei Überessen zu Übelkeit oder Blähungen führt.',
+    waterBalanceHint:
+      'Ein Minus ist ein Defizit gegenüber deinem Schweißverlust, ein Plus bedeutet, dass du mehr trinkst, als du verlierst. Das tolerierbare Defizit sinkt mit steigender Temperatur; ein Überschuss birgt das Risiko einer Hyponatriämie.',
+    waterBalanceHintLink: 'So liest du das →',
+    waterBalanceAria: 'Was die Flüssigkeitsbilanz bedeutet',
+    waterBalanceLabel: 'Flüssigkeitsbilanz in % der Körpermasse',
+  },
 };
 
 export function t(lang: Lang): StringTable {
@@ -1153,8 +1558,8 @@ type FruitSpecies = 'lemon' | 'lime';
 
 // Word forms for "N lemons/limes" next to a fraction like "3/4 cytryny". Polish noun counting
 // has three buckets (1 / 2-4 / 5+, plus fractions taking the genitive-singular "few" form);
-// English just needs singular vs. plural. This is a personal project, not a grammar textbook —
-// close enough for a recipe card, not aiming to nail every edge case (e.g. "1 1/2").
+// English and German just need singular vs. plural. This is a personal project, not a grammar
+// textbook — close enough for a recipe card, not aiming to nail every edge case (e.g. "1 1/2").
 const FRUIT_NOUNS: Record<
   Lang,
   Record<FruitSpecies, { one: string; few: string; many: string }>
@@ -1167,14 +1572,25 @@ const FRUIT_NOUNS: Record<
     lemon: { one: 'lemon', few: 'lemons', many: 'lemons' },
     lime: { one: 'lime', few: 'limes', many: 'limes' },
   },
+  de: {
+    lemon: { one: 'Zitrone', few: 'Zitronen', many: 'Zitronen' },
+    lime: { one: 'Limette', few: 'Limetten', many: 'Limetten' },
+  },
 };
 
-/** Declines the fruit noun for a whole-fruit citric amount, e.g. pl: 3/4 → "cytryny", 1 → "cytryna". */
+/** Declines the fruit noun for a whole-fruit citric amount, e.g. pl: 3/4 → "cytryny", 1 → "cytryna".
+ *  Grouped by declension family, not by language, so a new language joins whichever `case` matches
+ *  its grammar (two-bucket like en/de, or Polish's three-bucket system) instead of a new branch. */
 export function fruitNoun(species: FruitSpecies, amount: number, lang: Lang): string {
   const forms = FRUIT_NOUNS[lang][species];
-  if (lang === 'en') return amount <= 1 ? forms.one : forms.few;
-  if (amount === 1) return forms.one;
-  if (!Number.isInteger(amount)) return forms.few;
-  if (amount >= 2 && amount <= 4) return forms.few;
-  return forms.many;
+  switch (lang) {
+    case 'en':
+    case 'de':
+      return amount <= 1 ? forms.one : forms.few;
+    default:
+      if (amount === 1) return forms.one;
+      if (!Number.isInteger(amount)) return forms.few;
+      if (amount >= 2 && amount <= 4) return forms.few;
+      return forms.many;
+  }
 }
