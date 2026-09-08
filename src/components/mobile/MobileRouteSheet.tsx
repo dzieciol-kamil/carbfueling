@@ -312,7 +312,7 @@ export function MobileRouteSheet() {
               onClick={toggleGpx}
               style={{
                 width: 96,
-                border: '1px solid ' + (route.useGpx ? 'var(--border)' : 'var(--chip-border)'),
+                border: '1px solid var(--chip-border)',
                 background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
                 color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
                 borderRadius: 10,
