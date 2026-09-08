@@ -135,6 +135,13 @@ a:hover {
   color: #2f7099;
 }
 
+input,
+textarea,
+select {
+  color: var(--ink);
+  background: transparent;
+}
+
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
