@@ -42,7 +42,7 @@ function lineStyle(
     top: 9,
     width: 1.5,
     height: height - bottomPadding - 9,
-    background: CHART_COLORS.ink,
+    background: 'var(--ink)',
     opacity: on ? 0.9 : 0.55,
     pointerEvents: 'none',
   };
@@ -82,10 +82,10 @@ function nameInputStyle(show: boolean): CSSProperties {
     width: 76,
     boxSizing: 'border-box',
     padding: '3px 5px',
-    border: '1px solid rgba(0,0,0,0.18)',
+    border: '1px solid var(--chip-border)',
     borderRadius: 5,
     background: 'var(--surface)',
-    color: CHART_COLORS.ink,
+    color: 'var(--ink)',
     fontSize: 10,
     fontWeight: 600,
     fontFamily: 'Archivo, sans-serif',
@@ -176,7 +176,7 @@ export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }:
               >
                 <path
                   d="M8 18C8 18 1 10.5 1 7A7 7 0 1 1 15 7C15 10.5 8 18 8 18Z"
-                  fill={CHART_COLORS.ink}
+                  fill="var(--ink)"
                   opacity={on || dragging ? 1 : 0.75}
                 />
               </svg>

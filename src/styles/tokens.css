@@ -45,6 +45,7 @@
 }
 
 :root {
+  color-scheme: light;
   --ink: #16191c;
   --bg: #eff0ec;
   --surface: #ffffff;
@@ -68,8 +69,10 @@
   --border-warm: #e3d3cd;
   --danger: #b3402a;
   --on-brand: #ffffff;
+  --on-brand-muted: rgba(255, 255, 255, 0.62);
   --selected-bg: #16191c;
   --popover-bg: #2b2f2a;
+  --link-hover: #2f7099;
   --status-good-bg: #e7f2e1;
   --status-good-fg: #3d7a26;
   --status-partial-bg: #fbeae1;
@@ -83,6 +86,7 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --ink: #f0ebe0;
   --bg: #1c1a17;
   --surface: #26221d;
@@ -101,7 +105,8 @@
   --border-dashed: #453d31;
   --border-warm: #46392b;
   --danger: #e2926c;
-  /* --on-brand, --selected-bg, --popover-bg intentionally omitted — fixed in both themes */
+  --link-hover: #5aa8d6;
+  /* --on-brand, --on-brand-muted, --selected-bg, --popover-bg intentionally omitted — fixed in both themes */
   --status-good-bg: #1f2a1a;
   --status-good-fg: #7fc468;
   --status-partial-bg: #332218;
@@ -132,7 +137,7 @@ a {
 }
 
 a:hover {
-  color: #2f7099;
+  color: var(--link-hover);
 }
 
 input,

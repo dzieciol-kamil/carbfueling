@@ -21,6 +21,7 @@ const basePopoverStyle: CSSProperties = {
   width: 'max-content',
   background: 'var(--popover-bg)',
   color: 'var(--on-brand)',
+  border: '1px solid var(--border)',
   fontSize: 11,
   fontWeight: 400,
   lineHeight: 1.4,

@@ -385,7 +385,7 @@ export function MobileChart() {
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: 'var(--muted-4)',
+              color: 'var(--on-brand-muted)',
             }}
           >
             {badgeLines[0]}
@@ -399,7 +399,7 @@ export function MobileChart() {
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
-              color: 'var(--muted-4)',
+              color: 'var(--on-brand-muted)',
             }}
           >
             {badgeLines[2]}

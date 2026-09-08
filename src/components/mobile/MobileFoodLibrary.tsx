@@ -151,7 +151,7 @@ export function MobileFoodLibrary() {
                     height: 44,
                     padding: '0 10px',
                     borderRadius: 10,
-                    border: '1px solid ' + (entry.cont ? 'var(--ink)' : 'var(--chip-border)'),
+                    border: '1px solid ' + (entry.cont ? 'var(--border)' : 'var(--chip-border)'),
                     background: entry.cont ? 'var(--selected-bg)' : 'var(--surface)',
                     color: entry.cont ? 'var(--on-brand)' : 'var(--muted-2)',
                     fontSize: 10,

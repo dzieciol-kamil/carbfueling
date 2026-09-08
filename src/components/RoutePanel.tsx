@@ -452,7 +452,7 @@ export function RoutePanel() {
           <button
             onClick={toggleGpx}
             style={{
-              border: '1px solid ' + (route.useGpx ? 'var(--ink)' : 'var(--chip-border)'),
+              border: '1px solid ' + (route.useGpx ? 'var(--border)' : 'var(--chip-border)'),
               background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
               color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
               borderRadius: 8,

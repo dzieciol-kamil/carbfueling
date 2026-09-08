@@ -9,7 +9,7 @@ function contStyle(active: boolean): CSSProperties {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
+    border: '1px solid ' + (active ? 'var(--border)' : 'var(--chip-border)'),
     background: active ? 'var(--selected-bg)' : 'var(--surface)',
     color: active ? 'var(--on-brand)' : 'var(--muted-2)',
     borderRadius: 8,

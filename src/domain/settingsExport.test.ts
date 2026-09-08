@@ -225,4 +225,14 @@ describe('settingsExport', () => {
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
   });
+
+  test('imports an old export with no themeMode field, defaulting to auto', () => {
+    const legacyUi = { ...makeData().ui } as Record<string, unknown>;
+    delete legacyUi.themeMode;
+    const data = makeData({ ui: legacyUi as unknown as SettingsExportData['ui'] });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.ui.themeMode).toBe('auto');
+  });
 });

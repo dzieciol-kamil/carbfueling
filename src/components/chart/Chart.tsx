@@ -467,7 +467,7 @@ export function Chart({ height, showAxis }: ChartProps) {
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: i === 1 ? 15 : 10,
                 fontWeight: i === 1 ? 700 : 400,
-                color: i === 1 ? 'var(--on-brand)' : 'var(--muted-4)',
+                color: i === 1 ? 'var(--on-brand)' : 'var(--on-brand-muted)',
               }}
             >
               {line}

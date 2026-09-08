@@ -270,6 +270,11 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
   if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.yMode === 'sum') {
     parsed.data.ui.yMode = 'rate';
   }
+  // A file exported before `themeMode` was added won't carry it at all — default to "auto"
+  // rather than rejecting an otherwise-valid backup over a field that didn't exist yet.
+  if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.themeMode === undefined) {
+    parsed.data.ui.themeMode = 'auto';
+  }
   if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
   return {
     ok: true,

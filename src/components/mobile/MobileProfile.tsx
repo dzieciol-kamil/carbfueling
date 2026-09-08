@@ -37,6 +37,8 @@ export function MobileProfile() {
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
   const setViewMode = useAppStore((s) => s.setViewMode);
+  const themeMode = useAppStore((s) => s.ui.themeMode);
+  const setThemeMode = useAppStore((s) => s.setThemeMode);
   const mix = useAppStore((s) => s.mix);
   const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
@@ -163,6 +165,25 @@ export function MobileProfile() {
               {autoView === 'desktop' ? strings.desktop : strings.mobile}
             </span>
           )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.themeLabel}</span>
+          <SegmentedControl
+            options={(['auto', 'light', 'dark'] as const).map((v) => ({
+              value: v,
+              label:
+                v === 'auto'
+                  ? strings.themeAuto
+                  : v === 'light'
+                    ? strings.themeLight
+                    : strings.themeDark,
+            }))}
+            value={themeMode}
+            onChange={setThemeMode}
+            minHeight={44}
+            style={{ flex: 1, minWidth: 160 }}
+          />
         </div>
       </div>
 
