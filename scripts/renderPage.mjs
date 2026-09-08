@@ -173,9 +173,23 @@ export function prefixInternalUrls(html, base) {
   return html.split('__BASE__').join(base.replace(/\/$/, ''));
 }
 
+// og:locale wants underscore-joined locale tags, not bare language codes. Plain JS, unlike the
+// TS `Record<FaqLang, ...>` maps this mirrors (CHROME/FAQ_INDEX_META/CALCULATOR_LANG in
+// FaqLayout.tsx) — nothing here enforces this object stays in sync with FAQ_LANGS at compile
+// time, so ogLocale() below fails fast instead of silently emitting content="undefined".
+const OG_LOCALE = { en: 'en_US', pl: 'pl_PL', de: 'de_DE' };
+function ogLocale(lang) {
+  const locale = OG_LOCALE[lang];
+  if (!locale) throw new Error(`renderPage: no OG_LOCALE entry for language "${lang}"`);
+  return locale;
+}
+
 export function renderPage({
   urlPath,
-  altPath,
+  // The *other* language versions of this same page — NOT including the page's own
+  // language — as `{ lang, path }` pairs. One `hreflang` link and one `og:locale:alternate`
+  // tag is rendered per entry, alongside the page's own (`lang`/`urlPath`) entry.
+  alternates,
   lang,
   title,
   description,
@@ -187,9 +201,12 @@ export function renderPage({
   langRedirectTarget,
 }) {
   const canonical = canonicalOverride ?? `${SITE}${urlPath}`;
-  const alternate = `${SITE}${altPath}`;
-  const enHref = lang === 'pl' ? alternate : canonical;
-  const plHref = lang === 'pl' ? canonical : alternate;
+  // Every language version of this page, including its own — this is what hreflang and
+  // og:locale:alternate both need: the full set, not just "the other one".
+  const allVersions = [{ lang, href: canonical }, ...alternates.map((a) => ({ lang: a.lang, href: `${SITE}${a.path}` }))];
+  // x-default has always pointed at the English version (falling back to this page's own
+  // href if it has no English sibling), regardless of which language is being rendered.
+  const defaultHref = (allVersions.find((v) => v.lang === 'en') ?? allVersions[0]).href;
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   // 'article' is correct for FAQ articles' own og:type — but FAQPage (the FAQ index) and
@@ -211,9 +228,8 @@ export function renderPage({
     />
     <link rel="icon" type="image/svg+xml" href="__BASE__/favicon.svg" />
     <link rel="canonical" href="${canonical}" />
-    <link rel="alternate" hreflang="en" href="${enHref}" />
-    <link rel="alternate" hreflang="pl" href="${plHref}" />
-    <link rel="alternate" hreflang="x-default" href="${enHref}" />${robotsTag}
+    ${allVersions.map((v) => `<link rel="alternate" hreflang="${v.lang}" href="${v.href}" />`).join('\n    ')}
+    <link rel="alternate" hreflang="x-default" href="${defaultHref}" />${robotsTag}
     <meta name="theme-color" content="#16191c" />
     <title>${safeTitle}</title>
     <meta name="description" content="${safeDescription}" />
@@ -222,8 +238,8 @@ export function renderPage({
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDescription}" />
     <meta property="og:image" content="${SITE}/og-image.png" />
-    <meta property="og:locale" content="${lang === 'pl' ? 'pl_PL' : 'en_US'}" />
-    <meta property="og:locale:alternate" content="${lang === 'pl' ? 'en_US' : 'pl_PL'}" />
+    <meta property="og:locale" content="${ogLocale(lang)}" />
+    ${alternates.map((a) => `<meta property="og:locale:alternate" content="${ogLocale(a.lang)}" />`).join('\n    ')}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${safeTitle}" />
     <meta name="twitter:description" content="${safeDescription}" />

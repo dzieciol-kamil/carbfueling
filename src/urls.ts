@@ -1,12 +1,18 @@
 export type Lang = 'en' | 'pl';
 
+/** FAQ pages support a wider language set than the calculator/landing (`Lang` above),
+ *  since a FAQ-only language doesn't need the calculator's full string table. Keep the
+ *  two lists in sync with the actual per-language directories under `src/faq/articles/`. */
+export const FAQ_LANGS = ['en', 'pl', 'de'] as const;
+export type FaqLang = (typeof FAQ_LANGS)[number];
+
 const BASE_MARKER = '__BASE__';
 
 /** Root-absolute, `__BASE__`-prefixed. Used only by statically-rendered content
  *  (landing, FAQ) — the marker is substituted for the real base path once, at the
  *  end of `scripts/renderPage.mjs`'s render functions. Never imported by the live
  *  SPA bundle. */
-export function faqHref(lang: Lang, slug?: string): string {
+export function faqHref(lang: FaqLang, slug?: string): string {
   return slug ? `${BASE_MARKER}/${lang}/faq/${slug}/` : `${BASE_MARKER}/${lang}/faq/`;
 }
 
