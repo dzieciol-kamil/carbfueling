@@ -183,12 +183,13 @@ export const ARTICLES: FaqArticleMeta[] = [
     slug: 'diy-flavor-additives',
     datePublished: '2026-08-08',
     en: {
-      title: 'DIY flavor additives: simple ways to make your mix taste better',
+      title:
+        'DIY flavor additives: simple ways to make the contents of your bottle or gel taste better',
       description:
         'Flavor drops, freeze-dried fruit, hibiscus, and other easy ways to fix a boring bottle.',
     },
     pl: {
-      title: 'Domowe dodatki smakowe: proste sposoby na lepszy smak miksu',
+      title: 'Domowe dodatki smakowe: proste sposoby na lepszy smak zawartości bidonu czy żelu',
       description:
         'Aromaty w kroplach, liofilizowane owoce, hibiskus i inne łatwe sposoby na nudny bidon.',
     },

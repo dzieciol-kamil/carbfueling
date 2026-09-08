@@ -38,7 +38,7 @@ export default function WhatTheChartShowsPl() {
         węglowodanów na godzinę. To jest sufit wchłaniania i na wykresie widać go jako poziomą linię
         ograniczenia. Przy dobrej mieszance glukozowo-fruktozowej ten sufit dla większości
         rowerzystów wynosi ok. 90 g na godzinę — zobacz,{' '}
-        <a href={faqHref('pl', 'carb-transporter-mix')}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego ten sufit istnieje i jak mieszanie cukrów go podnosi
         </a>
         . Zjedzenie więcej niż wynosi sufit nic nie daje — nadmiar po prostu dłużej zalega w
@@ -56,8 +56,8 @@ export default function WhatTheChartShowsPl() {
       </p>
       <p style={articleTextStyle}>
         Naprzeciw niej stoi "wchłonięte": ile węglowodanów organizm faktycznie przyjął i może
-        wykorzystać, ograniczone jednocześnie dwiema rzeczami — tym, ile zjadłeś, i sufitem w
-        chłaniania. Nawet dobrze odżywiony rowerzysta nie przesunie linii wchłoniętych ponad sufit.
+        wykorzystać, ograniczone jednocześnie dwiema rzeczami — tym, ile zjadłeś, i sufitem
+        wchłaniania. Nawet dobrze odżywiony rowerzysta nie przesunie linii wchłoniętych ponad sufit.
         Obserwowanie obu tych linii obok siebie, godzina po godzinie, to sedno czytania tego
         wykresu.
       </p>
@@ -70,8 +70,10 @@ export default function WhatTheChartShowsPl() {
         Gdy wchłonięte spadają poniżej zapotrzebowania na jakimś odcinku trasy, ta luka zaznaczana
         jest jako niedobór. Właśnie tu po cichu narasta ryzyko złapania bomby — nie w jednym
         dramatycznym momencie, tylko minuta po minucie, kilometr po kilometrze. Zobacz,{' '}
-        <a href={faqHref('pl', 'bonk-crisis')}>co się dzieje, gdy taka luka trwa zbyt długo</a> —
-        tak mały, zignorowany niedobór zamienia się w realny kryzys na rowerze.
+        <a href={faqHref('pl', 'bonk-crisis')} style={articleLinkStyle}>
+          co się dzieje, gdy taka luka trwa zbyt długo
+        </a>{' '}
+        — tak mały, zignorowany niedobór zamienia się w realny kryzys na rowerze.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/deficit.jpg')}

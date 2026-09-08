@@ -55,7 +55,10 @@ export default function PlanOnYourBikeComputerEn() {
         faster climbing and slower descending. If the hard kilometres come early, "a quarter left"
         lands before the three-quarter mark of the leg. That comes straight off your route's
         elevation profile, the same one that{' '}
-        <a href={faqHref('en', 'what-the-chart-shows')}>drives the demand line on the chart</a>.
+        <a href={faqHref('en', 'what-the-chart-shows')} style={articleLinkStyle}>
+          drives the demand line on the chart
+        </a>
+        .
       </p>
       <p style={articleTextStyle}>
         Levels step in quarters: at thirty kilometres an hour you can't read a bottle any finer than

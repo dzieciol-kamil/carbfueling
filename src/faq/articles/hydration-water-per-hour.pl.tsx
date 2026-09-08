@@ -1,5 +1,11 @@
-import { calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import { calculatorHref, faqHref } from '../../urls';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function HydrationWaterPerHourPl() {
   return (
@@ -62,11 +68,14 @@ export default function HydrationWaterPerHourPl() {
         pasek zostaje zielony aż do 2,5% masy ciała, a przy 30 °C i więcej już tylko do 1,2%.
       </p>
       <p style={articleTextStyle}>
-        Drugi koniec skali jest rzadszy, ale groźniejszy. Picie ponad straty potu rozcieńcza sód we
-        krwi i prowadzi do hiponatremii wysiłkowej — jedynego ostrego zagrożenia w całej tej
-        dziedzinie z udokumentowaną drogą do szpitala, i takiego, które dopada zwykle wolniejszych
-        uczestników długich imprez, pijących na każdym punkcie „na zapas". Dlatego pasek nawodnienia
-        robi się bordowy również przy nadmiarze: za wypicie więcej, niż tracisz, nie ma nagrody.
+        Drugi koniec skali jest rzadszy, ale groźniejszy. Picie ponad straty potu rozcieńcza{' '}
+        <a href={faqHref('pl', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
+          sód we krwi
+        </a>{' '}
+        i prowadzi do hiponatremii wysiłkowej — jedynego ostrego zagrożenia w całej tej dziedzinie z
+        udokumentowaną drogą do szpitala, i takiego, które dopada zwykle wolniejszych uczestników
+        długich imprez, pijących na każdym punkcie „na zapas". Dlatego pasek nawodnienia robi się
+        bordowy również przy nadmiarze: za wypicie więcej, niż tracisz, nie ma nagrody.
       </p>
       <p style={articleTextStyle}>
         Carb Fueling bierze temperaturę ustawioną dla Twojej trasy oraz intensywność jazdy i na tej
@@ -74,6 +83,17 @@ export default function HydrationWaterPerHourPl() {
         więc nie musisz zgadywać ani robić własnego testu z wagą w trakcie jazdy. Liczba nad paskiem
         nawodnienia to właśnie ten bilans: minus oznacza niedobór, plus — picie ponad to, co
         wypocisz.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/26553489/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Sawka, Cheuvront, Kenefick, Sports Med 2015
+        </a>{' '}
+        (próg 27°C temperatury skóry, powyżej którego odwodnienie zaczyna kosztować wynik).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

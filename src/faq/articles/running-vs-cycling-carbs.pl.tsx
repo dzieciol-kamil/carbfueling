@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function RunningVsCyclingCarbsPl() {
   return (
@@ -64,7 +70,7 @@ export default function RunningVsCyclingCarbsPl() {
         po ogólne podejście; w przypadku biegania progresja musi odbywać się na bieganiu, a nie
         tylko na rowerze, zanim zaufasz liczbie w dniu startu.
       </p>
-      <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--muted)', marginBottom: 16 }}>
+      <p style={articleSourcesStyle}>
         Źródła:{' '}
         <a
           href="https://pubmed.ncbi.nlm.nih.gov/21049089/"

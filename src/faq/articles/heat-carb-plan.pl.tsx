@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function HeatCarbPlanPl() {
   return (
@@ -59,6 +65,18 @@ export default function HeatCarbPlanPl() {
         płynami a tolerancją jelita zaczyna realnie doskwierać. Carb Fueling przyjmuje temperaturę
         na trasie jako dane wejściowe i odpowiednio koryguje szacowane zapotrzebowanie na płyny,
         więc planując upalny wyjazd, widzisz kompromis płyny-węglowodany wprost, zamiast zgadywać.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/41138215/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Mougin i wsp., J Appl Physiol 2025
+        </a>{' '}
+        (upał obniża utlenianie węglowodanów egzogennych o ok. 20% nawet przy pełnym nawodnieniu,
+        głównie przez słabsze wchłanianie jelitowe).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

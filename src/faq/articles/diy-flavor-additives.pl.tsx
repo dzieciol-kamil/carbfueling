@@ -5,7 +5,7 @@ export default function DiyFlavorAdditivesPl() {
   return (
     <FaqLayout lang="pl" slug="diy-flavor-additives">
       <h1 style={articleH1Style}>
-        Domowe dodatki smakowe: proste sposoby na lepszy smak izotonika
+        Domowe dodatki smakowe: proste sposoby na lepszy smak zawartości bidonu czy żelu
       </h1>
       <p style={articleTextStyle}>
         Na długiej trasie smak to nie tylko kwestia przyjemności. Po kilku godzinach ten sam słodki

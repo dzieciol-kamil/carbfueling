@@ -4,6 +4,7 @@ import {
   articleH1Style,
   articleImgStyle,
   articleLinkStyle,
+  articleSourcesStyle,
   articleTextStyle,
 } from '../FaqLayout';
 
@@ -57,6 +58,17 @@ export default function CarbTransporterMixPl() {
       <p style={articleTextStyle}>
         Carb Fueling liczy Twój indywidualny sufit na podstawie ustawionej proporcji i pokazuje go
         na bieżąco przy zmianie miksu.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20574242/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Curr Opin Clin Nutr Metab Care 2010
+        </a>{' '}
+        (wielokrotnie transportowalne węglowodany, utlenianie do ok. 105 g/h).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

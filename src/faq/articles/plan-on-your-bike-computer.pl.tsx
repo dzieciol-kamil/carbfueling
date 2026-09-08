@@ -55,7 +55,10 @@ export default function PlanOnYourBikeComputerPl() {
         — na podjeździe pijesz szybciej, na zjeździe wolniej. Jeśli trudna część trasy jest na
         początku, "została ćwiartka" przypadnie przed trzema czwartymi odcinka. Bierze się to wprost
         z profilu wysokości Twojej trasy, tego samego, który{' '}
-        <a href={faqHref('pl', 'what-the-chart-shows')}>napędza zapotrzebowanie na wykresie</a>.
+        <a href={faqHref('pl', 'what-the-chart-shows')} style={articleLinkStyle}>
+          napędza zapotrzebowanie na wykresie
+        </a>
+        .
       </p>
       <p style={articleTextStyle}>
         Poziomy idą co ćwiartkę: jadąc trzydzieści na godzinę i tak nie ocenisz bidonu dokładniej.

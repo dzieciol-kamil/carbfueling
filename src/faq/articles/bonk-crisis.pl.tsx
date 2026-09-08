@@ -19,7 +19,7 @@ export default function BonkCrisisPl() {
         Mięśnie spalają węglowodany w tempie zależnym od wysiłku: mocniejsze tempo, szybsze
         spalanie. Jelito dostarcza węglowodany we własnym tempie — ograniczonym sufitem wchłaniania
         (zobacz{' '}
-        <a href={faqHref('pl', 'carb-transporter-mix')}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego nie wchłoniesz więcej niż ok. 90 g/h
         </a>
         ). Jeśli spalanie przez dłuższy czas przewyższa dostawy, zapasy glikogenu — rezerwa

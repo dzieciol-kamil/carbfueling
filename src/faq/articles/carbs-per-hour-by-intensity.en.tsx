@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function CarbsPerHourByIntensityEn() {
   return (
@@ -53,6 +59,17 @@ export default function CarbsPerHourByIntensityEn() {
       <p style={articleTextStyle}>
         Rather than applying a flat rule of thumb, Carb Fueling runs the numbers for your specific
         ride — using your route duration and intensity to work out your actual hourly carb need.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/24791914/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Sports Med 2014
+        </a>{' '}
+        (the 30/60/90g/h guidelines by exercise duration).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

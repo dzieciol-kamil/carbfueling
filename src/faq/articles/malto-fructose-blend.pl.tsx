@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function MaltoFructoseBlendPl() {
   return (
@@ -47,6 +53,17 @@ export default function MaltoFructoseBlendPl() {
         "Węglowodany złożone" albo "energia o powolnym uwalnianiu" na froncie nic nie mówią o tym,
         czy w środku jest sama maltodekstryna, czy mieszanka maltodekstryny z fruktozą — a to
         właśnie ta różnica decyduje, ile faktycznie wchłoniesz w ciągu godziny.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20574242/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Curr Opin Clin Nutr Metab Care 2010
+        </a>{' '}
+        (sufit SGLT1 ok. 60 g/h, sufit łączny przy mieszance glukoza-fruktoza wyższy).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function CarbsPerHourByIntensityPl() {
   return (
@@ -55,6 +61,17 @@ export default function CarbsPerHourByIntensityPl() {
         Zamiast opierać się na sztywnej regule, Carb Fueling liczy to dla Twojej konkretnej trasy —
         na podstawie czasu jazdy i intensywności wylicza Twoje rzeczywiste zapotrzebowanie na
         węglowodany w ciągu godziny.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/24791914/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Sports Med 2014
+        </a>{' '}
+        (widełki 30/60/90 g/h wg czasu trwania wysiłku).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

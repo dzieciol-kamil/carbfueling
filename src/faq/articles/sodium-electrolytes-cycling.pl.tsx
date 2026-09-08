@@ -1,5 +1,11 @@
-import { calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import { calculatorHref, faqHref } from '../../urls';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function SodiumElectrolytesCyclingPl() {
   return (
@@ -38,9 +44,11 @@ export default function SodiumElectrolytesCyclingPl() {
         Jeśli należysz do jednej z tych grup podwyższonego ryzyka, nie musisz zgadywać. Osoby, które
         wiedzą, że mocno lub słono się pocą, albo jadą długo w upale, mogą dodać tabletki
         elektrolitowe lub trochę soli do bidonu lub diety. Dwa proste sposoby, żeby zorientować się,
-        jak to wygląda u Ciebie: sprawdzenie, czy po treningu zostaje nalot soli, albo test wagowy
-        tempa pocenia (ważenie się przed i po godzinie jazdy w stałym tempie, opisany w FAQ o
-        nawodnieniu).
+        jak to wygląda u Ciebie: sprawdzenie, czy po treningu zostaje nalot soli, albo{' '}
+        <a href={faqHref('pl', 'hydration-water-per-hour')} style={articleLinkStyle}>
+          test wagowy tempa pocenia
+        </a>{' '}
+        (ważenie się przed i po godzinie jazdy w stałym tempie).
       </p>
       <p style={articleTextStyle}>
         Wniosek nie brzmi "zawsze dokładaj dodatkowy sód", tylko "poznaj swój profil pocenia i
@@ -56,6 +64,18 @@ export default function SodiumElectrolytesCyclingPl() {
         pierwiastek to silnie reaktywny metal, którego nie kupisz w sklepie ani nie dodasz do
         napoju. W przybliżeniu każde 0,1 g soli na 100 ml napoju dostarcza ok. 390 mg sodu na litr.
         Jeśli więc celujesz np. w 700 mg sodu na litr, to około 0,18 g soli na 100 ml.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/27478425/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Lara i wsp., J Int Soc Sports Nutr 2016
+        </a>{' '}
+        (rozstęp stężenia sodu w pocie u 157 maratończyków: ok. 160-2200 mg/l, podział na
+        low/typical/salty sweaters).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

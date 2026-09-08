@@ -1,5 +1,11 @@
-import { calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import { calculatorHref, faqHref } from '../../urls';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function HydrationWaterPerHourEn() {
   return (
@@ -61,17 +67,31 @@ export default function HydrationWaterPerHourEn() {
       </p>
       <p style={articleTextStyle}>
         The other end of the scale is rarer but more dangerous. Drinking past your sweat losses
-        dilutes the sodium in your blood and leads to exercise-associated hyponatraemia — the one
-        acute failure mode in this whole subject with a documented path to a hospital bed, and one
-        that typically catches slower finishers who drink at every aid station "to be safe". So the
-        hydration bar turns dark red for a surplus too: there is no prize for drinking more than you
-        lose.
+        dilutes the{' '}
+        <a href={faqHref('en', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
+          sodium in your blood
+        </a>{' '}
+        and leads to exercise-associated hyponatraemia — the one acute failure mode in this whole
+        subject with a documented path to a hospital bed, and one that typically catches slower
+        finishers who drink at every aid station "to be safe". So the hydration bar turns dark red
+        for a surplus too: there is no prize for drinking more than you lose.
       </p>
       <p style={articleTextStyle}>
         Carb Fueling takes the temperature you set for your route and your riding effort, and uses
         them to estimate your fluid need in ml per hour alongside your carb plan — so you don't have
         to guess or run your own weigh-in test mid-ride. The figure above the hydration bar is that
         balance: a minus is a shortfall, a plus means the plan has you drinking more than you sweat.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/26553489/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Sawka, Cheuvront, Kenefick, Sports Med 2015
+        </a>{' '}
+        (the 27°C skin-temperature threshold above which dehydration starts costing performance).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

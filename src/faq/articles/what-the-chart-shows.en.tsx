@@ -38,7 +38,7 @@ export default function WhatTheChartShowsEn() {
         your bloodstream each hour. This is the absorption cap, and it shows up on the chart as a
         flat ceiling line. With a good glucose-fructose blend, that ceiling sits at roughly 90g per
         hour for most riders — see{' '}
-        <a href={faqHref('en', 'carb-transporter-mix')}>
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
           why this ceiling exists and how mixing sugars raises it
         </a>
         . Eating more than the cap doesn't help — the extra just sits in your stomach longer.
@@ -66,8 +66,10 @@ export default function WhatTheChartShowsEn() {
         When absorbed drops below need for a stretch of the route, that gap gets marked as a
         deficit. This is where bonk risk quietly builds — not in one dramatic moment, but minute by
         minute, hour by hour. See{' '}
-        <a href={faqHref('en', 'bonk-crisis')}>what happens when that gap runs on too long</a>, and
-        how a small, ignored deficit turns into a real crisis on the bike.
+        <a href={faqHref('en', 'bonk-crisis')} style={articleLinkStyle}>
+          what happens when that gap runs on too long
+        </a>
+        , and how a small, ignored deficit turns into a real crisis on the bike.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/deficit.jpg')}

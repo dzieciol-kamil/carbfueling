@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function RunningVsCyclingCarbsEn() {
   return (
@@ -61,7 +67,7 @@ export default function RunningVsCyclingCarbsEn() {
         for the general approach; for running specifically, the progression needs to happen on runs,
         not just on the bike, before you trust the number on race day.
       </p>
-      <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--muted)', marginBottom: 16 }}>
+      <p style={articleSourcesStyle}>
         Sources:{' '}
         <a
           href="https://pubmed.ncbi.nlm.nih.gov/21049089/"

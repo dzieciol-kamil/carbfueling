@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function PacePowerAbsorptionPl() {
   return (
@@ -55,7 +61,7 @@ export default function PacePowerAbsorptionPl() {
         </a>{' '}
         powinien obejmować też trening przy intensywności zbliżonej do wyścigowej, a nie tylko
         spokojne wyjazdy. To, jak dobrze tolerujesz węglowodany na luźnym tempie, niewiele mówi o
-        tym, jak zniesiesz czasie cieżkiego wyścigu. Prawdę pokazuje dopiero test przy
+        tym, jak zniesiesz to podczas ciężkiego wyścigu. Prawdę pokazuje dopiero test przy
         intensywności, z jaką faktycznie wystartujesz.
       </p>
       <p style={articleTextStyle}>
@@ -63,6 +69,18 @@ export default function PacePowerAbsorptionPl() {
         zapotrzebowaniu na węglowodany, a proporcja miksu wyznacza sufit tego, ile jesteś w stanie
         wchłonąć. Widząc je razem, od razu widać, kiedy plan wymaga od jelita więcej, niż jest ono w
         stanie dostarczyć.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/28589631/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Costa i wsp., Aliment Pharmacol Ther 2017
+        </a>{' '}
+        (przegląd systematyczny: przy wysokiej intensywności wysiłku krew jest kierowana z dala od
+        jelita, co spowalnia opróżnianie żołądka i wchłanianie).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

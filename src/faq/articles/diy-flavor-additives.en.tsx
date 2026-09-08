@@ -5,7 +5,7 @@ export default function DiyFlavorAdditivesEn() {
   return (
     <FaqLayout lang="en" slug="diy-flavor-additives">
       <h1 style={articleH1Style}>
-        DIY flavor additives: simple ways to make your mix taste better
+        DIY flavor additives: simple ways to make the contents of your bottle or gel taste better
       </h1>
       <p style={articleTextStyle}>
         Flavor is not just a nice extra on a long ride. After a few hours, the same sweet taste gets

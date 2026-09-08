@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function HeatCarbPlanEn() {
   return (
@@ -54,6 +60,18 @@ export default function HeatCarbPlanEn() {
         start to bite. Carb Fueling takes a route temperature input and adjusts your fluid estimate
         accordingly, so when you're planning a hot ride, you can see the fluid-versus-carb tradeoff
         directly instead of guessing at it.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/41138215/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Mougin et al., J Appl Physiol 2025
+        </a>{' '}
+        (heat cuts exogenous carbohydrate oxidation by ~20% even with full hydration maintained,
+        mainly via reduced gut absorption).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

@@ -1,5 +1,11 @@
-import { calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import { calculatorHref, faqHref } from '../../urls';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function GutTrainingCarbTolerancePl() {
   return (
@@ -19,8 +25,12 @@ export default function GutTrainingCarbTolerancePl() {
         dla większości rowerzystów rozsądnym punktem startowym jest ok. 30 g węglowodanów na
         godzinę. Potem zwiększaj dawkę powoli, o mniej więcej 5-10 g na godzinę co tydzień lub dwa,
         dając jelitu czas na adaptację przy każdym kroku, zanim pójdziesz wyżej. Rowerzyści, którzy
-        od razu przechodzą na 90 g/h bez takiego rozpędzania się, zamiast dodatkowej energii
-        częściej dostają bóle brzucha, wzdęcia albo biegunkę.
+        od razu przechodzą na{' '}
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
+          ok. 90 g/h
+        </a>{' '}
+        bez takiego rozpędzania się, zamiast dodatkowej energii częściej dostają bóle brzucha,
+        wzdęcia albo biegunkę.
       </p>
       <p style={articleTextStyle}>
         Ćwicz przy intensywności i na dystansie zbliżonym do tego, co czeka Cię na starcie, a nie
@@ -56,6 +66,18 @@ export default function GutTrainingCarbTolerancePl() {
         nie przekroczy ok. 92 g/h. To świadomy, bezpieczny domyślny próg, a nie twardy fizjologiczny
         sufit — nieliczne, bardzo dobrze wytrenowane jelita mogą go przekroczyć — ale dla
         zdecydowanej większości rowerzystów jest to rozsądna granica.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20466803/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Cox i wsp., J Appl Physiol 2010
+        </a>{' '}
+        (28 dni treningu z wysoką dostępnością węglowodanów podniosło utlenianie węglowodanów
+        egzogennych i wynik na czas o ok. 6%).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

@@ -1,5 +1,11 @@
-import { calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import { calculatorHref, faqHref } from '../../urls';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function GutTrainingCarbToleranceEn() {
   return (
@@ -16,8 +22,12 @@ export default function GutTrainingCarbToleranceEn() {
         The safest way to build this tolerance is gradual. Start well below your eventual target —
         around 30g of carbs per hour is a reasonable starting point for most riders. Then increase
         the amount slowly, by roughly 5-10g per hour every week or two. Give your gut time to adapt
-        at each step before pushing higher. Riders who jump straight to 90g/h without this buildup
-        often end up with stomach pain, bloating, or diarrhea instead of extra energy.
+        at each step before pushing higher. Riders who jump straight to{' '}
+        <a href={faqHref('en', 'carb-transporter-mix')} style={articleLinkStyle}>
+          ~90g/h
+        </a>{' '}
+        without this buildup often end up with stomach pain, bloating, or diarrhea instead of extra
+        energy.
       </p>
       <p style={articleTextStyle}>
         Practice at the intensity and duration you expect to race at, not just on easy rides. Gut
@@ -50,6 +60,18 @@ export default function GutTrainingCarbToleranceEn() {
         bottle and gel mix ratio, Carb Fueling's absorption cap tops out around 92g/h. That's a
         deliberate safe default, not a hard physiological wall — a small number of very well-trained
         guts can push past it — but it's a sensible ceiling for the vast majority of riders.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20466803/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Cox et al., J Appl Physiol 2010
+        </a>{' '}
+        (28 days of training with high carb availability raised exogenous carbohydrate oxidation and
+        time-trial performance by ~6%).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>
