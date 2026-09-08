@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { hasPlanData, shouldConfirmViewModeChange, useAppStore } from './appStore';
+import { hasPlanData, resolveTheme, shouldConfirmViewModeChange, useAppStore } from './appStore';
 import type { Fill, RouteInput } from '../domain/types';
 
 function route(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -323,6 +323,18 @@ describe('shouldConfirmViewModeChange', () => {
   test('does not confirm re-picking the already-active forced layout', () => {
     expect(shouldConfirmViewModeChange('desktop', 'desktop')).toBe(false);
     expect(shouldConfirmViewModeChange('mobile', 'mobile')).toBe(false);
+  });
+});
+
+describe('resolveTheme', () => {
+  test('auto resolves to the detected OS theme', () => {
+    expect(resolveTheme('auto', 'dark')).toBe('dark');
+    expect(resolveTheme('auto', 'light')).toBe('light');
+  });
+
+  test('an explicit choice overrides auto-detection', () => {
+    expect(resolveTheme('light', 'dark')).toBe('light');
+    expect(resolveTheme('dark', 'light')).toBe('dark');
   });
 });
 
@@ -658,6 +670,29 @@ describe('persisted ui merge — autoView is derived, not remembered', () => {
       currentState,
     ) as typeof currentState;
     expect(merged.ui.viewMode).toBe('desktop');
+  });
+});
+
+describe('persisted ui merge — autoTheme is derived, not remembered', () => {
+  test('a stale autoTheme from another device loses to the one computed for this session', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, autoTheme: 'dark', themeMode: 'auto' } },
+      { ...currentState, ui: { ...currentState.ui, autoTheme: 'light' } },
+    ) as typeof currentState;
+    expect(merged.ui.autoTheme).toBe('light');
+    expect(merged.ui.themeMode).toBe('auto');
+  });
+
+  test('an explicitly forced themeMode is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, themeMode: 'dark' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.themeMode).toBe('dark');
   });
 });
 

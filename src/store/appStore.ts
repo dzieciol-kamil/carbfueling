@@ -59,6 +59,13 @@ function defaultAutoView(): 'desktop' | 'mobile' {
     : 'desktop';
 }
 
+function defaultAutoTheme(): 'light' | 'dark' {
+  return typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
+
 // A route edit (a different distance, fewer hours, another sport, switching mode, a fresh GPX
 // track...) moves the plan's distance domain under the fills/foods/shops placed on it. Every
 // such edit goes through here, which rescales them proportionally so each keeps its place
@@ -97,6 +104,7 @@ function normalizeHoursMinutes(route: RouteInput): RouteInput {
 }
 
 export type ViewMode = 'auto' | 'desktop' | 'mobile';
+export type ThemeMode = 'light' | 'dark' | 'auto';
 export type YMode = 'rate' | 'fluid';
 export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | null;
 export type MobileTab = 'plan' | 'gear' | 'mix' | 'food' | 'me';
@@ -105,6 +113,8 @@ interface UiState {
   lang: Lang;
   viewMode: ViewMode;
   autoView: 'desktop' | 'mobile';
+  themeMode: ThemeMode;
+  autoTheme: 'light' | 'dark';
   panel: PanelId;
   xUnit: XUnit;
   yMode: YMode;
@@ -164,6 +174,8 @@ interface AppState {
   setLang: (lang: Lang) => void;
   setViewMode: (mode: ViewMode) => void;
   setAutoView: (view: 'desktop' | 'mobile') => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setAutoTheme: (theme: 'light' | 'dark') => void;
   openPanel: (panel: PanelId) => void;
   closePanel: () => void;
   setXUnit: (u: XUnit) => void;
@@ -287,6 +299,8 @@ export const useAppStore = create<AppState>()(
         lang: defaultLang(),
         viewMode: 'auto',
         autoView: defaultAutoView(),
+        themeMode: 'auto',
+        autoTheme: defaultAutoTheme(),
         panel: null,
         xUnit: 'km',
         yMode: 'rate',
@@ -418,6 +432,8 @@ export const useAppStore = create<AppState>()(
       setLang: (lang) => set((s) => ({ ui: { ...s.ui, lang } })),
       setViewMode: (viewMode) => set((s) => ({ ui: { ...s.ui, viewMode } })),
       setAutoView: (autoView) => set((s) => ({ ui: { ...s.ui, autoView } })),
+      setThemeMode: (themeMode) => set((s) => ({ ui: { ...s.ui, themeMode } })),
+      setAutoTheme: (autoTheme) => set((s) => ({ ui: { ...s.ui, autoTheme } })),
       openPanel: (panel) => set((s) => ({ ui: { ...s.ui, panel } })),
       closePanel: () => set((s) => ({ ui: { ...s.ui, panel: null } })),
       setXUnit: (xUnit) => set((s) => ({ ui: { ...s.ui, xUnit } })),
@@ -765,6 +781,8 @@ export const useAppStore = create<AppState>()(
             // phone opens the desktop layout until the resize effect corrects it.
             // currentState's value has just been computed by defaultAutoView().
             autoView: currentState.ui.autoView,
+            // Same reasoning for the OS color-scheme preference.
+            autoTheme: currentState.ui.autoTheme,
             // Where someone happened to be looking last time is not a setting either.
             // Following the landing's "open the calculator" into a settings panel or
             // the Me tab is never what that link promised, so both start from their
@@ -804,6 +822,10 @@ export const useAppStore = create<AppState>()(
 
 export function isDesktopView(viewMode: ViewMode, autoView: 'desktop' | 'mobile'): boolean {
   return viewMode === 'auto' ? autoView === 'desktop' : viewMode === 'desktop';
+}
+
+export function resolveTheme(themeMode: ThemeMode, autoTheme: 'light' | 'dark'): 'light' | 'dark' {
+  return themeMode === 'auto' ? autoTheme : themeMode;
 }
 
 export function shouldConfirmViewModeChange(next: ViewMode, current: ViewMode): boolean {
