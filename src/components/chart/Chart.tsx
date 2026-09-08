@@ -255,7 +255,7 @@ export function Chart({ height, showAxis }: ChartProps) {
               x2={WIDTH}
               y1={gBase}
               y2={gBase}
-              stroke="#E3E5E0"
+              stroke="var(--border)"
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
             />
@@ -321,7 +321,7 @@ export function Chart({ height, showAxis }: ChartProps) {
             x2={px(k)}
             y1={4}
             y2={height - PB}
-            stroke="#EDEFEA"
+            stroke="var(--border-soft)"
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           />
@@ -331,7 +331,7 @@ export function Chart({ height, showAxis }: ChartProps) {
           x2={WIDTH}
           y1={height - PB}
           y2={height - PB}
-          stroke="#DDE0DA"
+          stroke="var(--chip-border)"
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
         />
@@ -397,7 +397,7 @@ export function Chart({ height, showAxis }: ChartProps) {
                   x2={WIDTH}
                   y1={py(v)}
                   y2={py(v)}
-                  stroke="#EDEFEA"
+                  stroke="var(--border-soft)"
                   strokeWidth={1}
                   vectorEffect="non-scaling-stroke"
                 />
