@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function MaltoFructoseBlendEn() {
   return (
@@ -45,6 +51,17 @@ export default function MaltoFructoseBlendEn() {
         marketing copy. "Complex carbs" or "slow-release energy" on the front of the package does
         not tell you whether the product is maltodextrin alone or a maltodextrin-fructose blend —
         and that difference decides how much of it you can actually absorb per hour.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20574242/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Curr Opin Clin Nutr Metab Care 2010
+        </a>{' '}
+        (SGLT1 ceiling of ~60g/h, higher combined ceiling with a glucose-fructose blend).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

@@ -29,9 +29,12 @@ export default function BottleRefillPlanningEn() {
       />
       <p style={articleTextStyle}>
         Place a "shop stop" at each refill point on your route. Carb Fueling then splits your total
-        mix across the stretches between stops, so you know exactly how much powder, water, and
-        extras to carry — or buy — at each one. Put stops before a gap gets too big, not after:
-        refilling at 20% supply left is a plan, refilling at 0% is a crisis.
+        carb mix across the stretches between stops, so you know exactly how much powder (your carb
+        mix), water, and products (gels, bananas) to carry — or buy — along the way.
+      </p>
+      <p style={articleTextStyle}>
+        Put stops before a gap gets too big, not after: refilling at 15-20% supply left is a plan,
+        refilling at 0% is a crisis.
       </p>
       <p style={articleTextStyle}>
         For short, well-stocked routes, one refill near the halfway point is often enough. For

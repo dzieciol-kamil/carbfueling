@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function CarbsPerHourByIntensityEn() {
   return (
@@ -13,11 +19,7 @@ export default function CarbsPerHourByIntensityEn() {
       <p style={articleTextStyle}>
         For an easy ride under about an hour, carbs barely matter. Your body's glycogen stores — the
         sugar already saved in your muscles and liver — are enough to cover that kind of effort on
-        their own, so water or a hydration drink matters more than carb intake. Go hard rather than
-        easy, though — intervals, a short race, a fast group ride — and Carb Fueling still suggests
-        intake based on your intensity, using the same range as the next bracket below: even a
-        short, hard effort can benefit from topping up blood sugar, not only from sparing muscle
-        glycogen.
+        their own, so water or a hydration drink matters more than carb intake.
       </p>
       <p style={articleTextStyle}>
         Once a ride stretches to 1–2.5 hours, carbs start to earn their place. Roughly 30–60g per
@@ -35,10 +37,10 @@ export default function CarbsPerHourByIntensityEn() {
         .
       </p>
       <p style={articleTextStyle}>
-        Intensity changes how urgently you need to reach the top of that range. An easy long day can
-        often get by nearer the low end even after several hours, since you're burning glycogen more
-        slowly. A hard or race-pace effort burns through glycogen faster and rewards higher carb
-        intake, even at the same duration.
+        Intensity changes how urgently you need to reach the top of the absorption range. An easy
+        long day can often get by nearer the low end even after several hours, since you're burning
+        glycogen more slowly. A hard or race-pace effort burns through glycogen faster and requires
+        higher carb intake, even at the same duration.
       </p>
       <p style={articleTextStyle}>
         A simple way to gauge intensity without a power meter or heart rate strap: can you still
@@ -57,6 +59,17 @@ export default function CarbsPerHourByIntensityEn() {
       <p style={articleTextStyle}>
         Rather than applying a flat rule of thumb, Carb Fueling runs the numbers for your specific
         ride — using your route duration and intensity to work out your actual hourly carb need.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/24791914/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Sports Med 2014
+        </a>{' '}
+        (the 30/60/90g/h guidelines by exercise duration).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

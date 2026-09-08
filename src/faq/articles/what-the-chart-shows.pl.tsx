@@ -12,10 +12,9 @@ export default function WhatTheChartShowsPl() {
     <FaqLayout lang="pl" slug="what-the-chart-shows">
       <h1 style={articleH1Style}>Co właściwie pokazuje wykres: od bidonu do krwiobiegu</h1>
       <p style={articleTextStyle}>
-        Każdy punkt na wykresie zaczyna się od jednego prostego faktu: co faktycznie zjadłeś albo
-        wypiłeś w danym miejscu trasy. To jest spożycie — surowy wsad do całej reszty. Żel, łyk z
-        bidonu, banan na przystanku. Wykres zapisuje to dokładnie tam, gdzie się wydarzyło na
-        trasie, a nie jako jedną sumę dla całej jazdy.
+        Każdy punkt na wykresie odpowiada temu, co planujesz zjeść albo wypić w danym miejscu trasy.
+        Żel, łyk wody czy izo z bidonu, banan na przystanku. Wykres zapisuje to dokładnie tam, gdzie
+        ma się wydarzyć na trasie, a nie jako jedną sumę dla całej jazdy.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/intake-vessels.jpg')}
@@ -25,7 +24,7 @@ export default function WhatTheChartShowsPl() {
       <p style={articleTextStyle}>
         Jedzenie i picie nie zamieniają się w paliwo w chwili, gdy trafiają do ust. Najpierw lądują
         w żołądku i jelicie, gdzie trawią się stopniowo. Między zjedzeniem czegoś a możliwością
-        wykorzystania tego przez organizm mija realny czas. Wykres pokazuje to uczciwie —
+        wykorzystania tego przez organizm mija realny czas. Wykres pokazuje cały ten proces —
         węglowodany chwilę czekają w żołądku, zamiast stawać się dostępne od razu po przełknięciu.
       </p>
       <img
@@ -38,7 +37,7 @@ export default function WhatTheChartShowsPl() {
         węglowodanów na godzinę. To jest sufit wchłaniania i na wykresie widać go jako poziomą linię
         ograniczenia. Przy dobrej mieszance glukozowo-fruktozowej ten sufit dla większości
         rowerzystów wynosi ok. 90 g na godzinę — zobacz,{' '}
-        <a href={faqHref('pl', 'carb-transporter-mix')}>
+        <a href={faqHref('pl', 'carb-transporter-mix')} style={articleLinkStyle}>
           dlaczego ten sufit istnieje i jak mieszanie cukrów go podnosi
         </a>
         . Zjedzenie więcej niż wynosi sufit nic nie daje — nadmiar po prostu dłużej zalega w
@@ -50,16 +49,16 @@ export default function WhatTheChartShowsPl() {
         style={articleImgStyle}
       />
       <p style={articleTextStyle}>
-        Przerywana linia "zapotrzebowanie" to strona popytu. Pokazuje, ile węglowodanów wymaga od
+        Przerywana linia "zapotrzebowania" to strona popytu. Pokazuje, ile węglowodanów wymaga od
         Ciebie trasa w danej godzinie, zależnie od intensywności wysiłku — wjedź na stromy podjazd,
         a linia rośnie, zjedź z drugiej strony, a spada.
       </p>
       <p style={articleTextStyle}>
         Naprzeciw niej stoi "wchłonięte": ile węglowodanów organizm faktycznie przyjął i może
-        wykorzystać, ograniczone jednocześnie dwiema rzeczami — tym, ile zjadłeś, i sufitem w
-        chłaniania. Nawet dobrze odżywiony rowerzysta nie przesunie linii wchłoniętych ponad sufit.
-        Obserwowanie obu tych linii obok siebie, godzina po godzinie, to sedno czytania tego
-        wykresu.
+        wykorzystać, ograniczone jednocześnie dwiema rzeczami — tym, ile zjadłeś, i sufitem
+        wchłaniania. Nawet dobrze odżywiony rowerzysta nie przesunie linii obrazującej ilość
+        wchłoniętych węglowodanów ponad sufit. Obserwowanie obu linii (zapotrzebowania i
+        wchłoniętych) obok siebie, godzina po godzinie, to sedno czytania tego wykresu.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/need-absorbed.jpg')}
@@ -70,8 +69,10 @@ export default function WhatTheChartShowsPl() {
         Gdy wchłonięte spadają poniżej zapotrzebowania na jakimś odcinku trasy, ta luka zaznaczana
         jest jako niedobór. Właśnie tu po cichu narasta ryzyko złapania bomby — nie w jednym
         dramatycznym momencie, tylko minuta po minucie, kilometr po kilometrze. Zobacz,{' '}
-        <a href={faqHref('pl', 'bonk-crisis')}>co się dzieje, gdy taka luka trwa zbyt długo</a> —
-        tak mały, zignorowany niedobór zamienia się w realny kryzys na rowerze.
+        <a href={faqHref('pl', 'bonk-crisis')} style={articleLinkStyle}>
+          co się dzieje, gdy taka luka trwa zbyt długo
+        </a>{' '}
+        — tak mały, zignorowany niedobór zamienia się w realny kryzys na rowerze.
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/deficit.jpg')}

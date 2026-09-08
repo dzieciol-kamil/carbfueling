@@ -1,9 +1,10 @@
-import { calculatorHref, assetHref } from '../../urls';
+import { faqHref, calculatorHref, assetHref } from '../../urls';
 import {
   FaqLayout,
   articleH1Style,
   articleImgStyle,
   articleLinkStyle,
+  articleSourcesStyle,
   articleTextStyle,
 } from '../FaqLayout';
 
@@ -24,8 +25,11 @@ export default function CarbTransporterMixEn() {
         and causes bloating or cramps.
       </p>
       <p style={articleTextStyle}>
-        GLUT5 handles fructose on a separate route, good for about another 30g per hour. Mix
-        fructose into your carb source, and you're using both doors at once. That's why
+        GLUT5 handles fructose on a separate route, good for about another 30g per hour (see{' '}
+        <a href={faqHref('en', 'gut-training-carb-tolerance')} style={articleLinkStyle}>
+          how to train your gut to raise your carb tolerance
+        </a>
+        ). Mix fructose into your carb source, and you're using both doors at once. That's why
         glucose-fructose blends push the realistic ceiling up to around 90g per hour.
       </p>
       <p style={articleTextStyle}>
@@ -50,6 +54,17 @@ export default function CarbTransporterMixEn() {
       <p style={articleTextStyle}>
         Carb Fueling calculates your personal ceiling from the mix ratio you set, and shows it live
         as you change the mix.
+      </p>
+      <p style={articleSourcesStyle}>
+        Sources:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/20574242/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jeukendrup, Curr Opin Clin Nutr Metab Care 2010
+        </a>{' '}
+        (multiple transportable carbohydrates, oxidation up to ~105g/h).
       </p>
       <p>
         <a href={calculatorHref('en')} style={articleLinkStyle}>

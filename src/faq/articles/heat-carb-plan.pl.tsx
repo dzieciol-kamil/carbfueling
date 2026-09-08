@@ -1,5 +1,11 @@
 import { faqHref, calculatorHref } from '../../urls';
-import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../FaqLayout';
+import {
+  FaqLayout,
+  articleH1Style,
+  articleLinkStyle,
+  articleSourcesStyle,
+  articleTextStyle,
+} from '../FaqLayout';
 
 export default function HeatCarbPlanPl() {
   return (
@@ -11,8 +17,7 @@ export default function HeatCarbPlanPl() {
         Upał zwiększa tempo pocenia, ale to nie wszystko — dodatkowo obciąża organizm próbą
         utrzymania temperatury ciała. Żeby się schłodzić, organizm kieruje więcej krwi do skóry. Ta
         krew musi skądś pochodzić, a jednym z miejsc, z których jest "pożyczana", jest jelito. To
-        normalna, zdrowa reakcja — ale ma efekt uboczny, który ma znaczenie przy planowaniu
-        odżywiania.
+        normalna, zdrowa reakcja, która ma znaczenie przy planowaniu odżywiania.
       </p>
       <p style={articleTextStyle}>
         Przy mniejszym przepływie krwi przez jelito trawienie zwalnia. Badania nad wysiłkiem w upale
@@ -25,7 +30,7 @@ export default function HeatCarbPlanPl() {
         Dlatego rada "po prostu pij więcej" jest niepełna. Jeśli zdolność jelita do wchłaniania jest
         już nieco ograniczona przez stres cieplny, dodatkowy płyn to dobry kierunek — ale
         utrzymywanie tego samego mocnego stężenia węglowodanów przy większej ilości płynu może się
-        odbić czkawką. Efektem bywają wzdęcia, mdłości albo skurcze żołądka, a nie lepsze zasilanie.
+        odbić czkawką. Efektem bywają wzdęcia, mdłości albo skurcze żołądka.
       </p>
       <p style={articleTextStyle}>
         Lepszym podejściem na upalne wyjazdy jest lekkie rozcieńczenie bidonów. Zapotrzebowanie na
@@ -37,9 +42,10 @@ export default function HeatCarbPlanPl() {
       <p style={articleTextStyle}>
         Warto też w upalne dni stawiać na płynne źródła węglowodanów o niższej osmolalności zamiast
         gęstych żeli. Żel to skoncentrowana dawka, którą jelito musi dopiero rozcieńczyć własnymi
-        rezerwami płynów, a dobrze wymieszany bidon jest już na łagodniejszym stężeniu. Nie
-        zapominaj też o sodzie — wraz z tempem pocenia w upale rośnie też utrata sodu, więc razem z
-        zapotrzebowaniem na płyny rośnie zapotrzebowanie na elektrolity (więcej o tym w{' '}
+        rezerwami płynów (chyba że popijesz żel dużą ilością samej wody), a dobrze wymieszany bidon
+        jest już na łagodniejszym stężeniu. Nie zapominaj też o sodzie — wraz z tempem pocenia w
+        upale rośnie też utrata sodu, więc razem z zapotrzebowaniem na płyny rośnie zapotrzebowanie
+        na elektrolity (więcej o tym w{' '}
         <a href={faqHref('pl', 'sodium-electrolytes-cycling')} style={articleLinkStyle}>
           naszym artykule o sodzie i elektrolitach
         </a>
@@ -58,7 +64,20 @@ export default function HeatCarbPlanPl() {
         to znaczenie głównie przy naprawdę upalnych, długich wyjazdach, gdzie kompromis między
         płynami a tolerancją jelita zaczyna realnie doskwierać. Carb Fueling przyjmuje temperaturę
         na trasie jako dane wejściowe i odpowiednio koryguje szacowane zapotrzebowanie na płyny,
-        więc planując upalny wyjazd, widzisz kompromis płyny-węglowodany wprost, zamiast zgadywać.
+        więc planując trening w upalny dzień, widzisz zapotrzebowanie zarówno na płyny, jak i
+        węglowodany, i możesz dostosować podaż zamiast zgadywać.
+      </p>
+      <p style={articleSourcesStyle}>
+        Źródła:{' '}
+        <a
+          href="https://pubmed.ncbi.nlm.nih.gov/41138215/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Mougin i wsp., J Appl Physiol 2025
+        </a>{' '}
+        (upał obniża utlenianie węglowodanów egzogennych o ok. 20% nawet przy pełnym nawodnieniu,
+        głównie przez słabsze wchłanianie jelitowe).
       </p>
       <p>
         <a href={calculatorHref('pl')} style={articleLinkStyle}>

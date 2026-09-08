@@ -89,11 +89,11 @@ export const ARTICLES: FaqArticleMeta[] = [
     slug: 'bottle-vs-gel',
     datePublished: '2026-08-08',
     en: {
-      title: 'Bottle or gel? When each carb-delivery format actually pays off',
+      title: 'Bottle or gel? When and what to choose',
       description: 'Comparing bottles, gels, and solid food for getting carbs in during a ride.',
     },
     pl: {
-      title: 'Bidon czy żel? Kiedy opłaca się każda forma dostarczania węglowodanów',
+      title: 'Bidon czy żel? Kiedy i co wybrać',
       description: 'Porównanie bidonu, żelu i jedzenia stałego jako źródeł węglowodanów na trasie.',
     },
   },
@@ -183,12 +183,13 @@ export const ARTICLES: FaqArticleMeta[] = [
     slug: 'diy-flavor-additives',
     datePublished: '2026-08-08',
     en: {
-      title: 'DIY flavor additives: simple ways to make your mix taste better',
+      title:
+        'DIY flavor additives: simple ways to make the contents of your bottle or gel taste better',
       description:
         'Flavor drops, freeze-dried fruit, hibiscus, and other easy ways to fix a boring bottle.',
     },
     pl: {
-      title: 'Domowe dodatki smakowe: proste sposoby na lepszy smak miksu',
+      title: 'Domowe dodatki smakowe: proste sposoby na lepszy smak zawartości bidonu czy żelu',
       description:
         'Aromaty w kroplach, liofilizowane owoce, hibiskus i inne łatwe sposoby na nudny bidon.',
     },
@@ -219,6 +220,20 @@ export const ARTICLES: FaqArticleMeta[] = [
         'Bieganie vs rower: czym naprawdę różni się zapotrzebowanie i wchłanianie węglowodanów',
       description:
         'Sufit wchłaniania jelita nie zmienia się między bieganiem a rowerem — ale Twój praktyczny cel powinien. Oto dlaczego.',
+    },
+  },
+  {
+    slug: 'rice-cake-bars',
+    datePublished: '2026-09-07',
+    en: {
+      title: 'Homemade rice cakes: a real-food recipe for when gels get old',
+      description:
+        'A simple rice, coconut, and date bar — the carb count per piece, and why real food beats another gel late in a long ride.',
+    },
+    pl: {
+      title: 'Domowy rice cake: przepis na paliwo, gdy żele już nie wchodzą',
+      description:
+        'Prosty batonik z ryżu, mleczka kokosowego i daktyli — ile ma węglowodanów na porcję i dlaczego realne jedzenie wygrywa z kolejnym żelem pod koniec długiej trasy.',
     },
   },
 ];
