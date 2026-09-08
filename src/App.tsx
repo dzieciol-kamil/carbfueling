@@ -13,7 +13,13 @@ import { RecipesSection } from './components/recipes/RecipesSection';
 import { RoutePanel } from './components/RoutePanel';
 import { SummaryCards } from './components/SummaryCards';
 import { TourOverlay } from './components/tour/TourOverlay';
-import { DESKTOP_BREAKPOINT, hasPlanData, isDesktopView, useAppStore } from './store/appStore';
+import {
+  DESKTOP_BREAKPOINT,
+  hasPlanData,
+  isDesktopView,
+  resolveTheme,
+  useAppStore,
+} from './store/appStore';
 import { nextLangPath } from './urls';
 
 function App() {
@@ -25,6 +31,9 @@ function App() {
   const autoView = useAppStore((s) => s.ui.autoView);
   const setAutoView = useAppStore((s) => s.setAutoView);
   const setLang = useAppStore((s) => s.setLang);
+  const themeMode = useAppStore((s) => s.ui.themeMode);
+  const autoTheme = useAppStore((s) => s.ui.autoTheme);
+  const setAutoTheme = useAppStore((s) => s.setAutoTheme);
 
   useEffect(() => {
     if (tourSeen || hasPlanData(useAppStore.getState())) return;
@@ -63,6 +72,18 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, [setAutoView]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => setAutoTheme(media.matches ? 'dark' : 'light');
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [setAutoTheme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolveTheme(themeMode, autoTheme);
+  }, [themeMode, autoTheme]);
 
   if (!isDesktopView(viewMode, autoView)) {
     return (

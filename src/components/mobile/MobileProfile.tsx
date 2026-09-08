@@ -19,7 +19,7 @@ import { MobileStepper } from './MobileStepper';
 const planBtnStyle: CSSProperties = {
   flex: 1,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   color: 'var(--ink)',
   borderRadius: 10,
   padding: '11px 12px',
@@ -37,6 +37,8 @@ export function MobileProfile() {
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
   const setViewMode = useAppStore((s) => s.setViewMode);
+  const themeMode = useAppStore((s) => s.ui.themeMode);
+  const setThemeMode = useAppStore((s) => s.setThemeMode);
   const mix = useAppStore((s) => s.mix);
   const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
@@ -164,6 +166,25 @@ export function MobileProfile() {
             </span>
           )}
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.themeLabel}</span>
+          <SegmentedControl
+            options={(['auto', 'light', 'dark'] as const).map((v) => ({
+              value: v,
+              label:
+                v === 'auto'
+                  ? strings.themeAuto
+                  : v === 'light'
+                    ? strings.themeLight
+                    : strings.themeDark,
+            }))}
+            value={themeMode}
+            onChange={setThemeMode}
+            minHeight={44}
+            style={{ flex: 1, minWidth: 160 }}
+          />
+        </div>
       </div>
 
       <div
@@ -214,7 +235,7 @@ export function MobileProfile() {
               margin: 0,
               fontSize: 12,
               lineHeight: 1.5,
-              color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
+              color: planFeedback === 'import-success' ? 'var(--muted-2)' : 'var(--danger)',
             }}
           >
             {planFeedback === 'import-error'
@@ -285,7 +306,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -317,7 +338,7 @@ export function MobileProfile() {
               height: 32,
               boxSizing: 'border-box',
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               color: 'var(--ink-soft)',
             }}
@@ -333,7 +354,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -351,7 +372,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -379,7 +400,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 9,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -397,7 +418,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -424,7 +445,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,

@@ -21,8 +21,8 @@ function chipButtonStyle(active: boolean): CSSProperties {
     height: 30,
     borderRadius: 8,
     border: '1px solid var(--chip-border)',
-    background: active ? 'var(--ink)' : '#fff',
-    color: active ? '#fff' : 'var(--muted)',
+    background: active ? 'var(--selected-bg)' : 'var(--surface)',
+    color: active ? 'var(--on-brand)' : 'var(--muted)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -59,7 +59,7 @@ export function MobileChartPanel() {
     <>
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface)',
           padding: '11px 14px 9px',
           display: 'flex',
           flexDirection: 'column',
@@ -135,7 +135,7 @@ export function MobileChartPanel() {
               height: 30,
               borderRadius: '50%',
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               color: 'var(--muted)',
               fontSize: 13,
               fontWeight: 700,
@@ -163,7 +163,7 @@ export function MobileChartPanel() {
           position: 'sticky',
           top: 0,
           zIndex: 5,
-          background: '#fff',
+          background: 'var(--surface)',
           borderBottom: '1px solid var(--border-soft)',
           padding: '0 14px 9px',
           display: 'flex',

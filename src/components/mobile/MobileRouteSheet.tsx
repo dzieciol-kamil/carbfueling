@@ -34,7 +34,7 @@ const sheetStyle: CSSProperties = {
   right: 0,
   bottom: 0,
   zIndex: 30,
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: '22px 22px 0 0',
   padding: '8px 18px 24px',
   boxShadow: '0 -12px 40px rgba(0,0,0,0.18)',
@@ -140,7 +140,7 @@ export function MobileRouteSheet() {
                 height: 34,
                 border: '1px solid var(--chip-border)',
                 borderRadius: 10,
-                background: '#fff',
+                background: 'var(--surface)',
                 cursor: 'pointer',
               }}
             >
@@ -285,7 +285,7 @@ export function MobileRouteSheet() {
                 flex: 1,
                 textAlign: 'center',
                 border: '1px solid var(--chip-border)',
-                background: '#fff',
+                background: 'var(--surface)',
                 color: 'var(--ink-soft)',
                 borderRadius: 10,
                 padding: '11px',
@@ -312,9 +312,9 @@ export function MobileRouteSheet() {
               onClick={toggleGpx}
               style={{
                 width: 96,
-                border: '1px solid ' + (route.useGpx ? 'var(--ink)' : 'var(--chip-border)'),
-                background: route.useGpx ? 'var(--ink)' : '#fff',
-                color: route.useGpx ? '#fff' : 'var(--muted-2)',
+                border: '1px solid var(--chip-border)',
+                background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
+                color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
                 borderRadius: 10,
                 fontSize: 12,
                 fontWeight: 600,
@@ -333,8 +333,8 @@ export function MobileRouteSheet() {
             onClick={close}
             style={{
               marginTop: 4,
-              background: 'var(--ink)',
-              color: '#fff',
+              background: 'var(--selected-bg)',
+              color: 'var(--on-brand)',
               border: 'none',
               borderRadius: 12,
               padding: 15,

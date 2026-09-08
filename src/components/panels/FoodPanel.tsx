@@ -9,9 +9,9 @@ function contStyle(active: boolean): CSSProperties {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    border: '1px solid ' + (active ? 'var(--ink)' : 'var(--chip-border)'),
-    background: active ? 'var(--ink)' : '#fff',
-    color: active ? '#fff' : 'var(--muted-2)',
+    border: '1px solid var(--chip-border)',
+    background: active ? 'var(--selected-bg)' : 'var(--surface)',
+    color: active ? 'var(--on-brand)' : 'var(--muted-2)',
     borderRadius: 8,
     padding: '6px 4px',
     fontSize: 10,
@@ -33,7 +33,7 @@ const textInputStyle: CSSProperties = {
   fontFamily: 'Archivo, sans-serif',
   fontSize: 13,
   fontWeight: 600,
-  background: '#fff',
+  background: 'var(--surface)',
 };
 const numberFieldStyle: CSSProperties = {
   display: 'flex',
@@ -43,7 +43,7 @@ const numberFieldStyle: CSSProperties = {
   borderRadius: 10,
   padding: '0 8px',
   minWidth: 0,
-  background: '#fff',
+  background: 'var(--surface)',
 };
 
 export function FoodPanel() {
@@ -89,10 +89,10 @@ export function FoodPanel() {
           <div
             key={entry.key}
             style={{
-              border: '1px solid #E9EBE5',
+              border: '1px solid var(--border)',
               borderRadius: 12,
               padding: '10px 12px',
-              background: '#FBFCFA',
+              background: 'var(--surface-soft)',
               display: 'grid',
               gridTemplateColumns: 'minmax(0,1.3fr) 74px 82px 76px 22px',
               alignItems: 'center',
@@ -156,7 +156,7 @@ export function FoodPanel() {
               style={{
                 border: 'none',
                 background: 'transparent',
-                color: '#B0B5B0',
+                color: 'var(--muted-4)',
                 cursor: 'pointer',
                 fontSize: 13,
                 padding: 4,
@@ -173,8 +173,8 @@ export function FoodPanel() {
         onClick={addFoodLibEntry}
         style={{
           marginTop: 12,
-          border: '1px dashed #C9CEC7',
-          background: '#F7F8F5',
+          border: '1px dashed var(--border-dashed)',
+          background: 'var(--surface-soft)',
           borderRadius: 10,
           padding: '11px 16px',
           fontFamily: 'Archivo, sans-serif',

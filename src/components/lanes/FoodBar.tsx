@@ -22,7 +22,7 @@ function delButtonStyle(show: boolean): CSSProperties {
     border: 'none',
     borderRadius: 4,
     background: 'rgba(0,0,0,0.32)',
-    color: '#fff',
+    color: 'var(--on-brand)',
     fontSize: 9,
     lineHeight: 1,
     cursor: 'pointer',
@@ -109,7 +109,7 @@ export function FoodBar({ food, distanceKm }: FoodBarProps) {
           style={{
             fontSize: 10,
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--on-brand)',
             fontFamily: "'JetBrains Mono', monospace",
             pointerEvents: 'none',
           }}

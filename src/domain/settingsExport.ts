@@ -32,10 +32,12 @@ const DEFAULT_SPORT: Sport = 'cycling';
 // scrub position) — none of that is "settings" and importing it would just
 // leave the app in a weird mid-interaction state.
 export type SettingsExportViewMode = 'auto' | 'desktop' | 'mobile';
+export type SettingsExportThemeMode = 'auto' | 'light' | 'dark';
 export type SettingsExportYMode = 'rate' | 'fluid';
 export type SettingsExportXUnit = 'km' | 'h';
 
 const VIEW_MODES: SettingsExportViewMode[] = ['auto', 'desktop', 'mobile'];
+const THEME_MODES: SettingsExportThemeMode[] = ['auto', 'light', 'dark'];
 const Y_MODES: SettingsExportYMode[] = ['rate', 'fluid'];
 const X_UNITS: SettingsExportXUnit[] = ['km', 'h'];
 const CONTENTS: Content[] = ['water', 'izo', 'gel'];
@@ -43,6 +45,7 @@ const CONTENTS: Content[] = ['water', 'izo', 'gel'];
 export interface SettingsExportUi {
   lang: Lang;
   viewMode: SettingsExportViewMode;
+  themeMode: SettingsExportThemeMode;
   xUnit: SettingsExportXUnit;
   yMode: SettingsExportYMode;
 }
@@ -212,6 +215,7 @@ function isValidUi(v: unknown): v is SettingsExportUi {
   return (
     LANGS.includes(v.lang as Lang) &&
     VIEW_MODES.includes(v.viewMode as SettingsExportViewMode) &&
+    THEME_MODES.includes(v.themeMode as SettingsExportThemeMode) &&
     X_UNITS.includes(v.xUnit as SettingsExportXUnit) &&
     Y_MODES.includes(v.yMode as SettingsExportYMode)
   );
@@ -265,6 +269,11 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
   // back to "rate" rather than rejecting an otherwise-valid backup over one stale UI pref.
   if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.yMode === 'sum') {
     parsed.data.ui.yMode = 'rate';
+  }
+  // A file exported before `themeMode` was added won't carry it at all — default to "auto"
+  // rather than rejecting an otherwise-valid backup over a field that didn't exist yet.
+  if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.themeMode === undefined) {
+    parsed.data.ui.themeMode = 'auto';
   }
   if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
   return {

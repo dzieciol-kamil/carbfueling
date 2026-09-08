@@ -31,14 +31,14 @@ function selKeyFor(item: PlanCardItem): string {
  *  must never come back is this screen picking its own numbers, which is how it ended up grading
  *  hydration on an uncalibrated `>= 70` that disagreed with desktop. */
 const COVERAGE_TINT: Record<CoverageStatus, { bg: string; fg: string }> = {
-  good: { bg: '#E7F2E1', fg: '#3D7A26' },
-  partial: { bg: '#FBEAE1', fg: '#A3512A' },
-  short: { bg: '#F8DED5', fg: '#8F3D1F' },
+  good: { bg: 'var(--status-good-bg)', fg: 'var(--status-good-fg)' },
+  partial: { bg: 'var(--status-partial-bg)', fg: 'var(--status-partial-fg)' },
+  short: { bg: 'var(--status-short-bg)', fg: 'var(--status-short-fg)' },
   // Shared: water triggers this above 100% of sweat loss, carbs when the planned rate passes the
   // rider's own gut cap — see coverageStatus.
-  over: { bg: '#F6DBE0', fg: '#8C2F39' },
+  over: { bg: 'var(--status-over-bg)', fg: 'var(--status-over-fg)' },
   // Carb-only — under 1h, where coverageStatus stops grading. Neutral, not a verdict.
-  unneeded: { bg: '#EBEBE8', fg: '#5F655F' },
+  unneeded: { bg: 'var(--status-unneeded-bg)', fg: 'var(--status-unneeded-fg)' },
 };
 
 function coverageCardStyle(status: CoverageStatus): CSSProperties {
@@ -177,7 +177,7 @@ export function MobilePlanList() {
             style={{
               height: 4,
               borderRadius: 2,
-              background: '#fff',
+              background: 'var(--surface)',
               overflow: 'hidden',
               margin: '6px 0',
             }}
@@ -248,7 +248,7 @@ export function MobilePlanList() {
               position: 'relative',
               height: 4,
               borderRadius: 2,
-              background: '#fff',
+              background: 'var(--surface)',
               overflow: 'hidden',
               margin: '6px 0',
             }}
@@ -357,14 +357,14 @@ export function MobilePlanList() {
             disabled={!hasGap}
             onClick={() => addFillInGap(vessel.gid)}
             style={{
-              border: '1px dashed #C9CEC7',
+              border: '1px dashed var(--border-dashed)',
               borderRadius: 11,
               padding: 12,
-              background: '#F7F8F5',
+              background: 'var(--surface-soft)',
               fontFamily: 'Archivo, sans-serif',
               fontSize: 13,
               fontWeight: 600,
-              color: hasGap ? 'var(--ink-soft)' : '#B7BCB6',
+              color: hasGap ? 'var(--ink-soft)' : 'var(--muted-4)',
               cursor: hasGap ? 'pointer' : 'not-allowed',
               width: '100%',
             }}
@@ -387,7 +387,7 @@ export function MobilePlanList() {
               borderRadius: 999,
               padding: '9px 12px',
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               cursor: 'pointer',
             }}
           >
@@ -413,10 +413,10 @@ export function MobilePlanList() {
         data-tour="add-shop"
         onClick={() => openShopSheet(null)}
         style={{
-          border: '1px dashed #C9CEC7',
+          border: '1px dashed var(--border-dashed)',
           borderRadius: 11,
           padding: 12,
-          background: '#F7F8F5',
+          background: 'var(--surface-soft)',
           fontFamily: 'Archivo, sans-serif',
           fontSize: 13,
           fontWeight: 600,
@@ -435,7 +435,7 @@ export function MobilePlanList() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#F9FAF7',
+          background: 'var(--surface-soft)',
           border: 'none',
           borderRadius: 12,
           padding: '15px 12px',

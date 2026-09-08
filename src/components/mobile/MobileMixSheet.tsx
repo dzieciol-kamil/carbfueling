@@ -53,7 +53,7 @@ const rowStyle: CSSProperties = {
   alignItems: 'baseline',
   justifyContent: 'space-between',
   gap: 10,
-  borderBottom: '1px solid #F0F1ED',
+  borderBottom: '1px solid var(--border-soft)',
   padding: '8px 0',
 };
 
@@ -106,7 +106,7 @@ export function MobileMixSheet() {
         position: 'absolute',
         inset: 0,
         zIndex: 26,
-        background: '#fff',
+        background: 'var(--surface)',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -132,7 +132,7 @@ export function MobileMixSheet() {
             height: 38,
             border: '1px solid var(--chip-border)',
             borderRadius: 11,
-            background: '#fff',
+            background: 'var(--surface)',
             cursor: 'pointer',
             fontSize: 14,
           }}
@@ -371,7 +371,7 @@ function CombinedGroupRows({
         </div>
       ))}
       {group.pours && group.pours.length > 1 && (
-        <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed #F0F1ED' }}>
+        <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border-soft)' }}>
           <div style={{ fontSize: 10, color: 'var(--muted-3)', marginBottom: 3 }}>
             {strings.combinePourLabel}
           </div>

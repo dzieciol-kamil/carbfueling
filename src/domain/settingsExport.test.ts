@@ -47,7 +47,7 @@ function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
     foods: [{ id: 101, key: 'gel', name: 'Energy gel', carbs: 22, from: 10, to: 10 }],
     shops: [{ id: 1, at: 40, name: 'Shop' }],
     foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', carbs: 22 }],
-    ui: { lang: 'en', viewMode: 'auto', xUnit: 'km', yMode: 'rate' },
+    ui: { lang: 'en', viewMode: 'auto', themeMode: 'auto', xUnit: 'km', yMode: 'rate' },
     nextGid: 2,
     nextFid: 2,
     nextFoodId: 102,
@@ -217,5 +217,22 @@ describe('settingsExport', () => {
     const file = buildSettingsExport(data);
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
+  test('rejects a themeMode value outside the known set', () => {
+    const data = makeData({ ui: { ...makeData().ui, themeMode: 'purple' as never } });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
+  test('imports an old export with no themeMode field, defaulting to auto', () => {
+    const legacyUi = { ...makeData().ui } as Record<string, unknown>;
+    delete legacyUi.themeMode;
+    const data = makeData({ ui: legacyUi as unknown as SettingsExportData['ui'] });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.ui.themeMode).toBe('auto');
   });
 });

@@ -24,16 +24,16 @@ function statusColor(status: CoverageStatus, goodColor: string): string {
   if (status === 'good') return goodColor;
   // Deeper and cooler than the "short" brick on purpose: both ends of the water scale are bad,
   // but they are not the same problem, and the number next to the bar says which one it is.
-  if (status === 'over') return '#8C2F39';
-  if (status === 'short') return '#B4552F';
+  if (status === 'over') return 'var(--status-over-fg)';
+  if (status === 'short') return 'var(--food)';
   // Neutral, not a verdict: under 1h carbs don't move the needle either way — see coverageStatus.
-  if (status === 'unneeded') return '#7A817C';
-  return '#D2703F';
+  if (status === 'unneeded') return 'var(--muted)';
+  return 'var(--climb)';
 }
 
 const cardStyle: CSSProperties = {
   flex: '1 1 auto',
-  background: '#fff',
+  background: 'var(--surface)',
   border: '1px solid var(--border)',
   borderRadius: 16,
   padding: '14px 18px',

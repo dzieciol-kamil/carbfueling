@@ -23,7 +23,7 @@ function delButtonStyle(show: boolean): CSSProperties {
     border: 'none',
     borderRadius: 4,
     background: 'rgba(0,0,0,0.32)',
-    color: '#fff',
+    color: 'var(--on-brand)',
     fontSize: 9,
     lineHeight: 1,
     cursor: 'pointer',
@@ -37,8 +37,8 @@ function delButtonStyle(show: boolean): CSSProperties {
 function popoverChipStyle(active: boolean, color: string): CSSProperties {
   return {
     border: '1px solid ' + (active ? color : 'var(--chip-border)'),
-    background: active ? color : '#fff',
-    color: active ? '#fff' : 'var(--ink-soft)',
+    background: active ? color : 'var(--surface)',
+    color: active ? 'var(--on-brand)' : 'var(--ink-soft)',
     borderRadius: 6,
     padding: '3px 8px',
     fontSize: 10,
@@ -130,7 +130,7 @@ export function FillBar({ fill, vessel, distanceKm }: FillBarProps) {
           style={{
             fontSize: 10,
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--on-brand)',
             fontFamily: "'JetBrains Mono', monospace",
             pointerEvents: 'none',
           }}

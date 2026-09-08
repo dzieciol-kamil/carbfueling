@@ -31,8 +31,8 @@ function contentLabel(content: Content, lang: Lang): string {
 function cOpt(on: boolean, color: string): CSSProperties {
   return {
     border: '1px solid ' + (on ? color : 'var(--chip-border)'),
-    background: on ? color : '#fff',
-    color: on ? '#fff' : 'var(--muted)',
+    background: on ? color : 'var(--surface)',
+    color: on ? 'var(--on-brand)' : 'var(--muted)',
     borderRadius: 7,
     padding: '5px 10px',
     fontSize: 11,
@@ -62,10 +62,10 @@ export function GearPanel() {
             key={vessel.gid}
             data-gid={vessel.gid}
             style={{
-              border: '1px solid #E9EBE5',
+              border: '1px solid var(--border)',
               borderRadius: 12,
               padding: 12,
-              background: '#FBFCFA',
+              background: 'var(--surface-soft)',
               opacity: dragKey === 'g' + vessel.gid ? 0.6 : 1,
             }}
           >
@@ -97,7 +97,7 @@ export function GearPanel() {
                   fontFamily: 'Archivo, sans-serif',
                   fontSize: 13,
                   fontWeight: 600,
-                  background: '#fff',
+                  background: 'var(--surface)',
                 }}
               />
               <span
@@ -109,7 +109,7 @@ export function GearPanel() {
                   borderRadius: 10,
                   padding: '0 10px',
                   width: 92,
-                  background: '#fff',
+                  background: 'var(--surface)',
                 }}
               >
                 <NumberInput
@@ -131,7 +131,7 @@ export function GearPanel() {
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  color: '#B0B5B0',
+                  color: 'var(--muted-4)',
                   cursor: 'pointer',
                   fontSize: 13,
                   padding: 6,
@@ -173,7 +173,7 @@ export function GearPanel() {
                     border: '1px solid var(--chip-border)',
                     borderRadius: 10,
                     padding: '0 4px 0 10px',
-                    background: '#fff',
+                    background: 'var(--surface)',
                     boxSizing: 'content-box',
                     marginLeft: 'auto',
                     marginRight: 35,
@@ -231,8 +231,8 @@ export function GearPanel() {
         onClick={addVessel}
         style={{
           marginTop: 12,
-          border: '1px dashed #C9CEC7',
-          background: '#F7F8F5',
+          border: '1px dashed var(--border-dashed)',
+          background: 'var(--surface-soft)',
           borderRadius: 10,
           padding: '11px 16px',
           fontFamily: 'Archivo, sans-serif',

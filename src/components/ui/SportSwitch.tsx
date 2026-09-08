@@ -29,7 +29,7 @@ function iconItemStyle(selected: boolean, hovered: boolean, size: number): CSSPr
   return {
     ...base,
     color: !selected && hovered ? 'var(--ink-soft)' : base.color,
-    background: !selected && hovered ? 'rgba(0,0,0,0.06)' : base.background,
+    background: !selected && hovered ? 'rgba(128,128,128,0.14)' : base.background,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

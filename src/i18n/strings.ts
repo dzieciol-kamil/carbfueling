@@ -161,6 +161,10 @@ export interface StringTable {
   viewLabel: string;
   viewAuto: string;
   autoDetected: string;
+  themeLabel: string;
+  themeAuto: string;
+  themeLight: string;
+  themeDark: string;
   viewModeConfirmTitle: string;
   viewModeConfirmBody: string;
   viewModeConfirmCancel: string;
@@ -507,6 +511,10 @@ export const STR: Record<Lang, StringTable> = {
     viewLabel: 'Tryb wyświetlania',
     viewAuto: 'Auto',
     autoDetected: 'wykryte automatycznie: ',
+    themeLabel: 'Motyw',
+    themeAuto: 'Auto',
+    themeLight: 'Jasny',
+    themeDark: 'Ciemny',
     viewModeConfirmTitle: 'Wymusić ten widok?',
     viewModeConfirmBody:
       'Ekran przestanie się automatycznie dopasowywać do rozmiaru urządzenia. Możesz to zmienić w dowolnej chwili w tym samym miejscu.',
@@ -911,6 +919,10 @@ export const STR: Record<Lang, StringTable> = {
     viewLabel: 'Display mode',
     viewAuto: 'Auto',
     autoDetected: 'auto-detected: ',
+    themeLabel: 'Theme',
+    themeAuto: 'Auto',
+    themeLight: 'Light',
+    themeDark: 'Dark',
     viewModeConfirmTitle: 'Force this view?',
     viewModeConfirmBody:
       'The layout will stop adapting automatically to your device. You can change this again anytime from the same place.',
@@ -1311,6 +1323,10 @@ export const STR: Record<Lang, StringTable> = {
     viewLabel: 'Anzeigemodus',
     viewAuto: 'Auto',
     autoDetected: 'automatisch erkannt: ',
+    themeLabel: 'Design',
+    themeAuto: 'Auto',
+    themeLight: 'Hell',
+    themeDark: 'Dunkel',
     viewModeConfirmTitle: 'Diese Ansicht erzwingen?',
     viewModeConfirmBody:
       'Das Layout passt sich nicht mehr automatisch an dein Gerät an. Du kannst das jederzeit an derselben Stelle wieder ändern.',
