@@ -367,7 +367,7 @@ export function Chart({ height, showAxis }: ChartProps) {
         <path
           d={polyline(S, nk, px, py)}
           fill="none"
-          stroke="#A8AEA9"
+          stroke="var(--muted-4)"
           strokeWidth={2}
           strokeDasharray="6 5"
           vectorEffect="non-scaling-stroke"
@@ -450,8 +450,8 @@ export function Chart({ height, showAxis }: ChartProps) {
             left: badgeFlip ? undefined : `calc(${scrubFrac * 100}% + 10px)`,
             right: badgeFlip ? `calc(${(1 - scrubFrac) * 100}% + 10px)` : undefined,
             minWidth: 104,
-            background: 'var(--ink)',
-            color: '#fff',
+            background: 'var(--selected-bg)',
+            color: 'var(--on-brand)',
             borderRadius: 9,
             padding: '7px 10px',
             display: 'flex',
@@ -467,7 +467,7 @@ export function Chart({ height, showAxis }: ChartProps) {
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: i === 1 ? 15 : 10,
                 fontWeight: i === 1 ? 700 : 400,
-                color: i === 1 ? '#fff' : '#A8AEA9',
+                color: i === 1 ? 'var(--on-brand)' : 'var(--muted-4)',
               }}
             >
               {line}

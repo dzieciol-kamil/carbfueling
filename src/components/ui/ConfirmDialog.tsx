@@ -72,8 +72,8 @@ export function ConfirmDialog({
           <button
             onClick={onConfirm}
             style={{
-              border: '1px solid var(--ink)',
-              background: 'var(--ink)',
+              border: '1px solid var(--selected-bg)',
+              background: 'var(--selected-bg)',
               color: 'var(--on-brand)',
               borderRadius: 8,
               padding: '7px 14px',
