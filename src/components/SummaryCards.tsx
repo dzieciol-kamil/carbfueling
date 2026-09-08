@@ -33,7 +33,7 @@ function statusColor(status: CoverageStatus, goodColor: string): string {
 
 const cardStyle: CSSProperties = {
   flex: '1 1 auto',
-  background: '#fff',
+  background: 'var(--surface)',
   border: '1px solid var(--border)',
   borderRadius: 16,
   padding: '14px 18px',
