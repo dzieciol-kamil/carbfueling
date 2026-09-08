@@ -54,7 +54,7 @@ export default function CarbTransporterMixDe() {
         Das Verhältnis spielt eine Rolle. Zu viel Fruktose, und du verschenkst Kapazität am
         Glukose-Tor; zu wenig, und du verschenkst Kapazität am Fruktose-Tor. Ein Verhältnis von 2:1
         (Glukose zu Fruktose nach Gewicht) ist für die meisten Radfahrer ein guter Ausgangspunkt —
-        das ist der Standard-„Iso"-Mix in Carb Fueling.
+        das ist der Standard-„Izo"-Mix in Carb Fueling.
       </p>
       <p style={articleTextStyle}>
         Carb Fueling berechnet deine persönliche Aufnahmeobergrenze anhand des eingestellten

@@ -55,7 +55,7 @@ async function main() {
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
   // used *inside* a React component's own JSX (that markup ends up in bodyHtml, which goes
   // through renderPage()'s single prefixInternalUrls pass at write time, same as everything
-  // else on the page). Here, though, the return value feeds `page.urlPath`/`page.altPath`,
+  // else on the page). Here, though, the return value feeds `page.urlPath`/`page.alternates`,
   // which renderPage() uses to build `canonical`/`hreflang` (always SITE-absolute, never
   // BASE-prefixed per the spec) — so the marker needs stripping before use in *this* context,
   // even though it's the same helper function called the same way.

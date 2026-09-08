@@ -39,7 +39,7 @@ export default function MaltoFructoseBlendDe() {
       <p style={articleTextStyle}>
         Das Verhältnis zwischen beiden spielt eine Rolle. Ein guter Ausgangspunkt sind ca. 2 Teile
         glukosebasiertes Kohlenhydrat auf 1 Teil Fruktose nach Gewicht — derselbe
-        Standard-„Iso"-Mix, den du in dieser App findest. Dieses Verhältnis nutzt fast die gesamte
+        Standard-„Izo"-Mix, den du in dieser App findest. Dieses Verhältnis nutzt fast die gesamte
         Kapazität von SGLT1 und fügt gleichzeitig genug Fruktose hinzu, damit auch GLUT5 voll
         ausgelastet wird.
       </p>

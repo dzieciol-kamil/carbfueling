@@ -38,7 +38,7 @@ export const ARTICLES: FaqArticleMeta[] = [
     de: {
       title: 'Was beim Hungerast wirklich passiert — und wie du ihn kommen siehst',
       description:
-        'Warum der Hungerast keine plötzliche Krise ist, sondern eine Lücke, die sich über die ganze Fahrt aufbaut.',
+        'Die Lücke zwischen verbrannten und zugeführten Kohlenhydraten — und wie du sie im Blick behältst.',
     },
   },
   {
@@ -279,7 +279,7 @@ export const ARTICLES: FaqArticleMeta[] = [
     de: {
       title: 'Was das Diagramm eigentlich zeigt: von der Flasche in den Blutkreislauf',
       description:
-        'Wie Carb Fueling Essen, Verdauung und Aufnahmeobergrenze über die ganze Strecke sichtbar macht.',
+        'Wie Carb Fueling Essen, Verdauung, Aufnahmeobergrenze und Defizit über die ganze Strecke sichtbar macht.',
     },
   },
   {

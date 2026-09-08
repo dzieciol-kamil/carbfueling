@@ -173,8 +173,16 @@ export function prefixInternalUrls(html, base) {
   return html.split('__BASE__').join(base.replace(/\/$/, ''));
 }
 
-// og:locale wants underscore-joined locale tags, not bare language codes.
+// og:locale wants underscore-joined locale tags, not bare language codes. Plain JS, unlike the
+// TS `Record<FaqLang, ...>` maps this mirrors (CHROME/FAQ_INDEX_META/CALCULATOR_LANG in
+// FaqLayout.tsx) — nothing here enforces this object stays in sync with FAQ_LANGS at compile
+// time, so ogLocale() below fails fast instead of silently emitting content="undefined".
 const OG_LOCALE = { en: 'en_US', pl: 'pl_PL', de: 'de_DE' };
+function ogLocale(lang) {
+  const locale = OG_LOCALE[lang];
+  if (!locale) throw new Error(`renderPage: no OG_LOCALE entry for language "${lang}"`);
+  return locale;
+}
 
 export function renderPage({
   urlPath,
@@ -230,8 +238,8 @@ export function renderPage({
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDescription}" />
     <meta property="og:image" content="${SITE}/og-image.png" />
-    <meta property="og:locale" content="${OG_LOCALE[lang]}" />
-    ${alternates.map((a) => `<meta property="og:locale:alternate" content="${OG_LOCALE[a.lang]}" />`).join('\n    ')}
+    <meta property="og:locale" content="${ogLocale(lang)}" />
+    ${alternates.map((a) => `<meta property="og:locale:alternate" content="${ogLocale(a.lang)}" />`).join('\n    ')}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${safeTitle}" />
     <meta name="twitter:description" content="${safeDescription}" />
