@@ -260,6 +260,7 @@ const defaultFoodLib: FoodLibEntry[] = [
   { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
   { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 },
   { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
+  { key: 'ricecake', pl: 'Rice cake', en: 'Rice cake', carbs: 30 },
 ];
 
 export const useAppStore = create<AppState>()(
