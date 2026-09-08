@@ -52,7 +52,7 @@ const LANDING_META = {
     description:
       'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie über die Zeit verteilst. Kostenlos, kein Konto, läuft im Browser.',
     jsonLdDescription:
-      'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie auf Flaschen, Fläschchen und Essen über die Zeit verteilst.',
+      'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie auf Flaschen, Flasks und Essen über die Zeit verteilst.',
   },
 };
 
@@ -195,7 +195,7 @@ async function main() {
       base: BASE,
       noindex: isPreview,
       canonicalOverride: `${SITE}/en/`,
-      langRedirectTarget: '/pl/',
+      langRedirectTargets: { pl: '/pl/', de: '/de/' },
     }),
     'utf-8',
   );

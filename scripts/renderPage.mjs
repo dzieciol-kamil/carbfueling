@@ -198,12 +198,15 @@ export function renderPage({
   base = '',
   noindex = false,
   canonicalOverride,
-  langRedirectTarget,
+  langRedirectTargets,
 }) {
   const canonical = canonicalOverride ?? `${SITE}${urlPath}`;
   // Every language version of this page, including its own — this is what hreflang and
   // og:locale:alternate both need: the full set, not just "the other one".
-  const allVersions = [{ lang, href: canonical }, ...alternates.map((a) => ({ lang: a.lang, href: `${SITE}${a.path}` }))];
+  const allVersions = [
+    { lang, href: canonical },
+    ...alternates.map((a) => ({ lang: a.lang, href: `${SITE}${a.path}` })),
+  ];
   // x-default has always pointed at the English version (falling back to this page's own
   // href if it has no English sibling), regardless of which language is being rendered.
   const defaultHref = (allVersions.find((v) => v.lang === 'en') ?? allVersions[0]).href;
@@ -214,8 +217,10 @@ export function renderPage({
   // whole page/app, not a single piece of content, so both need 'website' too.
   const ogType = jsonLd['@type'] === 'Article' ? 'article' : 'website';
   const robotsTag = noindex ? '\n    <meta name="robots" content="noindex, nofollow" />' : '';
-  const langRedirectTag = langRedirectTarget
-    ? `\n    <script src="__BASE__/lang-redirect.js" data-pl-target="__BASE__${langRedirectTarget}"></script>`
+  const langRedirectTag = langRedirectTargets
+    ? `\n    <script src="__BASE__/lang-redirect.js"${Object.entries(langRedirectTargets)
+        .map(([code, target]) => ` data-${code}-target="__BASE__${target}"`)
+        .join('')}></script>`
     : '';
   const html = `<!doctype html>
 <html lang="${lang}">

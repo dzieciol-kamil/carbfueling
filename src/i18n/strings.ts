@@ -1,7 +1,7 @@
 // Alphabetical by code, and kept that way as languages are added: this array's order is the
 // order every language list renders in — the calculator's dropdown (Header.tsx), the mobile
 // profile, and the static pages' switch (src/static/LangMenu.tsx).
-export const LANGS = ['en', 'pl', 'de'] as const;
+export const LANGS = ['de', 'en', 'pl'] as const;
 export type Lang = (typeof LANGS)[number];
 
 export interface StringTable {
@@ -1331,7 +1331,7 @@ export const STR: Record<Lang, StringTable> = {
     foodSectionHint:
       'Deine Produktliste — diese Buttons erscheinen unter dem Diagramm. Gib nur die Kohlenhydrate pro Portion an (nicht das Gewicht des Riegels) und eventuelle Flüssigkeit.',
     foodContHint:
-      'Wenn du „verteilt" aktivierst, erscheint das Produkt langsam im Diagramm, verteilt über mehrere Kilometer — eine Banane isst du sofort, Gummibärchen knabberst du dagegen unterwegs.',
+      'Wenn du „verteilt“ aktivierst, erscheint das Produkt langsam im Diagramm, verteilt über mehrere Kilometer — eine Banane isst du sofort, Gummibärchen knabberst du dagegen unterwegs.',
     mixHintPre: 'Hier legst du fest, woraus dein Getränk und Gel bestehen — ',
     mixHintLink1: 'Zuckerverhältnis',
     mixHintMid1: ' (auch normaler ',
@@ -1357,7 +1357,7 @@ export const STR: Record<Lang, StringTable> = {
       },
       {
         title: 'Rezept pro Flasche',
-        body: 'Die Karte „Flaschenrezepte" berechnet Gramm für Maltodextrin, Fruktose, Salz und Säure für jede einzelne Füllung.',
+        body: 'Die Karte „Flaschenrezepte“ berechnet Gramm für Maltodextrin, Fruktose, Salz und Säure für jede einzelne Füllung.',
       },
     ],
     ftAboutBody:
@@ -1367,7 +1367,7 @@ export const STR: Record<Lang, StringTable> = {
       'Kein Konto, kein Server, keine Cookies. Anonyme, cookiefreie Besucherzählung (GoatCounter) — kein seitenübergreifendes Tracking.',
     ftLegal: 'Haftungsausschluss',
     ftLegalBody:
-      'Dies ist ein Hilfsmittel für Aufklärung und Planung — keine medizinische, ernährungswissenschaftliche oder trainingsbezogene Beratung und kein Ersatz für eine Fachperson. Alle Werte sind Schätzungen auf Basis gemittelter Modelle; dein tatsächlicher Bedarf, deine Magen-Darm-Toleranz, dein Hydratationsstatus und deine Reaktion auf Belastung können davon erheblich abweichen. Du nutzt die App in eigener Verantwortung und ausschließlich auf eigenes Risiko. Der Autor übernimmt keine Haftung für gesundheitliche Folgen, Verletzungen, Schäden, Verluste oder Entscheidungen, die auf Grundlage dieser Ergebnisse getroffen werden — insbesondere übernimmt er keine Verantwortung für deine Gesundheit oder dein Leben. Wenn du eine Erkrankung hast (u. a. Diabetes, Nieren-, Herz- oder Magen-Darm-Erkrankungen), Medikamente einnimmst, schwanger bist oder dich auf einen langen oder sehr intensiven Wettkampf vorbereitest, besprich deinen Ernährungsplan mit ärztlichem Fachpersonal oder einer Sporternährungsberatung. Ignoriere keine Symptome: Bei Schwindel, Übelkeit, Verwirrtheit, Krämpfen oder Verdacht auf Hyponatriämie brich die Belastung ab und hol dir Hilfe. Die App wird „wie besehen" bereitgestellt, ohne jegliche Gewährleistung.',
+      'Dies ist ein Hilfsmittel für Aufklärung und Planung — keine medizinische, ernährungswissenschaftliche oder trainingsbezogene Beratung und kein Ersatz für eine Fachperson. Alle Werte sind Schätzungen auf Basis gemittelter Modelle; dein tatsächlicher Bedarf, deine Magen-Darm-Toleranz, dein Hydratationsstatus und deine Reaktion auf Belastung können davon erheblich abweichen. Du nutzt die App in eigener Verantwortung und ausschließlich auf eigenes Risiko. Der Autor übernimmt keine Haftung für gesundheitliche Folgen, Verletzungen, Schäden, Verluste oder Entscheidungen, die auf Grundlage dieser Ergebnisse getroffen werden — insbesondere übernimmt er keine Verantwortung für deine Gesundheit oder dein Leben. Wenn du eine Erkrankung hast (u. a. Diabetes, Nieren-, Herz- oder Magen-Darm-Erkrankungen), Medikamente einnimmst, schwanger bist oder dich auf einen langen oder sehr intensiven Wettkampf vorbereitest, besprich deinen Ernährungsplan mit ärztlichem Fachpersonal oder einer Sporternährungsberatung. Ignoriere keine Symptome: Bei Schwindel, Übelkeit, Verwirrtheit, Krämpfen oder Verdacht auf Hyponatriämie brich die Belastung ab und hol dir Hilfe. Die App wird „wie besehen“ bereitgestellt, ohne jegliche Gewährleistung.',
     ftLinks: 'Mitwirken',
     ftFaq: 'FAQ',
     ftIssues: 'Ideen & Fehler → GitHub Issues',
@@ -1393,22 +1393,22 @@ export const STR: Record<Lang, StringTable> = {
     tourFillBody:
       'Dieser Balken ist die Flasche, die wir gerade hinzugefügt haben. Du kannst die Mitte greifen und entlang der Strecke verschieben, oder den linken oder rechten Rand, um den Abschnitt, auf dem du daraus trinkst, zu verkürzen oder zu verlängern. Beim Darüberfahren mit der Maus erscheinen Buttons zum Wechseln des Inhalts (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt. Probier das nach dem Schließen der Tour aus.',
     tourFillBodyMobile:
-      'Das ist die Flasche, die wir gerade hinzugefügt haben. Tippe darauf, um die Bearbeitung zu öffnen — mit den Buttons „von" und „bis" verschiebst du sie entlang der Strecke oder änderst die Länge des Abschnitts, und die Buttons daneben wechseln den Inhalt (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt.',
+      'Das ist die Flasche, die wir gerade hinzugefügt haben. Tippe darauf, um die Bearbeitung zu öffnen — mit den Buttons „von“ und „bis“ verschiebst du sie entlang der Strecke oder änderst die Länge des Abschnitts, und die Buttons daneben wechseln den Inhalt (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt.',
     tourAddFillTitle: 'Weitere Füllung hinzufügen',
     tourAddFillBody:
-      'Dieser „+"-Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons unter dem Diagramm fügen mit einem Klick eine weitere Position hinzu.',
+      'Dieser „+“-Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons unter dem Diagramm fügen mit einem Klick eine weitere Position hinzu.',
     tourAddFillBodyMobile:
       'Dieser Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons weiter unten fügen mit einem Tipp eine weitere Position hinzu.',
     tourAddShopTitle: 'Versorgungspunkte',
     tourAddShopBody:
-      'Dieser „+" fügt im Diagramm eine Markierung für einen Versorgungspunkt hinzu (z. B. einen Laden) — du kannst sie an eine beliebige Stelle der Strecke ziehen, um zu markieren, bei welchem Kilometer du zusätzliches Essen oder Trinken einplanst.',
+      'Dieser „+“ fügt im Diagramm eine Markierung für einen Versorgungspunkt hinzu (z. B. einen Laden) — du kannst sie an eine beliebige Stelle der Strecke ziehen, um zu markieren, bei welchem Kilometer du zusätzliches Essen oder Trinken einplanst.',
     tourAddShopBodyMobile:
       'Dieser Button öffnet ein kleines Formular für einen Versorgungspunkt — du gibst den Kilometer und einen Namen ein (z. B. einen Laden), um zu markieren, wo du zusätzliches Essen oder Trinken einplanst.',
     tourClosingTitle: 'Das ist erstmal alles',
     tourClosingBody:
       'Rezepte zum Nachfüllen deiner Flaschen und Füllungen findest du unter dem Diagramm. Ausrüstung, Mischung, Produkte und Einstellungen (Gewicht, Anzeigemodus) findest du im Header. Diese Tour kannst du jederzeit über den Button in der Fußzeile erneut starten. Willst du mehr wissen? Die FAQ findest du auch dort.',
     tourClosingBodyMobile:
-      'Rezepte zum Nachfüllen von Flaschen findest du hinter dem Button „Flaschenrezepte" in der Planliste. Einstellungen und Sprache änderst du im Tab „Ich", Mischungsverhältnisse und verfügbare Flaschen in den Tabs „Mischung" und „Ausrüstung". Diese Tour kannst du jederzeit über den Button im Tab „Ich" erneut starten. Willst du mehr wissen? Die FAQ findest du auch im Tab „Ich".',
+      'Rezepte zum Nachfüllen von Flaschen findest du hinter dem Button „Flaschenrezepte“ in der Planliste. Einstellungen und Sprache änderst du im Tab „Ich“, Mischungsverhältnisse und verfügbare Flaschen in den Tabs „Mischung“ und „Ausrüstung“. Diese Tour kannst du jederzeit über den Button im Tab „Ich“ erneut starten. Willst du mehr wissen? Die FAQ findest du auch im Tab „Ich“.',
     tourNext: 'Weiter',
     tourBack: 'Zurück',
     tourSkip: 'Überspringen',
