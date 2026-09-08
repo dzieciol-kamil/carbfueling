@@ -49,7 +49,9 @@ async function main() {
   });
 
   const { ARTICLES } = await server.ssrLoadModule('/src/faq/registry.ts');
-  const { calculatorHref, faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
+  const { calculatorHref, faqHref, landingHref, FAQ_LANGS } =
+    await server.ssrLoadModule('/src/urls.ts');
+  const { FAQ_INDEX_META } = await server.ssrLoadModule('/src/faq/FaqLayout.tsx');
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
   // used *inside* a React component's own JSX (that markup ends up in bodyHtml, which goes
   // through renderPage()'s single prefixInternalUrls pass at write time, same as everything
@@ -69,7 +71,7 @@ async function main() {
     pages.push({
       outPath: path.join(distDir, lang, 'index.html'),
       urlPath: strip(landingHref(lang)),
-      altPath: strip(landingHref(altLang)),
+      alternates: [{ lang: altLang, path: strip(landingHref(altLang)) }],
       lang,
       title:
         lang === 'pl'
@@ -96,22 +98,20 @@ async function main() {
     });
   }
 
-  // FAQ pages (index + articles)
-  for (const lang of LANGS) {
-    const altLang = lang === 'pl' ? 'en' : 'pl';
+  // FAQ pages (index + articles) — a wider language set than the landing/calculator (FAQ_LANGS
+  // vs LANGS), since a FAQ-only language doesn't need a full calculator translation.
+  for (const lang of FAQ_LANGS) {
+    const otherFaqLangs = FAQ_LANGS.filter((l) => l !== lang);
 
-    const indexModPath = lang === 'pl' ? '/src/faq/FaqIndex.pl.tsx' : '/src/faq/FaqIndex.en.tsx';
+    const indexModPath = `/src/faq/FaqIndex.${lang}.tsx`;
     const { default: IndexComponent } = await server.ssrLoadModule(indexModPath);
     pages.push({
       outPath: path.join(distDir, lang, 'faq/index.html'),
       urlPath: strip(faqHref(lang)),
-      altPath: strip(faqHref(altLang)),
+      alternates: otherFaqLangs.map((l) => ({ lang: l, path: strip(faqHref(l)) })),
       lang,
-      title: lang === 'pl' ? 'Częste pytania — Carb Fueling' : 'FAQ — Carb Fueling',
-      description:
-        lang === 'pl'
-          ? 'Odpowiedzi na pytania o strategię węglowodanową i nawodnienie na długich trasach rowerowych.'
-          : 'Answers about carb and hydration strategy for long bike rides.',
+      title: FAQ_INDEX_META[lang].title,
+      description: FAQ_INDEX_META[lang].description,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
@@ -138,7 +138,7 @@ async function main() {
       pages.push({
         outPath: path.join(distDir, lang, 'faq', article.slug, 'index.html'),
         urlPath: articleUrlPath,
-        altPath: strip(faqHref(altLang, article.slug)),
+        alternates: otherFaqLangs.map((l) => ({ lang: l, path: strip(faqHref(l, article.slug)) })),
         lang,
         title: `${article[lang].title} — Carb Fueling`,
         description: article[lang].description,

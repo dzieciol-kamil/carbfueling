@@ -17,7 +17,7 @@ describe('ARTICLES registry', () => {
 
   it('has a non-empty en and pl title/description for every article', () => {
     for (const article of ARTICLES) {
-      for (const lang of ['en', 'pl'] as const) {
+      for (const lang of ['en', 'pl', 'de'] as const) {
         expect(article[lang].title.trim().length).toBeGreaterThan(0);
         expect(article[lang].description.trim().length).toBeGreaterThan(0);
       }
@@ -57,7 +57,7 @@ describe('ARTICLES registry', () => {
 
   it('has a component file on disk for every {slug, lang} pair', () => {
     for (const article of ARTICLES) {
-      for (const lang of ['en', 'pl'] as const) {
+      for (const lang of ['en', 'pl', 'de'] as const) {
         const componentPath = `./articles/${lang}/${article.slug}.tsx`;
         expect(componentPath in articleModules, `missing ${componentPath}`).toBe(true);
       }

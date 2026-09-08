@@ -1,6 +1,7 @@
 // src/landing/Landing.pl.tsx
 import type { CSSProperties } from 'react';
 import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
+import { LANGS, t } from '../i18n/strings';
 import SiteFooter from './SiteFooter';
 import LangMenu from '../static/LangMenu';
 
@@ -424,7 +425,12 @@ export default function LandingPl() {
           <span style={headerTagline}>planer węglowodanów i nawodnienia</span>
         </div>
         <div className="landing-actions">
-          <LangMenu lang="pl" hrefFor={landingHref} />
+          <LangMenu
+            langs={LANGS}
+            current="pl"
+            hrefFor={landingHref}
+            labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
+          />
           <a href={calculatorHref('pl')} style={ctaButton}>
             Otwórz kalkulator →
           </a>

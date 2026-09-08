@@ -68,7 +68,7 @@ describe('renderRedirectStub', () => {
 
 const basePageArgs = {
   urlPath: '/en/faq/',
-  altPath: '/pl/faq/',
+  alternates: [{ lang: 'pl', path: '/pl/faq/' }],
   lang: 'en',
   title: 'FAQ',
   description: 'desc',
@@ -81,7 +81,7 @@ describe('renderPage — root landing special case', () => {
     const html = renderPage({
       ...basePageArgs,
       urlPath: '/en/',
-      altPath: '/pl/',
+      alternates: [{ lang: 'pl', path: '/pl/' }],
       canonicalOverride: 'https://carbfueling.com/en/',
       langRedirectTarget: '/pl/',
     });
@@ -94,6 +94,56 @@ describe('renderPage — root landing special case', () => {
     const html = renderPage(basePageArgs);
     expect(html).not.toContain('lang-redirect.js');
     expect(html).not.toContain('redirect.js" data-target');
+  });
+});
+
+describe('renderPage — hreflang and og:locale', () => {
+  test('a 2-language page (today\'s landing/calculator/EN·PL FAQ case) carries exactly its own and one alternate hreflang link, plus x-default', () => {
+    const html = renderPage(basePageArgs);
+    expect(html).toContain('<link rel="alternate" hreflang="en" href="https://carbfueling.com/en/faq/" />');
+    expect(html).toContain('<link rel="alternate" hreflang="pl" href="https://carbfueling.com/pl/faq/" />');
+    expect(html).toContain('<link rel="alternate" hreflang="x-default" href="https://carbfueling.com/en/faq/" />');
+    expect(html).toContain('<meta property="og:locale" content="en_US" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="pl_PL" />');
+  });
+
+  test('x-default follows the English version even when rendering a non-English page', () => {
+    const html = renderPage({
+      ...basePageArgs,
+      urlPath: '/pl/faq/',
+      lang: 'pl',
+      alternates: [{ lang: 'en', path: '/en/faq/' }],
+    });
+    expect(html).toContain('<link rel="alternate" hreflang="x-default" href="https://carbfueling.com/en/faq/" />');
+    expect(html).toContain('<meta property="og:locale" content="pl_PL" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="en_US" />');
+  });
+
+  test('a 3-language page (FAQ with a third, calculator-less language) carries one hreflang link and one og:locale:alternate per alternate', () => {
+    const html = renderPage({
+      ...basePageArgs,
+      urlPath: '/de/faq/bonk-crisis/',
+      lang: 'de',
+      alternates: [
+        { lang: 'en', path: '/en/faq/bonk-crisis/' },
+        { lang: 'pl', path: '/pl/faq/bonk-crisis/' },
+      ],
+    });
+    expect(html).toContain(
+      '<link rel="alternate" hreflang="de" href="https://carbfueling.com/de/faq/bonk-crisis/" />',
+    );
+    expect(html).toContain(
+      '<link rel="alternate" hreflang="en" href="https://carbfueling.com/en/faq/bonk-crisis/" />',
+    );
+    expect(html).toContain(
+      '<link rel="alternate" hreflang="pl" href="https://carbfueling.com/pl/faq/bonk-crisis/" />',
+    );
+    expect(html).toContain(
+      '<link rel="alternate" hreflang="x-default" href="https://carbfueling.com/en/faq/bonk-crisis/" />',
+    );
+    expect(html).toContain('<meta property="og:locale" content="de_DE" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="en_US" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="pl_PL" />');
   });
 });
 

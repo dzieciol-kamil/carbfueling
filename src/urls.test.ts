@@ -13,11 +13,13 @@ describe('faqHref', () => {
   test('index page, per language', () => {
     expect(faqHref('en')).toBe('__BASE__/en/faq/');
     expect(faqHref('pl')).toBe('__BASE__/pl/faq/');
+    expect(faqHref('de')).toBe('__BASE__/de/faq/');
   });
 
   test('article page, per language', () => {
     expect(faqHref('en', 'bonk-crisis')).toBe('__BASE__/en/faq/bonk-crisis/');
     expect(faqHref('pl', 'bonk-crisis')).toBe('__BASE__/pl/faq/bonk-crisis/');
+    expect(faqHref('de', 'bonk-crisis')).toBe('__BASE__/de/faq/bonk-crisis/');
   });
 });
 

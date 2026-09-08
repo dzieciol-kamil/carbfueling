@@ -1,6 +1,7 @@
 // src/landing/Landing.en.tsx
 import type { CSSProperties } from 'react';
 import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
+import { LANGS, t } from '../i18n/strings';
 import SiteFooter from './SiteFooter';
 import LangMenu from '../static/LangMenu';
 
@@ -424,7 +425,12 @@ export default function LandingEn() {
           <span style={headerTagline}>carbohydrate &amp; hydration planner</span>
         </div>
         <div className="landing-actions">
-          <LangMenu lang="en" hrefFor={landingHref} />
+          <LangMenu
+            langs={LANGS}
+            current="en"
+            hrefFor={landingHref}
+            labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
+          />
           <a href={calculatorHref('en')} style={ctaButton}>
             Open the calculator →
           </a>

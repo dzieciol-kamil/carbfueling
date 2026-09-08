@@ -8,36 +8,47 @@
 // One difference from the calculator's menu that no markup can fix: with no script there is
 // nothing to close the panel when the reader clicks elsewhere. Clicking an entry navigates
 // away, which is the only thing anyone opens it for.
-import { LANGS, t, type Lang } from '../i18n/strings';
-
-export default function LangMenu({
-  lang,
+export default function LangMenu<Code extends string>({
+  langs,
+  current,
   hrefFor,
+  labelFor,
 }: {
-  lang: Lang;
+  /** The full set of languages to list, in display order. */
+  langs: readonly Code[];
+  current: Code;
   /** Where each language's entry points — the same page in that language. */
-  hrefFor: (lang: Lang) => string;
+  hrefFor: (lang: Code) => string;
+  /** Short code + full name shown for a given language — kept as a prop rather than an
+   *  internal lookup so this component doesn't have to know which language list it's
+   *  serving: the calculator's full set (via `i18n/strings.ts`'s `t()`) for the landing
+   *  pages, or the FAQ's own, wider set for FAQ pages (see `FaqLayout.tsx`). */
+  labelFor: (lang: Code) => { short: string; name: string };
 }) {
+  const c = labelFor(current);
   return (
     <details className="lang-menu">
       <summary>
-        <span className="lang-menu-code">{t(lang).langShort}</span>
-        <span className="lang-menu-name">{t(lang).langName}</span>
+        <span className="lang-menu-code">{c.short}</span>
+        <span className="lang-menu-name">{c.name}</span>
         <span className="lang-menu-caret">▾</span>
       </summary>
       <div className="lang-menu-list">
-        {LANGS.map((code) => (
-          <a
-            key={code}
-            href={hrefFor(code)}
-            hrefLang={code}
-            className={code === lang ? 'is-current' : undefined}
-          >
-            <span className="lang-menu-code">{t(code).langShort}</span>
-            <span className="lang-menu-name">{t(code).langName}</span>
-            <span className="lang-menu-check">✓</span>
-          </a>
-        ))}
+        {langs.map((code) => {
+          const l = labelFor(code);
+          return (
+            <a
+              key={code}
+              href={hrefFor(code)}
+              hrefLang={code}
+              className={code === current ? 'is-current' : undefined}
+            >
+              <span className="lang-menu-code">{l.short}</span>
+              <span className="lang-menu-name">{l.name}</span>
+              <span className="lang-menu-check">✓</span>
+            </a>
+          );
+        })}
       </div>
     </details>
   );

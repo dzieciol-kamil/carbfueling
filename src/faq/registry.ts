@@ -4,6 +4,7 @@ export interface FaqArticleMeta {
   datePublished: string;
   en: { title: string; description: string };
   pl: { title: string; description: string };
+  de: { title: string; description: string };
 }
 
 export const ARTICLES: FaqArticleMeta[] = [
@@ -18,6 +19,10 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Dlaczego nie wchłoniesz więcej niż ok. 90 g węglowodanów na godzinę?',
       description: 'Jak mieszanka glukozy i fruktozy podnosi sufit wchłaniania jelitowego.',
     },
+    de: {
+      title: 'Warum kannst du nicht mehr als ca. 90 g Kohlenhydrate pro Stunde aufnehmen?',
+      description: 'Wie eine Glukose-Fruktose-Mischung deine Aufnahmeobergrenze im Darm anhebt.',
+    },
   },
   {
     slug: 'bonk-crisis',
@@ -30,6 +35,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Co się dzieje, gdy "łapiesz bombę" — i jak to przewidzieć',
       description: 'Luka między spalanymi a dostarczanymi węglowodanami i jak ją obserwować.',
     },
+    de: {
+      title: 'Was beim Hungerast wirklich passiert — und wie du ihn kommen siehst',
+      description:
+        'Warum der Hungerast keine plötzliche Krise ist, sondern eine Lücke, die sich über die ganze Fahrt aufbaut.',
+    },
   },
   {
     slug: 'bottle-refill-planning',
@@ -41,6 +51,11 @@ export const ARTICLES: FaqArticleMeta[] = [
     pl: {
       title: 'Jak zaplanować uzupełnianie bidonów na długiej trasie',
       description: 'Gdzie ustawić punkty zaopatrzenia, żeby nigdy nie zabrakło paliwa.',
+    },
+    de: {
+      title: 'Flaschen auf einer langen Fahrt nachfüllen: so planst du es',
+      description:
+        'Wie du Verpflegungspunkte setzt, bevor die Lücke zwischen Bedarf und Vorrat zur Krise wird.',
     },
   },
   {
@@ -56,6 +71,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Maltodekstryna to dla jelita nadal sama glukoza — dlaczego dodanie fruktozy zmienia to, ile faktycznie wchłoniesz.',
     },
+    de: {
+      title: 'Malto + Fruktose: warum eine Transporter-Mischung besser wirkt als Glukose allein',
+      description:
+        'Warum reines Maltodextrin bei ca. 60 g/h endet und Fruktose einen zweiten Aufnahmekanal öffnet.',
+    },
   },
   {
     slug: 'carbs-per-hour-by-intensity',
@@ -69,6 +89,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Ile węglowodanów na godzinę naprawdę potrzebujesz?',
       description:
         'Praktyczny przewodnik wg intensywności i czasu trwania — od luźnej jazdy po wielogodzinne wysiłki.',
+    },
+    de: {
+      title: 'Wie viele Kohlenhydrate pro Stunde brauchst du wirklich?',
+      description:
+        'Ein praktischer 30-90-g/h-Bereich nach Fahrdauer und Intensität statt einer starren Regel.',
     },
   },
   {
@@ -84,6 +109,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Stopniowy plan na przyjmowanie więcej węglowodanów na godzinę bez wzdęć i skurczów.',
     },
+    de: {
+      title: 'Darmtraining: wie du deine Kohlenhydrattoleranz sicher steigerst',
+      description:
+        'Wie du deinen Darm über Wochen an höhere Kohlenhydratmengen gewöhnst, statt es am Renntag zu riskieren.',
+    },
   },
   {
     slug: 'bottle-vs-gel',
@@ -95,6 +125,10 @@ export const ARTICLES: FaqArticleMeta[] = [
     pl: {
       title: 'Bidon czy żel? Kiedy i co wybrać',
       description: 'Porównanie bidonu, żelu i jedzenia stałego jako źródeł węglowodanów na trasie.',
+    },
+    de: {
+      title: 'Flasche oder Gel? Wann was wählen',
+      description: 'Wann Flasche, Gel und feste Nahrung im Rennen jeweils ihre Stärken ausspielen.',
     },
   },
   {
@@ -108,6 +142,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Ile wody na godzinę? Nawodnienie, temperatura i tempo pocenia',
       description:
         'Dlaczego zapotrzebowanie na płyny tak bardzo różni się między rowerzystami — i jak oszacować swoje.',
+    },
+    de: {
+      title: 'Wie viel Wasser pro Stunde? Flüssigkeit, Hitze und Schweißrate',
+      description:
+        'Warum es keine feste ml-Zahl gibt und wie Temperatur deinen echten Flüssigkeitsbedarf bestimmt.',
     },
   },
   {
@@ -123,6 +162,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Straty sodu z potem mocno różnią się między osobami — kiedy warto je uzupełniać.',
     },
+    de: {
+      title: 'Natrium auf dem Rad: wann zusätzliche Elektrolyte wirklich einen Unterschied machen',
+      description:
+        'Wie du erkennst, ob du zu den "Salty Sweaters" gehörst, und wann sich zusätzliches Natrium lohnt.',
+    },
   },
   {
     slug: 'honey-sugar-diy-mix',
@@ -136,6 +180,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Miód albo cukier zamiast gotowego proszku — czy to działa tak samo dobrze?',
       description:
         'Nauka stojąca za domowymi miksami węglowodanowymi i porównanie z gotowymi proszkami izotonicznymi.',
+    },
+    de: {
+      title: 'Honig oder Haushaltszucker statt fertigem Pulver — funktioniert das genauso gut?',
+      description:
+        'Warum eine Glukose-Fruktose-Mischung aus Honig oder Zucker fast identisch wirkt wie ein Fertigprodukt.',
     },
   },
   {
@@ -151,6 +200,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Dlaczego jazda w upale zmienia to, co i ile powinieneś przyjmować — nie tylko ile pijesz.',
     },
+    de: {
+      title: "Wie Hitze deinen Kohlenhydratplan verändert (es ist nicht nur 'mehr trinken')",
+      description:
+        'Warum Hitze nicht nur mehr Schweiß bedeutet, sondern auch die Kohlenhydrataufnahme deines Darms bremst.',
+    },
   },
   {
     slug: 'fueling-100km-vs-300km',
@@ -163,6 +217,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Fueling na 100 km vs. 300 km: co się zmienia w strategii',
       description:
         'Dlaczego strategia zmienia się wraz z wydłużaniem trasy z kilku godzin na cały dzień i dłużej.',
+    },
+    de: {
+      title: 'Fueling bei 100 km vs. 300 km: was sich an der Strategie ändert',
+      description:
+        'Wie sich Limitierung, Geschmacksermüdung und Logistik zwischen kurzen und Ultra-Distanzen verschieben.',
     },
   },
   {
@@ -177,6 +236,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Czy tempo lub moc wpływają na to, ile możesz wchłonąć?',
       description:
         'Zapotrzebowanie i zdolność wchłaniania to nie to samo — dopóki intensywność nie zrobi się ekstremalna.',
+    },
+    de: {
+      title: 'Beeinflussen Tempo oder Leistung, wie viel du aufnehmen kannst?',
+      description:
+        'Warum eine härtere Fahrt zwar deinen Kohlenhydratbedarf erhöht, aber nicht deine Aufnahmeobergrenze.',
     },
   },
   {
@@ -193,6 +257,12 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Aromaty w kroplach, liofilizowane owoce, hibiskus i inne łatwe sposoby na nudny bidon.',
     },
+    de: {
+      title:
+        'Selbstgemachte Geschmackszusätze: einfache Wege, um Flasche oder Gel besser schmecken zu lassen',
+      description:
+        'Wie Zitrusaromen, Fruchtpulver, Hibiskus und Salz gegen Geschmacksermüdung auf langen Fahrten helfen.',
+    },
   },
   {
     slug: 'what-the-chart-shows',
@@ -205,6 +275,11 @@ export const ARTICLES: FaqArticleMeta[] = [
     pl: {
       title: 'Co właściwie pokazuje wykres: od bidonu do krwiobiegu',
       description: 'Wykres linia po linii — spożycie, żołądek, sufit wchłaniania i niedobór.',
+    },
+    de: {
+      title: 'Was das Diagramm eigentlich zeigt: von der Flasche in den Blutkreislauf',
+      description:
+        'Wie Carb Fueling Essen, Verdauung und Aufnahmeobergrenze über die ganze Strecke sichtbar macht.',
     },
   },
   {
@@ -221,6 +296,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Sufit wchłaniania jelita nie zmienia się między bieganiem a rowerem — ale Twój praktyczny cel powinien. Oto dlaczego.',
     },
+    de: {
+      title: 'Laufen vs. Rad: wie sich Kohlenhydratbedarf und -aufnahme wirklich unterscheiden',
+      description:
+        'Warum dieselbe Aufnahmeobergrenze beim Laufen wegen der mechanischen Belastung trotzdem öfter Probleme macht.',
+    },
   },
   {
     slug: 'rice-cake-bars',
@@ -234,6 +314,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Domowy rice cake: przepis na paliwo, gdy żele już nie wchodzą',
       description:
         'Prosty batonik z ryżu, mleczka kokosowego i daktyli — ile ma węglowodanów na porcję i dlaczego realne jedzenie wygrywa z kolejnym żelem pod koniec długiej trasy.',
+    },
+    de: {
+      title: 'Rice Cake selbst gemacht: Verpflegung für den Moment, wenn Gele nicht mehr gehen',
+      description:
+        'Ein Reisriegel-Rezept mit Nährwerten gegen Geschmacksermüdung auf sehr langen Strecken.',
     },
   },
 ];
