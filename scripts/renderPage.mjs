@@ -39,12 +39,18 @@ const ROOT_STYLE = `
   }
   :root { --ink:#16191c; --bg:#eff0ec; --surface:#fff; --border:#e3e5e0; --border-soft:#edefea;
     --chip-border:#dde0da; --muted:#7a817c; --muted-2:#6e7573; --muted-3:#9aa09b;
-    --ink-soft:#3d423e; --carb:#5aa33f; --gel:#c9922e; --food:#b4552f; --water:#3d8fbf; }
+    --ink-soft:#3d423e; --carb:#5aa33f; --gel:#c9922e; --food:#b4552f; --water:#3d8fbf;
+    --link-hover:#2f7099; --selected-bg:#16191c; --on-brand:#fff; --wash-rgb:239, 240, 236; }
+  [data-theme='dark'] {
+    --ink:#f0ebe0; --bg:#1c1a17; --surface:#26221d; --border:#383229; --border-soft:#2e2a24;
+    --chip-border:#443c30; --muted:#a89f8e; --muted-2:#c4bcac; --muted-3:#6e6658;
+    --ink-soft:#d8d2c6; --link-hover:#5aa8d6; --wash-rgb:28, 26, 23;
+  }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Archivo', Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased; }
   a { color: var(--water); text-decoration: none; }
-  a:hover { color: #2f7099; }
+  a:hover { color: var(--link-hover); }
 
   /* Language switch, shared by the landing and the FAQ pages (src/static/LangMenu.tsx).
      Shaped to match the calculator's own dropdown in Header.tsx — the values below are that
@@ -54,7 +60,7 @@ const ROOT_STYLE = `
   .lang-menu { position: relative; }
   .lang-menu > summary {
     display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
-    border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+    border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
     padding: 7px 13px; color: var(--ink);
   }
   .lang-menu > summary::-webkit-details-marker { display: none; }
@@ -66,17 +72,32 @@ const ROOT_STYLE = `
   .lang-menu-list {
     display: flex; flex-direction: column; gap: 2px;
     position: absolute; top: calc(100% + 6px); right: 0; min-width: 178px;
-    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 6px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px;
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14); z-index: 60;
   }
   .lang-menu-list a { display: flex; align-items: center; gap: 9px; border-radius: 8px;
     padding: 8px 10px; color: var(--ink); }
-  .lang-menu-list a.is-current { background: #f2f5ef; }
+  .lang-menu-list a.is-current { background: var(--border-soft); }
   .lang-menu-list .lang-menu-code { flex: 0 0 22px; letter-spacing: normal; }
   .lang-menu-list .lang-menu-name { font-size: 12.5px; font-weight: 500; }
   .lang-menu-check { margin-left: auto; font-size: 11px; color: var(--carb);
     visibility: hidden; }
   .lang-menu-list a.is-current .lang-menu-check { visibility: visible; }
+
+  /* The dark-mode switch next to the language menu (src/static/ThemeToggle.tsx). These pages
+     ship no script except this one control's — theme.js sets [data-theme] on <html> before
+     paint (from localStorage, falling back to prefers-color-scheme) and flips it on click. The
+     two icons are both always in the DOM; which one shows is decided by the same attribute the
+     rest of the page's colors key off, so the button never needs its own JS to redraw itself. */
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; box-sizing: border-box; flex: 0 0 32px;
+    border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
+    color: var(--ink-soft); cursor: pointer; font-size: 15px; line-height: 1;
+  }
+  .theme-toggle-icon-dark { display: none; }
+  [data-theme='dark'] .theme-toggle-icon-light { display: none; }
+  [data-theme='dark'] .theme-toggle-icon-dark { display: inline; }
 
   /* The FAQ pages carry the landing's opening photograph, held still behind the article:
      fixed, so it never scrolls with the text, and washed over the reading column so the
@@ -99,10 +120,10 @@ const ROOT_STYLE = `
   .faq-wash {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background: linear-gradient(90deg,
-      rgba(239, 240, 236, 0) 0%,
-      rgba(239, 240, 236, 0.86) calc(50% - 430px),
-      rgba(239, 240, 236, 0.86) calc(50% + 430px),
-      rgba(239, 240, 236, 0) 100%);
+      rgba(var(--wash-rgb), 0) 0%,
+      rgba(var(--wash-rgb), 0.86) calc(50% - 430px),
+      rgba(var(--wash-rgb), 0.86) calc(50% + 430px),
+      rgba(var(--wash-rgb), 0) 100%);
   }
 
   /* The band just above the phone breakpoint: the desktop bar still applies but no longer fits,
@@ -251,6 +272,7 @@ export function renderPage({
     <meta name="twitter:image" content="${SITE}/og-image.png" />
     <script type="application/ld+json">${safeJsonLd(jsonLd)}</script>
     <script data-goatcounter="https://kddudi.goatcounter.com/count" async src="__BASE__/count.js"></script>${langRedirectTag}
+    <script src="__BASE__/theme.js"></script>
     <style>${ROOT_STYLE}</style>
   </head>
   <body>

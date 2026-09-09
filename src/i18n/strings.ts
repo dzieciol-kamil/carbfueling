@@ -161,6 +161,7 @@ export interface StringTable {
   viewLabel: string;
   viewAuto: string;
   autoDetected: string;
+  themeToggleLabel: string;
   themeLabel: string;
   themeAuto: string;
   themeLight: string;
@@ -511,6 +512,7 @@ export const STR: Record<Lang, StringTable> = {
     viewLabel: 'Tryb wyświetlania',
     viewAuto: 'Auto',
     autoDetected: 'wykryte automatycznie: ',
+    themeToggleLabel: 'Przełącz jasny/ciemny motyw',
     themeLabel: 'Motyw',
     themeAuto: 'Auto',
     themeLight: 'Jasny',
@@ -919,6 +921,7 @@ export const STR: Record<Lang, StringTable> = {
     viewLabel: 'Display mode',
     viewAuto: 'Auto',
     autoDetected: 'auto-detected: ',
+    themeToggleLabel: 'Toggle light/dark theme',
     themeLabel: 'Theme',
     themeAuto: 'Auto',
     themeLight: 'Light',
@@ -1323,6 +1326,7 @@ export const STR: Record<Lang, StringTable> = {
     viewLabel: 'Anzeigemodus',
     viewAuto: 'Auto',
     autoDetected: 'automatisch erkannt: ',
+    themeToggleLabel: 'Hell-/Dunkelmodus umschalten',
     themeLabel: 'Design',
     themeAuto: 'Auto',
     themeLight: 'Hell',

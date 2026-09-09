@@ -4,6 +4,7 @@ import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
 import { LANGS, t } from '../i18n/strings';
 import SiteFooter from './SiteFooter';
 import LangMenu from '../static/LangMenu';
+import ThemeToggle from '../static/ThemeToggle';
 
 // The header is a fixed 61px bar, so nothing in it may wrap — the phone block already says
 // so, but the rule holds at every width: between 761px and ~778px the desktop bar runs out of
@@ -27,7 +28,7 @@ const ctaButton: CSSProperties = {
   alignItems: 'center',
   gap: 8,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: 999,
   padding: '9px 16px',
   fontSize: 13,
@@ -77,6 +78,17 @@ body { padding-top: var(--landing-header-h); }
   object-fit: cover; object-position: center center;
   opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
 }
+/* Every photograph ships a light and a dark capture (public/landing/*-dark.*); which one
+   renders is decided by the same [data-theme] attribute that recolors the rest of the page.
+   Both sit in the DOM so the swap is pure CSS — no script needed beyond the one that already
+   sets the attribute (see ThemeToggle.tsx / theme.js). */
+.landing-bg.is-dark, .landing-shot img.is-dark { display: none; }
+[data-theme='dark'] .landing-bg.is-dark, [data-theme='dark'] .landing-shot img.is-dark {
+  display: block;
+}
+[data-theme='dark'] .landing-bg.is-light, [data-theme='dark'] .landing-shot img.is-light {
+  display: none;
+}
 /* The closing photograph is 1376x768, and "cover" fills the height first — so the taller the
    window, the more of the sides it eats. A 1024px-wide window keeps 81% of the frame, but a
    768x1024 tablet in portrait keeps 45%: both FINISH pylons and the rider's body fall outside
@@ -96,8 +108,8 @@ body { padding-top: var(--landing-header-h); }
 .landing-wash {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 46% 60% at 50% 50%,
-    rgba(239, 240, 236, 0.97) 0%, rgba(239, 240, 236, 0.9) 44%,
-    rgba(239, 240, 236, 0.5) 72%, rgba(239, 240, 236, 0) 100%);
+    rgba(var(--wash-rgb), 0.97) 0%, rgba(var(--wash-rgb), 0.9) 44%,
+    rgba(var(--wash-rgb), 0.5) 72%, rgba(var(--wash-rgb), 0) 100%);
 }
 
 .landing-cluster {
@@ -124,7 +136,7 @@ body { padding-top: var(--landing-header-h); }
 }
 .landing-shot img {
   display: block; width: auto; height: auto; max-width: 100%; max-height: 23.5em;
-  border-radius: 0.75em; border: 1px solid var(--border); background: #fff;
+  border-radius: 0.75em; border: 1px solid var(--border); background: var(--surface);
   box-shadow: 0 1.5em 3.5em rgba(22, 25, 28, 0.16);
 }
 .landing-cap br { display: none; }
@@ -169,9 +181,17 @@ body { padding-top: var(--landing-header-h); }
    slides hand over to each other. Two things make that work: the slide sticks, and
    the footer sits inside the same <main> — a sticky element stops sticking at its
    parent's edge, so a footer placed after </main> would unstick the slide at exactly
-   the moment it arrived. */
+   the moment it arrived.
+
+   scroll-snap-stop: always is the other half. Without it, a single fast scroll gesture
+   (a trackpad flick, or a few queued wheel ticks) covers enough distance to sail past
+   this slide's own resting point and land directly on the footer's — the slide never
+   gets its moment fully on screen, and the footer's rise over it reads as an instant
+   jump instead of a ride. This forces every such gesture to stop here first, so the
+   footer's entrance is always its own, separate scroll. */
 .landing-slide:last-of-type {
   position: sticky; top: var(--landing-header-h); z-index: 1;
+  scroll-snap-stop: always;
 }
 
 .site-footer { width: 100%; box-sizing: border-box; display: flex; flex-direction: column;
@@ -198,7 +218,7 @@ body { padding-top: var(--landing-header-h); }
 .site-footer-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .site-footer-pill {
   display: inline-flex; align-items: center; gap: 8px;
-  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+  border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
   padding: 7px 13px; font-size: 12px; font-weight: 600; color: var(--ink);
 }
 .site-footer-pill-coffee { color: var(--gel); }
@@ -206,7 +226,7 @@ body { padding-top: var(--landing-header-h); }
 .site-footer-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; box-sizing: border-box;
-  border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+  border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
   color: var(--ink-soft);
 }
 .site-footer-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
@@ -214,7 +234,7 @@ body { padding-top: var(--landing-header-h); }
 .site-footer-disclaimer-body { margin: 0; font-size: 11.5px; line-height: 1.65; color: var(--muted); }
 .site-footer-bottom {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  flex-wrap: wrap; border-top: 1px solid #E6E8E2; padding-top: 14px;
+  flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 14px;
 }
 .site-footer-copyright {
   font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
@@ -299,9 +319,9 @@ body { padding-top: var(--landing-header-h); }
      smears the whole picture. Here it is a vertical fade instead: dense behind the
      question at the top, gone by the lower third so the road and the rider read. */
   .landing-wash {
-    background: linear-gradient(to bottom, rgba(239, 240, 236, 0.93) 0%,
-      rgba(239, 240, 236, 0.88) 32%, rgba(239, 240, 236, 0.45) 54%,
-      rgba(239, 240, 236, 0.08) 72%, rgba(239, 240, 236, 0) 100%);
+    background: linear-gradient(to bottom, rgba(var(--wash-rgb), 0.93) 0%,
+      rgba(var(--wash-rgb), 0.88) 32%, rgba(var(--wash-rgb), 0.45) 54%,
+      rgba(var(--wash-rgb), 0.08) 72%, rgba(var(--wash-rgb), 0) 100%);
   }
 
   .landing-cluster {
@@ -425,6 +445,7 @@ export default function LandingEn() {
           <span style={headerTagline}>carbohydrate &amp; hydration planner</span>
         </div>
         <div className="landing-actions">
+          <ThemeToggle label={t('en').themeToggleLabel} />
           <LangMenu
             langs={LANGS}
             current="en"
@@ -439,7 +460,8 @@ export default function LandingEn() {
 
       <main>
         <section className="landing-slide" data-shot="right" data-slide="1">
-          <img className="landing-bg" src={assetHref('/landing/road.jpg')} alt="" />
+          <img className="landing-bg is-light" src={assetHref('/landing/road.jpg')} alt="" />
+          <img className="landing-bg is-dark" src={assetHref('/landing/road-dark.jpeg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
             <i className="is-current" />
@@ -459,7 +481,13 @@ export default function LandingEn() {
                 This is what <br />a plan for your route looks like
               </figcaption>
               <img
+                className="is-light"
                 src={assetHref('/landing/hero.jpg')}
+                alt="Carb Fueling app: route, coverage cards, and the fueling plan chart"
+              />
+              <img
+                className="is-dark"
+                src={assetHref('/landing/hero-dark.png')}
                 alt="Carb Fueling app: route, coverage cards, and the fueling plan chart"
               />
             </figure>
@@ -467,7 +495,8 @@ export default function LandingEn() {
         </section>
 
         <section className="landing-slide" data-shot="left" data-slide="2">
-          <img className="landing-bg" src={assetHref('/landing/run.jpg')} alt="" />
+          <img className="landing-bg is-light" src={assetHref('/landing/run.jpg')} alt="" />
+          <img className="landing-bg is-dark" src={assetHref('/landing/run-dark.jpeg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
             <i />
@@ -489,7 +518,13 @@ export default function LandingEn() {
                 what you need in your kitchen
               </figcaption>
               <img
+                className="is-light"
                 src={assetHref('/landing/mix.jpg')}
+                alt="Mix & bottles panel: the isotonic recipe, measured out in sugar, salt and lemon"
+              />
+              <img
+                className="is-dark"
+                src={assetHref('/landing/mix-dark.png')}
                 alt="Mix & bottles panel: the isotonic recipe, measured out in sugar, salt and lemon"
               />
             </figure>
@@ -497,7 +532,8 @@ export default function LandingEn() {
         </section>
 
         <section className="landing-slide" data-shot="right" data-slide="3">
-          <img className="landing-bg" src={assetHref('/landing/gravel.jpg')} alt="" />
+          <img className="landing-bg is-light" src={assetHref('/landing/gravel.jpg')} alt="" />
+          <img className="landing-bg is-dark" src={assetHref('/landing/gravel-dark.jpeg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
             <i />
@@ -514,7 +550,13 @@ export default function LandingEn() {
             <figure className="landing-shot">
               <figcaption className="landing-cap">See the gap before it turns critical</figcaption>
               <img
+                className="is-light"
                 src={assetHref('/landing/chart.jpg')}
+                alt="The planning chart, showing the gap between the carbs absorbed and the carbs burned"
+              />
+              <img
+                className="is-dark"
+                src={assetHref('/landing/chart-dark.png')}
                 alt="The planning chart, showing the gap between the carbs absorbed and the carbs burned"
               />
             </figure>
@@ -522,7 +564,8 @@ export default function LandingEn() {
         </section>
 
         <section className="landing-slide" style={{ textAlign: 'center' }} data-slide="4">
-          <img className="landing-bg" src={assetHref('/landing/finish.jpg')} alt="" />
+          <img className="landing-bg is-light" src={assetHref('/landing/finish.jpg')} alt="" />
+          <img className="landing-bg is-dark" src={assetHref('/landing/finish-dark.jpeg')} alt="" />
           <div className="landing-wash" />
           <div className="landing-dots" aria-hidden="true">
             <i />
@@ -562,8 +605,8 @@ export default function LandingEn() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                background: 'var(--ink)',
-                color: '#fff',
+                background: 'var(--selected-bg)',
+                color: 'var(--on-brand)',
                 borderRadius: 999,
                 padding: '14px 28px',
                 fontSize: 15,
