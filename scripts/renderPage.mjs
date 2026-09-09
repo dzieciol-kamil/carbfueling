@@ -85,19 +85,20 @@ const ROOT_STYLE = `
   .lang-menu-list a.is-current .lang-menu-check { visibility: visible; }
 
   /* The dark-mode switch next to the language menu (src/static/ThemeToggle.tsx). These pages
-     ship no script except this one control's — theme.js sets [data-theme] on <html> before
-     paint (from localStorage, falling back to prefers-color-scheme) and flips it on click. The
-     two icons are both always in the DOM; which one shows is decided by the same attribute the
-     rest of the page's colors key off, so the button never needs its own JS to redraw itself. */
+     ship no script except this one control's — theme.js sets [data-theme] (resolved light/dark,
+     for colors) and [data-theme-mode] (the raw auto/light/dark preference) on <html> before
+     paint, and cycles the mode on click. All three icons are always in the DOM; which one shows
+     is decided by [data-theme-mode], so the button never needs its own JS to redraw itself. */
   .theme-toggle {
     display: inline-flex; align-items: center; justify-content: center;
     width: 32px; height: 32px; box-sizing: border-box; flex: 0 0 32px;
     border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
     color: var(--ink-soft); cursor: pointer; font-size: 15px; line-height: 1;
   }
-  .theme-toggle-icon-dark { display: none; }
-  [data-theme='dark'] .theme-toggle-icon-light { display: none; }
-  [data-theme='dark'] .theme-toggle-icon-dark { display: inline; }
+  .theme-toggle-icon { display: none; }
+  [data-theme-mode='auto'] .theme-toggle-icon-auto { display: inline-flex; }
+  [data-theme-mode='light'] .theme-toggle-icon-light { display: inline-flex; }
+  [data-theme-mode='dark'] .theme-toggle-icon-dark { display: inline-flex; }
 
   /* The FAQ pages carry the landing's opening photograph, held still behind the article:
      fixed, so it never scrolls with the text, and washed over the reading column so the
@@ -117,6 +118,11 @@ const ROOT_STYLE = `
     object-fit: cover; object-position: center center;
     opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
   }
+  /* Same light/dark pair-and-swap as the landing's .landing-bg (Landing.*.tsx) — the photo
+     itself needs a dark capture too, not just the wash tint over it. */
+  .faq-bg.is-dark { display: none; }
+  [data-theme='dark'] .faq-bg.is-dark { display: block; }
+  [data-theme='dark'] .faq-bg.is-light { display: none; }
   .faq-wash {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background: linear-gradient(90deg,

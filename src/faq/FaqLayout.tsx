@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { LANGS, t, type Lang } from '../i18n/strings';
 import { assetHref, calculatorHref, faqHref, landingHref } from '../urls';
 import LangMenu from '../static/LangMenu';
+import ThemeToggle from '../static/ThemeToggle';
 
 const CHROME: Record<Lang, { back: string; index: string; brand: string; open: string }> = {
   en: {
@@ -88,7 +89,7 @@ const ctaButton: CSSProperties = {
   alignItems: 'center',
   gap: 8,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: 999,
   padding: '9px 16px',
   fontSize: 13,
@@ -139,7 +140,8 @@ export function FaqLayout({
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <img className="faq-bg" src={assetHref('/landing/road.jpg')} alt="" />
+      <img className="faq-bg is-light" src={assetHref('/landing/road.jpg')} alt="" />
+      <img className="faq-bg is-dark" src={assetHref('/landing/road-dark.jpeg')} alt="" />
       <div className="faq-wash" />
       <header
         className="faq-header"
@@ -172,6 +174,7 @@ export function FaqLayout({
           </span>
         </a>
         <div className="faq-actions">
+          <ThemeToggle label={t(lang).themeToggleLabel} />
           <LangMenu
             langs={LANGS}
             current={lang}
