@@ -5,7 +5,7 @@
 window.addEventListener('load', function () {
   var url = new URL(location.href);
   var changed = false;
-  Array.prototype.slice.call(url.searchParams.keys()).forEach(function (key) {
+  Array.from(url.searchParams.keys()).forEach(function (key) {
     if (key.toLowerCase().indexOf('utm_') === 0) {
       url.searchParams.delete(key);
       changed = true;
