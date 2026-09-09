@@ -27,8 +27,9 @@ If the port is already in use, the script prints the running server's URL instea
 
 - `src/domain/` holds pure calculation logic (no React) — e.g. `fuel.ts` (supply/demand math), `gpx.ts` (GPX parsing), `dragMath.ts`, `laneLayout.ts`. Keep this layer framework-free and unit-tested (`*.test.ts` next to each file).
 - `src/store/appStore.ts` (zustand) is the single source of app state, persisted to `localStorage` via `persistStorage.ts`. No backend.
-- `src/components/` is organized by area: `mobile/`, `panels/`, `timeline/`, `lanes/`, `chart/`, `recipes/`, `tour/`, `ui/`.
+- `src/components/` is organized by area: `mobile/`, `panels/`, `timeline/`, `lanes/`, `chart/`, `recipes/`, `tour/`, `print/`, `ui/`.
 - `src/i18n/strings.ts` holds all user-facing copy — don't inline strings in components.
+- `MAP.md` is a hand-maintained index and goes stale fast. When a change adds, removes, renames, or moves a file/directory under `src/` (or another top-level dir `MAP.md` describes), update the relevant `MAP.md` entry in the same commit.
 
 ## Working style
 
