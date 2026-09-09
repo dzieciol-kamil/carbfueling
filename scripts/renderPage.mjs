@@ -277,7 +277,8 @@ export function renderPage({
     <meta name="twitter:description" content="${safeDescription}" />
     <meta name="twitter:image" content="${SITE}/og-image.png" />
     <script type="application/ld+json">${safeJsonLd(jsonLd)}</script>
-    <script data-goatcounter="https://kddudi.goatcounter.com/count" async src="__BASE__/count.js"></script>${langRedirectTag}
+    <script data-goatcounter="https://kddudi.goatcounter.com/count" async src="__BASE__/count.js"></script>
+    <script src="__BASE__/strip-utm.js"></script>${langRedirectTag}
     <script src="__BASE__/theme.js"></script>
     <style>${ROOT_STYLE}</style>
   </head>
