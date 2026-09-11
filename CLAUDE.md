@@ -22,6 +22,7 @@ If the port is already in use, the script prints the running server's URL instea
   2. Commit and push to `master`.
   3. `git tag vX.Y.Z && git push origin vX.Y.Z` — this alone triggers the production deploy.
   4. `gh release create vX.Y.Z --generate-notes` — creates the GitHub Release entry (separate from the tag; the deploy doesn't need it, but skipping it leaves the Releases page showing a stale "Latest").
+- **Claude Code cannot do step 3/4 itself**: both `git push origin vX.Y.Z` and `gh release create` get blocked by the Claude Code auto-mode permission classifier (they trigger a production deploy). Do everything up to the version-bump commit/push, then hand back to the user — they run the tag push / `gh release create` themselves, e.g. via `! <command>` in the CLI.
 
 ## Code conventions
 
