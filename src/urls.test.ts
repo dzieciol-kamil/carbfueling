@@ -14,12 +14,14 @@ describe('faqHref', () => {
     expect(faqHref('en')).toBe('__BASE__/en/faq/');
     expect(faqHref('pl')).toBe('__BASE__/pl/faq/');
     expect(faqHref('de')).toBe('__BASE__/de/faq/');
+    expect(faqHref('it')).toBe('__BASE__/it/faq/');
   });
 
   test('article page, per language', () => {
     expect(faqHref('en', 'bonk-crisis')).toBe('__BASE__/en/faq/bonk-crisis/');
     expect(faqHref('pl', 'bonk-crisis')).toBe('__BASE__/pl/faq/bonk-crisis/');
     expect(faqHref('de', 'bonk-crisis')).toBe('__BASE__/de/faq/bonk-crisis/');
+    expect(faqHref('it', 'bonk-crisis')).toBe('__BASE__/it/faq/bonk-crisis/');
   });
 });
 
@@ -28,6 +30,7 @@ describe('calculatorHref', () => {
     expect(calculatorHref('en')).toBe('__BASE__/en/calculator/');
     expect(calculatorHref('pl')).toBe('__BASE__/pl/calculator/');
     expect(calculatorHref('de')).toBe('__BASE__/de/calculator/');
+    expect(calculatorHref('it')).toBe('__BASE__/it/calculator/');
   });
 });
 
@@ -36,6 +39,7 @@ describe('landingHref', () => {
     expect(landingHref('en')).toBe('__BASE__/en/');
     expect(landingHref('pl')).toBe('__BASE__/pl/');
     expect(landingHref('de')).toBe('__BASE__/de/');
+    expect(landingHref('it')).toBe('__BASE__/it/');
   });
 });
 

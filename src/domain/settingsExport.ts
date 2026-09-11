@@ -206,6 +206,7 @@ function isValidFoodLibEntry(v: unknown): v is FoodLibEntry {
     typeof v.pl === 'string' &&
     typeof v.en === 'string' &&
     typeof v.de === 'string' &&
+    typeof v.it === 'string' &&
     isFiniteNumber(v.carbs)
   );
 }

@@ -19,15 +19,11 @@ const isPreview = BASE !== '';
 
 // A relative hint within our own sitemap, nothing more. The landing pages are the site's
 // entry points, the calculator is the thing people actually come to use, and the FAQ
-// supports both — which is what the default covers.
-const SITEMAP_PRIORITY = new Map([
-  ['/en/', '1.0'],
-  ['/pl/', '1.0'],
-  ['/de/', '1.0'],
-  ['/en/calculator/', '0.9'],
-  ['/pl/calculator/', '0.9'],
-  ['/de/calculator/', '0.9'],
-]);
+// supports both — which is what the default covers. Built from LANGS inside main() (see
+// buildSitemapPriority) rather than one hardcoded pair of lines per language here.
+function buildSitemapPriority(langs) {
+  return new Map(langs.flatMap((l) => [[`/${l}/`, '1.0'], [`/${l}/calculator/`, '0.9']]));
+}
 
 // SEO title/description for the landing pages, per language. `description` feeds the meta/og/
 // twitter tags; `jsonLdDescription` is worded slightly differently on purpose (see the existing
@@ -54,15 +50,22 @@ const LANDING_META = {
     jsonLdDescription:
       'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie auf Flaschen, Flasks und Essen über die Zeit verteilst.',
   },
+  it: {
+    title: 'Carb Fueling — pianificatore di carboidrati e idratazione',
+    description:
+      "Pianifica quanti carboidrati e quanto liquido portare su un giro, e come distribuirli nel tempo tra borracce, flask e cibo. Gratis, senza account, funziona nel browser.",
+    jsonLdDescription:
+      "Pianifica quanti carboidrati e quanto liquido portare su un giro, e come distribuirli tra borracce, flask e cibo nel tempo.",
+  },
 };
 
-async function writeSitemap(pages) {
+async function writeSitemap(pages, sitemapPriority) {
   const templatePath = path.join(rootDir, 'public/sitemap.xml');
   const template = await readFile(templatePath, 'utf-8');
   const entries = pages
     .map(
       (p) =>
-        `  <url>\n    <loc>${SITE}${p.urlPath}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>${SITEMAP_PRIORITY.get(p.urlPath) ?? '0.6'}</priority>\n  </url>`,
+        `  <url>\n    <loc>${SITE}${p.urlPath}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>${sitemapPriority.get(p.urlPath) ?? '0.6'}</priority>\n  </url>`,
     )
     .join('\n');
   const combined = template.replace('</urlset>', `${entries}\n</urlset>`);
@@ -195,7 +198,11 @@ async function main() {
       base: BASE,
       noindex: isPreview,
       canonicalOverride: `${SITE}/en/`,
-      langRedirectTargets: { pl: '/pl/', de: '/de/' },
+      // Every non-English language redirects home to its own landing page; derived from
+      // LANGS so a new language needs no edit here — it just needs an entry in LANGS.
+      langRedirectTargets: Object.fromEntries(
+        LANGS.filter((l) => l !== 'en').map((l) => [l, `/${l}/`]),
+      ),
     }),
     'utf-8',
   );
@@ -222,10 +229,10 @@ async function main() {
     // `pages` — and without these entries the site's main destination would be missing
     // from the sitemap entirely (on master the calculator *was* the sitemap). Only `urlPath`
     // is read here, so a bare object is all an entry needs.
-    await writeSitemap([
-      ...pages,
-      ...LANGS.map((lang) => ({ urlPath: strip(calculatorHref(lang)) })),
-    ]);
+    await writeSitemap(
+      [...pages, ...LANGS.map((lang) => ({ urlPath: strip(calculatorHref(lang)) }))],
+      buildSitemapPriority(LANGS),
+    );
   }
 
   await server.close();

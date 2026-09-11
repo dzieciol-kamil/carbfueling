@@ -42,6 +42,8 @@ function defaultLang(): Lang {
       return 'pl';
     case 'de':
       return 'de';
+    case 'it':
+      return 'it';
     default:
       return 'en';
   }
@@ -277,11 +279,34 @@ const defaultShops: ShopStop[] = [];
 const defaultCombinedFillIds: number[] = [];
 
 const defaultFoodLib: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', de: 'Energiegel', carbs: 22 },
-  { key: 'chew', pl: 'Żelki', en: 'Chews', de: 'Kaubonbons', carbs: 30, cont: true, span: 18 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', carbs: 35, ml: 330 },
-  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', carbs: 23 },
-  { key: 'ricecake', pl: 'Rice cake', en: 'Rice cake', de: 'Rice Cake', carbs: 30 },
+  {
+    key: 'gel',
+    pl: 'Żel energetyczny',
+    en: 'Energy gel',
+    de: 'Energiegel',
+    it: 'Gel energetico',
+    carbs: 22,
+  },
+  {
+    key: 'chew',
+    pl: 'Żelki',
+    en: 'Chews',
+    de: 'Kaubonbons',
+    it: 'Caramelle gommose',
+    carbs: 30,
+    cont: true,
+    span: 18,
+  },
+  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', it: 'Cola', carbs: 35, ml: 330 },
+  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
+  {
+    key: 'ricecake',
+    pl: 'Rice cake',
+    en: 'Rice cake',
+    de: 'Rice Cake',
+    it: 'Rice Cake',
+    carbs: 30,
+  },
 ];
 
 export const useAppStore = create<AppState>()(
@@ -681,7 +706,7 @@ export const useAppStore = create<AppState>()(
           return {
             foodLib: [
               ...s.foodLib,
-              { key: 'u' + s.nextFoodKey, pl: name, en: name, de: name, carbs: 25 },
+              { key: 'u' + s.nextFoodKey, pl: name, en: name, de: name, it: name, carbs: 25 },
             ],
             nextFoodKey: s.nextFoodKey + 1,
           };

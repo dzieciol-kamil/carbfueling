@@ -217,7 +217,7 @@ export function MobileMixSheet() {
                       onChange={() => handleToggle(fill)}
                       title={strings.combineFillCheckbox}
                     />
-                    {vessel.name} · napełnienie {i + 1}
+                    {vessel.name} · {strings.fill} {i + 1}
                   </div>
                   <div
                     style={{

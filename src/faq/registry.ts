@@ -1,11 +1,14 @@
-export interface FaqArticleMeta {
+import type { Lang } from '../i18n/strings';
+
+// An intersection, not one named field per language: `article.en.title` still works everywhere
+// (FaqIndex.*.tsx, build-static.mjs), but the per-language part is now `Record<Lang, ...>` so
+// adding a language only means adding an entry to every ARTICLES item below (unavoidable —
+// it's per-article translated content), never an edit to this type itself.
+export type FaqArticleMeta = {
   slug: string;
   /** ISO date (YYYY-MM-DD) this article first went live — used as JSON-LD datePublished. */
   datePublished: string;
-  en: { title: string; description: string };
-  pl: { title: string; description: string };
-  de: { title: string; description: string };
-}
+} & Record<Lang, { title: string; description: string }>;
 
 export const ARTICLES: FaqArticleMeta[] = [
   {
@@ -22,6 +25,11 @@ export const ARTICLES: FaqArticleMeta[] = [
     de: {
       title: 'Warum kannst du nicht mehr als ca. 90 g Kohlenhydrate pro Stunde aufnehmen?',
       description: 'Wie eine Glukose-Fruktose-Mischung deine Aufnahmeobergrenze im Darm anhebt.',
+    },
+    it: {
+      title: "Perché non puoi assorbire più di ~90 g di carboidrati all'ora?",
+      description:
+        'Come una miscela di glucosio e fruttosio alza la soglia di assorbimento intestinale.',
     },
   },
   {
@@ -40,6 +48,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Die Lücke zwischen verbrannten und zugeführten Kohlenhydraten — und wie du sie im Blick behältst.',
     },
+    it: {
+      title: 'Cosa succede davvero quando arriva la crisi di fame — e come vederla arrivare',
+      description:
+        "Il divario tra carboidrati bruciati e carboidrati forniti, e come tenerlo d'occhio.",
+    },
   },
   {
     slug: 'bottle-refill-planning',
@@ -56,6 +69,10 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Flaschen auf einer langen Fahrt nachfüllen: so planst du es',
       description:
         'Wie du Verpflegungspunkte setzt, bevor die Lücke zwischen Bedarf und Vorrat zur Krise wird.',
+    },
+    it: {
+      title: 'Pianificare le ricariche delle borracce su un giro lungo',
+      description: 'Dove posizionare le tappe di rifornimento per non restare mai a secco.',
     },
   },
   {
@@ -76,6 +93,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Warum reines Maltodextrin bei ca. 60 g/h endet und Fruktose einen zweiten Aufnahmekanal öffnet.',
     },
+    it: {
+      title: 'Maltodestrine + fruttosio: perché una miscela di trasporto batte il solo glucosio',
+      description:
+        'Perché la sola maltodestrina si ferma a ca. 60 g/h e il fruttosio apre una seconda via di assorbimento.',
+    },
   },
   {
     slug: 'carbs-per-hour-by-intensity',
@@ -94,6 +116,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Wie viele Kohlenhydrate pro Stunde brauchst du wirklich?',
       description:
         'Ein praktischer 30-90-g/h-Bereich nach Fahrdauer und Intensität statt einer starren Regel.',
+    },
+    it: {
+      title: "Quanti carboidrati all'ora servono davvero?",
+      description:
+        'Una guida pratica per intensità e durata del giro, dalle uscite leggere agli sforzi di più ore.',
     },
   },
   {
@@ -114,6 +141,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Wie du deinen Darm über Wochen an höhere Kohlenhydratmengen gewöhnst, statt es am Renntag zu riskieren.',
     },
+    it: {
+      title: "Allenare l'intestino: come alzare in sicurezza la tolleranza ai carboidrati",
+      description:
+        "Un piano progressivo per gestire più carboidrati all'ora senza gonfiore e crampi.",
+    },
   },
   {
     slug: 'bottle-vs-gel',
@@ -129,6 +161,11 @@ export const ARTICLES: FaqArticleMeta[] = [
     de: {
       title: 'Flasche oder Gel? Wann was wählen',
       description: 'Wann Flasche, Gel und feste Nahrung im Rennen jeweils ihre Stärken ausspielen.',
+    },
+    it: {
+      title: 'Borraccia o gel? Quando e cosa scegliere',
+      description:
+        'Confronto tra borracce, gel e cibo solido per assumere carboidrati durante un giro.',
     },
   },
   {
@@ -147,6 +184,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Wie viel Wasser pro Stunde? Flüssigkeit, Hitze und Schweißrate',
       description:
         'Warum es keine feste ml-Zahl gibt und wie Temperatur deinen echten Flüssigkeitsbedarf bestimmt.',
+    },
+    it: {
+      title: "Quanta acqua all'ora? Idratazione, caldo e tasso di sudorazione",
+      description:
+        'Perché il fabbisogno di liquidi varia tanto da persona a persona — e come stimare il tuo.',
     },
   },
   {
@@ -167,6 +209,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Wie du erkennst, ob du zu den "Salty Sweaters" gehörst, und wann sich zusätzliches Natrium lohnt.',
     },
+    it: {
+      title: 'Sodio in bici: quando gli elettroliti extra fanno davvero la differenza',
+      description:
+        'Le perdite di sodio col sudore variano molto da persona a persona — ecco quando conviene integrarlo.',
+    },
   },
   {
     slug: 'honey-sugar-diy-mix',
@@ -185,6 +232,12 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Honig oder Haushaltszucker statt fertigem Pulver — funktioniert das genauso gut?',
       description:
         'Warum eine Glukose-Fruktose-Mischung aus Honig oder Zucker fast identisch wirkt wie ein Fertigprodukt.',
+    },
+    it: {
+      title:
+        'Miele o zucchero da tavola al posto di una miscela pronta — funziona altrettanto bene?',
+      description:
+        'La scienza dietro le miscele di carboidrati fatte in casa, a confronto con le polveri isotoniche commerciali.',
     },
   },
   {
@@ -205,6 +258,10 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Warum Hitze nicht nur mehr Schweiß bedeutet, sondern auch die Kohlenhydrataufnahme deines Darms bremst.',
     },
+    it: {
+      title: 'Come il caldo cambia il tuo piano di carboidrati (non basta «bevi di più»)',
+      description: 'Perché il caldo cambia cosa e quanto dovresti assumere, non solo quanto bevi.',
+    },
   },
   {
     slug: 'fueling-100km-vs-300km',
@@ -222,6 +279,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Fueling bei 100 km vs. 300 km: was sich an der Strategie ändert',
       description:
         'Wie sich Limitierung, Geschmacksermüdung und Logistik zwischen kurzen und Ultra-Distanzen verschieben.',
+    },
+    it: {
+      title: 'Fueling per 100 km vs. 300+ km: cosa cambia davvero',
+      description:
+        "Perché la strategia cambia man mano che il giro passa da poche ore a un'intera giornata e oltre.",
     },
   },
   {
@@ -241,6 +303,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Beeinflussen Tempo oder Leistung, wie viel du aufnehmen kannst?',
       description:
         'Warum eine härtere Fahrt zwar deinen Kohlenhydratbedarf erhöht, aber nicht deine Aufnahmeobergrenze.',
+    },
+    it: {
+      title: 'Ritmo o potenza influenzano quanto puoi assorbire?',
+      description:
+        "Fabbisogno e capacità di assorbimento non sono la stessa cosa — finché l'intensità non diventa estrema.",
     },
   },
   {
@@ -263,6 +330,12 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Wie Zitrusaromen, Fruchtpulver, Hibiskus und Salz gegen Geschmacksermüdung auf langen Fahrten helfen.',
     },
+    it: {
+      title:
+        'Aggiunte di gusto fatte in casa: modi semplici per migliorare il sapore di borraccia o gel',
+      description:
+        'Aromi in gocce, frutta liofilizzata, ibisco e altri modi facili per risolvere una borraccia noiosa.',
+    },
   },
   {
     slug: 'what-the-chart-shows',
@@ -280,6 +353,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Was das Diagramm eigentlich zeigt: von der Flasche in den Blutkreislauf',
       description:
         'Wie Carb Fueling Essen, Verdauung, Aufnahmeobergrenze und Defizit über die ganze Strecke sichtbar macht.',
+    },
+    it: {
+      title: 'Cosa mostra davvero il grafico: dalla borraccia al flusso sanguigno',
+      description:
+        'Il grafico spiegato riga per riga — apporto, stomaco, soglia di assorbimento e deficit.',
     },
   },
   {
@@ -301,6 +379,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Warum dieselbe Aufnahmeobergrenze beim Laufen wegen der mechanischen Belastung trotzdem öfter Probleme macht.',
     },
+    it: {
+      title: "Corsa vs bici: come cambiano davvero il fabbisogno e l'assorbimento dei carboidrati",
+      description:
+        'La soglia di assorbimento intestinale non cambia tra corsa e bici — ma il tuo obiettivo pratico sì. Ecco perché.',
+    },
   },
   {
     slug: 'rice-cake-bars',
@@ -319,6 +402,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Rice Cake selbst gemacht: Verpflegung für den Moment, wenn Gele nicht mehr gehen',
       description:
         'Ein Reisriegel-Rezept mit Nährwerten gegen Geschmacksermüdung auf sehr langen Strecken.',
+    },
+    it: {
+      title: 'Rice cake fatti in casa: una ricetta di cibo vero per quando i gel stancano',
+      description:
+        "Una barretta semplice di riso, cocco e datteri — i carboidrati per pezzo, e perché il cibo vero batte l'ennesimo gel a fine giornata su un giro lungo.",
     },
   },
 ];

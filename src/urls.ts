@@ -1,4 +1,6 @@
-export type Lang = 'en' | 'pl' | 'de';
+import { LANGS, type Lang } from './i18n/strings';
+
+export type { Lang };
 
 const BASE_MARKER = '__BASE__';
 
@@ -39,6 +41,11 @@ export const LANDING_HREF_FROM_CALCULATOR = '../';
  *  calling it with the language already present in `pathname` returns `pathname`
  *  unchanged — App.tsx's pushState effect relies on that no-op to avoid re-pushing
  *  the current URL (which would otherwise corrupt the browser history stack). */
+// Built from LANGS rather than a literal list of codes, so a new language doesn't need this
+// regex updated by hand — this is exactly the kind of hardcoded lang list that went stale here
+// once before (this file used to declare its own `Lang` type, disconnected from `i18n/strings`'s).
+const LANG_SEGMENT = new RegExp(`/(${LANGS.join('|')})/`);
+
 export function nextLangPath(pathname: string, lang: Lang): string {
-  return pathname.replace(/\/(en|pl|de)\//, `/${lang}/`);
+  return pathname.replace(LANG_SEGMENT, `/${lang}/`);
 }
