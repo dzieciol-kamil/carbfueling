@@ -545,10 +545,10 @@ export default function LandingIt() {
           <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h2 className="landing-q">
-              Hai mai avuto una crisi di <br />
-              fame in bici o durante una <br />
-              corsa lunga — e avresti <br />
-              voluto vederla arrivare?
+              Hai mai avuto una crisi di fame in bici <br />
+              o durante una corsa lunga — <br />
+              e avresti voluto vederla <br />
+              arrivare?
             </h2>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
