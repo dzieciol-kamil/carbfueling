@@ -219,7 +219,9 @@ async function main() {
     await mkdir(path.dirname(stub.outPath), { recursive: true });
     await writeFile(
       stub.outPath,
-      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex: isPreview }),
+      // Always noindex, regardless of preview/prod: these are back-compat stubs for
+      // retired paths, never the canonical page — see ADR 0001's "ranking equity" risk.
+      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex: true }),
       'utf-8',
     );
   }
