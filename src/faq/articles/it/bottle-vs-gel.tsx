@@ -38,7 +38,7 @@ export default function BottleVsGelIt() {
         posto nei giri più lunghi e regolari. Masticare e digerire più lentamente non sono un
         problema quando l'intensità è abbastanza bassa — e il cibo vero aggiunge gusto e consistenza
         che un giro fatto solo di gel dolci e bevanda sportiva non può dare. Nelle giornate molto
-        lunghe, quella varietà conta molto, perché "resetta" il gusto dolce in bocca e ti permette
+        lunghe, quella varietà conta molto, perché «resetta» il gusto dolce in bocca e ti permette
         di continuare ad assumere carboidrati anche quando non hai più appetito per lo zucchero. Il
         limite è l'intensità e il terreno: è difficile masticare e deglutire mentre spingi forte, ed
         è scomodo mangiare del tutto su terreno tecnico e sconnesso dove ti servono entrambe le mani

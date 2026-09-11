@@ -32,8 +32,8 @@ export default function RiceCakeBarsIt() {
         minuti, poi incorpora il latte di cocco solido, i datteri, lo zucchero e il sale. Modella il
         composto su carta forno in un blocco rettangolare uniforme — dei taglieri premuti contro i
         lati aiutano a tenere i bordi dritti — e mettilo in frigo o freezer per qualche ora finché
-        non si soda. Taglia in 8 pezzi uguali e avvolgili singolarmente. Si conserva in frigo fino a
-        3 giorni, o indefinitamente in freezer.
+        non si rassoda. Taglia in 8 pezzi uguali e avvolgili singolarmente. Si conserva in frigo
+        fino a 3 giorni, o indefinitamente in freezer.
       </p>
       <p style={articleTextStyle}>
         Un pezzo corrisponde a circa 140 kcal, 30 g di carboidrati, 2 g di proteine e 2 g di grassi.

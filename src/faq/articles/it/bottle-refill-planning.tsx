@@ -28,7 +28,7 @@ export default function BottleRefillPlanningIt() {
         style={articleImgStyle}
       />
       <p style={articleTextStyle}>
-        Posiziona una "tappa" a ogni punto di rifornimento sul tuo percorso. Carb Fueling divide poi
+        Posiziona una «tappa» a ogni punto di rifornimento sul tuo percorso. Carb Fueling divide poi
         il tuo mix totale di carboidrati tra i tratti fra le tappe, così sai esattamente quanta
         polvere (il tuo mix), acqua e prodotti (gel, banane) portare — o comprare — lungo il
         percorso.

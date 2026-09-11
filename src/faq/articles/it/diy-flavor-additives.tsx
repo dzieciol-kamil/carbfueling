@@ -9,8 +9,8 @@ export default function DiyFlavorAdditivesIt() {
       </h1>
       <p style={articleTextStyle}>
         Il gusto non è solo un extra piacevole su un giro lungo. Dopo qualche ora, lo stesso sapore
-        dolce diventa davvero più difficile da digerire — gli atleti la chiamano "stanchezza di
-        gusto" o affaticamento del palato. Il tuo mix non è cambiato, ma la tua tolleranza sì. Se
+        dolce diventa davvero più difficile da digerire — gli atleti la chiamano «stanchezza di
+        gusto» o affaticamento del palato. Il tuo mix non è cambiato, ma la tua tolleranza sì. Se
         hai un modo per variare o migliorare il gusto, è più probabile che continui a bere e
         mangiare secondo programma, il che conta molto più di quanto sembri. Un piano di carboidrati
         funziona solo se lo segui davvero.

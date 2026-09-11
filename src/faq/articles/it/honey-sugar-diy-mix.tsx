@@ -22,7 +22,7 @@ export default function HoneySugarDiyMixIt() {
         Lo zucchero da tavola è una molecola chiamata saccarosio, fatta da un'unità di glucosio e
         una di fruttosio legate insieme. Un enzima nell'intestino chiamato saccarasi spezza quel
         legame quasi immediatamente, rilasciando glucosio libero e fruttosio libero in un rapporto
-        di circa 1:1. Quindi anche se il saccarosio sembra "solo zucchero" sull'etichetta, il corpo
+        di circa 1:1. Quindi anche se il saccarosio sembra «solo zucchero» sull'etichetta, il corpo
         lo trasforma nella stessa combinazione glucosio-fruttosio da cui è fatta una bevanda
         sportiva.
       </p>
@@ -54,7 +54,7 @@ export default function HoneySugarDiyMixIt() {
         Niente di tutto questo rende un mix fatto in casa una scelta peggiore. È un'opzione
         genuinamente valida, molto più economica per tanti atleti — solo un diverso insieme di
         compromessi, non una prestazione peggiore. È anche per questo che lo strumento di mix di
-        Carb Fueling include i preset integrati "Zucchero" e "Miele" accanto al rapporto standard
+        Carb Fueling include i preset integrati «Zucchero» e «Miele» accanto al rapporto standard
         glucosio-fruttosio, così puoi pianificare con entrambi usando la stessa matematica di
         assorbimento.
       </p>

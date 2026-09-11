@@ -49,13 +49,13 @@ export default function WhatTheChartShowsIt() {
       </p>
       <img
         src={assetHref('/faq/what-the-chart-shows/absorption-cap.jpg')}
-        alt="La linea tratteggiata piatta del limite di assorbimento sopra le linee crescenti di fabbisogno e assorbito."
+        alt="La linea tratteggiata piatta della soglia di assorbimento sopra le linee crescenti di fabbisogno e assorbito."
         style={articleImgStyle}
       />
       <p style={articleTextStyle}>
-        La linea "fabbisogno" è il lato della domanda del quadro. Mostra quanti carboidrati richiede
+        La linea «fabbisogno» è il lato della domanda del quadro. Mostra quanti carboidrati richiede
         il tuo giro ogni ora, in base a quanto stai spingendo in quel punto — sali una salita ripida
-        e sale, scendi dall'altra parte e cala. Contro di essa sta "assorbito": quanto carboidrato
+        e sale, scendi dall'altra parte e cala. Contro di essa sta «assorbito»: quanto carboidrato
         il tuo corpo ha davvero assunto e può usare, trattenuto da due cose insieme — quanto hai
         mangiato, e la soglia di assorbimento. Anche un atleta ben alimentato non può spingere
         l'assorbito oltre la soglia. Osservare queste due linee fianco a fianco, ora per ora, è
@@ -91,7 +91,7 @@ export default function WhatTheChartShowsIt() {
       />
       <p style={articleTextStyle}>
         Vedere tutto questo processo dispiegato, invece di un solo numero, è il vero scopo del
-        grafico. Trasforma "ho mangiato abbastanza oggi" da una domanda a cui rispondi dopo il giro
+        grafico. Trasforma «ho mangiato abbastanza oggi» da una domanda a cui rispondi dopo il giro
         in qualcosa che puoi vedere arrivare, ore prima, e correggere prima che diventi un problema.
       </p>
       <p>

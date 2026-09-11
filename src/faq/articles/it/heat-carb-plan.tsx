@@ -11,7 +11,7 @@ export default function HeatCarbPlanIt() {
   return (
     <FaqLayout lang="it" slug="heat-carb-plan">
       <h1 style={articleH1Style}>
-        Come il caldo cambia il tuo piano di carboidrati (non basta "bevi di più")
+        Come il caldo cambia il tuo piano di carboidrati (non basta «bevi di più»)
       </h1>
       <p style={articleTextStyle}>
         Il caldo alza il tasso di sudorazione, e mette anche uno stress extra sulla temperatura
@@ -27,7 +27,7 @@ export default function HeatCarbPlanIt() {
         intestino un po' meno capace di digerire ciò che gli dai.
       </p>
       <p style={articleTextStyle}>
-        Ecco perché "bevi di più" è un consiglio incompleto. Se la capacità di assorbimento del tuo
+        Ecco perché «bevi di più» è un consiglio incompleto. Se la capacità di assorbimento del tuo
         intestino è già sotto pressione per lo stress da caldo, aggiungere più liquido va bene, ma
         spingere la stessa concentrazione forte di carboidrati oltre a quel liquido extra può
         ritorcersi contro. Il risultato è spesso gonfiore, nausea o crampi.

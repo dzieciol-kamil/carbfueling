@@ -21,7 +21,7 @@ export default function SodiumElectrolytesCyclingIt() {
         dall'allenamento.
       </p>
       <p style={articleTextStyle}>
-        Gli atleti all'estremità alta vengono spesso chiamati "sudatori salati". Di solito puoi
+        Gli atleti all'estremità alta vengono spesso chiamati «sudatori salati». Di solito puoi
         accorgertene da solo: se la pelle o i vestiti si ricoprono di una crosta o un residuo bianco
         visibile dopo un giro, è sale secco lasciato dal sudore evaporato. È un segnale semplice e
         utile che stai perdendo più sodio della maggior parte degli atleti.
@@ -51,17 +51,17 @@ export default function SodiumElectrolytesCyclingIt() {
         (pesandoti prima e dopo un'ora a sforzo costante).
       </p>
       <p style={articleTextStyle}>
-        La conclusione non è "aggiungi sempre sodio extra". È "conosci il tuo profilo di sudorazione
-        e adattati alle condizioni". La maggior parte degli atleti occasionali su giri moderati può
+        La conclusione non è «aggiungi sempre sodio extra». È «conosci il tuo profilo di sudorazione
+        e adattati alle condizioni». La maggior parte degli atleti occasionali su giri moderati può
         lasciar perdere. Chi fa sforzi lunghi, caldi o di più giorni — specialmente se sospetta già
         di essere un sudatore salato — è chi trae il maggior beneficio dal prestarci attenzione.
       </p>
       <p style={articleTextStyle}>
         Se conosci la tua concentrazione di sodio nel sudore — da un test di laboratorio, o stimata
         dai segnali di sudatore salato qui sopra — puoi tradurla nel pannello Mix di Carb Fueling.
-        Il campo "sale" lì è grammi di normale sale da cucina (NaCl) per 100 ml, non sodio puro —
-        usiamo il sale perché è quello che aggiungeresti davvero a una borraccia; il sodio puro è un
-        metallo altamente reattivo che non puoi comprare né aggiungere a una bevanda. Come
+        Il campo «sale» lì indica i grammi di normale sale da cucina (NaCl) per 100 ml, non sodio
+        puro — usiamo il sale perché è quello che aggiungeresti davvero a una borraccia; il sodio
+        puro è un metallo altamente reattivo che non puoi comprare né aggiungere a una bevanda. Come
         approssimazione, ogni 0,1 g di sale per 100 ml di bevanda fornisce circa 390 mg di sodio per
         litro. Quindi se punti, ad esempio, a 700 mg di sodio per litro, sono circa 0,18 g di sale
         per 100 ml.

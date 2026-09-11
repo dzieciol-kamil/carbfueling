@@ -16,7 +16,7 @@ export default function MaltoFructoseBlendIt() {
       <p style={articleTextStyle}>
         Le maltodestrine suonano come un ingrediente speciale, ma sono solo una catena di unità di
         glucosio legate insieme. L'intestino spezza quella catena quasi immediatamente, quindi
-        quando arriva alla parete intestinale è semplice glucosio. "Carboidrato complesso" è una
+        quando arriva alla parete intestinale è semplice glucosio. «Carboidrato complesso» è una
         descrizione onesta della molecola, ma non cambia quale trasportatore usa per entrare nel
         sangue.
       </p>
@@ -38,7 +38,7 @@ export default function MaltoFructoseBlendIt() {
       </p>
       <p style={articleTextStyle}>
         Il rapporto tra i due conta. Un buon punto di partenza è circa 2 parti di carboidrato
-        equivalente-glucosio a 1 parte di fruttosio in peso — lo stesso predefinito "Izo" usato
+        equivalente-glucosio a 1 parte di fruttosio in peso — lo stesso predefinito «Izo» usato
         altrove in questa app. Quel rapporto usa la maggior parte della capacità dell'SGLT1
         aggiungendo abbastanza fruttosio da sfruttare bene anche il GLUT5.
       </p>
@@ -50,7 +50,7 @@ export default function MaltoFructoseBlendIt() {
       </p>
       <p style={articleTextStyle}>
         Ecco anche perché vale la pena leggere la lista ingredienti di un gel o un mix invece che
-        solo il testo di marketing. "Carboidrati complessi" o "energia a rilascio lento" sulla
+        solo il testo di marketing. «Carboidrati complessi» o «energia a rilascio lento» sulla
         confezione non ti dice se il prodotto è solo maltodestrine o una miscela
         maltodestrine-fruttosio — e quella differenza decide quanto ne puoi davvero assorbire
         all'ora.

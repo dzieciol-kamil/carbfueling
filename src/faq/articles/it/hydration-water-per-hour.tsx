@@ -14,7 +14,7 @@ export default function HydrationWaterPerHourIt() {
         Quanta acqua all'ora? Idratazione, caldo e tasso di sudorazione
       </h1>
       <p style={articleTextStyle}>
-        Non esiste un unico numero "bevi X ml all'ora" che vada bene per ogni atleta. Il tasso di
+        Non esiste un unico numero «bevi X ml all'ora» che vada bene per ogni atleta. Il tasso di
         sudorazione varia enormemente da persona a persona — circa da 0,5 a 2,5 litri all'ora, a
         volte di più. Dipende dalla tua corporatura, dalla tua forma fisica e acclimatazione al
         caldo, dalla temperatura dell'aria e dall'umidità, e da quanto stai spingendo. Due atleti
@@ -81,7 +81,7 @@ export default function HydrationWaterPerHourIt() {
         </a>{' '}
         e porta all'iponatriemia associata all'esercizio — l'unica modalità di guasto acuto in tutto
         questo argomento con un percorso documentato fino a un letto d'ospedale, e che tipicamente
-        colpisce gli atleti più lenti che bevono a ogni ristoro "per sicurezza". Per questo la barra
+        colpisce gli atleti più lenti che bevono a ogni ristoro «per sicurezza». Per questo la barra
         di idratazione diventa rosso scuro anche per un surplus: non c'è nessun premio per aver
         bevuto più di quanto hai perso.
       </p>

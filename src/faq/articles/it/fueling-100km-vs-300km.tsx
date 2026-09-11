@@ -6,7 +6,7 @@ export default function Fueling100kmVs300kmIt() {
     <FaqLayout lang="it" slug="fueling-100km-vs-300km">
       <h1 style={articleH1Style}>Fueling per 100 km vs. 300+ km: cosa cambia davvero</h1>
       <p style={articleTextStyle}>
-        Un giro di 100 km e uno di 300 km non sono "la stessa cosa, tre volte più lunga". Il fattore
+        Un giro di 100 km e uno di 300 km non sono «la stessa cosa, tre volte più lunga». Il fattore
         limitante cambia man mano che le ore si accumulano, e un piano di fueling che funziona bene
         per una distanza può fallire clamorosamente sull'altra. Ecco cosa cambia davvero.
       </p>

@@ -51,9 +51,9 @@ export default function RunningVsCyclingCarbsIt() {
         molto diverso — perché lo sport stesso fa parte dello stress, non solo lo sforzo.
       </p>
       <p style={articleTextStyle}>
-        La conclusione pratica non è "mangia meno perché il tuo intestino è più debole". È "mangia
+        La conclusione pratica non è «mangia meno perché il tuo intestino è più debole». È «mangia
         con meno margine d'errore, perché lo stesso piano grammo per grammo ha meno spazio per
-        andare storto". Gli intervalli di carboidrati all'ora per intensità e durata in{' '}
+        andare storto». Gli intervalli di carboidrati all'ora per intensità e durata in{' '}
         <a href={faqHref('it', 'carbs-per-hour-by-intensity')} style={articleLinkStyle}>
           quanti carboidrati all'ora servono davvero
         </a>{' '}

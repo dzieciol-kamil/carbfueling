@@ -259,7 +259,7 @@ export const ARTICLES: FaqArticleMeta[] = [
         'Warum Hitze nicht nur mehr Schweiß bedeutet, sondern auch die Kohlenhydrataufnahme deines Darms bremst.',
     },
     it: {
-      title: 'Come il caldo cambia il tuo piano di carboidrati (non basta "bevi di più")',
+      title: 'Come il caldo cambia il tuo piano di carboidrati (non basta «bevi di più»)',
       description: 'Perché il caldo cambia cosa e quanto dovresti assumere, non solo quanto bevi.',
     },
   },

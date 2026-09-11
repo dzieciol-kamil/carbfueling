@@ -21,7 +21,7 @@ export default function CarbTransporterMixIt() {
       <p style={articleTextStyle}>
         L'SGLT1 può trasportare circa 60 g di glucosio all'ora, qualunque sia la quantità che bevi —
         è un trasportatore attivo, legato al sodio, che semplicemente si satura a quel ritmo. Se
-        bevi solo gel a base di glucosio o maltodestrine pure, 60 g/h è il tuo tetto invalicabile —
+        bevi solo gel a base di glucosio o maltodestrine pure, 60 g/h è la tua soglia invalicabile —
         lo zucchero in eccesso resta nello stomaco e causa gonfiore o crampi.
       </p>
       <p style={articleTextStyle}>
@@ -30,7 +30,7 @@ export default function CarbTransporterMixIt() {
           come allenare l'intestino per alzare la tolleranza ai carboidrati
         </a>
         ). Aggiungendo fruttosio alla tua fonte di carboidrati, usi entrambe le porte
-        contemporaneamente. Per questo le miscele glucosio-fruttosio spingono il tetto realistico a
+        contemporaneamente. Per questo le miscele glucosio-fruttosio spingono la soglia realistica a
         circa 90 g all'ora.
       </p>
       <p style={articleTextStyle}>
@@ -39,7 +39,7 @@ export default function CarbTransporterMixIt() {
         rapidamente il carboidrato ingerito diventa davvero carburante bruciato (ossidazione dei
         carboidrati esogeni). Uno studio sull'alimentazione combinata glucosio-fruttosio
         (Jeukendrup, 2010) ha trovato che abbinare fonti di carboidrati che usano trasportatori
-        diversi — quelli che lui chiamava "carboidrati multipli trasportabili" — permette agli
+        diversi — quelli che lui chiamava «carboidrati multipli trasportabili» — permette agli
         atleti di ossidare i carboidrati circa il 50% più velocemente rispetto al solo glucosio — il
         divario tra ~60 g/h e ~90 g/h descritto sopra (in laboratorio si sono misurati anche fino a
         ~105 g/h).
@@ -52,7 +52,7 @@ export default function CarbTransporterMixIt() {
       <p style={articleTextStyle}>
         Il rapporto conta. Troppo fruttosio e sprechi la capacità della porta del glucosio; troppo
         poco e sprechi quella della porta del fruttosio. Un rapporto glucosio:fruttosio di 2:1 in
-        peso è un buon punto di partenza per la maggior parte degli atleti — è il mix "Izo"
+        peso è un buon punto di partenza per la maggior parte degli atleti — è il mix «Izo»
         predefinito in Carb Fueling.
       </p>
       <p style={articleTextStyle}>

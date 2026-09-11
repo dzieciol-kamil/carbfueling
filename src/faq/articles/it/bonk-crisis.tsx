@@ -36,8 +36,8 @@ export default function BonkCrisisIt() {
         style={articleImgStyle}
       />
       <p style={articleTextStyle}>
-        Il segnale d'allarme è visibile prima che accada: un divario crescente tra "carboidrati
-        bruciati" e "carboidrati forniti" su una linea temporale. Carb Fueling traccia entrambi
+        Il segnale d'allarme è visibile prima che accada: un divario crescente tra «carboidrati
+        bruciati» e «carboidrati forniti» su una linea temporale. Carb Fueling traccia entrambi
         mentre costruisci un percorso, così puoi vedere il divario aprirsi e correggerlo — apporti
         anticipati, un mix più concentrato o un ritmo leggermente più facile — prima che diventi una
         crisi.
