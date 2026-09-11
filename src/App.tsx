@@ -21,6 +21,7 @@ import {
   useAppStore,
 } from './store/appStore';
 import { nextLangPath } from './urls';
+import { LANGS, type Lang } from './i18n/strings';
 
 function App() {
   const panel = useAppStore((s) => s.ui.panel);
@@ -57,9 +58,12 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
+    // Built from LANGS, not a literal list of codes — this regex/cast pair went stale once
+    // already (missed a language) by hardcoding what LANGS already knows.
+    const langSegment = new RegExp(`/(${LANGS.join('|')})/`);
     const onPopState = () => {
-      const match = location.pathname.match(/\/(en|pl|de)\//);
-      if (match) setLang(match[1] as 'en' | 'pl' | 'de');
+      const match = location.pathname.match(langSegment);
+      if (match) setLang(match[1] as Lang);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);

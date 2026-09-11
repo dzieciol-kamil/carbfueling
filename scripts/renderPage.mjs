@@ -200,15 +200,13 @@ export function prefixInternalUrls(html, base) {
   return html.split('__BASE__').join(base.replace(/\/$/, ''));
 }
 
-// og:locale wants underscore-joined locale tags, not bare language codes. Plain JS, unlike the
-// TS `Record<FaqLang, ...>` maps this mirrors (CHROME/FAQ_INDEX_META/CALCULATOR_LANG in
-// FaqLayout.tsx) — nothing here enforces this object stays in sync with FAQ_LANGS at compile
-// time, so ogLocale() below fails fast instead of silently emitting content="undefined".
-const OG_LOCALE = { en: 'en_US', pl: 'pl_PL', de: 'de_DE' };
+// og:locale wants underscore-joined locale tags, not bare language codes. `<code>_<COUNTRY>`
+// is derivable for every language we ship except English (its country isn't its own code
+// uppercased) — so only the exception needs listing here, not every language, and a new
+// language needs no edit at all unless it's similarly irregular.
+const OG_LOCALE_EXCEPTIONS = { en: 'en_US' };
 function ogLocale(lang) {
-  const locale = OG_LOCALE[lang];
-  if (!locale) throw new Error(`renderPage: no OG_LOCALE entry for language "${lang}"`);
-  return locale;
+  return OG_LOCALE_EXCEPTIONS[lang] ?? `${lang}_${lang.toUpperCase()}`;
 }
 
 export function renderPage({

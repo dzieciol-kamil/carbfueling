@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLES } from './registry';
+import { LANGS } from '../i18n/strings';
 
 // Real files on disk relative to this test file — no filesystem mocking needed. Vite's
 // import.meta.glob resolves these paths at build/test time, so a missing component file
@@ -15,9 +16,9 @@ describe('ARTICLES registry', () => {
     }
   });
 
-  it('has a non-empty en and pl title/description for every article', () => {
+  it('has a non-empty title/description in every language for every article', () => {
     for (const article of ARTICLES) {
-      for (const lang of ['en', 'pl', 'de'] as const) {
+      for (const lang of LANGS) {
         expect(article[lang].title.trim().length).toBeGreaterThan(0);
         expect(article[lang].description.trim().length).toBeGreaterThan(0);
       }
@@ -57,7 +58,7 @@ describe('ARTICLES registry', () => {
 
   it('has a component file on disk for every {slug, lang} pair', () => {
     for (const article of ARTICLES) {
-      for (const lang of ['en', 'pl', 'de'] as const) {
+      for (const lang of LANGS) {
         const componentPath = `./articles/${lang}/${article.slug}.tsx`;
         expect(componentPath in articleModules, `missing ${componentPath}`).toBe(true);
       }

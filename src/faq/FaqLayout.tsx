@@ -23,6 +23,12 @@ const CHROME: Record<Lang, { back: string; index: string; brand: string; open: s
     brand: 'Carb Fueling',
     open: 'Rechner öffnen →',
   },
+  it: {
+    back: '← Torna al calcolatore',
+    index: 'Altri articoli FAQ',
+    brand: 'Carb Fueling',
+    open: 'Apri il calcolatore →',
+  },
 };
 
 /** `<title>`/meta description for the FAQ index page itself, per language. Read by
@@ -41,6 +47,11 @@ export const FAQ_INDEX_META: Record<Lang, { title: string; description: string }
   de: {
     title: 'FAQ — Carb Fueling',
     description: 'Antworten zu Kohlenhydrat- und Flüssigkeitsstrategie auf langen Radtouren.',
+  },
+  it: {
+    title: 'FAQ — Carb Fueling',
+    description:
+      'Risposte sulla strategia di carboidrati e idratazione per le lunghe uscite in bici.',
   },
 };
 
@@ -66,6 +77,15 @@ const MT_NOTICE: Partial<Record<Lang, ReactNode>> = {
       <a href="mailto:carbfueling@gmail.com">Schreib mir</a> oder{' '}
       <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">öffne ein Issue</a> — schon
       zwei korrigierte Sätze helfen.
+    </>
+  ),
+  it: (
+    <>
+      Questa pagina è stata tradotta automaticamente e non è ancora stata controllata da un
+      madrelingua italiano. I numeri sono verificati — il testo forse no. C'è qualcosa che suona
+      strano? <a href="mailto:carbfueling@gmail.com">Scrivimi</a> oppure{' '}
+      <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">apri una issue</a> —
+      bastano anche due frasi corrette.
     </>
   ),
 };

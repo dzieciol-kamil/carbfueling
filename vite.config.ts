@@ -15,6 +15,7 @@ export default defineConfig({
         en: 'en/calculator/index.html',
         pl: 'pl/calculator/index.html',
         de: 'de/calculator/index.html',
+        it: 'it/calculator/index.html',
       },
     },
   },
