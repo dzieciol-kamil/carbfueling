@@ -510,8 +510,8 @@ export default function LandingIt() {
             <h2 className="landing-q">
               Gel e bevande isotoniche <br />
               ti svuotano il portafoglio <br />
-              in silenzio, anche se non <br />
-              vuoi rinunciarci?
+              in silenzio, anche se non vuoi <br />
+              rinunciarci?
             </h2>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
