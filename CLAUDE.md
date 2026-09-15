@@ -15,14 +15,16 @@ If the port is already in use, the script prints the running server's URL instea
 ## Release process
 
 - Pushing to `master` deploys a **preview** build to `/preview` on carbfueling.com (noindex). It does not touch production.
-- Production (carbfueling.com root) only redeploys when a new `vX.Y.Z` git tag is pushed — bump `version` in `package.json`, commit, then tag and push the tag to release.
-- So: routine commits/pushes to `master` are safe and don't need a version bump; only tag when you actually want to ship.
-- To cut a release:
-  1. Bump `version` in `package.json` (and `package-lock.json` stays in sync via `npm install`).
-  2. Commit and push to `master`.
-  3. `git tag vX.Y.Z && git push origin vX.Y.Z` — this alone triggers the production deploy.
-  4. `gh release create vX.Y.Z --generate-notes` — creates the GitHub Release entry (separate from the tag; the deploy doesn't need it, but skipping it leaves the Releases page showing a stale "Latest").
-- **Claude Code cannot do step 3/4 itself**: both `git push origin vX.Y.Z` and `gh release create` get blocked by the Claude Code auto-mode permission classifier (they trigger a production deploy). Do everything up to the version-bump commit/push, then hand back to the user — they run the tag push / `gh release create` themselves, e.g. via `! <command>` in the CLI.
+- Production (carbfueling.com root) only redeploys when a `vX.Y.Z` git tag exists — master alone never touches it.
+- So: routine commits/pushes to `master` are safe and don't need a version bump; only release when you actually want to ship.
+- To cut a release: run the **Release** workflow from the Actions tab (`Actions → Release → Run workflow`) with the version as a bare semver string, e.g. `1.20.0`. It does everything:
+  1. Validates the input and refuses a version whose tag already exists.
+  2. Bumps `version` in `package.json`/`package-lock.json` and pushes that to `master` — skipped when master already carries that version (the usual case when the bump was committed by hand).
+  3. Gates on a green build (`npm ci`, `npx tsc -b --noEmit`, `npm test`, `npm run build`) before tagging, so a broken master can't become a release.
+  4. Creates and pushes the annotated tag `vX.Y.Z` and the GitHub Release (`--generate-notes`).
+  5. Runs the production + preview deploy.
+- The deploy runs as a `workflow_call` job inside the release run rather than via the tag-push trigger: a tag pushed by a workflow using `GITHUB_TOKEN` doesn't start new workflow runs, so relying on `deploy.yml`'s `on: push: tags` there would leave production stale. See the comments in `.github/workflows/release.yml` before changing that.
+- Tagging by hand (`git tag vX.Y.Z && git push origin vX.Y.Z`) still works and still triggers `deploy.yml` — the workflow is just the supported path.
 
 ## Code conventions
 

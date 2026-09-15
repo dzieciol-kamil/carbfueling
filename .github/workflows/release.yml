@@ -1,0 +1,106 @@
+name: Release
+
+# Cuts a production release from the Actions tab: bump (if needed) → verify → tag →
+# GitHub Release → deploy. Everything a release used to need locally lives here now.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release as bare semver, e.g. 1.20.0 (the tag becomes v1.20.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      # Pushes the version-bump commit, pushes the tag, creates the Release.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate the version input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version must be a bare X.Y.Z semver string (got '$VERSION') — no leading 'v', no suffix."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Tag v$VERSION already exists — a released tag is never overwritten. Pick a new version."
+            exit 1
+          fi
+          echo "Releasing v$VERSION"
+
+      # Usually a no-op: the version bump is normally already committed to master by hand.
+      # Only when master still carries an older version do we bump and push it, so that the
+      # tagged tree and package.json never disagree.
+      - name: Sync package.json to the release version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if [ "$CURRENT" = "$VERSION" ]; then
+            echo "package.json is already at $VERSION — nothing to bump."
+            exit 0
+          fi
+          echo "Bumping package.json from $CURRENT to $VERSION"
+          npm version "$VERSION" --no-git-tag-version
+          git add package.json package-lock.json
+          git commit -m "Bump version to $VERSION"
+          git push origin HEAD:master
+
+      # Same four steps ci.yml runs. A red master must never become a release tag, and the
+      # tag is only created after this passes.
+      - name: Verify the release build
+        run: |
+          npm ci
+          npx tsc -b --noEmit
+          npm test
+          npm run build
+
+      - name: Tag the release
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push origin "refs/tags/v$VERSION"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: gh release create "v$VERSION" --generate-notes
+
+  # DO NOT "simplify" this away by relying on deploy.yml's `on: push: tags: ['v*']` trigger.
+  # A tag pushed by a workflow using the default GITHUB_TOKEN does NOT start other workflow
+  # runs — GitHub suppresses those events to prevent recursion — so the tag push above leaves
+  # that trigger dormant and production would never update. (Same for dispatching deploy.yml
+  # through the API with GITHUB_TOKEN.) Calling it as a reusable workflow is a direct job
+  # invocation inside this same run, not an event, so the restriction doesn't apply.
+  # It also covers the preview build, whose `on: push: branches: [master]` trigger is
+  # suppressed for the same reason when this workflow pushes a version-bump commit.
+  deploy:
+    needs: release
+    uses: ./.github/workflows/deploy.yml
+    # A called workflow inherits no permissions — the calling job must declare the same set
+    # deploy.yml declares for itself.
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
