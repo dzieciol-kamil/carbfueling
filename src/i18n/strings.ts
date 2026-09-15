@@ -347,9 +347,12 @@ export interface StringTable {
   shareIncludeWeight: string;
   shareCopyLink: string;
   shareCopyText: string;
+  shareCopyImage: string;
   shareDownloadPng: string;
   shareCopied: string;
   shareCopyError: string;
+  /** Copying the PNG failed or the browser has no image clipboard — points at the download button. */
+  shareCopyImageError: string;
   shareDownloadError: string;
   /** Shown in place of the QR preview when the plan's link is past `QR_MAX_BYTES`. */
   shareQrTooLarge: string;
@@ -799,9 +802,11 @@ export const STR: Record<Lang, StringTable> = {
     shareIncludeWeight: 'Udostępnij wagę',
     shareCopyLink: 'Kopiuj link',
     shareCopyText: 'Kopiuj tekst',
+    shareCopyImage: 'Kopiuj obraz',
     shareDownloadPng: 'Pobierz PNG',
     shareCopied: 'Skopiowano.',
     shareCopyError: 'Nie udało się skopiować — zaznacz i skopiuj ręcznie.',
+    shareCopyImageError: 'Nie udało się skopiować obrazu — użyj „Pobierz PNG”.',
     shareDownloadError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     shareQrTooLarge: 'Ten plan jest za duży na kod QR — udostępnij sam link.',
     shareFileBadge: 'odznaka',
@@ -1244,9 +1249,11 @@ export const STR: Record<Lang, StringTable> = {
     shareIncludeWeight: 'Share my weight',
     shareCopyLink: 'Copy link',
     shareCopyText: 'Copy text',
+    shareCopyImage: 'Copy image',
     shareDownloadPng: 'Download PNG',
     shareCopied: 'Copied.',
     shareCopyError: 'Could not copy — select the text and copy it manually.',
+    shareCopyImageError: 'Could not copy the image — use "Download PNG" instead.',
     shareDownloadError: 'Could not save the file. Try again.',
     shareQrTooLarge: 'This plan is too large for a QR code — share the link instead.',
     shareFileBadge: 'badge',
@@ -1695,9 +1702,11 @@ export const STR: Record<Lang, StringTable> = {
     shareIncludeWeight: 'Mein Gewicht teilen',
     shareCopyLink: 'Link kopieren',
     shareCopyText: 'Text kopieren',
+    shareCopyImage: 'Bild kopieren',
     shareDownloadPng: 'PNG herunterladen',
     shareCopied: 'Kopiert.',
     shareCopyError: 'Kopieren fehlgeschlagen — Text markieren und manuell kopieren.',
+    shareCopyImageError: 'Bild konnte nicht kopiert werden — nutze „PNG herunterladen“.',
     shareDownloadError: 'Datei konnte nicht gespeichert werden. Versuch es noch einmal.',
     shareQrTooLarge: 'Dieser Plan ist zu groß für einen QR-Code — teile stattdessen den Link.',
     shareFileBadge: 'abzeichen',
@@ -2146,9 +2155,11 @@ export const STR: Record<Lang, StringTable> = {
     shareIncludeWeight: 'Condividi il mio peso',
     shareCopyLink: 'Copia link',
     shareCopyText: 'Copia testo',
+    shareCopyImage: 'Copia immagine',
     shareDownloadPng: 'Scarica PNG',
     shareCopied: 'Copiato.',
     shareCopyError: 'Copia non riuscita — seleziona il testo e copialo a mano.',
+    shareCopyImageError: 'Impossibile copiare l’immagine — usa «Scarica PNG».',
     shareDownloadError: 'Impossibile salvare il file. Riprova.',
     shareQrTooLarge: 'Questo piano è troppo grande per un codice QR — condividi il link.',
     shareFileBadge: 'distintivo',

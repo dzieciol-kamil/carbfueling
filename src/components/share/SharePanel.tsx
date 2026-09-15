@@ -20,17 +20,30 @@ const LAYOUT_OF: Partial<Record<FormatId, ShareLayout>> = {
   chart: 'chart',
 };
 
+// minHeight keeps a real tap target in the mobile bottom sheet, where the padding alone
+// would leave the buttons under the usual 44px floor.
 const actionBtn: CSSProperties = {
   border: '1px solid var(--chip-border)',
   background: 'var(--selected-bg)',
   color: 'var(--on-brand)',
   borderRadius: 10,
   padding: '10px 16px',
+  minHeight: 44,
   fontFamily: 'Archivo, sans-serif',
   fontSize: 13,
   fontWeight: 700,
   cursor: 'pointer',
 };
+
+/** The secondary half of an action pair, styled like ConfirmDialog's cancel button. */
+const secondaryBtn: CSSProperties = {
+  ...actionBtn,
+  background: 'var(--surface)',
+  color: 'var(--ink-soft)',
+  fontWeight: 600,
+};
+
+const disabledBtn: CSSProperties = { opacity: 0.5, cursor: 'not-allowed' };
 
 const cueBtn: CSSProperties = {
   border: 'none',
@@ -178,17 +191,38 @@ export function SharePanel({ desktop }: SharePanelProps) {
     }
   }
 
-  async function download() {
+  /** The one PNG both image buttons hand out, so copy and download can never diverge. */
+  function shareBlob(): Promise<Blob> {
     const canvas = canvasRef.current;
-    if (!canvas || !layout) return;
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) {
-      say(strings.shareDownloadError);
+    if (!canvas) return Promise.reject(new Error('share canvas missing'));
+    return new Promise((resolve, reject) =>
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob produced no image'))),
+        'image/png',
+      ),
+    );
+  }
+
+  async function copyImage() {
+    if (typeof ClipboardItem === 'undefined' || typeof navigator.clipboard?.write !== 'function') {
+      say(strings.shareCopyImageError);
       return;
     }
     try {
+      // The blob promise is passed in unresolved on purpose: awaiting it first would end the
+      // click's user-gesture window, and Safari (iOS above all) then rejects the write.
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': shareBlob() })]);
+      say(strings.shareCopied);
+    } catch {
+      say(strings.shareCopyImageError);
+    }
+  }
+
+  async function download() {
+    if (!layout) return;
+    try {
       await saveBlobFile(
-        blob,
+        await shareBlob(),
         shareImageFileName(layout, {
           badge: strings.shareFileBadge,
           qr: strings.shareFileQr,
@@ -357,7 +391,7 @@ export function SharePanel({ desktop }: SharePanelProps) {
           ))}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
           {format === 'link' && (
             <button style={actionBtn} onClick={() => void copy(url)}>
               {strings.shareCopyLink}
@@ -369,13 +403,22 @@ export function SharePanel({ desktop }: SharePanelProps) {
             </button>
           )}
           {layout && (
-            <button
-              style={qrTooLarge ? { ...actionBtn, opacity: 0.5, cursor: 'not-allowed' } : actionBtn}
-              disabled={qrTooLarge}
-              onClick={() => void download()}
-            >
-              {strings.shareDownloadPng}
-            </button>
+            <>
+              <button
+                style={qrTooLarge ? { ...secondaryBtn, ...disabledBtn } : secondaryBtn}
+                disabled={qrTooLarge}
+                onClick={() => void copyImage()}
+              >
+                {strings.shareCopyImage}
+              </button>
+              <button
+                style={qrTooLarge ? { ...actionBtn, ...disabledBtn } : actionBtn}
+                disabled={qrTooLarge}
+                onClick={() => void download()}
+              >
+                {strings.shareDownloadPng}
+              </button>
+            </>
           )}
         </div>
 
