@@ -44,13 +44,14 @@ const BADGE_PAD = 44;
 const BADGE_GAP = 44;
 /** Stat column: the wordmark and the six rows. `BADGE_VALUE_DX` is where the value sits relative
  *  to the label's left edge — wide enough for the longest label, measured with the real font at
- *  `BADGE_LABEL_PX`: German "Kohlenhydrate" 228.5 px, Polish "Węglowodany" 223.5 px. The column is
- *  that plus the widest value ("150 km", 129.6 px at `BADGE_VALUE_PX`), so 430 of the 500 fit. */
-const BADGE_STATS_W = 500;
-const BADGE_VALUE_DX = 300;
+ *  `BADGE_LABEL_PX`: German "Kohlenhydrate" 188.2 px, Polish "Węglowodany" 184.0 px. The column is
+ *  that plus the widest value (a seven-character one like "100 g/h", 126.0 px at `BADGE_VALUE_PX`),
+ *  so 376 of the 390 fit — the width follows the type down rather than leaving the column gappy. */
+const BADGE_STATS_W = 390;
+const BADGE_VALUE_DX = 250;
 /** The label carries the row, so it is set close to the value's size rather than a third of it. */
-const BADGE_LABEL_PX = 34;
-const BADGE_VALUE_PX = 36;
+const BADGE_LABEL_PX = 28;
+const BADGE_VALUE_PX = 30;
 const BADGE_ROW_H = 68;
 const BADGE_ROWS_TOP = BADGE_PAD + 74;
 const BADGE_PLOT_W = 560;
@@ -68,7 +69,15 @@ const CHART_SIZE = { w: 1200, h: 720 };
 const PAPER = '#FFFFFF';
 const INK = CHART_COLORS.ink;
 const MUTED = CHART_COLORS.muted;
-const ACCENT = CHART_COLORS.carb;
+/** The plot's two hues — deliberately *not* `CHART_COLORS.carb` / `.water`. The app's chart gives
+ *  each series a wide canvas and a legend beside it; the share plot stacks four curves inside a few
+ *  hundred rendered pixels, and at that size the app's desaturated, teal-leaning water blue reads
+ *  as a neighbour of the carb green instead of a different colour. Both are nudged apart here — the
+ *  blue deeper and truer, the green a shade darker and warmer — far enough to separate at the
+ *  preview's size, near enough that the image still carries the app's palette. `CHART_COLORS` must
+ *  not move for this: it also drives the main chart, the lane strips and the print sheet. */
+const PLOT_CARB = '#4C9633';
+const PLOT_WATER = '#2A66B0';
 
 const WORDMARK = 'CARB FUELING';
 const SITE = 'carbfueling.com';
@@ -242,8 +251,14 @@ function drawChart(
 
 // --- the plot -----------------------------------------------------------------
 
-/** Share of the plot's height left above the dashed demand lines. */
-const PLOT_HEADROOM = 0.12;
+/** Vertical offset between the two dashed demand lines, as a share of the plot's height. It used
+ *  to be a multiple of the stroke width — a few canvas pixels, which is not what the eye gets: the
+ *  preview (and any paste of the PNG) shows the canvas at roughly half size, so five canvas pixels
+ *  arrived as two and the green and blue dashes read as one line, with the solid water curve
+ *  crowding them from above whenever the plan covers hydration. Tying it to the plot instead of to
+ *  the stroke puts ~26 canvas px between them on the badge and ~28 on the chart — a good ten
+ *  pixels as rendered, unmistakably two lines — and keeps both layouts in step. */
+const DEMAND_GAP = 0.07;
 
 interface PlotBox {
   x: number;
@@ -259,8 +274,8 @@ interface PlotBox {
  *  is first so its demand line takes the higher of the two slots and its curves sit behind the
  *  carbs, which are the plan's subject. */
 const PLOT_SERIES = [
-  { supply: 'fluidRate', need: 'fluidNeedRate', color: CHART_COLORS.water },
-  { supply: 'rate', need: 'needRate', color: ACCENT },
+  { supply: 'fluidRate', need: 'fluidNeedRate', color: PLOT_WATER },
+  { supply: 'rate', need: 'needRate', color: PLOT_CARB },
 ] as const;
 
 /**
@@ -273,29 +288,54 @@ const PLOT_SERIES = [
  * thing that has to be there — it says which colour is which.
  *
  * g/h and ml/h have no common scale, so each pair gets its own — anchored on its *demand* peak,
- * not on the pair's overall maximum. That puts both dashed lines at a fixed height near the top,
- * a few pixels apart so they read as two lines rather than one, and it gives the picture a
- * meaning no number has to state: an intake curve that meets its demand touches its own dashed
- * line. `PLOT_HEADROOM` is what an overshooting intake curve has to rise into.
+ * not on the pair's overall maximum. That gives the picture a meaning no number has to state: an
+ * intake curve that meets its demand touches its own dashed line, and it runs above the line by
+ * however much the plan overshoots.
+ *
+ * How high the dashed lines sit is then the only free variable, and it is the data that sets it.
+ * The headroom used to be a constant fraction of the box, which is a bet that no curve overshoots
+ * by more than that — and a sawtooth intake curve on a real plan overshoots by far more, so the
+ * teeth were sliced flat against the top edge and the water curve was pinned along it. Instead the
+ * scale is sized from the tallest peak that has to fit: the pair whose intake runs furthest above
+ * its demand decides where the first dashed line goes, and both lines slide down the plot together
+ * when a plan overshoots a lot. Nothing is clipped, every curve keeps its true shape, and each
+ * dashed line still sits where its own series meets it.
  */
 function drawPlot(ctx: CanvasRenderingContext2D, input: ShareRenderInput, box: PlotBox): void {
   const legendH = Math.round(box.labelPx * 2.2);
   const bottom = box.y + box.h - legendH;
-  const top = box.y + Math.round((bottom - box.y) * PLOT_HEADROOM);
-  // Wider than the dashed stroke, so the two demand lines sit side by side without touching.
-  const demandGap = Math.max(2, Math.round(box.strokePx * 1.2));
 
   const S = samples(input.plan);
   const D = dist(input.plan.route);
   if (S.length > 1 && D > 0) {
     const px = (x: number) => box.x + (x / D) * box.w;
+    // Per pair: the demand peak the scale is anchored on, and how far past it the intake goes. A
+    // pair with no demand at all (nothing to plan for) asks for no headroom.
+    const peaks = PLOT_SERIES.map((series) => {
+      const demand = Math.max(...S.map((p) => p[series.need]));
+      const intake = Math.max(...S.map((p) => p[series.supply]));
+      return { demand, ratio: demand > 0 ? intake / demand : 1 };
+    });
+    // 1 keeps a plan that never reaches its demand from being blown up to fill the box.
+    const maxRatio = Math.max(1, ...peaks.map((p) => p.ratio));
+    // Air above the tallest peak. A stroke-width or two clears the edge arithmetically but still
+    // reads as a curve pressed against a ceiling, so it is a share of the plot: ~22 canvas px on
+    // the badge, ~24 on the chart, which is visible breathing room at the rendered size.
+    const topPad = Math.max(box.strokePx, Math.round((bottom - box.y) * 0.06));
+    // Height of the first (water) dashed line above the baseline. The tallest curve is `maxRatio`
+    // times its own line's height, so this is exactly what makes it land on `topPad`.
+    const demandH = (bottom - box.y - topPad) / maxRatio;
+    // The carb line sits this much lower. Capped so a pathological overshoot — which squeezes
+    // `demandH` towards the baseline — cannot push it onto the baseline itself.
+    const gap = Math.min(Math.round((bottom - box.y) * DEMAND_GAP), Math.floor(demandH / 3));
     PLOT_SERIES.forEach((series, i) => {
-      const demandY = top + i * demandGap;
-      const peak = Math.max(...S.map((p) => p[series.need]));
-      // A ride with no demand at all (nothing to plan for) collapses onto the baseline rather
-      // than dividing by zero; a curve past the headroom is clipped to the box's top edge.
+      const demandY = bottom - demandH + i * gap;
+      const { demand } = peaks[i];
+      // A ride with no demand collapses onto the baseline rather than dividing by zero. The
+      // `box.y` floor is only a guard against a pathological sample — `maxRatio` has already sized
+      // the scale so that every peak fits, so on real data the clamp never bites.
       const py = (v: number) =>
-        peak > 0 ? Math.max(box.y, bottom - (v / peak) * (bottom - demandY)) : bottom;
+        demand > 0 ? Math.max(box.y, bottom - (v / demand) * (bottom - demandY)) : bottom;
       drawSeries(ctx, S, series.need, px, py, series.color, box.strokePx, null);
       drawSeries(ctx, S, series.supply, px, py, series.color, box.strokePx, bottom);
     });
@@ -370,8 +410,8 @@ function drawLegend(
   ctx.textBaseline = 'middle';
   let x = box.x;
   for (const [color, label] of [
-    [ACCENT, labels.legendCarbs],
-    [CHART_COLORS.water, labels.legendWater],
+    [PLOT_CARB, labels.legendCarbs],
+    [PLOT_WATER, labels.legendWater],
   ] as const) {
     ctx.fillStyle = color;
     roundRect(ctx, x, cy - swatchH / 2, swatchW, swatchH, swatchH / 2);
