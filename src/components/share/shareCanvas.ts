@@ -43,10 +43,14 @@ const QR_ONLY_CELL = 12;
 const BADGE_PAD = 44;
 const BADGE_GAP = 44;
 /** Stat column: the wordmark and the six rows. `BADGE_VALUE_DX` is where the value sits relative
- *  to the label's left edge — wide enough for the longest label ("Kohlenhydrate") at its type
- *  size, and the column is that plus the widest value ("~1.5 l" in 44 px mono). */
+ *  to the label's left edge — wide enough for the longest label, measured with the real font at
+ *  `BADGE_LABEL_PX`: German "Kohlenhydrate" 228.5 px, Polish "Węglowodany" 223.5 px. The column is
+ *  that plus the widest value ("150 km", 129.6 px at `BADGE_VALUE_PX`), so 430 of the 500 fit. */
 const BADGE_STATS_W = 500;
 const BADGE_VALUE_DX = 300;
+/** The label carries the row, so it is set close to the value's size rather than a third of it. */
+const BADGE_LABEL_PX = 34;
+const BADGE_VALUE_PX = 36;
 const BADGE_ROW_H = 68;
 const BADGE_ROWS_TOP = BADGE_PAD + 74;
 const BADGE_PLOT_W = 560;
@@ -156,12 +160,12 @@ function drawBadge(
   let y = BADGE_ROWS_TOP;
   for (const [label, value] of rows) {
     ctx.fillStyle = MUTED;
-    ctx.font = '600 26px Archivo, Helvetica, sans-serif';
-    // The label's cap height is half the value's, so it is nudged down to sit on the same optical
-    // line rather than hanging off the value's top edge.
-    ctx.fillText(label, pad, y + 10);
+    ctx.font = `600 ${BADGE_LABEL_PX}px Archivo, Helvetica, sans-serif`;
+    // Archivo's cap height sits a little above the mono's at these sizes, so the label is nudged
+    // down to share the value's optical line.
+    ctx.fillText(label, pad, y + 3);
     ctx.fillStyle = INK;
-    ctx.font = "700 44px 'JetBrains Mono', monospace";
+    ctx.font = `700 ${BADGE_VALUE_PX}px 'JetBrains Mono', monospace`;
     ctx.fillText(value, pad + BADGE_VALUE_DX, y);
     y += BADGE_ROW_H;
   }
@@ -238,6 +242,9 @@ function drawChart(
 
 // --- the plot -----------------------------------------------------------------
 
+/** Share of the plot's height left above the dashed demand lines. */
+const PLOT_HEADROOM = 0.12;
+
 interface PlotBox {
   x: number;
   y: number;
@@ -248,34 +255,50 @@ interface PlotBox {
   strokePx: number;
 }
 
+/** A series pair — what the ride demands, and what the plan actually delivers against it. Water
+ *  is first so its demand line takes the higher of the two slots and its curves sit behind the
+ *  carbs, which are the plan's subject. */
+const PLOT_SERIES = [
+  { supply: 'fluidRate', need: 'fluidNeedRate', color: CHART_COLORS.water },
+  { supply: 'rate', need: 'needRate', color: ACCENT },
+] as const;
+
 /**
- * The plan's two curves, shared by the 'chart' and 'badge' layouts so they cannot drift apart.
+ * The plan's four curves — an intake curve and its dashed demand line per series — shared by the
+ * 'chart' and 'badge' layouts so they cannot drift apart.
  *
  * Decoration, not a graph: it carries no numbers at all — no units, no ticks, no gridlines, no
  * axis values — because nobody reads values off a shared PNG. Every figure worth having is
- * printed as text elsewhere (the badge's stat rows, the chart's caption). That is also why the
- * two series can each be normalised against their own peak despite being g/h and ml/h: with no
- * scale on the canvas there is no reading to mislead, and both curves fill the box as shapes.
- * The legend is the one thing that has to be there — it says which colour is which.
+ * printed as text elsewhere (the badge's stat rows, the chart's caption). The legend is the one
+ * thing that has to be there — it says which colour is which.
+ *
+ * g/h and ml/h have no common scale, so each pair gets its own — anchored on its *demand* peak,
+ * not on the pair's overall maximum. That puts both dashed lines at a fixed height near the top,
+ * a few pixels apart so they read as two lines rather than one, and it gives the picture a
+ * meaning no number has to state: an intake curve that meets its demand touches its own dashed
+ * line. `PLOT_HEADROOM` is what an overshooting intake curve has to rise into.
  */
 function drawPlot(ctx: CanvasRenderingContext2D, input: ShareRenderInput, box: PlotBox): void {
   const legendH = Math.round(box.labelPx * 2.2);
   const bottom = box.y + box.h - legendH;
+  const top = box.y + Math.round((bottom - box.y) * PLOT_HEADROOM);
+  // Wider than the dashed stroke, so the two demand lines sit side by side without touching.
+  const demandGap = Math.max(2, Math.round(box.strokePx * 1.2));
 
   const S = samples(input.plan);
   const D = dist(input.plan.route);
   if (S.length > 1 && D > 0) {
     const px = (x: number) => box.x + (x / D) * box.w;
-    // 1.12 keeps the peak off the top edge; a flat-zero series collapses onto the baseline
-    // rather than dividing by zero.
-    const scale = (max: number) => (v: number) =>
-      bottom - (max > 0 ? v / (max * 1.12) : 0) * (bottom - box.y);
-    const pyCarb = scale(Math.max(...S.map((p) => p.rate)));
-    const pyFluid = scale(Math.max(...S.map((p) => p.fluidRate)));
-
-    // Water underneath, carbs on top: carbs are the plan's subject, so they take the front.
-    drawSeries(ctx, S, 'fluidRate', px, pyFluid, CHART_COLORS.water, box.strokePx, bottom);
-    drawSeries(ctx, S, 'rate', px, pyCarb, ACCENT, box.strokePx, bottom);
+    PLOT_SERIES.forEach((series, i) => {
+      const demandY = top + i * demandGap;
+      const peak = Math.max(...S.map((p) => p[series.need]));
+      // A ride with no demand at all (nothing to plan for) collapses onto the baseline rather
+      // than dividing by zero; a curve past the headroom is clipped to the box's top edge.
+      const py = (v: number) =>
+        peak > 0 ? Math.max(box.y, bottom - (v / peak) * (bottom - demandY)) : bottom;
+      drawSeries(ctx, S, series.need, px, py, series.color, box.strokePx, null);
+      drawSeries(ctx, S, series.supply, px, py, series.color, box.strokePx, bottom);
+    });
   }
 
   ctx.strokeStyle = '#D8DCD6';
@@ -288,18 +311,19 @@ function drawPlot(ctx: CanvasRenderingContext2D, input: ShareRenderInput, box: P
   drawLegend(ctx, input.labels, box, bottom + legendH / 2 + box.labelPx * 0.2);
 }
 
-/** A soft fill under the curve plus the stroke on top. The fill is what makes the pair read as a
- *  graphic rather than two wires; '22' is ~13% alpha, light enough that the overlap of the two
- *  stays legible. */
+/** A curve in its series' colour: solid over a soft fill down to `fillTo` for what the plan
+ *  delivers, or — with `fillTo` null — the thinner dashed line for what the ride demands. The
+ *  fill is what makes the pair read as a graphic rather than two wires; '22' is ~13% alpha, light
+ *  enough that the overlap of the two stays legible. */
 function drawSeries(
   ctx: CanvasRenderingContext2D,
   S: Sample[],
-  key: 'rate' | 'fluidRate',
+  key: 'rate' | 'fluidRate' | 'needRate' | 'fluidNeedRate',
   px: (x: number) => number,
   py: (v: number) => number,
   color: string,
   width: number,
-  baseline: number,
+  fillTo: number | null,
 ): void {
   const trace = () =>
     S.forEach((p, i) => {
@@ -309,21 +333,25 @@ function drawSeries(
       else ctx.lineTo(x, y);
     });
 
-  ctx.beginPath();
-  trace();
-  ctx.lineTo(px(S[S.length - 1].x), baseline);
-  ctx.lineTo(px(S[0].x), baseline);
-  ctx.closePath();
-  ctx.fillStyle = color + '22';
-  ctx.fill();
+  if (fillTo !== null) {
+    ctx.beginPath();
+    trace();
+    ctx.lineTo(px(S[S.length - 1].x), fillTo);
+    ctx.lineTo(px(S[0].x), fillTo);
+    ctx.closePath();
+    ctx.fillStyle = color + '22';
+    ctx.fill();
+  }
 
   ctx.strokeStyle = color;
-  ctx.lineWidth = width;
+  ctx.lineWidth = fillTo === null ? Math.max(2, width * 0.6) : width;
   ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
+  ctx.lineCap = fillTo === null ? 'butt' : 'round';
+  ctx.setLineDash(fillTo === null ? [width * 2, width * 1.6] : []);
   ctx.beginPath();
   trace();
   ctx.stroke();
+  ctx.setLineDash([]);
 }
 
 /** Swatch + word per series, laid out left to right from measured widths so a long translation

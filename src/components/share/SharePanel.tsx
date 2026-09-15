@@ -55,6 +55,18 @@ const cueBtn: CSSProperties = {
   flexShrink: 0,
 };
 
+/** Desktop only: the panel is pinned to the viewport's centre (`top: 50%` + a -50% translate), so
+ *  an arrow at the panel's own vertical centre stays put however tall the current format makes it.
+ *  In the mobile bottom sheet the panel grows upwards from `bottom: 0` and its centre moves, so
+ *  there the arrows stay in normal flow next to the title. */
+const cueEdge = (side: 'left' | 'right'): CSSProperties => ({
+  ...cueBtn,
+  position: 'absolute',
+  [side]: 10,
+  top: '50%',
+  transform: 'translateY(-50%)',
+});
+
 const previewBox: CSSProperties = {
   background: 'var(--bg)',
   border: '1px solid var(--border-soft)',
@@ -65,6 +77,14 @@ const previewBox: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
 };
+
+/** How much of the viewport the panel's own chrome takes around the preview — its margins, the
+ *  title, the weight opt-in, the carousel head, the dots, the buttons and every gap between them,
+ *  measured with a little slack for a hint that wraps to two lines. The preview canvas is capped
+ *  at what is left, because a percentage cap cannot work here: the box it sits in is a flex item
+ *  whose height comes out of flex shrinking, which is indefinite as far as `max-height: 100%` is
+ *  concerned, so the canvas would keep the height its aspect ratio implies and spill out. */
+const PREVIEW_CHROME_PX = 344;
 
 const codeStyle: CSSProperties = {
   fontFamily: "'JetBrains Mono', monospace",
@@ -256,14 +276,16 @@ export function SharePanel({ desktop }: SharePanelProps) {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 520,
+        width: 600,
         maxWidth: 'calc(100vw - 28px)',
         maxHeight: 'calc(100vh - 40px)',
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 14,
         boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
-        padding: '18px 20px',
+        // The side padding is the arrows' lane: they sit inside it, flanking the content rather
+        // than over it, at every panel height and down to the `maxWidth` clamp.
+        padding: '18px 46px',
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
@@ -331,7 +353,7 @@ export function SharePanel({ desktop }: SharePanelProps) {
             type="button"
             onClick={() => step(-1)}
             aria-label={strings.sharePrevFormat}
-            style={cueBtn}
+            style={desktop ? cueEdge('left') : cueBtn}
           >
             <span className="share-cue share-cue-left" aria-hidden="true">
               <i />
@@ -349,7 +371,7 @@ export function SharePanel({ desktop }: SharePanelProps) {
             type="button"
             onClick={() => step(1)}
             aria-label={strings.shareNextFormat}
-            style={cueBtn}
+            style={desktop ? cueEdge('right') : cueBtn}
           >
             <span className="share-cue" aria-hidden="true">
               <i />
@@ -375,8 +397,15 @@ export function SharePanel({ desktop }: SharePanelProps) {
             <canvas
               ref={canvasRef}
               style={{
-                width: '100%',
+                // Fitted to the space in *both* axes rather than stretched to the box's width:
+                // the near-square 'qr' canvas is taller than the panel can be, and a canvas at
+                // `width: 100%` keeps the height its aspect ratio implies and spills out of the
+                // preview box. The wide formats never got tall enough to show it. The bitmap is
+                // untouched either way, so the download keeps its full resolution.
+                width: 'auto',
                 height: 'auto',
+                maxWidth: '100%',
+                maxHeight: `calc(100vh - ${PREVIEW_CHROME_PX}px)`,
                 aspectRatio: `${canvasDims.w} / ${canvasDims.h}`,
                 borderRadius: 8,
                 border: '1px solid var(--border-soft)',
