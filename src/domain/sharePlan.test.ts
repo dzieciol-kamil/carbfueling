@@ -1,9 +1,11 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
   buildSharedPlan,
   decodeSharedPlan,
   encodeSharedPlan,
   sharedPlanToSettingsData,
+  SHARE_CONTAINER_DEFLATE,
+  SHARE_CONTAINER_RAW,
   type SharedPlan,
 } from './sharePlan';
 import type { SettingsExportData } from './settingsExport';
@@ -77,10 +79,62 @@ function baseData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
   };
 }
 
-function roundTrip(plan: SharedPlan): SharedPlan {
-  const decoded = decodeSharedPlan(encodeSharedPlan(plan));
+async function roundTrip(plan: SharedPlan): Promise<SharedPlan> {
+  const decoded = await decodeSharedPlan(await encodeSharedPlan(plan));
   expect(decoded).not.toBeNull();
   return decoded as SharedPlan;
+}
+
+// --- white-box helpers for container-format tests -------------------------------
+// The wire format (see sharePlan.ts) is: one marker byte, then either deflate-raw-compressed
+// or raw JSON bytes, base64url-encoded together. These helpers peel that apart / build it
+// directly so tests can exercise the decoder's marker branches without depending on which
+// marker this Node process's encodeSharedPlan happens to produce.
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlToBytes(s: string): Uint8Array {
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function pump(
+  stream: { readable: ReadableStream<Uint8Array>; writable: WritableStream<BufferSource> },
+  bytes: Uint8Array,
+): Promise<Uint8Array> {
+  const writer = stream.writable.getWriter();
+  const written = writer.write(bytes as BufferSource).then(() => writer.close());
+  const [, buf] = await Promise.all([written, new Response(stream.readable).arrayBuffer()]);
+  return new Uint8Array(buf);
+}
+
+async function decodedJson(encoded: string): Promise<unknown> {
+  const bytes = base64UrlToBytes(encoded);
+  const marker = bytes[0];
+  const body = bytes.subarray(1);
+  const json =
+    marker === SHARE_CONTAINER_DEFLATE
+      ? await pump(new DecompressionStream('deflate-raw'), body)
+      : body;
+  return JSON.parse(new TextDecoder().decode(json));
+}
+
+async function encodeContainer(marker: number, json: unknown): Promise<string> {
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(json));
+  const body =
+    marker === SHARE_CONTAINER_DEFLATE
+      ? await pump(new CompressionStream('deflate-raw'), jsonBytes)
+      : jsonBytes;
+  const out = new Uint8Array(body.length + 1);
+  out[0] = marker;
+  out.set(body, 1);
+  return bytesToBase64Url(out);
 }
 
 describe('buildSharedPlan', () => {
@@ -102,59 +156,59 @@ describe('buildSharedPlan', () => {
 describe('buildSharedPlan bounds what it emits so the link is never dead on arrival', () => {
   const long = 'x'.repeat(200);
 
-  test('truncates a vessel name no maxLength stops the user typing', () => {
+  test('truncates a vessel name no maxLength stops the user typing', async () => {
     const data = baseData();
     data.gear[0].name = long;
-    const decoded = roundTrip(buildSharedPlan(data, true));
+    const decoded = await roundTrip(buildSharedPlan(data, true));
     expect(decoded.gear[0].name).toBe('x'.repeat(60));
   });
 
-  test('truncates an over-long food name and food key', () => {
+  test('truncates an over-long food name and food key', async () => {
     const data = baseData();
     data.foods[0].name = long;
     data.foods[0].key = 'k'.repeat(80);
-    const decoded = roundTrip(buildSharedPlan(data, true));
+    const decoded = await roundTrip(buildSharedPlan(data, true));
     expect(decoded.foods[0].name).toBe('x'.repeat(60));
     expect(decoded.foods[0].key).toBe('k'.repeat(40));
   });
 
-  test('clamps a temp an imported backup can carry past the slider', () => {
+  test('clamps a temp an imported backup can carry past the slider', async () => {
     const data = baseData();
     data.route.temp = 999;
-    const decoded = roundTrip(buildSharedPlan(data, true));
+    const decoded = await roundTrip(buildSharedPlan(data, true));
     expect(decoded.route.temp).toBe(60);
   });
 
-  test('clamps a weight outside the decoder range instead of emitting a dead link', () => {
+  test('clamps a weight outside the decoder range instead of emitting a dead link', async () => {
     const data = baseData();
     data.route.weight = 5;
-    expect(roundTrip(buildSharedPlan(data, true)).weight).toBe(20);
+    expect((await roundTrip(buildSharedPlan(data, true))).weight).toBe(20);
   });
 
-  test('keeps gel doses inside their fill after clamping', () => {
+  test('keeps gel doses inside their fill after clamping', async () => {
     const data = baseData();
     data.fills[1].from = -30;
     data.fills[1].pos = [-10, 40, 5000];
-    const decoded = roundTrip(buildSharedPlan(data, true));
+    const decoded = await roundTrip(buildSharedPlan(data, true));
     expect(decoded.fills[1].pos).toEqual([0, 40, 80]);
   });
 });
 
 describe('encode/decode round trip', () => {
-  test('preserves the whole plan', () => {
+  test('preserves the whole plan', async () => {
     const plan = buildSharedPlan(baseData(), true);
-    expect(roundTrip(plan)).toEqual(plan);
+    expect(await roundTrip(plan)).toEqual(plan);
   });
 
-  test('preserves non-ASCII names', () => {
-    const decoded = roundTrip(buildSharedPlan(baseData(), true));
+  test('preserves non-ASCII names', async () => {
+    const decoded = await roundTrip(buildSharedPlan(baseData(), true));
     expect(decoded.gear[1].name).toBe('Flask ż');
     expect(decoded.shops[0].name).toBe('Żabka');
     expect(decoded.foods[0].name).toBe('Żel');
   });
 
-  test('preserves per-dose gel positions and optional food fields', () => {
-    const decoded = roundTrip(buildSharedPlan(baseData(), true));
+  test('preserves per-dose gel positions and optional food fields', async () => {
+    const decoded = await roundTrip(buildSharedPlan(baseData(), true));
     expect(decoded.fills[1].pos).toEqual([12.5, 40, 66.25]);
     expect(decoded.fills[0].pos).toBeUndefined();
     expect(decoded.foods[1].ml).toBe(50);
@@ -162,17 +216,67 @@ describe('encode/decode round trip', () => {
     expect(decoded.foods[0].ml).toBeUndefined();
   });
 
-  test('round-trips a weight-omitted plan as null', () => {
-    const decoded = roundTrip(buildSharedPlan(baseData(), false));
+  test('round-trips a weight-omitted plan as null', async () => {
+    const decoded = await roundTrip(buildSharedPlan(baseData(), false));
     expect(decoded.weight).toBeNull();
   });
 
-  test('produces a URL-safe string', () => {
-    expect(encodeSharedPlan(buildSharedPlan(baseData(), true))).toMatch(/^[A-Za-z0-9_-]+$/);
+  test('produces a URL-safe string', async () => {
+    expect(await encodeSharedPlan(buildSharedPlan(baseData(), true))).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
-  test('stays comfortably inside a shareable URL length', () => {
-    expect(encodeSharedPlan(buildSharedPlan(baseData(), true)).length).toBeLessThan(1200);
+  test('stays comfortably inside a shareable URL length', async () => {
+    const encoded = await encodeSharedPlan(buildSharedPlan(baseData(), true));
+    expect(encoded.length).toBeLessThan(1200);
+  });
+});
+
+describe('container marker (compression)', () => {
+  test('encodes with the deflate marker when CompressionStream is available', async () => {
+    const encoded = await encodeSharedPlan(buildSharedPlan(baseData(), true));
+    expect(base64UrlToBytes(encoded)[0]).toBe(SHARE_CONTAINER_DEFLATE);
+  });
+
+  test('round-trips through the compressed path', async () => {
+    const plan = buildSharedPlan(baseData(), true);
+    const encoded = await encodeSharedPlan(plan);
+    expect(base64UrlToBytes(encoded)[0]).toBe(SHARE_CONTAINER_DEFLATE);
+    expect(await decodeSharedPlan(encoded)).toEqual(plan);
+  });
+
+  test('falls back to the raw marker when CompressionStream is unavailable, and still round-trips', async () => {
+    vi.stubGlobal('CompressionStream', undefined);
+    try {
+      const plan = buildSharedPlan(baseData(), true);
+      const encoded = await encodeSharedPlan(plan);
+      expect(base64UrlToBytes(encoded)[0]).toBe(SHARE_CONTAINER_RAW);
+      expect(await decodeSharedPlan(encoded)).toEqual(plan);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  test('decode honours an explicit raw marker', async () => {
+    const plan = buildSharedPlan(baseData(), true);
+    const json = await decodedJson(await encodeSharedPlan(plan));
+    const encoded = await encodeContainer(SHARE_CONTAINER_RAW, json);
+    expect(await decodeSharedPlan(encoded)).toEqual(plan);
+  });
+
+  test('decode honours an explicit deflate marker', async () => {
+    const plan = buildSharedPlan(baseData(), true);
+    const json = await decodedJson(await encodeSharedPlan(plan));
+    const encoded = await encodeContainer(SHARE_CONTAINER_DEFLATE, json);
+    expect(await decodeSharedPlan(encoded)).toEqual(plan);
+  });
+
+  test('rejects an unrecognised marker', async () => {
+    expect(await decodeSharedPlan(bytesToBase64Url(new Uint8Array([2, 1, 2, 3])))).toBeNull();
+  });
+
+  test('rejects deflate-marked garbage instead of throwing', async () => {
+    const bytes = new Uint8Array([SHARE_CONTAINER_DEFLATE, 9, 9, 9, 9, 9]);
+    await expect(decodeSharedPlan(bytesToBase64Url(bytes))).resolves.toBeNull();
   });
 });
 
@@ -181,114 +285,115 @@ describe('decodeSharedPlan rejects bad input', () => {
     ['empty', ''],
     ['not base64url', 'abc$%^&'],
     ['base64url but not JSON', 'YWJjZGVm'],
-    ['truncated', encodeSharedPlan(buildSharedPlan(baseData(), true)).slice(0, 40)],
-  ])('%s -> null', (_label, param) => {
-    expect(decodeSharedPlan(param)).toBeNull();
+  ])('%s -> null', async (_label, param) => {
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a future schema version', () => {
+  test('truncated -> null', async () => {
+    const encoded = await encodeSharedPlan(buildSharedPlan(baseData(), true));
+    expect(await decodeSharedPlan(encoded.slice(0, 40))).toBeNull();
+  });
+
+  test('rejects a future schema version', async () => {
     const plan = buildSharedPlan(baseData(), true);
-    const raw = JSON.parse(atob(encodeSharedPlan(plan).replace(/-/g, '+').replace(/_/g, '/')));
+    const raw = (await decodedJson(await encodeSharedPlan(plan))) as unknown[];
     raw[0] = 99;
-    const bumped = btoa(JSON.stringify(raw))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-    expect(decodeSharedPlan(bumped)).toBeNull();
+    const bumped = await encodeContainer(SHARE_CONTAINER_RAW, raw);
+    expect(await decodeSharedPlan(bumped)).toBeNull();
   });
 
-  test('rejects an out-of-range distance', () => {
+  test('rejects an out-of-range distance', async () => {
     const plan = buildSharedPlan(baseData(), true);
     const broken = { ...plan, route: { ...plan.route, distance: 99999 } };
-    expect(decodeSharedPlan(encodeSharedPlan(broken))).toBeNull();
+    expect(await decodeSharedPlan(await encodeSharedPlan(broken))).toBeNull();
   });
 
-  test('rejects an unknown content enum', () => {
+  test('rejects an unknown content enum', async () => {
     const plan = buildSharedPlan(baseData(), true);
     const broken = {
       ...plan,
       fills: [{ ...plan.fills[0], content: 'lava' as unknown as 'izo' }],
     };
-    expect(decodeSharedPlan(encodeSharedPlan(broken))).toBeNull();
+    expect(await decodeSharedPlan(await encodeSharedPlan(broken))).toBeNull();
   });
 
-  test('rejects an over-long list', () => {
+  test('rejects an over-long list', async () => {
     const plan = buildSharedPlan(baseData(), true);
     const many = Array.from({ length: 300 }, (_, i) => ({ id: i, at: 1, name: 'x' }));
-    expect(decodeSharedPlan(encodeSharedPlan({ ...plan, shops: many }))).toBeNull();
+    expect(await decodeSharedPlan(await encodeSharedPlan({ ...plan, shops: many }))).toBeNull();
   });
 });
 
 describe('decodeSharedPlan rejects plans that type-check but are nonsense', () => {
-  function shared(mutate: (plan: SharedPlan) => SharedPlan): string {
+  async function shared(mutate: (plan: SharedPlan) => SharedPlan): Promise<string> {
     return encodeSharedPlan(mutate(buildSharedPlan(baseData(), true)));
   }
 
-  test('rejects a fill whose from is past its to', () => {
-    const param = shared((p) => ({ ...p, fills: [{ ...p.fills[0], from: 2000, to: 0 }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects a fill whose from is past its to', async () => {
+    const param = await shared((p) => ({ ...p, fills: [{ ...p.fills[0], from: 2000, to: 0 }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a food whose from is past its to', () => {
-    const param = shared((p) => ({ ...p, foods: [{ ...p.foods[0], from: 90, to: 10 }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects a food whose from is past its to', async () => {
+    const param = await shared((p) => ({ ...p, foods: [{ ...p.foods[0], from: 90, to: 10 }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a gel dose outside its own fill', () => {
-    const param = shared((p) => ({
+  test('rejects a gel dose outside its own fill', async () => {
+    const param = await shared((p) => ({
       ...p,
       fills: [{ ...p.fills[1], from: 10, to: 80, pos: [12.5, 500] }],
     }));
-    expect(decodeSharedPlan(param)).toBeNull();
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a non-integer fill id', () => {
-    const param = shared((p) => ({ ...p, fills: [{ ...p.fills[0], fid: 1.5 }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects a non-integer fill id', async () => {
+    const param = await shared((p) => ({ ...p, fills: [{ ...p.fills[0], fid: 1.5 }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a negative food id', () => {
-    const param = shared((p) => ({ ...p, foods: [{ ...p.foods[0], id: -1 }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects a negative food id', async () => {
+    const param = await shared((p) => ({ ...p, foods: [{ ...p.foods[0], id: -1 }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a non-integer shop id', () => {
-    const param = shared((p) => ({ ...p, shops: [{ ...p.shops[0], id: 0.5 }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects a non-integer shop id', async () => {
+    const param = await shared((p) => ({ ...p, shops: [{ ...p.shops[0], id: 0.5 }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects duplicate fill ids', () => {
-    const param = shared((p) => ({
+  test('rejects duplicate fill ids', async () => {
+    const param = await shared((p) => ({
       ...p,
       fills: [p.fills[0], { ...p.fills[1], fid: p.fills[0].fid }],
     }));
-    expect(decodeSharedPlan(param)).toBeNull();
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects duplicate food ids', () => {
-    const param = shared((p) => ({
+  test('rejects duplicate food ids', async () => {
+    const param = await shared((p) => ({
       ...p,
       foods: [p.foods[0], { ...p.foods[1], id: p.foods[0].id }],
     }));
-    expect(decodeSharedPlan(param)).toBeNull();
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects duplicate shop ids', () => {
-    const param = shared((p) => ({ ...p, shops: [p.shops[0], { ...p.shops[0] }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects duplicate shop ids', async () => {
+    const param = await shared((p) => ({ ...p, shops: [p.shops[0], { ...p.shops[0] }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects duplicate vessel gids', () => {
-    const param = shared((p) => ({
+  test('rejects duplicate vessel gids', async () => {
+    const param = await shared((p) => ({
       ...p,
       gear: [p.gear[0], { ...p.gear[1], gid: p.gear[0].gid }],
     }));
-    expect(decodeSharedPlan(param)).toBeNull();
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 
-  test('rejects a fill pointing at a vessel the link does not carry', () => {
-    const param = shared((p) => ({ ...p, fills: [{ ...p.fills[0], gid: 'g99' }] }));
-    expect(decodeSharedPlan(param)).toBeNull();
+  test('rejects a fill pointing at a vessel the link does not carry', async () => {
+    const param = await shared((p) => ({ ...p, fills: [{ ...p.fills[0], gid: 'g99' }] }));
+    expect(await decodeSharedPlan(param)).toBeNull();
   });
 });
 

@@ -26,6 +26,28 @@ export const SHARE_SCHEMA_VERSION = 1;
 /** Query param the encoded plan travels in, on the calculator's own URL. */
 export const SHARE_PARAM = 'p';
 
+// --- container format -----------------------------------------------------------
+// The wire format is one leading marker byte, then either a deflate-raw-compressed or a raw
+// JSON blob, all base64url-encoded together. The marker has to live *outside* the JSON (as a
+// byte in front of it, not a field inside it) because its whole job is telling the decoder
+// which decompressor to run before there is any JSON to read — SHARE_SCHEMA_VERSION, by
+// contrast, is a field inside the JSON and versions the *shape* of a decoded plan, not the
+// container it arrived in. Two different version numbers for two different things: this one
+// lets the outer container format change again later (a different algorithm, say) without the
+// decoder having to guess at the bytes, independent of any given browser's capabilities.
+//
+// CompressionStream/DecompressionStream('deflate-raw') are stream-based Web APIs, native in
+// Chrome 80+, Safari 16.4+, Firefox 113+ and Node 18+ — no polyfill, no dependency, always
+// used when encoding (no size threshold below which we skip it). The raw marker is decode's
+// only other branch, kept as a cheap safety net rather than an old-browser compatibility
+// path — browsers without CompressionStream are old enough now to not be a design concern.
+// decodeSharedPlan still honours both markers unconditionally.
+//
+// Exported (rather than kept private) so the test file can build payloads under either marker
+// directly, instead of reimplementing this encoder to test the decoder's branches.
+export const SHARE_CONTAINER_RAW = 0;
+export const SHARE_CONTAINER_DEFLATE = 1;
+
 // A shared link is untrusted input from the address bar, so every list is bounded
 // before anything renders it — same reasoning as MAX_IMPORT_ARRAY_LENGTH in
 // settingsExport.ts, with a tighter bound because a URL cannot legitimately be long.
@@ -192,7 +214,7 @@ function r3(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-export function encodeSharedPlan(plan: SharedPlan): string {
+export async function encodeSharedPlan(plan: SharedPlan): Promise<string> {
   const { route: rt, mix: m } = plan;
   const payload = [
     SHARE_SCHEMA_VERSION,
@@ -250,15 +272,39 @@ export function encodeSharedPlan(plan: SharedPlan): string {
     plan.shops.map((s) => [s.id, r2(s.at), s.name]),
     plan.weight === null ? 0 : r2(plan.weight),
   ];
-  return toBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const json = new TextEncoder().encode(JSON.stringify(payload));
+  const [marker, body] =
+    typeof CompressionStream === 'undefined'
+      ? [SHARE_CONTAINER_RAW, json]
+      : [SHARE_CONTAINER_DEFLATE, await deflateRaw(json)];
+  return toBase64Url(withMarker(marker, body));
 }
 
-export function decodeSharedPlan(param: string): SharedPlan | null {
-  const bytes = fromBase64Url(param);
-  if (!bytes) return null;
+export async function decodeSharedPlan(param: string): Promise<SharedPlan | null> {
+  const container = fromBase64Url(param);
+  if (!container || container.length < 1) return null;
+  const marker = container[0];
+  const body = container.subarray(1);
+
+  let json: Uint8Array;
+  if (marker === SHARE_CONTAINER_DEFLATE) {
+    if (typeof DecompressionStream === 'undefined') return null;
+    try {
+      json = await inflateRaw(body);
+    } catch {
+      // A DecompressionStream fed non-deflate bytes (garbage input, a truncated paste)
+      // rejects rather than throws synchronously — this is where that becomes a plain null.
+      return null;
+    }
+  } else if (marker === SHARE_CONTAINER_RAW) {
+    json = body;
+  } else {
+    return null;
+  }
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(new TextDecoder().decode(bytes));
+    parsed = JSON.parse(new TextDecoder().decode(json));
   } catch {
     return null;
   }
@@ -519,6 +565,41 @@ function decodeShop(v: unknown): ShopStop | null {
   if (!Array.isArray(v) || v.length !== 3) return null;
   if (!id(v[0]) || !inLimit(v[1], LIMITS.km) || !str(v[2], MAX_LEN.name)) return null;
   return { id: v[0], at: v[1], name: v[2] };
+}
+
+// --- container marker + compression --------------------------------------------
+
+function withMarker(marker: number, bytes: Uint8Array): Uint8Array {
+  const out = new Uint8Array(bytes.length + 1);
+  out[0] = marker;
+  out.set(bytes, 1);
+  return out;
+}
+
+/** Runs `bytes` through a Compression/DecompressionStream and collects the result. Both write
+ *  and read are awaited together (rather than firing the write and only awaiting the read) so
+ *  a write-side error — e.g. `inflateRaw` fed bytes that are not valid deflate — surfaces as a
+ *  rejection here instead of an unhandled one off in the background. */
+function pump(
+  stream: { readable: ReadableStream<Uint8Array>; writable: WritableStream<BufferSource> },
+  bytes: Uint8Array,
+): Promise<Uint8Array> {
+  const writer = stream.writable.getWriter();
+  // Cast: TS's DOM lib pins BufferSource's ArrayBufferView to an ArrayBuffer-backed one
+  // specifically, while a bare `Uint8Array` type is generic over any ArrayBufferLike
+  // (including SharedArrayBuffer) — bytes here are always a plain, freshly-allocated buffer.
+  const written = writer.write(bytes as BufferSource).then(() => writer.close());
+  return Promise.all([written, new Response(stream.readable).arrayBuffer()]).then(
+    ([, buf]) => new Uint8Array(buf),
+  );
+}
+
+function deflateRaw(bytes: Uint8Array): Promise<Uint8Array> {
+  return pump(new CompressionStream('deflate-raw'), bytes);
+}
+
+function inflateRaw(bytes: Uint8Array): Promise<Uint8Array> {
+  return pump(new DecompressionStream('deflate-raw'), bytes);
 }
 
 // --- base64url ----------------------------------------------------------------
