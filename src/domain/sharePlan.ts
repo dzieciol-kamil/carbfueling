@@ -31,6 +31,43 @@ export const SHARE_PARAM = 'p';
 // settingsExport.ts, with a tighter bound because a URL cannot legitimately be long.
 const MAX_SHARED_ARRAY_LENGTH = 200;
 
+interface Limit {
+  readonly min: number;
+  readonly max: number;
+}
+
+/** Every numeric bound the decoder enforces, defined once so the encode side can clamp to
+ *  exactly the same numbers and the two can never drift apart.
+ *
+ *  Why that matters: decodeSharedPlan rejects the *whole* payload over one out-of-range
+ *  field, and SharedPlanPrompt.tsx ignores a failed decode without a word (spec §5.1). So
+ *  any value buildSharedPlan can emit but decodeSharedPlan would refuse turns a perfectly
+ *  legal local plan into a dead link — and nothing tells the sender. A bottle name has no
+ *  maxLength in GearPanel/MobileGear, and settingsExport.ts only checks that temp is finite,
+ *  so both are reachable. buildSharedPlan therefore truncates and clamps into these bounds:
+ *  a link that degrades (the 200-character bottle name arrives cut to 60) is far better than
+ *  a link that silently does nothing. */
+const LIMITS = {
+  km: { min: 0, max: 2000 },
+  speed: { min: 0, max: 100 },
+  hours: { min: 0, max: 999 },
+  minutes: { min: 0, max: 1440 },
+  preMealCarbs: { min: 0, max: 500 },
+  preMealMinutes: { min: 0, max: 1440 },
+  temp: { min: -50, max: 60 },
+  weight: { min: 20, max: 300 },
+  conc: { min: 0, max: 100 },
+  /** Grams per 100 ml for salt/citric, and the sugar:fructose ratio — same scale for both. */
+  mixPart: { min: 0, max: 20 },
+  vol: { min: 0, max: 10000 },
+  gelParts: { min: 0, max: 50 },
+  carbs: { min: 0, max: 1000 },
+  ml: { min: 0, max: 5000 },
+} as const satisfies Record<string, Limit>;
+
+/** String length caps, under the same encode/decode contract as LIMITS. */
+const MAX_LEN = { gid: 20, name: 60, foodKey: 40 } as const;
+
 const SPORTS: Sport[] = ['cycling', 'running'];
 const MODES: Mode[] = ['route', 'time'];
 const INTENSITIES: Intensity[] = ['low', 'mid', 'high'];
@@ -65,28 +102,84 @@ export interface SharedPlan {
   shops: ShopStop[];
 }
 
+/** Builds the plan that travels in a link, truncated and clamped into exactly the bounds
+ *  decodeSharedPlan enforces — see LIMITS for why a degraded link beats a dead one. */
 export function buildSharedPlan(data: SettingsExportData, includeWeight: boolean): SharedPlan {
   const r = data.route;
+  const m = data.mix;
   return {
     route: {
       sport: r.sport,
       mode: r.mode,
-      distance: r.distance,
-      speed: r.speed,
-      hours: r.hours,
-      minutes: r.minutes,
-      preMealCarbs: r.preMealCarbs,
-      preMealMinutes: r.preMealMinutes,
+      distance: clampTo(r.distance, LIMITS.km),
+      speed: clampTo(r.speed, LIMITS.speed),
+      hours: clampTo(r.hours, LIMITS.hours),
+      minutes: clampTo(r.minutes, LIMITS.minutes),
+      preMealCarbs: clampTo(r.preMealCarbs, LIMITS.preMealCarbs),
+      preMealMinutes: clampTo(r.preMealMinutes, LIMITS.preMealMinutes),
       intensity: r.intensity,
-      temp: r.temp,
+      temp: clampTo(r.temp, LIMITS.temp),
     },
-    weight: includeWeight ? r.weight : null,
-    mix: data.mix,
-    gear: data.gear,
-    fills: data.fills,
-    foods: data.foods,
-    shops: data.shops,
+    weight: includeWeight ? clampTo(r.weight, LIMITS.weight) : null,
+    mix: {
+      ...m,
+      conc: clampTo(m.conc, LIMITS.conc),
+      gelConc: clampTo(m.gelConc, LIMITS.conc),
+      ratio: clampTo(m.ratio, LIMITS.mixPart),
+      gelRatio: clampTo(m.gelRatio, LIMITS.mixPart),
+      salt: clampTo(m.salt, LIMITS.mixPart),
+      citric: clampTo(m.citric, LIMITS.mixPart),
+      gelSalt: clampTo(m.gelSalt, LIMITS.mixPart),
+      gelCitric: clampTo(m.gelCitric, LIMITS.mixPart),
+    },
+    // Vessel gids are truncated on both sides of the reference, so a fill still finds its
+    // bottle — and at 'g<n>' they are nowhere near the cap anyway.
+    gear: data.gear.map((v) => ({
+      ...v,
+      gid: truncate(v.gid, MAX_LEN.gid),
+      name: truncate(v.name, MAX_LEN.name),
+      vol: clampTo(v.vol, LIMITS.vol),
+      gelParts: clampTo(v.gelParts, LIMITS.gelParts),
+    })),
+    fills: data.fills.map(boundFill),
+    foods: data.foods.map(boundFood),
+    shops: data.shops.map((s) => ({
+      ...s,
+      at: clampTo(s.at, LIMITS.km),
+      name: truncate(s.name, MAX_LEN.name),
+    })),
   };
+}
+
+function boundFill(f: Fill): Fill {
+  const from = clampTo(f.from, LIMITS.km);
+  const to = Math.max(from, clampTo(f.to, LIMITS.km));
+  const bounded: Fill = { ...f, gid: truncate(f.gid, MAX_LEN.gid), from, to };
+  // Rounding in encodeSharedPlan is monotonic, so a dose clamped inside [from, to] here is
+  // still inside the rounded [from, to] the decoder checks it against.
+  if (f.pos) bounded.pos = f.pos.map((p) => clampTo(p, { min: from, max: to }));
+  return bounded;
+}
+
+function boundFood(f: FoodItem): FoodItem {
+  const from = clampTo(f.from, LIMITS.km);
+  return {
+    ...f,
+    key: truncate(f.key, MAX_LEN.foodKey),
+    name: truncate(f.name, MAX_LEN.name),
+    carbs: clampTo(f.carbs, LIMITS.carbs),
+    ml: f.ml === undefined ? undefined : clampTo(f.ml, LIMITS.ml),
+    from,
+    to: Math.max(from, clampTo(f.to, LIMITS.km)),
+  };
+}
+
+function clampTo(n: number, limit: Limit): number {
+  return Number.isFinite(n) ? Math.min(limit.max, Math.max(limit.min, n)) : limit.min;
+}
+
+function truncate(s: string, maxLen: number): string {
+  return s.length <= maxLen ? s : s.slice(0, maxLen);
 }
 
 // Rounding keeps float noise (12.300000000000001) out of a string the user has to paste.
@@ -181,7 +274,22 @@ export function decodeSharedPlan(param: string): SharedPlan | null {
   const weightRaw = parsed[7];
   if (!route || !mix || !gear || !fills || !foods || !shops) return null;
   if (!num(weightRaw)) return null;
-  if (weightRaw !== 0 && !inRange(weightRaw, 20, 300)) return null;
+  if (weightRaw !== 0 && !inLimit(weightRaw, LIMITS.weight)) return null;
+
+  // Invariants no single row can check on its own. A duplicate id gives React duplicate keys
+  // and makes updateFill(fid, …) edit two rows at once; a fill pointing at a vessel that is
+  // not in the link has no volume to draw from. Neither can be produced by this app, so a
+  // link carrying one is hostile input — and per spec §5.1 a bad link is ignored in silence.
+  if (
+    !unique(gear.map((v) => v.gid)) ||
+    !unique(fills.map((f) => f.fid)) ||
+    !unique(foods.map((f) => f.id)) ||
+    !unique(shops.map((s) => s.id))
+  ) {
+    return null;
+  }
+  const gids = new Set(gear.map((v) => v.gid));
+  if (!fills.every((f) => gids.has(f.gid))) return null;
 
   return { route, weight: weightRaw === 0 ? null : weightRaw, mix, gear, fills, foods, shops };
 }
@@ -245,11 +353,19 @@ function gidNumber(v: Vessel): number {
 function num(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
-function inRange(v: unknown, min: number, max: number): boolean {
-  return num(v) && v >= min && v <= max;
+function inLimit(v: unknown, limit: Limit): boolean {
+  return num(v) && v >= limit.min && v <= limit.max;
 }
-function str(v: unknown, maxLen = 60): v is string {
+function str(v: unknown, maxLen: number): v is string {
   return typeof v === 'string' && v.length <= maxLen;
+}
+/** Ids index React keys and address rows in updateFill/updateFood — fractional or negative
+ *  ones are never something this app produced. */
+function id(v: unknown): v is number {
+  return Number.isInteger(v) && (v as number) >= 0;
+}
+function unique(values: (number | string)[]): boolean {
+  return new Set(values).size === values.length;
 }
 function enumAt<T>(v: unknown, table: T[]): T | null {
   return Number.isInteger(v) && (v as number) >= 0 && (v as number) < table.length
@@ -275,13 +391,13 @@ function decodeRoute(v: unknown): SharedRoute | null {
   const intensity = enumAt(v[8], INTENSITIES);
   if (!sport || !mode || !intensity) return null;
   if (
-    !inRange(v[2], 0, 2000) ||
-    !inRange(v[3], 0, 100) ||
-    !inRange(v[4], 0, 999) ||
-    !inRange(v[5], 0, 1440) ||
-    !inRange(v[6], 0, 500) ||
-    !inRange(v[7], 0, 1440) ||
-    !inRange(v[9], -50, 60)
+    !inLimit(v[2], LIMITS.km) ||
+    !inLimit(v[3], LIMITS.speed) ||
+    !inLimit(v[4], LIMITS.hours) ||
+    !inLimit(v[5], LIMITS.minutes) ||
+    !inLimit(v[6], LIMITS.preMealCarbs) ||
+    !inLimit(v[7], LIMITS.preMealMinutes) ||
+    !inLimit(v[9], LIMITS.temp)
   ) {
     return null;
   }
@@ -307,14 +423,14 @@ function decodeMix(v: unknown): MixSettings | null {
   const gelCitricSource = enumAt(v[11], CITRIC_SOURCES);
   if (!ratioPreset || !gelRatioPreset || !citricSource || !gelCitricSource) return null;
   if (
-    !inRange(v[0], 0, 100) ||
-    !inRange(v[1], 0, 100) ||
-    !inRange(v[2], 0, 20) ||
-    !inRange(v[3], 0, 20) ||
-    !inRange(v[6], 0, 20) ||
-    !inRange(v[7], 0, 20) ||
-    !inRange(v[8], 0, 20) ||
-    !inRange(v[9], 0, 20)
+    !inLimit(v[0], LIMITS.conc) ||
+    !inLimit(v[1], LIMITS.conc) ||
+    !inLimit(v[2], LIMITS.mixPart) ||
+    !inLimit(v[3], LIMITS.mixPart) ||
+    !inLimit(v[6], LIMITS.mixPart) ||
+    !inLimit(v[7], LIMITS.mixPart) ||
+    !inLimit(v[8], LIMITS.mixPart) ||
+    !inLimit(v[9], LIMITS.mixPart)
   ) {
     return null;
   }
@@ -336,8 +452,14 @@ function decodeMix(v: unknown): MixSettings | null {
 
 function decodeVessel(v: unknown): Vessel | null {
   if (!Array.isArray(v) || v.length !== 5) return null;
-  if (!str(v[0], 20) || !str(v[1]) || !inRange(v[2], 0, 10000) || !inRange(v[4], 0, 50))
+  if (
+    !str(v[0], MAX_LEN.gid) ||
+    !str(v[1], MAX_LEN.name) ||
+    !inLimit(v[2], LIMITS.vol) ||
+    !inLimit(v[4], LIMITS.gelParts)
+  ) {
     return null;
+  }
   if (!Array.isArray(v[3]) || v[3].length > CONTENTS.length) return null;
   const allowed: Content[] = [];
   for (const c of v[3]) {
@@ -352,13 +474,21 @@ function decodeFill(v: unknown): Fill | null {
   if (!Array.isArray(v) || v.length !== 6) return null;
   const content = enumAt(v[2], CONTENTS);
   if (!content) return null;
-  if (!num(v[0]) || !str(v[1], 20) || !inRange(v[3], 0, 2000) || !inRange(v[4], 0, 2000)) {
+  if (
+    !id(v[0]) ||
+    !str(v[1], MAX_LEN.gid) ||
+    !inLimit(v[3], LIMITS.km) ||
+    !inLimit(v[4], LIMITS.km)
+  )
     return null;
-  }
-  const fill: Fill = { fid: v[0], gid: v[1], content, from: v[3], to: v[4] };
+  const from: number = v[3];
+  const to: number = v[4];
+  if (from > to) return null;
+  const fill: Fill = { fid: v[0], gid: v[1], content, from, to };
   if (v[5] !== 0) {
     if (!Array.isArray(v[5]) || v[5].length > MAX_SHARED_ARRAY_LENGTH) return null;
-    if (!v[5].every((p) => inRange(p, 0, 2000))) return null;
+    // A dose outside its own fill is a gel poured from a bottle the rider is not carrying yet.
+    if (!v[5].every((p) => inLimit(p, { min: from, max: to }))) return null;
     fill.pos = v[5] as number[];
   }
   return fill;
@@ -367,14 +497,15 @@ function decodeFill(v: unknown): Fill | null {
 function decodeFood(v: unknown): FoodItem | null {
   if (!Array.isArray(v) || v.length !== 8) return null;
   if (
-    !num(v[0]) ||
-    !str(v[1], 40) ||
-    !str(v[2]) ||
-    !inRange(v[3], 0, 1000) ||
-    !inRange(v[4], 0, 5000) ||
+    !id(v[0]) ||
+    !str(v[1], MAX_LEN.foodKey) ||
+    !str(v[2], MAX_LEN.name) ||
+    !inLimit(v[3], LIMITS.carbs) ||
+    !inLimit(v[4], LIMITS.ml) ||
     (v[5] !== 0 && v[5] !== 1) ||
-    !inRange(v[6], 0, 2000) ||
-    !inRange(v[7], 0, 2000)
+    !inLimit(v[6], LIMITS.km) ||
+    !inLimit(v[7], LIMITS.km) ||
+    v[6] > v[7]
   ) {
     return null;
   }
@@ -386,7 +517,7 @@ function decodeFood(v: unknown): FoodItem | null {
 
 function decodeShop(v: unknown): ShopStop | null {
   if (!Array.isArray(v) || v.length !== 3) return null;
-  if (!num(v[0]) || !inRange(v[1], 0, 2000) || !str(v[2])) return null;
+  if (!id(v[0]) || !inLimit(v[1], LIMITS.km) || !str(v[2], MAX_LEN.name)) return null;
   return { id: v[0], at: v[1], name: v[2] };
 }
 

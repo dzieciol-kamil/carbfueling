@@ -99,6 +99,47 @@ describe('buildSharedPlan', () => {
   });
 });
 
+describe('buildSharedPlan bounds what it emits so the link is never dead on arrival', () => {
+  const long = 'x'.repeat(200);
+
+  test('truncates a vessel name no maxLength stops the user typing', () => {
+    const data = baseData();
+    data.gear[0].name = long;
+    const decoded = roundTrip(buildSharedPlan(data, true));
+    expect(decoded.gear[0].name).toBe('x'.repeat(60));
+  });
+
+  test('truncates an over-long food name and food key', () => {
+    const data = baseData();
+    data.foods[0].name = long;
+    data.foods[0].key = 'k'.repeat(80);
+    const decoded = roundTrip(buildSharedPlan(data, true));
+    expect(decoded.foods[0].name).toBe('x'.repeat(60));
+    expect(decoded.foods[0].key).toBe('k'.repeat(40));
+  });
+
+  test('clamps a temp an imported backup can carry past the slider', () => {
+    const data = baseData();
+    data.route.temp = 999;
+    const decoded = roundTrip(buildSharedPlan(data, true));
+    expect(decoded.route.temp).toBe(60);
+  });
+
+  test('clamps a weight outside the decoder range instead of emitting a dead link', () => {
+    const data = baseData();
+    data.route.weight = 5;
+    expect(roundTrip(buildSharedPlan(data, true)).weight).toBe(20);
+  });
+
+  test('keeps gel doses inside their fill after clamping', () => {
+    const data = baseData();
+    data.fills[1].from = -30;
+    data.fills[1].pos = [-10, 40, 5000];
+    const decoded = roundTrip(buildSharedPlan(data, true));
+    expect(decoded.fills[1].pos).toEqual([0, 40, 80]);
+  });
+});
+
 describe('encode/decode round trip', () => {
   test('preserves the whole plan', () => {
     const plan = buildSharedPlan(baseData(), true);
@@ -175,6 +216,79 @@ describe('decodeSharedPlan rejects bad input', () => {
     const plan = buildSharedPlan(baseData(), true);
     const many = Array.from({ length: 300 }, (_, i) => ({ id: i, at: 1, name: 'x' }));
     expect(decodeSharedPlan(encodeSharedPlan({ ...plan, shops: many }))).toBeNull();
+  });
+});
+
+describe('decodeSharedPlan rejects plans that type-check but are nonsense', () => {
+  function shared(mutate: (plan: SharedPlan) => SharedPlan): string {
+    return encodeSharedPlan(mutate(buildSharedPlan(baseData(), true)));
+  }
+
+  test('rejects a fill whose from is past its to', () => {
+    const param = shared((p) => ({ ...p, fills: [{ ...p.fills[0], from: 2000, to: 0 }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects a food whose from is past its to', () => {
+    const param = shared((p) => ({ ...p, foods: [{ ...p.foods[0], from: 90, to: 10 }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects a gel dose outside its own fill', () => {
+    const param = shared((p) => ({
+      ...p,
+      fills: [{ ...p.fills[1], from: 10, to: 80, pos: [12.5, 500] }],
+    }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects a non-integer fill id', () => {
+    const param = shared((p) => ({ ...p, fills: [{ ...p.fills[0], fid: 1.5 }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects a negative food id', () => {
+    const param = shared((p) => ({ ...p, foods: [{ ...p.foods[0], id: -1 }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects a non-integer shop id', () => {
+    const param = shared((p) => ({ ...p, shops: [{ ...p.shops[0], id: 0.5 }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects duplicate fill ids', () => {
+    const param = shared((p) => ({
+      ...p,
+      fills: [p.fills[0], { ...p.fills[1], fid: p.fills[0].fid }],
+    }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects duplicate food ids', () => {
+    const param = shared((p) => ({
+      ...p,
+      foods: [p.foods[0], { ...p.foods[1], id: p.foods[0].id }],
+    }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects duplicate shop ids', () => {
+    const param = shared((p) => ({ ...p, shops: [p.shops[0], { ...p.shops[0] }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects duplicate vessel gids', () => {
+    const param = shared((p) => ({
+      ...p,
+      gear: [p.gear[0], { ...p.gear[1], gid: p.gear[0].gid }],
+    }));
+    expect(decodeSharedPlan(param)).toBeNull();
+  });
+
+  test('rejects a fill pointing at a vessel the link does not carry', () => {
+    const param = shared((p) => ({ ...p, fills: [{ ...p.fills[0], gid: 'g99' }] }));
+    expect(decodeSharedPlan(param)).toBeNull();
   });
 });
 
