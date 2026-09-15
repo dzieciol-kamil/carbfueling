@@ -3,6 +3,7 @@ import { dist, fmtX } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
 import { PrintIcon } from '../print/PrintIcon';
+import { ShareIcon } from '../share/ShareIcon';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileChart } from './MobileChart';
 import { MobileLaneStrip } from './MobileLaneStrip';
@@ -41,6 +42,7 @@ export function MobileChartPanel() {
   const toggleGpxPeek = useAppStore((s) => s.toggleGpxPeek);
   const lang = useAppStore((s) => s.ui.lang);
   const openChartHelp = useAppStore((s) => s.openChartHelp);
+  const openPanel = useAppStore((s) => s.openPanel);
   const strings = t(lang);
 
   const distanceKm = dist(route);
@@ -76,6 +78,15 @@ export function MobileChartPanel() {
             fullWidth={false}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => openPanel('share')}
+              title={strings.sharePlanButton}
+              aria-label={strings.sharePlanButton}
+              style={chipButtonStyle(false)}
+            >
+              <ShareIcon size={15} />
+            </button>
             <button
               type="button"
               onClick={() => window.print()}

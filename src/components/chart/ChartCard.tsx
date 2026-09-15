@@ -8,6 +8,7 @@ import { LanesSection } from '../lanes/LanesSection';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { PrintIcon } from '../print/PrintIcon';
+import { ShareIcon } from '../share/ShareIcon';
 import { usePlanFileTransfer } from '../usePlanFileTransfer';
 import { ShopMarkers } from './ShopMarkers';
 import { TimelineSection } from '../timeline/TimelineSection';
@@ -62,6 +63,7 @@ export function ChartCard() {
   const addShop = useAppStore((s) => s.addShop);
   const openChartHelp = useAppStore((s) => s.openChartHelp);
   const clearPlan = useAppStore((s) => s.clearPlan);
+  const openPanel = useAppStore((s) => s.openPanel);
   const strings = t(lang);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const {
@@ -139,7 +141,7 @@ export function ChartCard() {
             {strings.curve}
           </div>
           <div style={{ position: 'relative' }}>
-            {/* All three share one gap, so the row reads as a single group of actions. */}
+            {/* They all share one gap, so the row reads as a single group of actions. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
                 <StartOverIcon />
@@ -156,6 +158,10 @@ export function ChartCard() {
               <button onClick={() => window.print()} style={planBtnStyle}>
                 <PrintIcon />
                 <span>{strings.printPlanButton}</span>
+              </button>
+              <button onClick={() => openPanel('share')} style={planBtnStyle}>
+                <ShareIcon />
+                <span>{strings.sharePlanButton}</span>
               </button>
             </div>
             <input
