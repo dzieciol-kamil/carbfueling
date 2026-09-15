@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   decodeSharedPlan,
   sharedPlanToSettingsData,
@@ -23,10 +23,16 @@ import { ConfirmDialog } from './ui/ConfirmDialog';
  * plan rather than re-emitting the one that just arrived (spec §5.4). A link that fails to
  * decode is treated as if it were never there: a truncated paste should not error the app
  * (decodeSharedPlan returns null instead of throwing).
+ *
+ * decodeSharedPlan is async now (it awaits DecompressionStream), so what is cached here is a
+ * *promise* of the decoded plan rather than the plan itself. That does not weaken the
+ * synchronous guarantee above: the URL read and the history.replaceState strip below still
+ * happen inline, before decodeSharedPlan is even called — only the decode result is awaited,
+ * and only later, inside the component.
  */
-let pendingSharedPlan = readSharedPlanFromUrl();
+let pendingSharedPlan: Promise<SharedPlan | null> | null = readSharedPlanFromUrl();
 
-function readSharedPlanFromUrl(): SharedPlan | null {
+function readSharedPlanFromUrl(): Promise<SharedPlan | null> | null {
   const url = new URL(location.href);
   const param = url.searchParams.get(SHARE_PARAM);
   if (!param) return null;
@@ -51,8 +57,24 @@ function consumePendingSharedPlan(): void {
 export function SharedPlanPrompt() {
   const lang = useAppStore((s) => s.ui.lang);
   const strings = t(lang);
-  // Lazy initialiser, not a mount effect: see pendingSharedPlan above.
-  const [pending, setPending] = useState<SharedPlan | null>(() => pendingSharedPlan);
+  const [pending, setPending] = useState<SharedPlan | null>(null);
+
+  // The module-scope promise is what carries the plan across a desktop/mobile remount (see
+  // pendingSharedPlan above) — this effect just waits for whichever promise was captured at
+  // module load and, if nothing has consumed it since (dismiss()/apply() null it out), shows
+  // the dialog. The cancellation flag stops a late resolution from reopening the dialog after
+  // this particular instance has already unmounted.
+  useEffect(() => {
+    const plan = pendingSharedPlan;
+    if (!plan) return;
+    let cancelled = false;
+    plan.then((decoded) => {
+      if (!cancelled && pendingSharedPlan === plan) setPending(decoded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!pending) return null;
 

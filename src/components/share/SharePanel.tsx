@@ -134,12 +134,28 @@ export function SharePanel({ desktop }: SharePanelProps) {
   // above, so the link always encodes exactly what importSettings consumes on the far end.
   // The slices are therefore the invalidation signal, not the input: every field the codec
   // touches is one of them, so a change to any of them is what makes the link go stale.
-  const url = useMemo(() => {
+  //
+  // encodeSharedPlan is async (it awaits CompressionStream), so url is state filled by an
+  // effect rather than a useMemo. The effect never resets url to null on a plan edit — only
+  // ever replaces one finished value with a newer one — so the preview keeps showing the
+  // last-known-good link instead of flashing empty while the next encode is in flight; the
+  // `cancelled` flag stops a slow encode from an earlier edit landing after a faster one from
+  // a later edit and clobbering it. Every consumer below (the preview text, canvasDims,
+  // qrTooLarge, the render effect, the action buttons) guards on `url` being non-null so
+  // nothing runs against the not-yet-ready state.
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
     const data = useAppStore.getState().getSettingsExportData();
-    const encoded = encodeSharedPlan(buildSharedPlan(data, includeWeight));
-    // location.origin + pathname, so the link keeps whatever base path this build is served
-    // under (/preview/ included) and whichever language the sender is using.
-    return `${location.origin}${location.pathname}?${SHARE_PARAM}=${encoded}`;
+    void encodeSharedPlan(buildSharedPlan(data, includeWeight)).then((encoded) => {
+      if (cancelled) return;
+      // location.origin + pathname, so the link keeps whatever base path this build is
+      // served under (/preview/ included) and whichever language the sender is using.
+      setUrl(`${location.origin}${location.pathname}?${SHARE_PARAM}=${encoded}`);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [includeWeight, route, mix, gear, fills, foods, shops]);
 
   const plan = useMemo(
@@ -173,10 +189,14 @@ export function SharePanel({ desktop }: SharePanelProps) {
 
   // The QR layouts size themselves from the link, so the preview's aspect ratio depends on the
   // url too — and computing it re-encodes the QR, which is too slow to redo on every render.
-  const canvasDims = useMemo(() => (layout ? canvasSize(layout, url) : null), [layout, url]);
+  // Guarded on `url` so a not-yet-encoded link doesn't get mistaken for one that overflows
+  // QR_MAX_BYTES (see qrTooLarge below).
+  const canvasDims = useMemo(() => (layout && url ? canvasSize(layout, url) : null), [layout, url]);
   // No size means the link does not fit in a QR code at all (see QR_MAX_BYTES). Only the 'qr'
-  // format carries one, so every other format — the links included — is unaffected.
-  const qrTooLarge = layout === 'qr' && !canvasDims;
+  // format carries one, so every other format — the links included — is unaffected. Requiring
+  // `url` keeps this false while the first encode is still in flight, rather than flashing the
+  // "too large" message before there is even a link to judge.
+  const qrTooLarge = layout === 'qr' && !!url && !canvasDims;
 
   useEffect(() => {
     if (!feedback) return;
@@ -185,7 +205,7 @@ export function SharePanel({ desktop }: SharePanelProps) {
   }, [feedback]);
 
   useEffect(() => {
-    if (!open || !layout || !canvasRef.current) return;
+    if (!open || !layout || !canvasRef.current || !url) return;
     renderShareImage(canvasRef.current, {
       layout,
       url,
@@ -380,8 +400,8 @@ export function SharePanel({ desktop }: SharePanelProps) {
         </div>
 
         <div style={previewBox}>
-          {format === 'link' && <code style={codeStyle}>{url}</code>}
-          {format === 'text' && (
+          {format === 'link' && url && <code style={codeStyle}>{url}</code>}
+          {format === 'text' && url && (
             <code style={codeStyle}>
               {blurb}
               {'\n'}
@@ -421,17 +441,17 @@ export function SharePanel({ desktop }: SharePanelProps) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {format === 'link' && (
+          {format === 'link' && url && (
             <button style={actionBtn} onClick={() => void copy(url)}>
               {strings.shareCopyLink}
             </button>
           )}
-          {format === 'text' && (
+          {format === 'text' && url && (
             <button style={actionBtn} onClick={() => void copy(`${blurb}\n${url}`)}>
               {strings.shareCopyText}
             </button>
           )}
-          {layout && (
+          {layout && url && (
             <>
               <button
                 style={qrTooLarge ? { ...secondaryBtn, ...disabledBtn } : secondaryBtn}
