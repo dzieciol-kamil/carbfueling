@@ -78,11 +78,15 @@ function qrOnlySize(side: number): { w: number; h: number } {
  *  encoded — but the `url` argument stays for every layout so callers need no special case. The
  *  panel's preview needs these numbers for its CSS aspect-ratio, which is why this stays
  *  exported. Encoding is not free (tens of ms on a long link), so callers should not invoke this
- *  on every render. */
-export function canvasSize(layout: ShareLayout, url: string): { w: number; h: number } {
+ *  on every render.
+ *
+ *  `null` means the link is past `QR_MAX_BYTES` and has no QR at all — there is nothing to size,
+ *  and the panel shows a message instead. Only 'qr' can return it. */
+export function canvasSize(layout: ShareLayout, url: string): { w: number; h: number } | null {
   if (layout === 'chart') return CHART_SIZE;
   if (layout === 'badge') return BADGE_SIZE;
-  return qrOnlySize(qrCanvasMetrics(qrModules(url).length, QR_ONLY_CELL).side);
+  const modules = qrModules(url);
+  return modules ? qrOnlySize(qrCanvasMetrics(modules.length, QR_ONLY_CELL).side) : null;
 }
 
 export function renderShareImage(canvas: HTMLCanvasElement, input: ShareRenderInput): void {
@@ -90,6 +94,9 @@ export function renderShareImage(canvas: HTMLCanvasElement, input: ShareRenderIn
   // matrix, and encoding a long link at level 'H' costs tens of milliseconds. Only 'qr' still
   // carries a code — the badge shows the plan's curve instead.
   const modules = input.layout === 'qr' ? qrModules(input.url) : null;
+  // A link past `QR_MAX_BYTES` has no code to draw, so this is a no-op rather than a half-drawn
+  // canvas — the panel hides the preview and says to share the link instead.
+  if (input.layout === 'qr' && !modules) return;
   const { w, h } = modules
     ? qrOnlySize(qrCanvasMetrics(modules.length, QR_ONLY_CELL).side)
     : input.layout === 'badge'
@@ -110,10 +117,17 @@ export function renderShareImage(canvas: HTMLCanvasElement, input: ShareRenderIn
   else drawChart(ctx, w, h, input);
 }
 
-export function shareImageFileName(layout: ShareLayout, now: Date = new Date()): string {
-  const iso = now.toISOString().slice(0, 10);
-  const kind = layout === 'badge' ? 'odznaka' : layout === 'qr' ? 'qr' : 'wykres';
-  return `carb-fueling-${kind}-${iso}.png`;
+/** The middle word of the downloaded file's name, per layout, in the sender's language. Comes
+ *  from the string table (see `shareFileBadge` and friends), so the slugs stay filename-safe
+ *  there: lowercase ASCII, no spaces, no diacritics. */
+export type ShareFileSlugs = Record<ShareLayout, string>;
+
+export function shareImageFileName(
+  layout: ShareLayout,
+  slugs: ShareFileSlugs,
+  now: Date = new Date(),
+): string {
+  return `carb-fueling-${slugs[layout]}-${now.toISOString().slice(0, 10)}.png`;
 }
 
 // --- layouts ------------------------------------------------------------------

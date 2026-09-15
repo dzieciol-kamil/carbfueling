@@ -88,7 +88,10 @@ export function SharePanel({ desktop }: SharePanelProps) {
   const strings = t(lang);
 
   const [index, setIndex] = useState(0);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  // The message carries a sequence number so copying twice is a real state change: the same text
+  // set again would leave the state untouched, and the auto-dismiss effect below would never
+  // re-run — the second toast would then inherit the first one's remaining time.
+  const [feedback, setFeedback] = useState<{ text: string; seq: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const format = FORMATS[index];
@@ -138,6 +141,9 @@ export function SharePanel({ desktop }: SharePanelProps) {
   // The QR layouts size themselves from the link, so the preview's aspect ratio depends on the
   // url too — and computing it re-encodes the QR, which is too slow to redo on every render.
   const canvasDims = useMemo(() => (layout ? canvasSize(layout, url) : null), [layout, url]);
+  // No size means the link does not fit in a QR code at all (see QR_MAX_BYTES). Only the 'qr'
+  // format carries one, so every other format — the links included — is unaffected.
+  const qrTooLarge = layout === 'qr' && !canvasDims;
 
   useEffect(() => {
     if (!feedback) return;
@@ -159,12 +165,16 @@ export function SharePanel({ desktop }: SharePanelProps) {
 
   if (!open) return null;
 
+  function say(text: string) {
+    setFeedback((prev) => ({ text, seq: (prev?.seq ?? 0) + 1 }));
+  }
+
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setFeedback(strings.shareCopied);
+      say(strings.shareCopied);
     } catch {
-      setFeedback(strings.shareCopyError);
+      say(strings.shareCopyError);
     }
   }
 
@@ -173,13 +183,21 @@ export function SharePanel({ desktop }: SharePanelProps) {
     if (!canvas || !layout) return;
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) {
-      setFeedback(strings.shareDownloadError);
+      say(strings.shareDownloadError);
       return;
     }
     try {
-      await saveBlobFile(blob, shareImageFileName(layout), 'image/png');
+      await saveBlobFile(
+        blob,
+        shareImageFileName(layout, {
+          badge: strings.shareFileBadge,
+          qr: strings.shareFileQr,
+          chart: strings.shareFileChart,
+        }),
+        'image/png',
+      );
     } catch {
-      setFeedback(strings.shareDownloadError);
+      say(strings.shareDownloadError);
     }
   }
 
@@ -314,6 +332,11 @@ export function SharePanel({ desktop }: SharePanelProps) {
               {url}
             </code>
           )}
+          {qrTooLarge && (
+            <span style={{ fontSize: 12, color: 'var(--muted-2)', textAlign: 'center' }}>
+              {strings.shareQrTooLarge}
+            </span>
+          )}
           {layout && canvasDims && (
             <canvas
               ref={canvasRef}
@@ -346,14 +369,18 @@ export function SharePanel({ desktop }: SharePanelProps) {
             </button>
           )}
           {layout && (
-            <button style={actionBtn} onClick={() => void download()}>
+            <button
+              style={qrTooLarge ? { ...actionBtn, opacity: 0.5, cursor: 'not-allowed' } : actionBtn}
+              disabled={qrTooLarge}
+              onClick={() => void download()}
+            >
               {strings.shareDownloadPng}
             </button>
           )}
         </div>
 
         <div style={{ minHeight: 16, fontSize: 11, color: 'var(--muted-2)', textAlign: 'center' }}>
-          {feedback}
+          {feedback?.text}
         </div>
       </div>
     </div>

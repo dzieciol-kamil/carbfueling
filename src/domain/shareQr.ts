@@ -12,7 +12,22 @@ const ERROR_CORRECTION = 'H';
 /** 0 = pick the smallest version that fits the payload. */
 const AUTO_VERSION = 0;
 
-export function qrModules(text: string): boolean[][] {
+/**
+ * Bytes a QR code can carry at all. The largest symbol (version 40, 177 modules) at error
+ * correction 'H' holds 1273 bytes in 8-bit byte mode; past that `qr.make()` throws
+ * "code length overflow". A share link is one byte per character here — `qrcode-generator`'s
+ * default `stringToBytes` emits one byte per UTF-16 code unit — so `text.length` is the count.
+ *
+ * A long plan (four bottles, twenty fills, a shelf of foods) blows through this, and always
+ * will: whatever the codec's payload shrinks to, a plan with enough fills reaches it again.
+ */
+export const QR_MAX_BYTES = 1273;
+
+/** The module matrix, or `null` when the text is too long to encode at all — the caller shows a
+ *  "share the link instead" message. Overflow is a value rather than the library's exception
+ *  because it is a normal outcome for a big plan, and an exception here unmounts the app. */
+export function qrModules(text: string): boolean[][] | null {
+  if (text.length > QR_MAX_BYTES) return null;
   const qr = qrcode(AUTO_VERSION, ERROR_CORRECTION);
   qr.addData(text);
   qr.make();

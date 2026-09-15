@@ -351,6 +351,13 @@ export interface StringTable {
   shareCopied: string;
   shareCopyError: string;
   shareDownloadError: string;
+  /** Shown in place of the QR preview when the plan's link is past `QR_MAX_BYTES`. */
+  shareQrTooLarge: string;
+  /** The middle word of a downloaded PNG's file name. Filename-safe by rule: lowercase ASCII,
+   *  no spaces, no diacritics — so a German or Italian word is transliterated, not accented. */
+  shareFileBadge: string;
+  shareFileQr: string;
+  shareFileChart: string;
   shareFormatLink: string;
   shareFormatLinkHint: string;
   shareFormatText: string;
@@ -796,6 +803,10 @@ export const STR: Record<Lang, StringTable> = {
     shareCopied: 'Skopiowano.',
     shareCopyError: 'Nie udało się skopiować — zaznacz i skopiuj ręcznie.',
     shareDownloadError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
+    shareQrTooLarge: 'Ten plan jest za duży na kod QR — udostępnij sam link.',
+    shareFileBadge: 'odznaka',
+    shareFileQr: 'qr',
+    shareFileChart: 'wykres',
     shareFormatLink: 'Sam link',
     shareFormatLinkHint: 'Wklej gdziekolwiek — odbiorca otworzy ten sam plan.',
     shareFormatText: 'Link z opisem',
@@ -1237,6 +1248,10 @@ export const STR: Record<Lang, StringTable> = {
     shareCopied: 'Copied.',
     shareCopyError: 'Could not copy — select the text and copy it manually.',
     shareDownloadError: 'Could not save the file. Try again.',
+    shareQrTooLarge: 'This plan is too large for a QR code — share the link instead.',
+    shareFileBadge: 'badge',
+    shareFileQr: 'qr',
+    shareFileChart: 'chart',
     shareFormatLink: 'Link only',
     shareFormatLinkHint: 'Paste it anywhere — it opens the same plan.',
     shareFormatText: 'Link with a blurb',
@@ -1684,6 +1699,10 @@ export const STR: Record<Lang, StringTable> = {
     shareCopied: 'Kopiert.',
     shareCopyError: 'Kopieren fehlgeschlagen — Text markieren und manuell kopieren.',
     shareDownloadError: 'Datei konnte nicht gespeichert werden. Versuch es noch einmal.',
+    shareQrTooLarge: 'Dieser Plan ist zu groß für einen QR-Code — teile stattdessen den Link.',
+    shareFileBadge: 'abzeichen',
+    shareFileQr: 'qr',
+    shareFileChart: 'diagramm',
     shareFormatLink: 'Nur Link',
     shareFormatLinkHint: 'Überall einfügen — es öffnet denselben Plan.',
     shareFormatText: 'Link mit Kurztext',
@@ -2131,6 +2150,10 @@ export const STR: Record<Lang, StringTable> = {
     shareCopied: 'Copiato.',
     shareCopyError: 'Copia non riuscita — seleziona il testo e copialo a mano.',
     shareDownloadError: 'Impossibile salvare il file. Riprova.',
+    shareQrTooLarge: 'Questo piano è troppo grande per un codice QR — condividi il link.',
+    shareFileBadge: 'distintivo',
+    shareFileQr: 'qr',
+    shareFileChart: 'grafico',
     shareFormatLink: 'Solo link',
     shareFormatLinkHint: 'Incollalo ovunque — apre lo stesso piano.',
     shareFormatText: 'Link con descrizione',

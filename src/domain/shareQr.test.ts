@@ -1,15 +1,23 @@
 import { describe, expect, test } from 'vitest';
-import { QR_QUIET_MODULES, qrCanvasMetrics, qrModules } from './shareQr';
+import { QR_MAX_BYTES, QR_QUIET_MODULES, qrCanvasMetrics, qrModules } from './shareQr';
+
+/** Every case below is a link that fits, so the null branch is asserted where it belongs
+ *  (the ceiling tests) instead of in every other expectation. */
+function encode(text: string): boolean[][] {
+  const m = qrModules(text);
+  if (!m) throw new Error('expected this link to encode');
+  return m;
+}
 
 describe('qrModules', () => {
   test('returns a square matrix', () => {
-    const m = qrModules('https://carbfueling.com/pl/calculator/?p=abc');
+    const m = encode('https://carbfueling.com/pl/calculator/?p=abc');
     expect(m.length).toBeGreaterThan(20);
     expect(m.every((row) => row.length === m.length)).toBe(true);
   });
 
   test('draws the three finder patterns as dark corners', () => {
-    const m = qrModules('https://carbfueling.com/pl/calculator/?p=abc');
+    const m = encode('https://carbfueling.com/pl/calculator/?p=abc');
     const last = m.length - 1;
     expect(m[0][0]).toBe(true);
     expect(m[0][last]).toBe(true);
@@ -17,14 +25,28 @@ describe('qrModules', () => {
   });
 
   test('grows with the payload', () => {
-    const short = qrModules('https://carbfueling.com/');
-    const long = qrModules('https://carbfueling.com/pl/calculator/?p=' + 'A'.repeat(700));
+    const short = encode('https://carbfueling.com/');
+    const long = encode('https://carbfueling.com/pl/calculator/?p=' + 'A'.repeat(700));
     expect(long.length).toBeGreaterThan(short.length);
   });
 
+  test('encodes a link right up to the byte ceiling', () => {
+    const m = encode('A'.repeat(QR_MAX_BYTES));
+    // Version 40 — the largest symbol there is, which is what the ceiling comes from.
+    expect(m.length).toBe(177);
+  });
+
+  test('returns null past the ceiling rather than throwing', () => {
+    const tooLong = 'https://carbfueling.com/pl/calculator/?p=' + 'A'.repeat(QR_MAX_BYTES);
+    expect(tooLong.length).toBeGreaterThan(QR_MAX_BYTES);
+    expect(qrModules(tooLong)).toBeNull();
+    // One byte past is already too much: the ceiling is exact, not a safety margin.
+    expect(qrModules('A'.repeat(QR_MAX_BYTES + 1))).toBeNull();
+  });
+
   test('is deterministic', () => {
-    const a = qrModules('https://carbfueling.com/x');
-    const b = qrModules('https://carbfueling.com/x');
+    const a = encode('https://carbfueling.com/x');
+    const b = encode('https://carbfueling.com/x');
     expect(a).toEqual(b);
   });
 });
