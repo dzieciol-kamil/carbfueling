@@ -812,3 +812,23 @@ describe('migrate: 1.5:1 preset re-tagging (v3 -> v4)', () => {
     expect(migrated.mix.gelRatioPreset).toBe('iso');
   });
 });
+
+describe('share preferences', () => {
+  test('shareIncludeWeight defaults to false', () => {
+    expect(useAppStore.getState().ui.shareIncludeWeight).toBe(false);
+  });
+
+  test('setShareIncludeWeight persists the choice for the next share', () => {
+    useAppStore.getState().setShareIncludeWeight(true);
+    expect(useAppStore.getState().ui.shareIncludeWeight).toBe(true);
+    useAppStore.getState().setShareIncludeWeight(false);
+    expect(useAppStore.getState().ui.shareIncludeWeight).toBe(false);
+  });
+
+  test('the share panel opens and closes like every other panel', () => {
+    useAppStore.getState().openPanel('share');
+    expect(useAppStore.getState().ui.panel).toBe('share');
+    useAppStore.getState().closePanel();
+    expect(useAppStore.getState().ui.panel).toBeNull();
+  });
+});
