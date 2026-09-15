@@ -28,6 +28,9 @@ moved, trust the filesystem over this file and update it.
   - `dragMath.ts` — drag-and-drop geometry for lanes/timeline.
   - `laneLayout.ts` — lane layout calculations.
   - `settingsExport.ts` — settings import/export.
+  - `sharePlan.ts` — encode/decode a plan into the `?p=` share link.
+  - `shareSummary.ts` — the figures the share blurb/badge/chart PNG all quote.
+  - `shareQr.ts` — QR module matrix for the share panel's image formats.
   - `types.ts` — shared domain types.
   - Autoplan (auto-generate a fueling plan) does **not** exist on `master` — it's mid-rewrite on
     unmerged branches (`feat/autoplan`, `feat/autoplan-loop`; see memory for status). Don't expect
