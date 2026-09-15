@@ -196,3 +196,80 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Share panel carousel affordance. The landing's chevron construction (two rotated borders,
+   no SVG) reused here — but the bounce lives on the wrapper as a plain translateX while the
+   rotate lives on the inner element. Combining rotate() and translate() on one element mixes
+   local coordinate frames, which is what sent one of the two arrows bouncing diagonally. */
+.share-cue {
+  display: inline-block;
+  color: var(--muted-2);
+  animation: share-cue-right 2.1s ease-in-out infinite;
+}
+
+.share-cue-left {
+  animation-name: share-cue-left;
+}
+
+.share-cue i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-right: 2.2px solid currentColor;
+  border-bottom: 2.2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.share-cue-left i {
+  transform: rotate(135deg);
+}
+
+@keyframes share-cue-right {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes share-cue-left {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(-3px);
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-cue {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+/* Which format of the carousel you are on — the landing's dot row, laid out horizontally. */
+.share-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.share-dots i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--chip-border);
+}
+
+.share-dots i.is-current {
+  background: var(--ink-soft);
+}

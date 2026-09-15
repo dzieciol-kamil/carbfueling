@@ -328,6 +328,33 @@ export interface StringTable {
   sharedPlanConfirmBody: string;
   sharedPlanConfirmCancel: string;
   sharedPlanConfirmConfirm: string;
+  sharePlanButton: string;
+  sharePanelTitle: string;
+  shareIncludeWeight: string;
+  shareCopyLink: string;
+  shareCopyText: string;
+  shareDownloadPng: string;
+  shareCopied: string;
+  shareCopyError: string;
+  shareDownloadError: string;
+  shareFormatLink: string;
+  shareFormatLinkHint: string;
+  shareFormatText: string;
+  shareFormatTextHint: string;
+  shareFormatBadge: string;
+  shareFormatBadgeHint: string;
+  shareFormatQr: string;
+  shareFormatQrHint: string;
+  shareFormatChart: string;
+  shareFormatChartHint: string;
+  shareBlurbTemplate: string;
+  shareStatDistance: string;
+  shareStatDuration: string;
+  shareStatCarbs: string;
+  shareStatVessels: string;
+  shareStatStops: string;
+  shareNextFormat: string;
+  sharePrevFormat: string;
   exportPlanError: string;
   clearPlanButton: string;
   printPlanButton: string;
@@ -739,6 +766,33 @@ export const STR: Record<Lang, StringTable> = {
       'Wczytać go? Twój obecny plan — trasa, sprzęt, mieszanka, produkty i postoje — zostanie zastąpiony. Tej zmiany nie da się cofnąć.',
     sharedPlanConfirmCancel: 'Anuluj',
     sharedPlanConfirmConfirm: 'Wczytaj',
+    sharePlanButton: 'Udostępnij',
+    sharePanelTitle: 'Udostępnij plan',
+    shareIncludeWeight: 'Udostępnij wagę',
+    shareCopyLink: 'Kopiuj link',
+    shareCopyText: 'Kopiuj tekst',
+    shareDownloadPng: 'Pobierz PNG',
+    shareCopied: 'Skopiowano.',
+    shareCopyError: 'Nie udało się skopiować — zaznacz i skopiuj ręcznie.',
+    shareDownloadError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
+    shareFormatLink: 'Sam link',
+    shareFormatLinkHint: 'Wklej gdziekolwiek — odbiorca otworzy ten sam plan.',
+    shareFormatText: 'Link z opisem',
+    shareFormatTextHint: 'Link plus jedno zdanie — do postów i opisów bez podglądu linku.',
+    shareFormatBadge: 'Odznaka',
+    shareFormatBadgeHint: 'Kluczowe liczby obok kodu QR.',
+    shareFormatQr: 'Sam QR',
+    shareFormatQrHint: 'Duży kod do druku — na bidon, ramę albo numer startowy.',
+    shareFormatChart: 'Wykres + opis',
+    shareFormatChartHint: 'Krzywa podaży i zapotrzebowania z jednym zdaniem podpisu.',
+    shareBlurbTemplate: 'Mój plan żywieniowy: {dist} km / {dur}, {gph} g/h, postoje: {stops}.',
+    shareStatDistance: 'Dystans',
+    shareStatDuration: 'Czas',
+    shareStatCarbs: 'Węglowodany',
+    shareStatVessels: 'Bidony',
+    shareStatStops: 'Postoje',
+    shareNextFormat: 'Następny format',
+    sharePrevFormat: 'Poprzedni format',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     clearPlanButton: 'Od nowa',
     printPlanButton: 'Drukuj',
@@ -1149,6 +1203,34 @@ export const STR: Record<Lang, StringTable> = {
       'Load it? Your current plan — route, gear, mix, products and stops — will be replaced. This cannot be undone.',
     sharedPlanConfirmCancel: 'Cancel',
     sharedPlanConfirmConfirm: 'Load',
+    sharePlanButton: 'Share',
+    sharePanelTitle: 'Share this plan',
+    shareIncludeWeight: 'Share my weight',
+    shareCopyLink: 'Copy link',
+    shareCopyText: 'Copy text',
+    shareDownloadPng: 'Download PNG',
+    shareCopied: 'Copied.',
+    shareCopyError: 'Could not copy — select the text and copy it manually.',
+    shareDownloadError: 'Could not save the file. Try again.',
+    shareFormatLink: 'Link only',
+    shareFormatLinkHint: 'Paste it anywhere — it opens the same plan.',
+    shareFormatText: 'Link with a blurb',
+    shareFormatTextHint:
+      'Link plus one sentence — for posts and descriptions with no link preview.',
+    shareFormatBadge: 'Badge',
+    shareFormatBadgeHint: 'The key numbers beside a QR code.',
+    shareFormatQr: 'QR only',
+    shareFormatQrHint: 'A large code to print — for a bottle, a top tube or a race number.',
+    shareFormatChart: 'Chart with a caption',
+    shareFormatChartHint: 'The supply and demand curve with a one-line caption.',
+    shareBlurbTemplate: 'My fuelling plan: {dist} km / {dur}, {gph} g/h, stops: {stops}.',
+    shareStatDistance: 'Distance',
+    shareStatDuration: 'Duration',
+    shareStatCarbs: 'Carbs',
+    shareStatVessels: 'Bottles',
+    shareStatStops: 'Stops',
+    shareNextFormat: 'Next format',
+    sharePrevFormat: 'Previous format',
     exportPlanError: 'Could not save the file. Please try again.',
     clearPlanButton: 'Start over',
     printPlanButton: 'Print',
@@ -1564,6 +1646,33 @@ export const STR: Record<Lang, StringTable> = {
       'Laden? Dein aktueller Plan — Strecke, Ausrüstung, Mischung, Produkte und Stopps — wird ersetzt. Das lässt sich nicht rückgängig machen.',
     sharedPlanConfirmCancel: 'Abbrechen',
     sharedPlanConfirmConfirm: 'Laden',
+    sharePlanButton: 'Teilen',
+    sharePanelTitle: 'Plan teilen',
+    shareIncludeWeight: 'Mein Gewicht teilen',
+    shareCopyLink: 'Link kopieren',
+    shareCopyText: 'Text kopieren',
+    shareDownloadPng: 'PNG herunterladen',
+    shareCopied: 'Kopiert.',
+    shareCopyError: 'Kopieren fehlgeschlagen — Text markieren und manuell kopieren.',
+    shareDownloadError: 'Datei konnte nicht gespeichert werden. Versuch es noch einmal.',
+    shareFormatLink: 'Nur Link',
+    shareFormatLinkHint: 'Überall einfügen — es öffnet denselben Plan.',
+    shareFormatText: 'Link mit Kurztext',
+    shareFormatTextHint: 'Link plus ein Satz — für Beiträge und Beschreibungen ohne Linkvorschau.',
+    shareFormatBadge: 'Badge',
+    shareFormatBadgeHint: 'Die wichtigsten Zahlen neben einem QR-Code.',
+    shareFormatQr: 'Nur QR',
+    shareFormatQrHint: 'Großer Code zum Ausdrucken — für Flasche, Oberrohr oder Startnummer.',
+    shareFormatChart: 'Diagramm mit Bildunterschrift',
+    shareFormatChartHint: 'Die Angebots- und Bedarfskurve mit einer Zeile Text.',
+    shareBlurbTemplate: 'Mein Verpflegungsplan: {dist} km / {dur}, {gph} g/h, Stopps: {stops}.',
+    shareStatDistance: 'Distanz',
+    shareStatDuration: 'Dauer',
+    shareStatCarbs: 'Kohlenhydrate',
+    shareStatVessels: 'Flaschen',
+    shareStatStops: 'Stopps',
+    shareNextFormat: 'Nächstes Format',
+    sharePrevFormat: 'Vorheriges Format',
     exportPlanError: 'Datei konnte nicht gespeichert werden. Bitte versuche es erneut.',
     clearPlanButton: 'Neu starten',
     printPlanButton: 'Drucken',
@@ -1980,6 +2089,33 @@ export const STR: Record<Lang, StringTable> = {
       'Caricarlo? Il tuo piano attuale — percorso, attrezzatura, miscela, prodotti e soste — verrà sostituito. L’operazione non è reversibile.',
     sharedPlanConfirmCancel: 'Annulla',
     sharedPlanConfirmConfirm: 'Carica',
+    sharePlanButton: 'Condividi',
+    sharePanelTitle: 'Condividi il piano',
+    shareIncludeWeight: 'Condividi il mio peso',
+    shareCopyLink: 'Copia link',
+    shareCopyText: 'Copia testo',
+    shareDownloadPng: 'Scarica PNG',
+    shareCopied: 'Copiato.',
+    shareCopyError: 'Copia non riuscita — seleziona il testo e copialo a mano.',
+    shareDownloadError: 'Impossibile salvare il file. Riprova.',
+    shareFormatLink: 'Solo link',
+    shareFormatLinkHint: 'Incollalo ovunque — apre lo stesso piano.',
+    shareFormatText: 'Link con descrizione',
+    shareFormatTextHint: 'Link più una frase — per post e descrizioni senza anteprima del link.',
+    shareFormatBadge: 'Badge',
+    shareFormatBadgeHint: 'I numeri chiave accanto a un codice QR.',
+    shareFormatQr: 'Solo QR',
+    shareFormatQrHint: 'Codice grande da stampare — per borraccia, tubo orizzontale o pettorale.',
+    shareFormatChart: 'Grafico con didascalia',
+    shareFormatChartHint: 'La curva di offerta e fabbisogno con una riga di didascalia.',
+    shareBlurbTemplate: 'Il mio piano nutrizionale: {dist} km / {dur}, {gph} g/h, soste: {stops}.',
+    shareStatDistance: 'Distanza',
+    shareStatDuration: 'Durata',
+    shareStatCarbs: 'Carboidrati',
+    shareStatVessels: 'Borracce',
+    shareStatStops: 'Soste',
+    shareNextFormat: 'Formato successivo',
+    sharePrevFormat: 'Formato precedente',
     exportPlanError: 'Impossibile salvare il file. Riprova.',
     clearPlanButton: 'Ricomincia',
     printPlanButton: 'Stampa',
