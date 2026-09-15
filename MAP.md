@@ -50,9 +50,11 @@ moved, trust the filesystem over this file and update it.
   - `recipes/` — `RecipesSection.tsx`.
   - `tour/` — onboarding tour overlay (`TourOverlay.tsx`, `tourSteps.ts`).
   - `print/` — printable plan sheet (`PrintSheet.tsx`, `PrintIcon.tsx`).
+  - `share/` — share panel and the canvas renderer behind its PNG formats
+    (`SharePanel.tsx`, `shareCanvas.ts`, `ShareIcon.tsx`).
   - `ui/` — generic reusable widgets (`ConfirmDialog.tsx`, `NumberInput.tsx`, `SegmentedControl.tsx`, etc.).
   - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx`, `RoutePanel.tsx`,
-    `usePlanFileTransfer.ts` — top-level shared components.
+    `SharedPlanPrompt.tsx`, `usePlanFileTransfer.ts` — top-level shared components.
 - `faq/` — FAQ pages (`FaqIndex.en/pl/de/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
 - `landing/` — marketing landing pages (`Landing.en/pl/de/it.tsx`, `SiteFooter.tsx`).
 - `utils/` — `fileSave.ts`, `fileSystemAccess.d.ts`.
