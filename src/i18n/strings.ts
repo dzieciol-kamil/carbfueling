@@ -324,6 +324,10 @@ export interface StringTable {
   importPlanConfirmConfirm: string;
   importPlanError: string;
   importPlanSuccess: string;
+  sharedPlanConfirmTitle: string;
+  sharedPlanConfirmBody: string;
+  sharedPlanConfirmCancel: string;
+  sharedPlanConfirmConfirm: string;
   exportPlanError: string;
   clearPlanButton: string;
   printPlanButton: string;
@@ -730,6 +734,11 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       'Nie udało się wczytać pliku — sprawdź, czy to poprawny eksport planu z Carb Fueling.',
     importPlanSuccess: 'Plan zaimportowany.',
+    sharedPlanConfirmTitle: 'Otworzono udostępniony plan',
+    sharedPlanConfirmBody:
+      'Wczytać go? Twój obecny plan — trasa, sprzęt, mieszanka, produkty i postoje — zostanie zastąpiony. Tej zmiany nie da się cofnąć.',
+    sharedPlanConfirmCancel: 'Anuluj',
+    sharedPlanConfirmConfirm: 'Wczytaj',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     clearPlanButton: 'Od nowa',
     printPlanButton: 'Drukuj',
@@ -1135,6 +1144,11 @@ export const STR: Record<Lang, StringTable> = {
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
+    sharedPlanConfirmTitle: 'A shared plan was opened',
+    sharedPlanConfirmBody:
+      'Load it? Your current plan — route, gear, mix, products and stops — will be replaced. This cannot be undone.',
+    sharedPlanConfirmCancel: 'Cancel',
+    sharedPlanConfirmConfirm: 'Load',
     exportPlanError: 'Could not save the file. Please try again.',
     clearPlanButton: 'Start over',
     printPlanButton: 'Print',
@@ -1545,6 +1559,11 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       'Datei konnte nicht gelesen werden — prüfe, ob es sich um einen gültigen Carb-Fueling-Planexport handelt.',
     importPlanSuccess: 'Plan importiert.',
+    sharedPlanConfirmTitle: 'Ein geteilter Plan wurde geöffnet',
+    sharedPlanConfirmBody:
+      'Laden? Dein aktueller Plan — Strecke, Ausrüstung, Mischung, Produkte und Stopps — wird ersetzt. Das lässt sich nicht rückgängig machen.',
+    sharedPlanConfirmCancel: 'Abbrechen',
+    sharedPlanConfirmConfirm: 'Laden',
     exportPlanError: 'Datei konnte nicht gespeichert werden. Bitte versuche es erneut.',
     clearPlanButton: 'Neu starten',
     printPlanButton: 'Drucken',
@@ -1956,6 +1975,11 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       "Impossibile leggere il file — controlla che sia un'esportazione valida di un piano Carb Fueling.",
     importPlanSuccess: 'Piano importato.',
+    sharedPlanConfirmTitle: 'È stato aperto un piano condiviso',
+    sharedPlanConfirmBody:
+      'Caricarlo? Il tuo piano attuale — percorso, attrezzatura, miscela, prodotti e soste — verrà sostituito. L’operazione non è reversibile.',
+    sharedPlanConfirmCancel: 'Annulla',
+    sharedPlanConfirmConfirm: 'Carica',
     exportPlanError: 'Impossibile salvare il file. Riprova.',
     clearPlanButton: 'Ricomincia',
     printPlanButton: 'Stampa',
