@@ -12,7 +12,7 @@ interface SharePanelProps {
 
 type FormatId = 'link' | 'text' | 'badge' | 'qr' | 'chart';
 
-const FORMATS: FormatId[] = ['link', 'text', 'badge', 'qr', 'chart'];
+const FORMATS: FormatId[] = ['link', 'text', 'badge', 'chart', 'qr'];
 
 const LAYOUT_OF: Partial<Record<FormatId, ShareLayout>> = {
   badge: 'badge',
