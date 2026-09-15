@@ -4,6 +4,20 @@
 export const LANGS = ['de', 'en', 'it', 'pl'] as const;
 export type Lang = (typeof LANGS)[number];
 
+/** The plural forms of a counted noun. Which keys a language actually needs is a property of that
+ *  language — Polish inflects three ways (1 postój / 2 postoje / 5 postojów), en/de/it two — so
+ *  the table below fills in only the forms its own language uses. */
+export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>>;
+
+/** "2 postoje", "5 postojów", "2 stops". `Intl.PluralRules` is what maps the count onto a form,
+ *  so nothing here hand-lists language codes (repo rule: mechanism derives from LANGS). The
+ *  fallbacks cover a form a table left out — e.g. the fractional counts pl categorises as
+ *  "other", which no count we pass can actually be. */
+export function countedNoun(count: number, forms: PluralForms, lang: Lang): string {
+  const form = forms[new Intl.PluralRules(lang).select(count)] ?? forms.other ?? forms.one ?? '';
+  return `${count} ${form}`;
+}
+
 export interface StringTable {
   tagline: string;
   desktop: string;
@@ -324,6 +338,54 @@ export interface StringTable {
   importPlanConfirmConfirm: string;
   importPlanError: string;
   importPlanSuccess: string;
+  sharedPlanConfirmTitle: string;
+  sharedPlanConfirmBody: string;
+  sharedPlanConfirmCancel: string;
+  sharedPlanConfirmConfirm: string;
+  sharePlanButton: string;
+  sharePanelTitle: string;
+  shareIncludeWeight: string;
+  shareCopyLink: string;
+  shareCopyText: string;
+  shareCopyImage: string;
+  shareDownloadPng: string;
+  shareCopied: string;
+  shareCopyError: string;
+  /** Copying the PNG failed or the browser has no image clipboard — points at the download button. */
+  shareCopyImageError: string;
+  shareDownloadError: string;
+  /** Shown in place of the QR preview when the plan's link is past `QR_MAX_BYTES`. */
+  shareQrTooLarge: string;
+  /** The middle word of a downloaded PNG's file name. Filename-safe by rule: lowercase ASCII,
+   *  no spaces, no diacritics — so a German or Italian word is transliterated, not accented. */
+  shareFileBadge: string;
+  shareFileQr: string;
+  shareFileChart: string;
+  shareFormatLink: string;
+  shareFormatLinkHint: string;
+  shareFormatText: string;
+  shareFormatTextHint: string;
+  shareFormatBadge: string;
+  shareFormatBadgeHint: string;
+  shareFormatQr: string;
+  shareFormatQrHint: string;
+  shareFormatChart: string;
+  shareFormatChartHint: string;
+  shareBlurbTemplate: string;
+  shareStatDistance: string;
+  shareStatDuration: string;
+  shareStatCarbs: string;
+  shareStatHydration: string;
+  shareStatVessels: string;
+  shareStatStops: string;
+  /** Legend of the curve drawn on the badge and chart PNGs: bare nouns, no units — the plot
+   *  carries no numbers at all, every figure lives in the stat rows and the caption. */
+  shareLegendCarbs: string;
+  shareLegendWater: string;
+  /** Inflected by `countedNoun` for the blurb's stop count. */
+  shareStopsPlural: PluralForms;
+  shareNextFormat: string;
+  sharePrevFormat: string;
   exportPlanError: string;
   clearPlanButton: string;
   printPlanButton: string;
@@ -730,6 +792,49 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       'Nie udało się wczytać pliku — sprawdź, czy to poprawny eksport planu z Carb Fueling.',
     importPlanSuccess: 'Plan zaimportowany.',
+    sharedPlanConfirmTitle: 'Otworzono udostępniony plan',
+    sharedPlanConfirmBody:
+      'Wczytać go? Twój obecny plan — trasa, sprzęt, mieszanka, produkty i postoje — zostanie zastąpiony. Tej zmiany nie da się cofnąć.',
+    sharedPlanConfirmCancel: 'Anuluj',
+    sharedPlanConfirmConfirm: 'Wczytaj',
+    sharePlanButton: 'Udostępnij',
+    sharePanelTitle: 'Udostępnij plan',
+    shareIncludeWeight: 'Udostępnij wagę',
+    shareCopyLink: 'Kopiuj link',
+    shareCopyText: 'Kopiuj tekst',
+    shareCopyImage: 'Kopiuj obraz',
+    shareDownloadPng: 'Pobierz PNG',
+    shareCopied: 'Skopiowano do schowka.',
+    shareCopyError: 'Nie udało się skopiować — zaznacz i skopiuj ręcznie.',
+    shareCopyImageError: 'Nie udało się skopiować obrazu — użyj „Pobierz PNG”.',
+    shareDownloadError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
+    shareQrTooLarge: 'Ten plan jest za duży na kod QR — udostępnij sam link.',
+    shareFileBadge: 'odznaka',
+    shareFileQr: 'qr',
+    shareFileChart: 'wykres',
+    shareFormatLink: 'Sam link',
+    shareFormatLinkHint: 'Wklej gdziekolwiek — odbiorca otworzy ten sam plan.',
+    shareFormatText: 'Link z opisem',
+    shareFormatTextHint:
+      'Jedno zdanie podsumowania plus link — do postów i opisów bez podglądu linku.',
+    shareFormatBadge: 'Odznaka',
+    shareFormatBadgeHint: 'Kluczowe liczby obok wykresów węglowodanów i nawodnienia.',
+    shareFormatQr: 'Sam QR',
+    shareFormatQrHint: 'Zeskanuj na swój telefon — plan otworzy się od razu.',
+    shareFormatChart: 'Wykres + opis',
+    shareFormatChartHint: 'Krzywa podaży i zapotrzebowania z jednym zdaniem podpisu.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km w {dur}, {gph} g/h, {hyd}, {stops}.',
+    shareStatDistance: 'Dystans',
+    shareStatDuration: 'Czas',
+    shareStatCarbs: 'Węglowodany',
+    shareStatHydration: 'Płyny',
+    shareStatVessels: 'Bidony',
+    shareStatStops: 'Postoje',
+    shareLegendCarbs: 'węglowodany',
+    shareLegendWater: 'woda',
+    shareStopsPlural: { one: 'postój', few: 'postoje', many: 'postojów' },
+    shareNextFormat: 'Następny format',
+    sharePrevFormat: 'Poprzedni format',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     clearPlanButton: 'Od nowa',
     printPlanButton: 'Drukuj',
@@ -1135,6 +1240,49 @@ export const STR: Record<Lang, StringTable> = {
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
+    sharedPlanConfirmTitle: 'A shared plan was opened',
+    sharedPlanConfirmBody:
+      'Load it? Your current plan — route, gear, mix, products and stops — will be replaced. This cannot be undone.',
+    sharedPlanConfirmCancel: 'Cancel',
+    sharedPlanConfirmConfirm: 'Load',
+    sharePlanButton: 'Share',
+    sharePanelTitle: 'Share this plan',
+    shareIncludeWeight: 'Share my weight',
+    shareCopyLink: 'Copy link',
+    shareCopyText: 'Copy text',
+    shareCopyImage: 'Copy image',
+    shareDownloadPng: 'Download PNG',
+    shareCopied: 'Copied to clipboard.',
+    shareCopyError: 'Could not copy — select the text and copy it manually.',
+    shareCopyImageError: 'Could not copy the image — use "Download PNG" instead.',
+    shareDownloadError: 'Could not save the file. Try again.',
+    shareQrTooLarge: 'This plan is too large for a QR code — share the link instead.',
+    shareFileBadge: 'badge',
+    shareFileQr: 'qr',
+    shareFileChart: 'chart',
+    shareFormatLink: 'Link only',
+    shareFormatLinkHint: 'Paste it anywhere — it opens the same plan.',
+    shareFormatText: 'Link with a blurb',
+    shareFormatTextHint:
+      'A one-sentence summary plus the link — for posts and descriptions with no link preview.',
+    shareFormatBadge: 'Badge',
+    shareFormatBadgeHint: 'The key numbers beside the carb and hydration curves.',
+    shareFormatQr: 'QR only',
+    shareFormatQrHint: 'Scan it onto your phone — the plan opens straight away.',
+    shareFormatChart: 'Chart with a caption',
+    shareFormatChartHint: 'The supply and demand curve with a one-line caption.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km in {dur}, {gph} g/h, {hyd}, {stops}.',
+    shareStatDistance: 'Distance',
+    shareStatDuration: 'Duration',
+    shareStatCarbs: 'Carbs',
+    shareStatHydration: 'Fluids',
+    shareStatVessels: 'Bottles',
+    shareStatStops: 'Stops',
+    shareLegendCarbs: 'carbs',
+    shareLegendWater: 'water',
+    shareStopsPlural: { one: 'stop', other: 'stops' },
+    shareNextFormat: 'Next format',
+    sharePrevFormat: 'Previous format',
     exportPlanError: 'Could not save the file. Please try again.',
     clearPlanButton: 'Start over',
     printPlanButton: 'Print',
@@ -1545,6 +1693,49 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       'Datei konnte nicht gelesen werden — prüfe, ob es sich um einen gültigen Carb-Fueling-Planexport handelt.',
     importPlanSuccess: 'Plan importiert.',
+    sharedPlanConfirmTitle: 'Ein geteilter Plan wurde geöffnet',
+    sharedPlanConfirmBody:
+      'Laden? Dein aktueller Plan — Strecke, Ausrüstung, Mischung, Produkte und Stopps — wird ersetzt. Das lässt sich nicht rückgängig machen.',
+    sharedPlanConfirmCancel: 'Abbrechen',
+    sharedPlanConfirmConfirm: 'Laden',
+    sharePlanButton: 'Teilen',
+    sharePanelTitle: 'Plan teilen',
+    shareIncludeWeight: 'Mein Gewicht teilen',
+    shareCopyLink: 'Link kopieren',
+    shareCopyText: 'Text kopieren',
+    shareCopyImage: 'Bild kopieren',
+    shareDownloadPng: 'PNG herunterladen',
+    shareCopied: 'In die Zwischenablage kopiert.',
+    shareCopyError: 'Kopieren fehlgeschlagen — Text markieren und manuell kopieren.',
+    shareCopyImageError: 'Bild konnte nicht kopiert werden — nutze „PNG herunterladen“.',
+    shareDownloadError: 'Datei konnte nicht gespeichert werden. Versuch es noch einmal.',
+    shareQrTooLarge: 'Dieser Plan ist zu groß für einen QR-Code — teile stattdessen den Link.',
+    shareFileBadge: 'abzeichen',
+    shareFileQr: 'qr',
+    shareFileChart: 'diagramm',
+    shareFormatLink: 'Nur Link',
+    shareFormatLinkHint: 'Überall einfügen — es öffnet denselben Plan.',
+    shareFormatText: 'Link mit Kurztext',
+    shareFormatTextHint:
+      'Ein Satz Zusammenfassung plus Link — für Beiträge und Beschreibungen ohne Linkvorschau.',
+    shareFormatBadge: 'Badge',
+    shareFormatBadgeHint: 'Die wichtigsten Zahlen neben den Kurven für Kohlenhydrate und Trinken.',
+    shareFormatQr: 'Nur QR',
+    shareFormatQrHint: 'Scan ihn aufs Handy — der Plan öffnet sich sofort.',
+    shareFormatChart: 'Diagramm mit Bildunterschrift',
+    shareFormatChartHint: 'Die Angebots- und Bedarfskurve mit einer Zeile Text.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km in {dur}, {gph} g/h, {hyd}, {stops}.',
+    shareStatDistance: 'Distanz',
+    shareStatDuration: 'Dauer',
+    shareStatCarbs: 'Kohlenhydrate',
+    shareStatHydration: 'Flüssigkeit',
+    shareStatVessels: 'Flaschen',
+    shareStatStops: 'Stopps',
+    shareLegendCarbs: 'Kohlenhydrate',
+    shareLegendWater: 'Wasser',
+    shareStopsPlural: { one: 'Stopp', other: 'Stopps' },
+    shareNextFormat: 'Nächstes Format',
+    sharePrevFormat: 'Vorheriges Format',
     exportPlanError: 'Datei konnte nicht gespeichert werden. Bitte versuche es erneut.',
     clearPlanButton: 'Neu starten',
     printPlanButton: 'Drucken',
@@ -1956,6 +2147,49 @@ export const STR: Record<Lang, StringTable> = {
     importPlanError:
       "Impossibile leggere il file — controlla che sia un'esportazione valida di un piano Carb Fueling.",
     importPlanSuccess: 'Piano importato.',
+    sharedPlanConfirmTitle: 'È stato aperto un piano condiviso',
+    sharedPlanConfirmBody:
+      'Caricarlo? Il tuo piano attuale — percorso, attrezzatura, miscela, prodotti e soste — verrà sostituito. L’operazione non è reversibile.',
+    sharedPlanConfirmCancel: 'Annulla',
+    sharedPlanConfirmConfirm: 'Carica',
+    sharePlanButton: 'Condividi',
+    sharePanelTitle: 'Condividi il piano',
+    shareIncludeWeight: 'Condividi il mio peso',
+    shareCopyLink: 'Copia link',
+    shareCopyText: 'Copia testo',
+    shareCopyImage: 'Copia immagine',
+    shareDownloadPng: 'Scarica PNG',
+    shareCopied: 'Copiato negli appunti.',
+    shareCopyError: 'Copia non riuscita — seleziona il testo e copialo a mano.',
+    shareCopyImageError: 'Impossibile copiare l’immagine — usa «Scarica PNG».',
+    shareDownloadError: 'Impossibile salvare il file. Riprova.',
+    shareQrTooLarge: 'Questo piano è troppo grande per un codice QR — condividi il link.',
+    shareFileBadge: 'distintivo',
+    shareFileQr: 'qr',
+    shareFileChart: 'grafico',
+    shareFormatLink: 'Solo link',
+    shareFormatLinkHint: 'Incollalo ovunque — apre lo stesso piano.',
+    shareFormatText: 'Link con descrizione',
+    shareFormatTextHint:
+      'Una frase di riepilogo più il link — per post e descrizioni senza anteprima del link.',
+    shareFormatBadge: 'Badge',
+    shareFormatBadgeHint: 'I numeri chiave accanto alle curve di carboidrati e liquidi.',
+    shareFormatQr: 'Solo QR',
+    shareFormatQrHint: 'Scansionalo sul telefono — il piano si apre subito.',
+    shareFormatChart: 'Grafico con didascalia',
+    shareFormatChartHint: 'La curva di offerta e fabbisogno con una riga di didascalia.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km in {dur}, {gph} g/h, {hyd}, {stops}.',
+    shareStatDistance: 'Distanza',
+    shareStatDuration: 'Durata',
+    shareStatCarbs: 'Carboidrati',
+    shareStatHydration: 'Liquidi',
+    shareStatVessels: 'Borracce',
+    shareStatStops: 'Soste',
+    shareLegendCarbs: 'carboidrati',
+    shareLegendWater: 'acqua',
+    shareStopsPlural: { one: 'sosta', other: 'soste' },
+    shareNextFormat: 'Formato successivo',
+    sharePrevFormat: 'Formato precedente',
     exportPlanError: 'Impossibile salvare il file. Riprova.',
     clearPlanButton: 'Ricomincia',
     printPlanButton: 'Stampa',

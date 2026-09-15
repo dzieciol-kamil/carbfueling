@@ -28,6 +28,9 @@ moved, trust the filesystem over this file and update it.
   - `dragMath.ts` — drag-and-drop geometry for lanes/timeline.
   - `laneLayout.ts` — lane layout calculations.
   - `settingsExport.ts` — settings import/export.
+  - `sharePlan.ts` — encode/decode a plan into the `?p=` share link.
+  - `shareSummary.ts` — the figures the share blurb/badge/chart PNG all quote.
+  - `shareQr.ts` — QR module matrix for the share panel's image formats.
   - `types.ts` — shared domain types.
   - Autoplan (auto-generate a fueling plan) does **not** exist on `master` — it's mid-rewrite on
     unmerged branches (`feat/autoplan`, `feat/autoplan-loop`; see memory for status). Don't expect
@@ -47,9 +50,11 @@ moved, trust the filesystem over this file and update it.
   - `recipes/` — `RecipesSection.tsx`.
   - `tour/` — onboarding tour overlay (`TourOverlay.tsx`, `tourSteps.ts`).
   - `print/` — printable plan sheet (`PrintSheet.tsx`, `PrintIcon.tsx`).
+  - `share/` — share panel and the canvas renderer behind its PNG formats
+    (`SharePanel.tsx`, `shareCanvas.ts`, `ShareIcon.tsx`).
   - `ui/` — generic reusable widgets (`ConfirmDialog.tsx`, `NumberInput.tsx`, `SegmentedControl.tsx`, etc.).
   - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx`, `RoutePanel.tsx`,
-    `usePlanFileTransfer.ts` — top-level shared components.
+    `SharedPlanPrompt.tsx`, `usePlanFileTransfer.ts` — top-level shared components.
 - `faq/` — FAQ pages (`FaqIndex.en/pl/de/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
 - `landing/` — marketing landing pages (`Landing.en/pl/de/it.tsx`, `SiteFooter.tsx`).
 - `utils/` — `fileSave.ts`, `fileSystemAccess.d.ts`.

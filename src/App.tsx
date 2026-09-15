@@ -11,6 +11,8 @@ import { MixPanel } from './components/panels/MixPanel';
 import { SettingsPanel } from './components/panels/SettingsPanel';
 import { RecipesSection } from './components/recipes/RecipesSection';
 import { RoutePanel } from './components/RoutePanel';
+import { SharedPlanPrompt } from './components/SharedPlanPrompt';
+import { SharePanel } from './components/share/SharePanel';
 import { SummaryCards } from './components/SummaryCards';
 import { TourOverlay } from './components/tour/TourOverlay';
 import {
@@ -95,6 +97,8 @@ function App() {
         <div className="app-shell">
           <MobileApp />
           <TourOverlay />
+          <SharedPlanPrompt />
+          <SharePanel desktop={false} />
           <ChartHelpModal desktop={false} />
         </div>
         <PrintSheet />
@@ -141,6 +145,8 @@ function App() {
         </div>
         <Footer />
         <TourOverlay />
+        <SharedPlanPrompt />
+        <SharePanel desktop />
         <ChartHelpModal desktop />
       </div>
       <PrintSheet />

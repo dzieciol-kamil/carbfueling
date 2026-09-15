@@ -108,7 +108,7 @@ function normalizeHoursMinutes(route: RouteInput): RouteInput {
 export type ViewMode = 'auto' | 'desktop' | 'mobile';
 export type ThemeMode = 'light' | 'dark' | 'auto';
 export type YMode = 'rate' | 'fluid';
-export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | null;
+export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | 'share' | null;
 export type MobileTab = 'plan' | 'gear' | 'mix' | 'food' | 'me';
 
 interface UiState {
@@ -134,6 +134,10 @@ interface UiState {
   routeSheet: boolean;
   shopSheet: { editId: number | null } | null;
   chartHelp: boolean;
+  /** Whether the share link carries the rider's body weight. Off by default — weight feeds
+   *  the demand calculation and is personal — but once ticked it stays ticked, so someone who
+   *  shares plans with a training partner is not re-asked every time. */
+  shareIncludeWeight: boolean;
 }
 
 interface AppState {
@@ -180,6 +184,7 @@ interface AppState {
   setAutoTheme: (theme: 'light' | 'dark') => void;
   openPanel: (panel: PanelId) => void;
   closePanel: () => void;
+  setShareIncludeWeight: (v: boolean) => void;
   setXUnit: (u: XUnit) => void;
   setYMode: (m: YMode) => void;
   toggleTimelineOpen: () => void;
@@ -343,6 +348,7 @@ export const useAppStore = create<AppState>()(
         routeSheet: false,
         shopSheet: null,
         chartHelp: false,
+        shareIncludeWeight: false,
       },
       nextGid: 3,
       nextFid: 1,
@@ -468,6 +474,8 @@ export const useAppStore = create<AppState>()(
       setAutoTheme: (autoTheme) => set((s) => ({ ui: { ...s.ui, autoTheme } })),
       openPanel: (panel) => set((s) => ({ ui: { ...s.ui, panel } })),
       closePanel: () => set((s) => ({ ui: { ...s.ui, panel: null } })),
+      setShareIncludeWeight: (shareIncludeWeight) =>
+        set((s) => ({ ui: { ...s.ui, shareIncludeWeight } })),
       setXUnit: (xUnit) => set((s) => ({ ui: { ...s.ui, xUnit } })),
       setYMode: (yMode) => set((s) => ({ ui: { ...s.ui, yMode } })),
       toggleTimelineOpen: () => set((s) => ({ ui: { ...s.ui, timelineOpen: !s.ui.timelineOpen } })),

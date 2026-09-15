@@ -1,5 +1,6 @@
-// Shared "save text to a file" helper used by the settings export feature
-// (Header.tsx desktop, MobileProfile.tsx mobile "Me" tab).
+// Shared "save a file" helpers used by the settings export feature
+// (Header.tsx desktop, MobileProfile.tsx mobile "Me" tab) and by the share
+// panel's PNG downloads (components/share/SharePanel.tsx).
 //
 // Prefers the File System Access API's native "Save As" dialog so the user
 // can choose a destination folder and filename. That API is only available
@@ -12,6 +13,14 @@ export async function saveTextFile(
   filename: string,
   mimeType = 'application/json',
 ): Promise<void> {
+  return saveBlobFile(new Blob([content], { type: mimeType }), filename, mimeType);
+}
+
+export async function saveBlobFile(
+  blob: Blob,
+  filename: string,
+  mimeType = blob.type || 'application/octet-stream',
+): Promise<void> {
   if ('showSaveFilePicker' in window) {
     try {
       const dot = filename.lastIndexOf('.');
@@ -21,7 +30,7 @@ export async function saveTextFile(
         types: [{ description: mimeType, accept: { [mimeType]: ext ? [ext] : [] } }],
       });
       const writable = await handle.createWritable();
-      await writable.write(new Blob([content], { type: mimeType }));
+      await writable.write(blob);
       await writable.close();
       return;
     } catch (err) {
@@ -31,11 +40,10 @@ export async function saveTextFile(
     }
   }
 
-  downloadViaAnchor(content, filename, mimeType);
+  downloadViaAnchor(blob, filename);
 }
 
-function downloadViaAnchor(content: string, filename: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType });
+function downloadViaAnchor(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
