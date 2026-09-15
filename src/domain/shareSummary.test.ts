@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { shareBlurb, shareStats } from './shareSummary';
+import { countedNoun, STR } from '../i18n/strings';
+import { fmtHydration, shareBlurb, shareStats } from './shareSummary';
 import type { PlanState, ShopStop } from './types';
 import { DEFAULT_MIX } from './types';
 
@@ -61,14 +62,62 @@ describe('shareStats', () => {
     expect(s.durationLabel).toBe('0:00');
     expect(s.carbGph).toBe(0);
     expect(s.stops).toBe(0);
+    expect(s.hydrationL).toBe(0);
+  });
+
+  test('hydration lands on a whole tenth of a litre', () => {
+    const s = shareStats(planState(), shops);
+    expect(s.hydrationL).toBeGreaterThan(0);
+    expect(Math.abs(s.hydrationL * 10 - Math.round(s.hydrationL * 10))).toBeLessThan(1e-9);
+  });
+});
+
+describe('fmtHydration', () => {
+  test('marks the figure as an estimate and drops a trailing .0', () => {
+    expect(fmtHydration(2)).toBe('~2 l');
+    expect(fmtHydration(1.5)).toBe('~1.5 l');
+    // The float that `Math.round(x / 0.1) * 0.1` actually produces for 1.6.
+    expect(fmtHydration(1.6000000000000001)).toBe('~1.6 l');
+    expect(fmtHydration(0)).toBe('~0 l');
+  });
+});
+
+describe('countedNoun', () => {
+  test('picks the Polish form for one, few and many', () => {
+    const forms = STR.pl.shareStopsPlural;
+    expect(countedNoun(1, forms, 'pl')).toBe('1 postój');
+    expect(countedNoun(2, forms, 'pl')).toBe('2 postoje');
+    expect(countedNoun(5, forms, 'pl')).toBe('5 postojów');
+    // Zero is "many" in Polish, not a form of its own.
+    expect(countedNoun(0, forms, 'pl')).toBe('0 postojów');
+  });
+
+  test('picks the two-form English plural', () => {
+    const forms = STR.en.shareStopsPlural;
+    expect(countedNoun(1, forms, 'en')).toBe('1 stop');
+    expect(countedNoun(0, forms, 'en')).toBe('0 stops');
+    expect(countedNoun(3, forms, 'en')).toBe('3 stops');
   });
 });
 
 describe('shareBlurb', () => {
   test('substitutes every placeholder', () => {
     const s = shareStats(planState(), shops);
-    const out = shareBlurb(s, 'Plan {dist} km / {dur}, {gph} g/h, postoje: {stops}.');
-    expect(out).toBe(`Plan 90 km / ${s.durationLabel}, ${s.carbGph} g/h, postoje: 1.`);
+    const out = shareBlurb(
+      s,
+      'Carb fueling: {dist}km w {dur}, {gph} g/h, {hyd}, {stops}.',
+      '1 postój',
+    );
+    expect(out).toBe(
+      `Carb fueling: 90km w ${s.durationLabel}, ${s.carbGph} g/h, ${fmtHydration(s.hydrationL)}, 1 postój.`,
+    );
     expect(out).not.toContain('{');
+  });
+
+  test('every language ships a template with the same placeholders', () => {
+    const s = shareStats(planState(), shops);
+    for (const table of Object.values(STR)) {
+      expect(shareBlurb(s, table.shareBlurbTemplate, 'x')).not.toContain('{');
+    }
   });
 });

@@ -1,6 +1,6 @@
 import { dist, samples, type Sample } from '../../domain/fuel';
 import { qrCanvasMetrics, qrModules } from '../../domain/shareQr';
-import type { ShareStats } from '../../domain/shareSummary';
+import { fmtHydration, type ShareStats } from '../../domain/shareSummary';
 import type { PlanState } from '../../domain/types';
 import { CHART_COLORS } from '../chart/theme';
 
@@ -14,8 +14,12 @@ export interface ShareLabels {
   distance: string;
   duration: string;
   carbs: string;
+  hydration: string;
   vessels: string;
   stops: string;
+  /** Legend of the plot. Bare nouns with no units — see `drawPlot`. */
+  legendCarbs: string;
+  legendWater: string;
 }
 
 export interface ShareRenderInput {
@@ -29,24 +33,28 @@ export interface ShareRenderInput {
   plan: PlanState;
 }
 
-/** Pixels per QR module. The layouts used to squeeze the code into a fixed box, which at a
+/** Pixels per QR module. The layout used to squeeze the code into a fixed box, which at a
  *  realistic plan link (105 modules) left ~3 px/module — far below what a phone camera can
- *  resolve, so the badge's code simply did not scan. The module size is the constant now and
- *  the canvas grows with the payload instead.
- *
- *  6 px is the floor at which a module survives the rescaling a messaging app applies to an
- *  attached image; the 'qr' format is meant to be printed and taped to a top tube, so it gets
- *  double that and stays legible when the paper is scaled down. */
-const BADGE_QR_CELL = 6;
+ *  resolve, so the code simply did not scan. The module size is the constant now and the canvas
+ *  grows with the payload instead. The 'qr' format is meant to be printed and taped to a top
+ *  tube, so 12 px keeps it legible even when the paper is scaled down. */
 const QR_ONLY_CELL = 12;
 
 const BADGE_PAD = 44;
-const BADGE_GAP = 40;
-/** Width reserved for the wordmark and the stat rows beside the code. */
-const BADGE_STATS_W = 480;
-/** Height the stat column needs on its own: wordmark, five rows, site line. The badge is only
- *  ever taller than this because of the code, but the layout must not collapse if it isn't. */
-const BADGE_STATS_H = 382;
+const BADGE_GAP = 44;
+/** Stat column: the wordmark and the six rows. `BADGE_VALUE_DX` is where the value sits relative
+ *  to the label's left edge — wide enough for the longest label ("Kohlenhydrate") at its type
+ *  size, and the column is that plus the widest value ("~1.5 l" in 44 px mono). */
+const BADGE_STATS_W = 500;
+const BADGE_VALUE_DX = 300;
+const BADGE_ROW_H = 68;
+const BADGE_ROWS_TOP = BADGE_PAD + 74;
+const BADGE_PLOT_W = 560;
+/** Fixed again: with the QR gone, nothing about the badge depends on the link's length. */
+const BADGE_SIZE = {
+  w: BADGE_PAD * 2 + BADGE_STATS_W + BADGE_GAP + BADGE_PLOT_W,
+  h: 640,
+};
 
 const QR_ONLY_PAD = 70;
 const QR_ONLY_FOOTER = 80;
@@ -61,36 +69,32 @@ const ACCENT = CHART_COLORS.carb;
 const WORDMARK = 'CARB FUELING';
 const SITE = 'carbfueling.com';
 
-const QR_CELL: Record<'badge' | 'qr', number> = { badge: BADGE_QR_CELL, qr: QR_ONLY_CELL };
-
-/** Canvas size for a QR layout whose code block came out `side` pixels square. */
-function sizeFor(layout: 'badge' | 'qr', side: number): { w: number; h: number } {
-  if (layout === 'qr') {
-    return { w: side + QR_ONLY_PAD * 2, h: side + QR_ONLY_PAD * 2 + QR_ONLY_FOOTER };
-  }
-  return {
-    w: BADGE_PAD * 2 + BADGE_STATS_W + BADGE_GAP + side,
-    h: BADGE_PAD * 2 + Math.max(side, BADGE_STATS_H),
-  };
+/** Canvas size for the 'qr' layout, whose code block came out `side` pixels square. */
+function qrOnlySize(side: number): { w: number; h: number } {
+  return { w: side + QR_ONLY_PAD * 2, h: side + QR_ONLY_PAD * 2 + QR_ONLY_FOOTER };
 }
 
-/** The two QR layouts size themselves from the code, so the output size depends on the link
- *  being encoded — hence the `url` argument. The panel's preview needs the same numbers for its
- *  CSS aspect-ratio, which is why this stays exported. Encoding is not free (tens of ms on a
- *  long link), so callers should not invoke this on every render. */
+/** Only the 'qr' layout sizes itself from the code, so only it depends on the link being
+ *  encoded — but the `url` argument stays for every layout so callers need no special case. The
+ *  panel's preview needs these numbers for its CSS aspect-ratio, which is why this stays
+ *  exported. Encoding is not free (tens of ms on a long link), so callers should not invoke this
+ *  on every render. */
 export function canvasSize(layout: ShareLayout, url: string): { w: number; h: number } {
   if (layout === 'chart') return CHART_SIZE;
-  return sizeFor(layout, qrCanvasMetrics(qrModules(url).length, QR_CELL[layout]).side);
+  if (layout === 'badge') return BADGE_SIZE;
+  return qrOnlySize(qrCanvasMetrics(qrModules(url).length, QR_ONLY_CELL).side);
 }
 
 export function renderShareImage(canvas: HTMLCanvasElement, input: ShareRenderInput): void {
   // Encoded once here and handed to the layout: the canvas size and the drawing both need the
-  // matrix, and encoding a long link at level 'H' costs tens of milliseconds.
-  const modules = input.layout === 'chart' ? null : qrModules(input.url);
-  const { w, h } =
-    input.layout === 'chart' || !modules
-      ? CHART_SIZE
-      : sizeFor(input.layout, qrCanvasMetrics(modules.length, QR_CELL[input.layout]).side);
+  // matrix, and encoding a long link at level 'H' costs tens of milliseconds. Only 'qr' still
+  // carries a code — the badge shows the plan's curve instead.
+  const modules = input.layout === 'qr' ? qrModules(input.url) : null;
+  const { w, h } = modules
+    ? qrOnlySize(qrCanvasMetrics(modules.length, QR_ONLY_CELL).side)
+    : input.layout === 'badge'
+      ? BADGE_SIZE
+      : CHART_SIZE;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -101,8 +105,8 @@ export function renderShareImage(canvas: HTMLCanvasElement, input: ShareRenderIn
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, w, h);
 
-  if (modules && input.layout === 'badge') drawBadge(ctx, w, h, input, modules);
-  else if (modules && input.layout === 'qr') drawQrOnly(ctx, w, h, modules);
+  if (modules) drawQrOnly(ctx, w, h, modules);
+  else if (input.layout === 'badge') drawBadge(ctx, w, h, input);
   else drawChart(ctx, w, h, input);
 }
 
@@ -119,13 +123,11 @@ function drawBadge(
   w: number,
   h: number,
   input: ShareRenderInput,
-  modules: boolean[][],
 ): void {
   const pad = BADGE_PAD;
-  const { side } = qrCanvasMetrics(modules.length, BADGE_QR_CELL);
 
   ctx.fillStyle = INK;
-  ctx.font = '700 30px Archivo, Helvetica, sans-serif';
+  ctx.font = '700 34px Archivo, Helvetica, sans-serif';
   ctx.textBaseline = 'top';
   ctx.fillText(WORDMARK, pad, pad);
 
@@ -133,25 +135,37 @@ function drawBadge(
     [input.labels.distance, `${input.stats.distanceKm} km`],
     [input.labels.duration, input.stats.durationLabel],
     [input.labels.carbs, `${input.stats.carbGph} g/h`],
+    [input.labels.hydration, fmtHydration(input.stats.hydrationL)],
     [input.labels.vessels, String(input.stats.vessels)],
     [input.labels.stops, String(input.stats.stops)],
   ];
-  let y = pad + 62;
+  let y = BADGE_ROWS_TOP;
   for (const [label, value] of rows) {
     ctx.fillStyle = MUTED;
-    ctx.font = '600 20px Archivo, Helvetica, sans-serif';
-    ctx.fillText(label, pad, y + 8);
+    ctx.font = '600 26px Archivo, Helvetica, sans-serif';
+    // The label's cap height is half the value's, so it is nudged down to sit on the same optical
+    // line rather than hanging off the value's top edge.
+    ctx.fillText(label, pad, y + 10);
     ctx.fillStyle = INK;
-    ctx.font = "700 34px 'JetBrains Mono', monospace";
-    ctx.fillText(value, pad + 240, y);
-    y += 56;
+    ctx.font = "700 44px 'JetBrains Mono', monospace";
+    ctx.fillText(value, pad + BADGE_VALUE_DX, y);
+    y += BADGE_ROW_H;
   }
 
   ctx.fillStyle = MUTED;
-  ctx.font = '600 18px Archivo, Helvetica, sans-serif';
-  ctx.fillText(SITE, pad, h - pad - 20);
+  ctx.font = '600 22px Archivo, Helvetica, sans-serif';
+  ctx.fillText(SITE, pad, h - pad - 26);
 
-  drawQr(ctx, modules, w - pad - side, pad + Math.round((h - pad * 2 - side) / 2), BADGE_QR_CELL);
+  // The same curve the 'chart' layout draws, at the badge's own size: the rows say what the plan
+  // is, the shape says what it looks like.
+  drawPlot(ctx, input, {
+    x: w - pad - BADGE_PLOT_W,
+    y: BADGE_ROWS_TOP,
+    w: BADGE_PLOT_W,
+    h: y - BADGE_ROWS_TOP,
+    labelPx: 18,
+    strokePx: 4,
+  });
 }
 
 function drawQrOnly(
@@ -182,68 +196,149 @@ function drawChart(
   input: ShareRenderInput,
 ): void {
   const pad = 56;
-  const plotTop = pad + 56;
-  const plotBottom = h - pad - 96;
-  const plotLeft = pad;
-  const plotRight = w - pad;
+  const plotTop = pad + 66;
+  const plotBottom = h - pad - 100;
 
   ctx.fillStyle = INK;
-  ctx.font = '700 30px Archivo, Helvetica, sans-serif';
+  ctx.font = '700 34px Archivo, Helvetica, sans-serif';
   ctx.textBaseline = 'top';
   ctx.fillText(WORDMARK, pad, pad);
+
+  drawPlot(ctx, input, {
+    x: pad,
+    y: plotTop,
+    w: w - pad * 2,
+    h: plotBottom - plotTop,
+    labelPx: 22,
+    strokePx: 6,
+  });
+
+  ctx.fillStyle = INK;
+  ctx.font = '600 26px Archivo, Helvetica, sans-serif';
+  ctx.textBaseline = 'top';
+  ctx.fillText(input.caption, pad, plotBottom + 30);
+  ctx.fillStyle = MUTED;
+  ctx.font = '600 20px Archivo, Helvetica, sans-serif';
+  ctx.fillText(SITE, pad, plotBottom + 68);
+}
+
+// --- the plot -----------------------------------------------------------------
+
+interface PlotBox {
+  x: number;
+  y: number;
+  w: number;
+  /** Includes the legend strip along the bottom — the curves get what's left above it. */
+  h: number;
+  labelPx: number;
+  strokePx: number;
+}
+
+/**
+ * The plan's two curves, shared by the 'chart' and 'badge' layouts so they cannot drift apart.
+ *
+ * Decoration, not a graph: it carries no numbers at all — no units, no ticks, no gridlines, no
+ * axis values — because nobody reads values off a shared PNG. Every figure worth having is
+ * printed as text elsewhere (the badge's stat rows, the chart's caption). That is also why the
+ * two series can each be normalised against their own peak despite being g/h and ml/h: with no
+ * scale on the canvas there is no reading to mislead, and both curves fill the box as shapes.
+ * The legend is the one thing that has to be there — it says which colour is which.
+ */
+function drawPlot(ctx: CanvasRenderingContext2D, input: ShareRenderInput, box: PlotBox): void {
+  const legendH = Math.round(box.labelPx * 2.2);
+  const bottom = box.y + box.h - legendH;
 
   const S = samples(input.plan);
   const D = dist(input.plan.route);
   if (S.length > 1 && D > 0) {
-    const maxY = Math.max(10, ...S.map((p) => Math.max(p.rate, p.needRate))) * 1.15;
-    const px = (x: number) => plotLeft + (x / D) * (plotRight - plotLeft);
-    const py = (v: number) => plotBottom - (v / maxY) * (plotBottom - plotTop);
+    const px = (x: number) => box.x + (x / D) * box.w;
+    // 1.12 keeps the peak off the top edge; a flat-zero series collapses onto the baseline
+    // rather than dividing by zero.
+    const scale = (max: number) => (v: number) =>
+      bottom - (max > 0 ? v / (max * 1.12) : 0) * (bottom - box.y);
+    const pyCarb = scale(Math.max(...S.map((p) => p.rate)));
+    const pyFluid = scale(Math.max(...S.map((p) => p.fluidRate)));
 
-    // Need first, so the supply line reads on top of it.
-    strokeSeries(ctx, S, 'needRate', px, py, MUTED, 3, [10, 8]);
-    strokeSeries(ctx, S, 'rate', px, py, ACCENT, 5, []);
+    // Water underneath, carbs on top: carbs are the plan's subject, so they take the front.
+    drawSeries(ctx, S, 'fluidRate', px, pyFluid, CHART_COLORS.water, box.strokePx, bottom);
+    drawSeries(ctx, S, 'rate', px, pyCarb, ACCENT, box.strokePx, bottom);
   }
 
   ctx.strokeStyle = '#D8DCD6';
   ctx.lineWidth = 2;
-  ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(plotLeft, plotBottom);
-  ctx.lineTo(plotRight, plotBottom);
+  ctx.moveTo(box.x, bottom);
+  ctx.lineTo(box.x + box.w, bottom);
   ctx.stroke();
 
-  ctx.fillStyle = INK;
-  ctx.font = '600 26px Archivo, Helvetica, sans-serif';
-  ctx.fillText(input.caption, pad, plotBottom + 28);
-  ctx.fillStyle = MUTED;
-  ctx.font = '600 20px Archivo, Helvetica, sans-serif';
-  ctx.fillText(SITE, pad, plotBottom + 66);
+  drawLegend(ctx, input.labels, box, bottom + legendH / 2 + box.labelPx * 0.2);
 }
 
-function strokeSeries(
+/** A soft fill under the curve plus the stroke on top. The fill is what makes the pair read as a
+ *  graphic rather than two wires; '22' is ~13% alpha, light enough that the overlap of the two
+ *  stays legible. */
+function drawSeries(
   ctx: CanvasRenderingContext2D,
   S: Sample[],
-  key: 'rate' | 'needRate',
+  key: 'rate' | 'fluidRate',
   px: (x: number) => number,
   py: (v: number) => number,
   color: string,
   width: number,
-  dash: number[],
+  baseline: number,
 ): void {
+  const trace = () =>
+    S.forEach((p, i) => {
+      const x = px(p.x);
+      const y = py(p[key]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+  ctx.beginPath();
+  trace();
+  ctx.lineTo(px(S[S.length - 1].x), baseline);
+  ctx.lineTo(px(S[0].x), baseline);
+  ctx.closePath();
+  ctx.fillStyle = color + '22';
+  ctx.fill();
+
   ctx.strokeStyle = color;
   ctx.lineWidth = width;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  ctx.setLineDash(dash);
   ctx.beginPath();
-  S.forEach((p, i) => {
-    const x = px(p.x);
-    const y = py(p[key]);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
+  trace();
   ctx.stroke();
-  ctx.setLineDash([]);
+}
+
+/** Swatch + word per series, laid out left to right from measured widths so a long translation
+ *  ("Kohlenhydrate") pushes the next entry along instead of being written over. */
+function drawLegend(
+  ctx: CanvasRenderingContext2D,
+  labels: ShareLabels,
+  box: PlotBox,
+  cy: number,
+): void {
+  const swatchW = box.labelPx * 1.7;
+  const swatchH = Math.max(3, Math.round(box.labelPx * 0.3));
+  const gap = box.labelPx * 0.6;
+
+  ctx.font = `600 ${box.labelPx}px Archivo, Helvetica, sans-serif`;
+  ctx.textBaseline = 'middle';
+  let x = box.x;
+  for (const [color, label] of [
+    [ACCENT, labels.legendCarbs],
+    [CHART_COLORS.water, labels.legendWater],
+  ] as const) {
+    ctx.fillStyle = color;
+    roundRect(ctx, x, cy - swatchH / 2, swatchW, swatchH, swatchH / 2);
+    ctx.fill();
+    ctx.fillStyle = MUTED;
+    ctx.fillText(label, x + swatchW + gap, cy);
+    x += swatchW + gap + ctx.measureText(label).width + box.labelPx * 1.8;
+  }
+  ctx.textBaseline = 'top';
 }
 
 // --- QR -----------------------------------------------------------------------

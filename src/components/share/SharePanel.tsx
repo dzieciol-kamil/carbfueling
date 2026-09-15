@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildSharedPlan, encodeSharedPlan, SHARE_PARAM } from '../../domain/sharePlan';
 import { shareBlurb, shareStats } from '../../domain/shareSummary';
-import { t } from '../../i18n/strings';
+import { countedNoun, t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { saveBlobFile } from '../../utils/fileSave';
 import { canvasSize, renderShareImage, shareImageFileName, type ShareLayout } from './shareCanvas';
@@ -111,7 +111,13 @@ export function SharePanel({ desktop }: SharePanelProps) {
     [route, mix, gear, fills, foods, foodLib],
   );
   const stats = useMemo(() => shareStats(plan, shops), [plan, shops]);
-  const blurb = shareBlurb(stats, strings.shareBlurbTemplate);
+  // The stop count is inflected here, not in the domain layer: picking "postój"/"postoje"/
+  // "postojów" needs both the string table and the language, and shareSummary.ts has neither.
+  const blurb = shareBlurb(
+    stats,
+    strings.shareBlurbTemplate,
+    countedNoun(stats.stops, strings.shareStopsPlural, lang),
+  );
 
   // t() returns a fresh table on every call, so the canvas labels are memoised on the language
   // instead — otherwise the render effect below would fire on every keystroke behind the panel.
@@ -121,8 +127,11 @@ export function SharePanel({ desktop }: SharePanelProps) {
       distance: s.shareStatDistance,
       duration: s.shareStatDuration,
       carbs: s.shareStatCarbs,
+      hydration: s.shareStatHydration,
       vessels: s.shareStatVessels,
       stops: s.shareStatStops,
+      legendCarbs: s.shareLegendCarbs,
+      legendWater: s.shareLegendWater,
     };
   }, [lang]);
 

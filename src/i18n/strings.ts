@@ -4,6 +4,20 @@
 export const LANGS = ['de', 'en', 'it', 'pl'] as const;
 export type Lang = (typeof LANGS)[number];
 
+/** The plural forms of a counted noun. Which keys a language actually needs is a property of that
+ *  language — Polish inflects three ways (1 postój / 2 postoje / 5 postojów), en/de/it two — so
+ *  the table below fills in only the forms its own language uses. */
+export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>>;
+
+/** "2 postoje", "5 postojów", "2 stops". `Intl.PluralRules` is what maps the count onto a form,
+ *  so nothing here hand-lists language codes (repo rule: mechanism derives from LANGS). The
+ *  fallbacks cover a form a table left out — e.g. the fractional counts pl categorises as
+ *  "other", which no count we pass can actually be. */
+export function countedNoun(count: number, forms: PluralForms, lang: Lang): string {
+  const form = forms[new Intl.PluralRules(lang).select(count)] ?? forms.other ?? forms.one ?? '';
+  return `${count} ${form}`;
+}
+
 export interface StringTable {
   tagline: string;
   desktop: string;
@@ -351,8 +365,15 @@ export interface StringTable {
   shareStatDistance: string;
   shareStatDuration: string;
   shareStatCarbs: string;
+  shareStatHydration: string;
   shareStatVessels: string;
   shareStatStops: string;
+  /** Legend of the curve drawn on the badge and chart PNGs: bare nouns, no units — the plot
+   *  carries no numbers at all, every figure lives in the stat rows and the caption. */
+  shareLegendCarbs: string;
+  shareLegendWater: string;
+  /** Inflected by `countedNoun` for the blurb's stop count. */
+  shareStopsPlural: PluralForms;
   shareNextFormat: string;
   sharePrevFormat: string;
   exportPlanError: string;
@@ -780,17 +801,21 @@ export const STR: Record<Lang, StringTable> = {
     shareFormatText: 'Link z opisem',
     shareFormatTextHint: 'Link plus jedno zdanie — do postów i opisów bez podglądu linku.',
     shareFormatBadge: 'Odznaka',
-    shareFormatBadgeHint: 'Kluczowe liczby obok kodu QR.',
+    shareFormatBadgeHint: 'Kluczowe liczby obok krzywej planu.',
     shareFormatQr: 'Sam QR',
     shareFormatQrHint: 'Duży kod do druku — na bidon, ramę albo numer startowy.',
     shareFormatChart: 'Wykres + opis',
     shareFormatChartHint: 'Krzywa podaży i zapotrzebowania z jednym zdaniem podpisu.',
-    shareBlurbTemplate: 'Mój plan żywieniowy: {dist} km / {dur}, {gph} g/h, postoje: {stops}.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km w {dur}, {gph} g/h, {hyd}, {stops}.',
     shareStatDistance: 'Dystans',
     shareStatDuration: 'Czas',
     shareStatCarbs: 'Węglowodany',
+    shareStatHydration: 'Płyny',
     shareStatVessels: 'Bidony',
     shareStatStops: 'Postoje',
+    shareLegendCarbs: 'węglowodany',
+    shareLegendWater: 'woda',
+    shareStopsPlural: { one: 'postój', few: 'postoje', many: 'postojów' },
     shareNextFormat: 'Następny format',
     sharePrevFormat: 'Poprzedni format',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
@@ -1218,17 +1243,21 @@ export const STR: Record<Lang, StringTable> = {
     shareFormatTextHint:
       'Link plus one sentence — for posts and descriptions with no link preview.',
     shareFormatBadge: 'Badge',
-    shareFormatBadgeHint: 'The key numbers beside a QR code.',
+    shareFormatBadgeHint: "The key numbers beside the plan's curve.",
     shareFormatQr: 'QR only',
     shareFormatQrHint: 'A large code to print — for a bottle, a top tube or a race number.',
     shareFormatChart: 'Chart with a caption',
     shareFormatChartHint: 'The supply and demand curve with a one-line caption.',
-    shareBlurbTemplate: 'My fuelling plan: {dist} km / {dur}, {gph} g/h, stops: {stops}.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km in {dur}, {gph} g/h, {hyd}, {stops}.',
     shareStatDistance: 'Distance',
     shareStatDuration: 'Duration',
     shareStatCarbs: 'Carbs',
+    shareStatHydration: 'Fluids',
     shareStatVessels: 'Bottles',
     shareStatStops: 'Stops',
+    shareLegendCarbs: 'carbs',
+    shareLegendWater: 'water',
+    shareStopsPlural: { one: 'stop', other: 'stops' },
     shareNextFormat: 'Next format',
     sharePrevFormat: 'Previous format',
     exportPlanError: 'Could not save the file. Please try again.',
@@ -1660,17 +1689,21 @@ export const STR: Record<Lang, StringTable> = {
     shareFormatText: 'Link mit Kurztext',
     shareFormatTextHint: 'Link plus ein Satz — für Beiträge und Beschreibungen ohne Linkvorschau.',
     shareFormatBadge: 'Badge',
-    shareFormatBadgeHint: 'Die wichtigsten Zahlen neben einem QR-Code.',
+    shareFormatBadgeHint: 'Die wichtigsten Zahlen neben der Plankurve.',
     shareFormatQr: 'Nur QR',
     shareFormatQrHint: 'Großer Code zum Ausdrucken — für Flasche, Oberrohr oder Startnummer.',
     shareFormatChart: 'Diagramm mit Bildunterschrift',
     shareFormatChartHint: 'Die Angebots- und Bedarfskurve mit einer Zeile Text.',
-    shareBlurbTemplate: 'Mein Verpflegungsplan: {dist} km / {dur}, {gph} g/h, Stopps: {stops}.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km in {dur}, {gph} g/h, {hyd}, {stops}.',
     shareStatDistance: 'Distanz',
     shareStatDuration: 'Dauer',
     shareStatCarbs: 'Kohlenhydrate',
+    shareStatHydration: 'Flüssigkeit',
     shareStatVessels: 'Flaschen',
     shareStatStops: 'Stopps',
+    shareLegendCarbs: 'Kohlenhydrate',
+    shareLegendWater: 'Wasser',
+    shareStopsPlural: { one: 'Stopp', other: 'Stopps' },
     shareNextFormat: 'Nächstes Format',
     sharePrevFormat: 'Vorheriges Format',
     exportPlanError: 'Datei konnte nicht gespeichert werden. Bitte versuche es erneut.',
@@ -2103,17 +2136,21 @@ export const STR: Record<Lang, StringTable> = {
     shareFormatText: 'Link con descrizione',
     shareFormatTextHint: 'Link più una frase — per post e descrizioni senza anteprima del link.',
     shareFormatBadge: 'Badge',
-    shareFormatBadgeHint: 'I numeri chiave accanto a un codice QR.',
+    shareFormatBadgeHint: 'I numeri chiave accanto alla curva del piano.',
     shareFormatQr: 'Solo QR',
     shareFormatQrHint: 'Codice grande da stampare — per borraccia, tubo orizzontale o pettorale.',
     shareFormatChart: 'Grafico con didascalia',
     shareFormatChartHint: 'La curva di offerta e fabbisogno con una riga di didascalia.',
-    shareBlurbTemplate: 'Il mio piano nutrizionale: {dist} km / {dur}, {gph} g/h, soste: {stops}.',
+    shareBlurbTemplate: 'Carb fueling: {dist}km in {dur}, {gph} g/h, {hyd}, {stops}.',
     shareStatDistance: 'Distanza',
     shareStatDuration: 'Durata',
     shareStatCarbs: 'Carboidrati',
+    shareStatHydration: 'Liquidi',
     shareStatVessels: 'Borracce',
     shareStatStops: 'Soste',
+    shareLegendCarbs: 'carboidrati',
+    shareLegendWater: 'acqua',
+    shareStopsPlural: { one: 'sosta', other: 'soste' },
     shareNextFormat: 'Formato successivo',
     sharePrevFormat: 'Formato precedente',
     exportPlanError: 'Impossibile salvare il file. Riprova.',
