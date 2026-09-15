@@ -126,6 +126,10 @@ export function SharePanel({ desktop }: SharePanelProps) {
     };
   }, [lang]);
 
+  // The QR layouts size themselves from the link, so the preview's aspect ratio depends on the
+  // url too — and computing it re-encodes the QR, which is too slow to redo on every render.
+  const canvasDims = useMemo(() => (layout ? canvasSize(layout, url) : null), [layout, url]);
+
   useEffect(() => {
     if (!feedback) return;
     const timer = setTimeout(() => setFeedback(null), 3000);
@@ -301,13 +305,13 @@ export function SharePanel({ desktop }: SharePanelProps) {
               {url}
             </code>
           )}
-          {layout && (
+          {layout && canvasDims && (
             <canvas
               ref={canvasRef}
               style={{
                 width: '100%',
                 height: 'auto',
-                aspectRatio: `${canvasSize(layout).w} / ${canvasSize(layout).h}`,
+                aspectRatio: `${canvasDims.w} / ${canvasDims.h}`,
                 borderRadius: 8,
                 border: '1px solid var(--border-soft)',
               }}
