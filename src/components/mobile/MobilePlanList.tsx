@@ -83,6 +83,7 @@ export function MobilePlanList() {
     summary.carbPlannedRateGph,
     summary.carbAbsCapGph,
     summary.carbTargetGph,
+    route.intensity,
   );
   const carbTint = COVERAGE_TINT[carbStatus];
   // hydrationStatus, not coverageStatus: water is graded on its own scale entirely — the signed

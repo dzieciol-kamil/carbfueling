@@ -107,6 +107,7 @@ export function SummaryCards() {
       summary.carbPlannedRateGph,
       summary.carbAbsCapGph,
       summary.carbTargetGph,
+      route.intensity,
     ),
     'var(--carb)',
   );

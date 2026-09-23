@@ -851,7 +851,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
     carbRateHint:
-      'Kolor paska pokazuje realne tempo dowozu węgli (g/h) względem tego, ile faktycznie potrzebuje ta trasa — nie procentu wyżej. Zielono jest, gdy dowozisz tyle, ile trzeba; jeśli potrzeba przekracza ok. 40 g/h, wystarczy dobić do 40 g/h, bo powyżej tego dokładanie węgli daje już bardzo mało. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
+      'Kolor paska pokazuje realne tempo dowozu węgli (g/h) względem tego, ile faktycznie potrzebuje ta trasa — nie procentu wyżej. Zielono jest, gdy dowozisz tyle, ile trzeba; jeśli potrzeba przekracza ok. 40 g/h, wystarczy dobić do 40 g/h (przy niskiej intensywności do 30 g/h), bo powyżej tego dokładanie węgli daje już bardzo mało. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
     waterBalanceHint:
       'Minus to niedobór wobec strat potu, plus to picie ponad nie. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
     waterBalanceHintLink: 'Jak to czytać →',
@@ -1299,7 +1299,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
     carbRateHint:
-      "The bar's colour tracks your realised delivery rate (g/h) against what this specific ride actually needs — not the percentage above it. It turns green once you're delivering what the ride needs; if that need is above roughly 40 g/h, reaching 40 g/h is enough, since more carbs past that point barely help. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
+      "The bar's colour tracks your realised delivery rate (g/h) against what this specific ride actually needs — not the percentage above it. It turns green once you're delivering what the ride needs; if that need is above roughly 40 g/h, reaching 40 g/h is enough (30 g/h at low intensity), since more carbs past that point barely help. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
     waterBalanceHint:
       'A minus is a shortfall against your sweat loss, a plus is drinking past it. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
     waterBalanceHintLink: 'How to read this →',
@@ -1752,7 +1752,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'Die Menge an Kohlenhydraten, die du nach der Fahrt essen solltest, um die Glykogenspeicher der Muskeln aufzufüllen.',
     carbRateHint:
-      'Die Farbe des Balkens zeigt deine tatsächliche Zufuhrrate (g/h) im Vergleich zu dem, was diese Strecke wirklich braucht — nicht den Prozentsatz darüber. Er wird grün, sobald du lieferst, was die Strecke braucht; liegt der Bedarf über etwa 40 g/h, reicht es, 40 g/h zu erreichen, da mehr Kohlenhydrate darüber hinaus kaum noch helfen. Unter 1h Fahr- oder Laufzeit wird der Balken grau, weil Kohlenhydrate über so kurze Zeit ohnehin kaum eine Rolle spielen. Dunkelrot bedeutet, dass die geplante Rate über dem liegt, was dein Darm tatsächlich aufnehmen kann — der Überschuss bleibt im Magen und zieht Wasser, was bei Überessen zu Übelkeit oder Blähungen führt.',
+      'Die Farbe des Balkens zeigt deine tatsächliche Zufuhrrate (g/h) im Vergleich zu dem, was diese Strecke wirklich braucht — nicht den Prozentsatz darüber. Er wird grün, sobald du lieferst, was die Strecke braucht; liegt der Bedarf über etwa 40 g/h, reicht es, 40 g/h zu erreichen (bei niedriger Intensität 30 g/h), da mehr Kohlenhydrate darüber hinaus kaum noch helfen. Unter 1h Fahr- oder Laufzeit wird der Balken grau, weil Kohlenhydrate über so kurze Zeit ohnehin kaum eine Rolle spielen. Dunkelrot bedeutet, dass die geplante Rate über dem liegt, was dein Darm tatsächlich aufnehmen kann — der Überschuss bleibt im Magen und zieht Wasser, was bei Überessen zu Übelkeit oder Blähungen führt.',
     waterBalanceHint:
       'Ein Minus ist ein Defizit gegenüber deinem Schweißverlust, ein Plus bedeutet, dass du mehr trinkst, als du verlierst. Das tolerierbare Defizit sinkt mit steigender Temperatur; ein Überschuss birgt das Risiko einer Hyponatriämie.',
     waterBalanceHintLink: 'So liest du das →',
@@ -2206,7 +2206,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'La quantità di carboidrati da mangiare dopo il giro per ricostituire il glicogeno muscolare.',
     carbRateHint:
-      "Il colore della barra segue il tuo ritmo di apporto reale (g/h) rispetto a quanto serve davvero per questo percorso — non la percentuale sopra. Diventa verde quando fornisci quanto richiesto dal percorso; se il fabbisogno supera circa 40 g/h, basta arrivare a 40 g/h, perché oltre quella soglia altri carboidrati aiutano molto poco. Sotto 1h di bici o corsa la barra è grigia, perché su un tempo così breve i carboidrati contano comunque poco. Bordeaux significa che il ritmo pianificato supera quanto il tuo intestino può davvero assorbire — l'eccesso resta nello stomaco e richiama acqua, da cui nausea o gonfiore per aver esagerato.",
+      "Il colore della barra segue il tuo ritmo di apporto reale (g/h) rispetto a quanto serve davvero per questo percorso — non la percentuale sopra. Diventa verde quando fornisci quanto richiesto dal percorso; se il fabbisogno supera circa 40 g/h, basta arrivare a 40 g/h (30 g/h a bassa intensità), perché oltre quella soglia altri carboidrati aiutano molto poco. Sotto 1h di bici o corsa la barra è grigia, perché su un tempo così breve i carboidrati contano comunque poco. Bordeaux significa che il ritmo pianificato supera quanto il tuo intestino può davvero assorbire — l'eccesso resta nello stomaco e richiama acqua, da cui nausea o gonfiore per aver esagerato.",
     waterBalanceHint:
       "Un meno è un deficit rispetto alla perdita di sudore, un più significa bere oltre quella perdita. Il deficit tollerabile si riduce con l'aumentare della temperatura; un surplus comporta il rischio di iponatriemia.",
     waterBalanceHintLink: 'Come si legge →',
