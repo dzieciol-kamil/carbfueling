@@ -15,6 +15,7 @@ import {
   cph,
   dist,
   hydrationStatus,
+  planExtras,
   planSummary,
   totalHours,
   waterBalancePct,
@@ -377,6 +378,12 @@ describe('shapeShort (R50: hour-long stretches at 80 %, one lone dip to 70 %, th
     expect(score(state, draft([], fed([1, 0.6, 1, 1]))).shapeShort).toBeGreaterThan(0.01);
   });
 
+  test("gutPeak is the app's own gut peak for the plan", () => {
+    const d = draft([gelMatched]);
+    const fills = d.fills.map((f, i) => ({ ...f, fid: i + 1 }));
+    expect(score(state, d).gutPeak).toBeCloseTo(planExtras({ ...state, fills }).gutPeak.g, 9);
+  });
+
   test('under an hour the shape is not graded, like the carb badge', () => {
     const short: PlanState = { ...state, route: { ...route, distance: 20 } };
     expect(score(short, draft([])).shapeShort).toBe(0);
@@ -384,11 +391,24 @@ describe('shapeShort (R50: hour-long stretches at 80 %, one lone dip to 70 %, th
 });
 
 describe('compareScore', () => {
-  const s = (toGreen: number, stops: number, powderCarried: number, shapeShort = 0): Score => ({
+  const s = (
+    toGreen: number,
+    stops: number,
+    powderCarried: number,
+    shapeShort = 0,
+    gutPeak = 0,
+  ): Score => ({
     toGreen,
     shapeShort,
     stops,
     powderCarried,
+    gutPeak,
+  });
+
+  test('equal on everything else, the lower gut peak wins', () => {
+    expect(compareScore(s(0, 2, 2, 0, 58), s(0, 2, 2, 0, 95))).toBeLessThan(0);
+    // ...but it never outranks sachets, stops, shape or the badges.
+    expect(compareScore(s(0, 2, 1, 0, 95), s(0, 2, 2, 0, 58))).toBeLessThan(0);
   });
 
   test('shape decides after toGreen and before stops (R50)', () => {

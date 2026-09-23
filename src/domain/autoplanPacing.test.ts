@@ -89,7 +89,9 @@ const foodLib: FoodLibEntry[] = [
   { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
   { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
   { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
-  { key: 'u1', pl: 'Obiad', en: 'Obiad', carbs: 60, cont: false, span: 18 },
+  // A meal is eaten sitting down, so it is a stop like the cola — owner, 2026-09-23: *"obiad
+  // powinien wymuszać postój, obiadu nie zjemy pedałując"*. The fixture used to miss the flag.
+  { key: 'u1', pl: 'Obiad', en: 'Obiad', carbs: 60, cont: false, span: 18, needsStop: true },
 ];
 
 const state: PacingState = { route, mix, gear, fills: [], foods: [], foodLib, stops: [] };

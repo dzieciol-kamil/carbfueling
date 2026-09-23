@@ -43,6 +43,10 @@ export type Score = {
   stops: number;
   /** Tie-break: fewer sachets carried from home wins — izo powder or gel concentrate alike. */
   powderCarried: number;
+  /** Last tie-break: the lower gut peak (grams) wins — among plans equal on everything above, the
+   *  one easier on the stomach. Owner's pick on the 194 km kit, 2026-09-23: of three plans tied on
+   *  badges, shape, stops and sachets, the one peaking at 58 g over one at 95 g. */
+  gutPeak: number;
 };
 
 export type Draft = { fills: DraftFill[]; foods: DraftFood[]; stops: DraftStop[] };
@@ -238,10 +242,11 @@ export function score(state: PlanState, draft: Draft): Score {
     shapeShort,
     stops: draft.stops.length,
     powderCarried,
+    gutPeak: s.gutPeakG,
   };
 }
 
-/** Strictly lexicographic: `toGreen`, then `shapeShort`, then `stops`, then `powderCarried`.
+/** Strictly lexicographic: `toGreen`, `shapeShort`, `stops`, `powderCarried`, then `gutPeak`.
  *  Negative when `a` is the better plan. Shape comes before stops because a stretch fed by
  *  nothing is worth a stop to fix — the rider's own izo-6 build takes two stops where one reads
  *  green — and once every fifth reaches the floor it is 0 and stops decide again. The two real
@@ -251,5 +256,7 @@ export function compareScore(a: Score, b: Score): number {
   if (Math.abs(a.toGreen - b.toGreen) > TO_GREEN_EPSILON) return a.toGreen - b.toGreen;
   if (Math.abs(a.shapeShort - b.shapeShort) > TO_GREEN_EPSILON) return a.shapeShort - b.shapeShort;
   if (a.stops !== b.stops) return a.stops - b.stops;
-  return a.powderCarried - b.powderCarried;
+  if (a.powderCarried !== b.powderCarried) return a.powderCarried - b.powderCarried;
+  if (Math.abs(a.gutPeak - b.gutPeak) > TO_GREEN_EPSILON) return a.gutPeak - b.gutPeak;
+  return 0;
 }

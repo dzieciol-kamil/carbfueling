@@ -1198,6 +1198,9 @@ export interface PlanSummary {
   coveredCarbs: number;
   /** See `RateStats.creditSteps` — autoplan's shape input, not shown in the app. */
   creditSteps: { x: number; need: number; credit: number }[];
+  /** Highest the gut's carb backlog gets over the ride, in grams — `planExtras().gutPeak.g`, read
+   *  off the same samples so autoplan can rank on it without simulating the ride twice. */
+  gutPeakG: number;
   /** `coveredCarbs` averaged over the ride — the number `coverageStatus` actually grades and
    *  colours the badge from. Deliberately not `totalCarbs / hrs`: that would drift from the badge
    *  on a plan whose timing doesn't match its need (front-loaded carbs, a big pre-ride meal), and
@@ -1265,6 +1268,7 @@ export function planSummary(state: PlanState): PlanSummary {
     coverage,
     coveredCarbs,
     creditSteps,
+    gutPeakG: S.reduce((m, p) => Math.max(m, p.gut), 0),
     carbRateGph: hrs > 0 ? coveredCarbs / hrs : 0,
     carbPlannedRateGph: hrs > 0 ? totalCarbs / hrs : 0,
     carbTargetGph: hrs > 0 ? cph(route) : 0,
