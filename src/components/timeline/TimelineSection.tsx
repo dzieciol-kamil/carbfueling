@@ -1,7 +1,15 @@
 import type { CSSProperties } from 'react';
 import { carbsFill, dist, rangeLabel } from '../../domain/fuel';
 import { gaps } from '../../domain/dragMath';
-import type { Fill, FoodItem, MixSettings, RouteInput, Vessel, XUnit } from '../../domain/types';
+import type {
+  Fill,
+  FoodItem,
+  FoodLibEntry,
+  MixSettings,
+  RouteInput,
+  Vessel,
+  XUnit,
+} from '../../domain/types';
 import { t, type Lang } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
 import { CHART_COLORS, sourceColor } from '../chart/theme';
@@ -11,11 +19,7 @@ function contentLabel(content: Fill['content'], lang: Lang): string {
   return content === 'water' ? strings.water : content === 'gel' ? strings.gel : strings.izo;
 }
 
-function foodName(
-  fd: FoodItem,
-  foodLib: { key: string; pl: string; en: string }[],
-  lang: Lang,
-): string {
+function foodName(fd: FoodItem, foodLib: FoodLibEntry[], lang: Lang): string {
   const entry = foodLib.find((x) => x.key === fd.key);
   return (entry && (entry[lang] || entry.en)) || fd.name || '—';
 }
@@ -29,8 +33,8 @@ function rowStyle(active: boolean): CSSProperties {
     padding: '8px 10px',
     margin: '0 -10px',
     borderRadius: 8,
-    borderBottom: '1px solid #F4F5F1',
-    background: active ? '#F2F5EF' : 'transparent',
+    borderBottom: '1px solid var(--border-soft)',
+    background: active ? 'var(--surface-soft)' : 'transparent',
   };
 }
 
@@ -82,8 +86,8 @@ export function TimelineSection() {
           justifyContent: 'space-between',
           gap: 12,
           padding: '10px 14px',
-          border: '1px solid #E9EBE6',
-          background: timelineOpen ? '#F6F7F4' : '#fff',
+          border: '1px solid var(--border)',
+          background: timelineOpen ? 'var(--surface-soft)' : 'var(--surface)',
           borderRadius: 11,
           cursor: 'pointer',
           fontFamily: 'Archivo, sans-serif',
@@ -281,9 +285,9 @@ function VesselGroup({
         style={{
           marginTop: 8,
           width: '100%',
-          border: '1px dashed ' + (can ? '#C9CEC7' : '#E6E8E2'),
-          background: can ? '#F7F8F5' : '#FBFCFA',
-          color: can ? 'var(--ink-soft)' : '#B7BCB6',
+          border: '1px dashed ' + (can ? 'var(--border-dashed)' : 'var(--border)'),
+          background: can ? 'var(--surface-soft)' : 'var(--surface-soft)',
+          color: can ? 'var(--ink-soft)' : 'var(--muted-4)',
           borderRadius: 9,
           padding: '8px 14px',
           fontSize: 12,
@@ -300,7 +304,7 @@ function VesselGroup({
 
 interface FoodGroupProps {
   foods: FoodItem[];
-  foodLib: { key: string; pl: string; en: string }[];
+  foodLib: FoodLibEntry[];
   route: RouteInput;
   xUnit: XUnit;
   lang: Lang;
@@ -406,7 +410,7 @@ function FoodGroup({ foods, foodLib, route, xUnit, lang, hoverKey, setHoverKey }
         style={{
           marginTop: 8,
           width: '100%',
-          color: '#9AA09B',
+          color: 'var(--muted-3)',
           fontSize: 11,
           fontFamily: 'Archivo, sans-serif',
           padding: '6px 0',

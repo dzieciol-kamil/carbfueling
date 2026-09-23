@@ -47,8 +47,17 @@ function vessel(gid: string, vol: number, allowed: Content[]): Vessel {
 }
 
 const FOOD_LIB: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
+  { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 },
+  {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    de: 'Cola',
+    it: 'Cola',
+    carbs: 35,
+    ml: 330,
+    needsStop: true,
+  },
 ];
 
 function makeState(route: RouteInput, gear: Vessel[], foodLib = FOOD_LIB): PlanState {
@@ -365,7 +374,15 @@ describe('the selection is an offer', () => {
   test('different bought products may share a stop, the same one twice never', () => {
     const lib: FoodLibEntry[] = [
       ...FOOD_LIB,
-      { key: 'meal', pl: 'Obiad', en: 'Meal', carbs: 60, needsStop: true },
+      {
+        key: 'meal',
+        pl: 'Obiad',
+        en: 'Meal',
+        de: 'Mittagessen',
+        it: 'Pranzo',
+        carbs: 60,
+        needsStop: true,
+      },
     ];
     const state = makeState(
       makeRoute({ distance: 80, temp: 20 }),

@@ -42,9 +42,34 @@ function lineStyle(
     top: 9,
     width: 1.5,
     height: height - bottomPadding - 9,
-    background: CHART_COLORS.ink,
+    background: 'var(--ink)',
     opacity: on ? 0.9 : 0.55,
     pointerEvents: 'none',
+  };
+}
+
+/**
+ * Transparent bridge between the pin and the name field floating above it. Hover lives on the pin's
+ * container, and `pointerleave` fires the moment the cursor is over neither the container nor a
+ * descendant — which is exactly what the empty strip between the two used to be, so the field
+ * vanished on the way to it and could never be clicked. A descendant spanning that strip keeps the
+ * pointer inside the chain.
+ *
+ * Covers the 19px gap only (the field ends at -19), not the field's own band: everything this box
+ * spans stops being clickable while a pin is hovered, and it sits above the chart's legend row.
+ * Only rendered while the cluster is already open, so it is absent the rest of the time.
+ */
+function hoverBridgeStyle(show: boolean): CSSProperties {
+  return {
+    position: 'absolute',
+    left: '50%',
+    top: -20,
+    transform: 'translateX(-50%)',
+    width: 76,
+    height: 20,
+    zIndex: 2,
+    pointerEvents: 'auto',
+    display: show ? 'block' : 'none',
   };
 }
 
@@ -57,10 +82,10 @@ function nameInputStyle(show: boolean): CSSProperties {
     width: 76,
     boxSizing: 'border-box',
     padding: '3px 5px',
-    border: '1px solid rgba(0,0,0,0.18)',
+    border: '1px solid var(--chip-border)',
     borderRadius: 5,
-    background: '#fff',
-    color: CHART_COLORS.ink,
+    background: 'var(--surface)',
+    color: 'var(--ink)',
     fontSize: 10,
     fontWeight: 600,
     fontFamily: 'Archivo, sans-serif',
@@ -83,7 +108,7 @@ function dragLabelStyle(flip: boolean): CSSProperties {
     ...(flip ? { right: PIN_W / 2 + 6 } : { left: PIN_W / 2 + 6 }),
     transform: 'translateY(-50%)',
     background: CHART_COLORS.ink,
-    color: '#fff',
+    color: 'var(--on-brand)',
     fontSize: 10,
     fontWeight: 700,
     fontFamily: "'JetBrains Mono', monospace",
@@ -105,7 +130,7 @@ function removeButtonStyle(show: boolean): CSSProperties {
     border: 'none',
     borderRadius: 4,
     background: 'rgba(0,0,0,0.55)',
-    color: '#fff',
+    color: 'var(--on-brand)',
     fontSize: 8,
     lineHeight: 1,
     cursor: 'pointer',
@@ -151,10 +176,11 @@ export function ShopMarkers({ distanceKm, height, bottomPadding, route, xUnit }:
               >
                 <path
                   d="M8 18C8 18 1 10.5 1 7A7 7 0 1 1 15 7C15 10.5 8 18 8 18Z"
-                  fill={CHART_COLORS.ink}
+                  fill="var(--ink)"
                   opacity={on || dragging ? 1 : 0.75}
                 />
               </svg>
+              <div style={hoverBridgeStyle(on && !dragging)} onPointerDown={stopPointerDown} />
               <button
                 onClick={() => removeShop(shop.id)}
                 onPointerDown={stopPointerDown}

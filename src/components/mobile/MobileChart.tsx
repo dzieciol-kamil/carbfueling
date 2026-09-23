@@ -226,7 +226,7 @@ export function MobileChart() {
                   x2={WIDTH}
                   y1={gBase}
                   y2={gBase}
-                  stroke="#E3E5E0"
+                  stroke="var(--border)"
                   strokeWidth={1}
                   vectorEffect="non-scaling-stroke"
                 />
@@ -252,7 +252,7 @@ export function MobileChart() {
                 x2={WIDTH}
                 y1={HEIGHT * frac}
                 y2={HEIGHT * frac}
-                stroke="#EDEFEA"
+                stroke="var(--border-soft)"
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />
@@ -279,7 +279,7 @@ export function MobileChart() {
             <path
               d={polyline(S, nk, px, py)}
               fill="none"
-              stroke="#A8AEA9"
+              stroke="var(--muted-4)"
               strokeWidth={2}
               strokeDasharray="6 5"
               vectorEffect="non-scaling-stroke"
@@ -309,7 +309,7 @@ export function MobileChart() {
                 x2={px(shop.at)}
                 y1={0}
                 y2={HEIGHT}
-                stroke="#9AA09B"
+                stroke="var(--muted-3)"
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />
@@ -345,7 +345,7 @@ export function MobileChart() {
           x2={WIDTH}
           y1={HEIGHT - 1}
           y2={HEIGHT - 1}
-          stroke="#DDE0DA"
+          stroke="var(--chip-border)"
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
         />
@@ -371,8 +371,8 @@ export function MobileChart() {
             left: badgeFlip ? undefined : `calc(${scrubFrac * 100}% + 8px)`,
             right: badgeFlip ? `calc(${(1 - scrubFrac) * 100}% + 8px)` : undefined,
             minWidth: 104,
-            background: 'var(--ink)',
-            color: '#fff',
+            background: 'var(--selected-bg)',
+            color: 'var(--on-brand)',
             borderRadius: 9,
             padding: '7px 10px',
             display: 'flex',
@@ -382,7 +382,11 @@ export function MobileChart() {
           }}
         >
           <span
-            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#A8AEA9' }}
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              color: 'var(--on-brand-muted)',
+            }}
           >
             {badgeLines[0]}
           </span>
@@ -392,7 +396,11 @@ export function MobileChart() {
             {badgeLines[1]}
           </span>
           <span
-            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#A8AEA9' }}
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              color: 'var(--on-brand-muted)',
+            }}
           >
             {badgeLines[2]}
           </span>

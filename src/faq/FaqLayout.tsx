@@ -1,7 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { t, type Lang } from '../i18n/strings';
+import { LANGS, t, type Lang } from '../i18n/strings';
 import { assetHref, calculatorHref, faqHref, landingHref } from '../urls';
 import LangMenu from '../static/LangMenu';
+import ThemeToggle from '../static/ThemeToggle';
 
 const CHROME: Record<Lang, { back: string; index: string; brand: string; open: string }> = {
   en: {
@@ -16,6 +17,77 @@ const CHROME: Record<Lang, { back: string; index: string; brand: string; open: s
     brand: 'Carb Fueling',
     open: 'Otwórz kalkulator →',
   },
+  de: {
+    back: '← Zurück zum Rechner',
+    index: 'Weitere FAQ-Artikel',
+    brand: 'Carb Fueling',
+    open: 'Rechner öffnen →',
+  },
+  it: {
+    back: '← Torna al calcolatore',
+    index: 'Altri articoli FAQ',
+    brand: 'Carb Fueling',
+    open: 'Apri il calcolatore →',
+  },
+};
+
+/** `<title>`/meta description for the FAQ index page itself, per language. Read by
+ *  `scripts/build-static.mjs` — colocated here with the rest of the FAQ's own chrome copy
+ *  rather than duplicated in the build script. */
+export const FAQ_INDEX_META: Record<Lang, { title: string; description: string }> = {
+  en: {
+    title: 'FAQ — Carb Fueling',
+    description: 'Answers about carb and hydration strategy for long bike rides.',
+  },
+  pl: {
+    title: 'Częste pytania — Carb Fueling',
+    description:
+      'Odpowiedzi na pytania o strategię węglowodanową i nawodnienie na długich trasach rowerowych.',
+  },
+  de: {
+    title: 'FAQ — Carb Fueling',
+    description: 'Antworten zu Kohlenhydrat- und Flüssigkeitsstrategie auf langen Radtouren.',
+  },
+  it: {
+    title: 'FAQ — Carb Fueling',
+    description:
+      'Risposte sulla strategia di carboidrati e idratazione per le lunghe uscite in bici.',
+  },
+};
+
+/** Every article is written in Polish first, then carried into other languages by machine
+ *  translation with no native-speaker pass yet. Shown in the footer for any language that isn't
+ *  the Polish source — omitted (no key) for a language once a human has signed off on its copy.
+ *  Add a translated entry here when a new locale ships; nothing else in this file needs to
+ *  change. */
+const MT_NOTICE: Partial<Record<Lang, ReactNode>> = {
+  en: (
+    <>
+      This page was machine-translated and hasn't been checked by a native English speaker yet. The
+      numbers are verified — the wording might not be. Something sound off?{' '}
+      <a href="mailto:carbfueling@gmail.com">Email me</a> or{' '}
+      <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">open an issue</a> — even
+      two fixed sentences help.
+    </>
+  ),
+  de: (
+    <>
+      Diese Seite wurde maschinell übersetzt und noch nicht von einem Muttersprachler geprüft. Die
+      Zahlen sind geprüft — der Wortlaut vielleicht nicht. Klingt etwas seltsam?{' '}
+      <a href="mailto:carbfueling@gmail.com">Schreib mir</a> oder{' '}
+      <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">öffne ein Issue</a> — schon
+      zwei korrigierte Sätze helfen.
+    </>
+  ),
+  it: (
+    <>
+      Questa pagina è stata tradotta automaticamente e non è ancora stata controllata da un
+      madrelingua italiano. I numeri sono verificati — il testo forse no. C'è qualcosa che suona
+      strano? <a href="mailto:carbfueling@gmail.com">Scrivimi</a> oppure{' '}
+      <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">apri una issue</a> —
+      bastano anche due frasi corrette.
+    </>
+  ),
 };
 
 // The landing header, rebuilt here in inline styles: these pages ship no stylesheet of their
@@ -37,7 +109,7 @@ const ctaButton: CSSProperties = {
   alignItems: 'center',
   gap: 8,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: 999,
   padding: '9px 16px',
   fontSize: 13,
@@ -63,6 +135,15 @@ export const articleImgStyle: CSSProperties = {
 
 export const articleLinkStyle: CSSProperties = { fontSize: 15, fontWeight: 600 };
 
+/** The citation line at the foot of an article. Quieter than the body on purpose: a link to a
+ *  manufacturer's help page is a footnote, not a paragraph of the article. */
+export const articleSourcesStyle: CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.6,
+  color: 'var(--muted)',
+  marginBottom: 16,
+};
+
 export function FaqLayout({
   lang,
   slug,
@@ -79,13 +160,14 @@ export function FaqLayout({
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <img className="faq-bg" src={assetHref('/landing/road.jpg')} alt="" />
+      <img className="faq-bg is-light" src={assetHref('/landing/road.jpg')} alt="" />
+      <img className="faq-bg is-dark" src={assetHref('/landing/road-dark.jpeg')} alt="" />
       <div className="faq-wash" />
       <header
         className="faq-header"
         style={{
           position: 'relative',
-          zIndex: 1,
+          zIndex: 2,
           // Every number here is the landing header's, down to the 61px height: the two bars
           // sit at the same place on screen, so following a link between the pages doesn't
           // shift the wordmark. Opaque for the same reason the landing's is — the photograph
@@ -112,7 +194,13 @@ export function FaqLayout({
           </span>
         </a>
         <div className="faq-actions">
-          <LangMenu lang={lang} hrefFor={(code) => faqHref(code, slug)} />
+          <ThemeToggle label={t(lang).themeToggleLabel} />
+          <LangMenu
+            langs={LANGS}
+            current={lang}
+            hrefFor={(code) => faqHref(code, slug)}
+            labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
+          />
           <a href={calculatorHref(lang)} style={ctaButton}>
             {c.open}
           </a>
@@ -139,16 +227,17 @@ export function FaqLayout({
           background: 'var(--bg)',
           padding: '20px 24px',
           borderTop: '1px solid var(--border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 14,
-          flexWrap: 'wrap',
           fontSize: 12,
           color: 'var(--muted)',
         }}
       >
-        <a href={indexHref}>{c.index}</a>
-        <a href={calculatorHref(lang)}>{c.back}</a>
+        {MT_NOTICE[lang] && <p style={{ margin: '0 0 14px', maxWidth: 640 }}>{MT_NOTICE[lang]}</p>}
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
+        >
+          <a href={indexHref}>{c.index}</a>
+          <a href={calculatorHref(lang)}>{c.back}</a>
+        </div>
       </footer>
     </div>
   );

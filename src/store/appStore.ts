@@ -14,6 +14,7 @@ import {
   gaps,
   moveListItem,
   nextShopAt,
+  scalePlan,
 } from '../domain/dragMath';
 import { startFillOf } from '../domain/combinedRefill';
 import { dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
@@ -39,8 +40,19 @@ import {
 } from '../domain/types';
 
 function defaultLang(): Lang {
-  const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
-  return browserLang.toLowerCase().startsWith('pl') ? 'pl' : 'en';
+  const browserLang = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : '';
+  // Add a `case` here, not a new branch, when a language ships — `default` (English) covers
+  // every browser locale that isn't one of ours yet.
+  switch (browserLang.slice(0, 2)) {
+    case 'pl':
+      return 'pl';
+    case 'de':
+      return 'de';
+    case 'it':
+      return 'it';
+    default:
+      return 'en';
+  }
 }
 
 export const DESKTOP_BREAKPOINT = 770;
@@ -55,10 +67,27 @@ function defaultAutoView(): 'desktop' | 'mobile' {
     : 'desktop';
 }
 
-// A route edit (shorter distance, fewer hours, switching mode, a shorter GPX
-// track...) can pull the plan's distance domain in under fills/foods/shops
-// placed further out — clamp them back onto the route instead of letting
-// them render off the end of the chart.
+function defaultAutoTheme(): 'light' | 'dark' {
+  return typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
+
+// A route edit (a different distance, fewer hours, another sport, switching mode, a fresh GPX
+// track...) moves the plan's distance domain under the fills/foods/shops placed on it. Every
+// such edit goes through here, which rescales them proportionally so each keeps its place
+// *along the effort* — see `scalePlan` for why proportional rather than clamped.
+function withRoute(
+  s: { route: RouteInput; fills: Fill[]; foods: FoodItem[]; shops: ShopStop[] },
+  route: RouteInput,
+) {
+  return { route, ...scalePlan(dist(s.route), dist(route), s.fills, s.foods, s.shops) };
+}
+
+// Imported backups carry no previous domain to scale from — their positions are already
+// expressed in their own route's km. Clamp instead, purely defensively, in case the file
+// predates a since-changed placement rule and holds something off the end of its own route.
 function reconcileToRoute(route: RouteInput, fills: Fill[], foods: FoodItem[], shops: ShopStop[]) {
   const distanceKm = dist(route);
   return {
@@ -83,14 +112,17 @@ function normalizeHoursMinutes(route: RouteInput): RouteInput {
 }
 
 export type ViewMode = 'auto' | 'desktop' | 'mobile';
+export type ThemeMode = 'light' | 'dark' | 'auto';
 export type YMode = 'rate' | 'fluid';
-export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | null;
+export type PanelId = 'settings' | 'mix' | 'gear' | 'food' | 'share' | null;
 export type MobileTab = 'plan' | 'gear' | 'mix' | 'food' | 'me';
 
 interface UiState {
   lang: Lang;
   viewMode: ViewMode;
   autoView: 'desktop' | 'mobile';
+  themeMode: ThemeMode;
+  autoTheme: 'light' | 'dark';
   panel: PanelId;
   xUnit: XUnit;
   yMode: YMode;
@@ -108,6 +140,10 @@ interface UiState {
   routeSheet: boolean;
   shopSheet: { editId: number | null } | null;
   chartHelp: boolean;
+  /** Whether the share link carries the rider's body weight. Off by default — weight feeds
+   *  the demand calculation and is personal — but once ticked it stays ticked, so someone who
+   *  shares plans with a training partner is not re-asked every time. */
+  shareIncludeWeight: boolean;
 }
 
 interface AppState {
@@ -150,8 +186,11 @@ interface AppState {
   setLang: (lang: Lang) => void;
   setViewMode: (mode: ViewMode) => void;
   setAutoView: (view: 'desktop' | 'mobile') => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setAutoTheme: (theme: 'light' | 'dark') => void;
   openPanel: (panel: PanelId) => void;
   closePanel: () => void;
+  setShareIncludeWeight: (v: boolean) => void;
   setXUnit: (u: XUnit) => void;
   setYMode: (m: YMode) => void;
   toggleTimelineOpen: () => void;
@@ -257,10 +296,43 @@ const defaultShops: ShopStop[] = [];
 const defaultCombinedFillIds: number[] = [];
 
 const defaultFoodLib: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
-  { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
-  { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
+  {
+    key: 'gel',
+    pl: 'Żel energetyczny',
+    en: 'Energy gel',
+    de: 'Energiegel',
+    it: 'Gel energetico',
+    carbs: 22,
+  },
+  {
+    key: 'chew',
+    pl: 'Żelki',
+    en: 'Chews',
+    de: 'Kaubonbons',
+    it: 'Caramelle gommose',
+    carbs: 30,
+    cont: true,
+    span: 18,
+  },
+  {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    de: 'Cola',
+    it: 'Cola',
+    carbs: 35,
+    ml: 330,
+    needsStop: true,
+  },
+  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
+  {
+    key: 'ricecake',
+    pl: 'Rice cake',
+    en: 'Rice cake',
+    de: 'Rice Cake',
+    it: 'Rice Cake',
+    carbs: 30,
+  },
 ];
 
 export const useAppStore = create<AppState>()(
@@ -278,6 +350,8 @@ export const useAppStore = create<AppState>()(
         lang: defaultLang(),
         viewMode: 'auto',
         autoView: defaultAutoView(),
+        themeMode: 'auto',
+        autoTheme: defaultAutoTheme(),
         panel: null,
         xUnit: 'km',
         yMode: 'rate',
@@ -295,6 +369,7 @@ export const useAppStore = create<AppState>()(
         routeSheet: false,
         shopSheet: null,
         chartHelp: false,
+        shareIncludeWeight: false,
       },
       nextGid: 3,
       nextFid: 1,
@@ -302,55 +377,44 @@ export const useAppStore = create<AppState>()(
       nextFoodKey: 1,
       nextShopId: 1,
 
-      setMode: (mode) =>
-        set((s) => {
-          const route = { ...s.route, mode };
-          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
-        }),
+      setMode: (mode) => set((s) => withRoute(s, { ...s.route, mode })),
       setSport: (sport) =>
         set((s) =>
           s.route.sport === sport
             ? {}
-            : { route: { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] } },
+            : withRoute(s, { ...s.route, sport, speed: SPORT_DEFAULT_SPEED[sport] }),
         ),
-      // Distance/hours/minutes are edited through free-typing number fields, which
-      // commit a value on every keystroke (for live chart feedback) — reconciling
-      // fills/foods/shops right here would clamp them against transient in-progress
-      // digits (e.g. typing "50" over "90" passes through "5"), destructively
-      // collapsing them before the final value ever lands. Reconcile once the field
-      // is actually committed instead — see reconcilePlan, wired to onCommit.
-      setDistance: (n) => set((s) => ({ route: { ...s.route, distance: clamp(n, 0, 2000) } })),
+      // Distance/hours/minutes are edited through free-typing number fields, which commit a
+      // value on every keystroke (for live chart feedback), so these rescale against transient
+      // in-progress digits too — e.g. typing "50" over "90" passes through "5". That is safe
+      // precisely because scaling composes: 90→5→50 lands exactly where 90→50 does.
+      setDistance: (n) => set((s) => withRoute(s, { ...s.route, distance: clamp(n, 0, 2000) })),
       setSpeed: (n) => set((s) => ({ route: { ...s.route, speed: clamp(n, 0, 100) } })),
-      setHours: (n) => set((s) => ({ route: { ...s.route, hours: clamp(n, 0, 999) } })),
+      setHours: (n) => set((s) => withRoute(s, { ...s.route, hours: clamp(n, 0, 999) })),
       // Deliberately unclamped — see normalizeHoursMinutes, applied on commit via reconcilePlan.
-      setMinutes: (n) => set((s) => ({ route: { ...s.route, minutes: n } })),
-      reconcilePlan: () =>
-        set((s) => {
-          const route = normalizeHoursMinutes(s.route);
-          return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
-        }),
+      setMinutes: (n) => set((s) => withRoute(s, { ...s.route, minutes: n })),
+      reconcilePlan: () => set((s) => withRoute(s, normalizeHoursMinutes(s.route))),
       setWeight: (n) => set((s) => ({ route: { ...s.route, weight: clamp(n, 20, 300) } })),
       setPreMealCarbs: (n) =>
         set((s) => ({ route: { ...s.route, preMealCarbs: clamp(n, 0, 500) } })),
       setPreMealMinutes: (n) =>
         set((s) => ({ route: { ...s.route, preMealMinutes: clamp(n, 0, 1440) } })),
-      setIntensity: (i) => set((s) => ({ route: { ...s.route, intensity: i } })),
+      setIntensity: (i) => set((s) => withRoute(s, { ...s.route, intensity: i })),
       setTemp: (n) => set((s) => ({ route: { ...s.route, temp: n } })),
       toggleGpx: () => set((s) => ({ route: { ...s.route, useGpx: !s.route.useGpx } })),
       loadGpxFromFile: async (file) => {
         try {
           const { track, distanceKm, fileName } = await loadGpxFile(file);
-          set((s) => {
-            const route: RouteInput = {
+          set((s) =>
+            withRoute(s, {
               ...s.route,
               gpxTrack: track,
               gpxName: fileName,
               gpxError: null,
               useGpx: true,
               distance: distanceKm,
-            };
-            return { route, ...reconcileToRoute(route, s.fills, s.foods, s.shops) };
-          });
+            }),
+          );
         } catch {
           set((s) => ({ route: { ...s.route, gpxError: 'gpxBad' } }));
         }
@@ -371,7 +435,13 @@ export const useAppStore = create<AppState>()(
           foods: s.foods,
           shops: s.shops,
           foodLib: s.foodLib,
-          ui: { lang: s.ui.lang, viewMode: s.ui.viewMode, xUnit: s.ui.xUnit, yMode: s.ui.yMode },
+          ui: {
+            lang: s.ui.lang,
+            viewMode: s.ui.viewMode,
+            themeMode: s.ui.themeMode,
+            xUnit: s.ui.xUnit,
+            yMode: s.ui.yMode,
+          },
           nextGid: s.nextGid,
           nextFid: s.nextFid,
           nextFoodId: s.nextFoodId,
@@ -402,6 +472,7 @@ export const useAppStore = create<AppState>()(
               ...s.ui,
               lang: data.ui.lang,
               viewMode: data.ui.viewMode,
+              themeMode: data.ui.themeMode,
               xUnit: data.ui.xUnit,
               yMode: data.ui.yMode,
               panel: null,
@@ -420,8 +491,12 @@ export const useAppStore = create<AppState>()(
       setLang: (lang) => set((s) => ({ ui: { ...s.ui, lang } })),
       setViewMode: (viewMode) => set((s) => ({ ui: { ...s.ui, viewMode } })),
       setAutoView: (autoView) => set((s) => ({ ui: { ...s.ui, autoView } })),
+      setThemeMode: (themeMode) => set((s) => ({ ui: { ...s.ui, themeMode } })),
+      setAutoTheme: (autoTheme) => set((s) => ({ ui: { ...s.ui, autoTheme } })),
       openPanel: (panel) => set((s) => ({ ui: { ...s.ui, panel } })),
       closePanel: () => set((s) => ({ ui: { ...s.ui, panel: null } })),
+      setShareIncludeWeight: (shareIncludeWeight) =>
+        set((s) => ({ ui: { ...s.ui, shareIncludeWeight } })),
       setXUnit: (xUnit) => set((s) => ({ ui: { ...s.ui, xUnit } })),
       setYMode: (yMode) => set((s) => ({ ui: { ...s.ui, yMode } })),
       toggleTimelineOpen: () => set((s) => ({ ui: { ...s.ui, timelineOpen: !s.ui.timelineOpen } })),
@@ -664,7 +739,10 @@ export const useAppStore = create<AppState>()(
         set((s) => {
           const name = t(s.ui.lang).newFood;
           return {
-            foodLib: [...s.foodLib, { key: 'u' + s.nextFoodKey, pl: name, en: name, carbs: 25 }],
+            foodLib: [
+              ...s.foodLib,
+              { key: 'u' + s.nextFoodKey, pl: name, en: name, de: name, it: name, carbs: 25 },
+            ],
             nextFoodKey: s.nextFoodKey + 1,
           };
         }),
@@ -835,6 +913,8 @@ export const useAppStore = create<AppState>()(
             // phone opens the desktop layout until the resize effect corrects it.
             // currentState's value has just been computed by defaultAutoView().
             autoView: currentState.ui.autoView,
+            // Same reasoning for the OS color-scheme preference.
+            autoTheme: currentState.ui.autoTheme,
             // Where someone happened to be looking last time is not a setting either.
             // Following the landing's "open the calculator" into a settings panel or
             // the Me tab is never what that link promised, so both start from their
@@ -874,6 +954,10 @@ export const useAppStore = create<AppState>()(
 
 export function isDesktopView(viewMode: ViewMode, autoView: 'desktop' | 'mobile'): boolean {
   return viewMode === 'auto' ? autoView === 'desktop' : viewMode === 'desktop';
+}
+
+export function resolveTheme(themeMode: ThemeMode, autoTheme: 'light' | 'dark'): 'light' | 'dark' {
+  return themeMode === 'auto' ? autoTheme : themeMode;
 }
 
 export function shouldConfirmViewModeChange(next: ViewMode, current: ViewMode): boolean {

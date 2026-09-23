@@ -11,7 +11,6 @@ import { renderPage, renderRedirectStub, SITE } from './renderPage.mjs';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(rootDir, 'dist');
 const BASE = process.env.BASE ?? '';
-const LANGS = ['en', 'pl'];
 // One predicate, spelled once: a build with a base path is the /preview deploy, and it must
 // be excluded from the index and from the sitemap together. These two were separate
 // expressions (`BASE !== ''` and `!BASE`); equivalent, but the spec is emphatic about this
@@ -20,21 +19,53 @@ const isPreview = BASE !== '';
 
 // A relative hint within our own sitemap, nothing more. The landing pages are the site's
 // entry points, the calculator is the thing people actually come to use, and the FAQ
-// supports both — which is what the default covers.
-const SITEMAP_PRIORITY = new Map([
-  ['/en/', '1.0'],
-  ['/pl/', '1.0'],
-  ['/en/calculator/', '0.9'],
-  ['/pl/calculator/', '0.9'],
-]);
+// supports both — which is what the default covers. Built from LANGS inside main() (see
+// buildSitemapPriority) rather than one hardcoded pair of lines per language here.
+function buildSitemapPriority(langs) {
+  return new Map(langs.flatMap((l) => [[`/${l}/`, '1.0'], [`/${l}/calculator/`, '0.9']]));
+}
 
-async function writeSitemap(pages) {
+// SEO title/description for the landing pages, per language. `description` feeds the meta/og/
+// twitter tags; `jsonLdDescription` is worded slightly differently on purpose (see the existing
+// en/pl copy) for the JSON-LD structured-data block.
+const LANDING_META = {
+  en: {
+    title: 'Carb Fueling — carbohydrate & hydration planner',
+    description:
+      'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time. Free, no account, runs in your browser.',
+    jsonLdDescription:
+      'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time.',
+  },
+  pl: {
+    title: 'Carb Fueling — planer węglowodanów i nawodnienia',
+    description:
+      'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je w czasie. Za darmo, bez konta, działa w przeglądarce.',
+    jsonLdDescription:
+      'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je na bidony, flaszki i jedzenie w czasie.',
+  },
+  de: {
+    title: 'Carb Fueling — Kohlenhydrat- und Flüssigkeitsplaner',
+    description:
+      'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie über die Zeit verteilst. Kostenlos, kein Konto, läuft im Browser.',
+    jsonLdDescription:
+      'Plane, wie viele Kohlenhydrate und wie viel Flüssigkeit du auf eine Fahrt mitnimmst, und wie du sie auf Flaschen, Flasks und Essen über die Zeit verteilst.',
+  },
+  it: {
+    title: 'Carb Fueling — pianificatore di carboidrati e idratazione',
+    description:
+      "Pianifica quanti carboidrati e quanto liquido portare su un giro, e come distribuirli nel tempo tra borracce, flask e cibo. Gratis, senza account, funziona nel browser.",
+    jsonLdDescription:
+      "Pianifica quanti carboidrati e quanto liquido portare su un giro, e come distribuirli tra borracce, flask e cibo nel tempo.",
+  },
+};
+
+async function writeSitemap(pages, sitemapPriority) {
   const templatePath = path.join(rootDir, 'public/sitemap.xml');
   const template = await readFile(templatePath, 'utf-8');
   const entries = pages
     .map(
       (p) =>
-        `  <url>\n    <loc>${SITE}${p.urlPath}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>${SITEMAP_PRIORITY.get(p.urlPath) ?? '0.6'}</priority>\n  </url>`,
+        `  <url>\n    <loc>${SITE}${p.urlPath}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>${sitemapPriority.get(p.urlPath) ?? '0.6'}</priority>\n  </url>`,
     )
     .join('\n');
   const combined = template.replace('</urlset>', `${entries}\n</urlset>`);
@@ -50,10 +81,12 @@ async function main() {
 
   const { ARTICLES } = await server.ssrLoadModule('/src/faq/registry.ts');
   const { calculatorHref, faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
+  const { LANGS } = await server.ssrLoadModule('/src/i18n/strings.ts');
+  const { FAQ_INDEX_META } = await server.ssrLoadModule('/src/faq/FaqLayout.tsx');
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
   // used *inside* a React component's own JSX (that markup ends up in bodyHtml, which goes
   // through renderPage()'s single prefixInternalUrls pass at write time, same as everything
-  // else on the page). Here, though, the return value feeds `page.urlPath`/`page.altPath`,
+  // else on the page). Here, though, the return value feeds `page.urlPath`/`page.alternates`,
   // which renderPage() uses to build `canonical`/`hreflang` (always SITE-absolute, never
   // BASE-prefixed per the spec) — so the marker needs stripping before use in *this* context,
   // even though it's the same helper function called the same way.
@@ -63,31 +96,24 @@ async function main() {
 
   // Landing pages
   for (const lang of LANGS) {
-    const altLang = lang === 'pl' ? 'en' : 'pl';
-    const modPath = lang === 'pl' ? '/src/landing/Landing.pl.tsx' : '/src/landing/Landing.en.tsx';
-    const { default: LandingComponent } = await server.ssrLoadModule(modPath);
+    const otherLangs = LANGS.filter((l) => l !== lang);
+    const meta = LANDING_META[lang];
+    const { default: LandingComponent } = await server.ssrLoadModule(
+      `/src/landing/Landing.${lang}.tsx`,
+    );
     pages.push({
       outPath: path.join(distDir, lang, 'index.html'),
       urlPath: strip(landingHref(lang)),
-      altPath: strip(landingHref(altLang)),
+      alternates: otherLangs.map((l) => ({ lang: l, path: strip(landingHref(l)) })),
       lang,
-      title:
-        lang === 'pl'
-          ? 'Carb Fueling — planer węglowodanów i nawodnienia'
-          : 'Carb Fueling — carbohydrate & hydration planner',
-      description:
-        lang === 'pl'
-          ? 'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je w czasie. Za darmo, bez konta, działa w przeglądarce.'
-          : 'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time. Free, no account, runs in your browser.',
+      title: meta.title,
+      description: meta.description,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         name: 'Carb Fueling',
         url: `${SITE}${strip(landingHref(lang))}`,
-        description:
-          lang === 'pl'
-            ? 'Zaplanuj, ile węglowodanów i płynów zabrać na trasę, i jak rozłożyć je na bidony, flaszki i jedzenie w czasie.'
-            : 'Plan how many carbs and how much fluid to take on a ride, and how to spread them across bottles, flasks and food over time.',
+        description: meta.jsonLdDescription,
         applicationCategory: 'SportsApplication',
         operatingSystem: 'Any (runs in a web browser)',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -98,20 +124,17 @@ async function main() {
 
   // FAQ pages (index + articles)
   for (const lang of LANGS) {
-    const altLang = lang === 'pl' ? 'en' : 'pl';
+    const otherFaqLangs = LANGS.filter((l) => l !== lang);
 
-    const indexModPath = lang === 'pl' ? '/src/faq/FaqIndex.pl.tsx' : '/src/faq/FaqIndex.en.tsx';
+    const indexModPath = `/src/faq/FaqIndex.${lang}.tsx`;
     const { default: IndexComponent } = await server.ssrLoadModule(indexModPath);
     pages.push({
       outPath: path.join(distDir, lang, 'faq/index.html'),
       urlPath: strip(faqHref(lang)),
-      altPath: strip(faqHref(altLang)),
+      alternates: otherFaqLangs.map((l) => ({ lang: l, path: strip(faqHref(l)) })),
       lang,
-      title: lang === 'pl' ? 'Częste pytania — Carb Fueling' : 'FAQ — Carb Fueling',
-      description:
-        lang === 'pl'
-          ? 'Odpowiedzi na pytania o strategię węglowodanową i nawodnienie na długich trasach rowerowych.'
-          : 'Answers about carb and hydration strategy for long bike rides.',
+      title: FAQ_INDEX_META[lang].title,
+      description: FAQ_INDEX_META[lang].description,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
@@ -125,20 +148,20 @@ async function main() {
     });
 
     for (const article of ARTICLES) {
-      const modPath = path.join(rootDir, 'src/faq/articles', `${article.slug}.${lang}.tsx`);
+      const modPath = path.join(rootDir, 'src/faq/articles', lang, `${article.slug}.tsx`);
       if (!existsSync(modPath)) {
         throw new Error(
           `build-static: missing component ${modPath} for registry slug "${article.slug}" (${lang})`,
         );
       }
       const { default: ArticleComponent } = await server.ssrLoadModule(
-        `/src/faq/articles/${article.slug}.${lang}.tsx`,
+        `/src/faq/articles/${lang}/${article.slug}.tsx`,
       );
       const articleUrlPath = strip(faqHref(lang, article.slug));
       pages.push({
         outPath: path.join(distDir, lang, 'faq', article.slug, 'index.html'),
         urlPath: articleUrlPath,
-        altPath: strip(faqHref(altLang, article.slug)),
+        alternates: otherFaqLangs.map((l) => ({ lang: l, path: strip(faqHref(l, article.slug)) })),
         lang,
         title: `${article[lang].title} — Carb Fueling`,
         description: article[lang].description,
@@ -175,7 +198,11 @@ async function main() {
       base: BASE,
       noindex: isPreview,
       canonicalOverride: `${SITE}/en/`,
-      langRedirectTarget: '/pl/',
+      // Every non-English language redirects home to its own landing page; derived from
+      // LANGS so a new language needs no edit here — it just needs an entry in LANGS.
+      langRedirectTargets: Object.fromEntries(
+        LANGS.filter((l) => l !== 'en').map((l) => [l, `/${l}/`]),
+      ),
     }),
     'utf-8',
   );
@@ -192,20 +219,22 @@ async function main() {
     await mkdir(path.dirname(stub.outPath), { recursive: true });
     await writeFile(
       stub.outPath,
-      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex: isPreview }),
+      // Always noindex, regardless of preview/prod: these are back-compat stubs for
+      // retired paths, never the canonical page — see ADR 0001's "ranking equity" risk.
+      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex: true }),
       'utf-8',
     );
   }
 
   if (!isPreview) {
-    // The calculator's two pages come from Vite, not from this script, so they never enter
-    // `pages` — and without these two entries the site's main destination would be missing
+    // The calculator's pages come from Vite, not from this script, so they never enter
+    // `pages` — and without these entries the site's main destination would be missing
     // from the sitemap entirely (on master the calculator *was* the sitemap). Only `urlPath`
     // is read here, so a bare object is all an entry needs.
-    await writeSitemap([
-      ...pages,
-      ...LANGS.map((lang) => ({ urlPath: strip(calculatorHref(lang)) })),
-    ]);
+    await writeSitemap(
+      [...pages, ...LANGS.map((lang) => ({ urlPath: strip(calculatorHref(lang)) }))],
+      buildSitemapPriority(LANGS),
+    );
   }
 
   await server.close();

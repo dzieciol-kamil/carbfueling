@@ -28,7 +28,7 @@ export function TourReplayConfirm({ strings, onCancel, onConfirm }: TourReplayCo
           position: 'relative',
           width: 340,
           maxWidth: 'calc(100vw - 28px)',
-          background: '#fff',
+          background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: 14,
           padding: '18px 20px',

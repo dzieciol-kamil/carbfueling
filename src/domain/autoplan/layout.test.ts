@@ -827,7 +827,16 @@ describe('merging nearby stops', () => {
   test('the window is measured from where the stop lands, not from where the cluster opened', () => {
     const r = makeRoute({ distance: 50, speed: 20, temp: 34, weight: 93, intensity: 'low' });
     const lib: FoodLibEntry[] = [
-      { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
+      {
+        key: 'cola',
+        pl: 'Cola',
+        en: 'Cola',
+        de: 'Cola',
+        it: 'Cola',
+        carbs: 35,
+        ml: 330,
+        needsStop: true,
+      },
     ];
     const state = makeState(r, [vessel('g1', 750, ['water']), vessel('g2', 150, ['water'])], lib);
     const end = dist(r) * 0.98;
@@ -982,8 +991,17 @@ describe('the gut gate', () => {
 
 describe('needsStop products', () => {
   const FOOD_LIB: FoodLibEntry[] = [
-    { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
-    { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
+    {
+      key: 'cola',
+      pl: 'Cola',
+      en: 'Cola',
+      de: 'Cola',
+      it: 'Cola',
+      carbs: 35,
+      ml: 330,
+      needsStop: true,
+    },
+    { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
   ];
   const route = makeRoute();
   const state = makeState(route, [vessel('a', 750, ['izo'])], FOOD_LIB);
@@ -1085,7 +1103,16 @@ describe('a refill is done at a stop the plan already has', () => {
   // Carbs 0, so the shop is a stop and nothing else: it cannot move the gut gate and re-tile the
   // relay underneath the assertions.
   const FOOD_LIB: FoodLibEntry[] = [
-    { key: 'tap', pl: 'Woda ze sklepu', en: 'Shop water', carbs: 0, ml: 500, needsStop: true },
+    {
+      key: 'tap',
+      pl: 'Woda ze sklepu',
+      en: 'Shop water',
+      de: 'Wasser aus dem Laden',
+      it: 'Acqua dal negozio',
+      carbs: 0,
+      ml: 500,
+      needsStop: true,
+    },
   ];
   const state = makeState(
     route,
@@ -1278,7 +1305,16 @@ describe('a spent vessel is topped up at a stop that already exists', () => {
   test('nor at a stop it reaches while still carrying carbs', () => {
     // The flask's 500 ml of gel is 300 g — 100 km — so at the cola stop at 50 it is still full.
     const FOOD_LIB: FoodLibEntry[] = [
-      { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
+      {
+        key: 'cola',
+        pl: 'Cola',
+        en: 'Cola',
+        de: 'Cola',
+        it: 'Cola',
+        carbs: 35,
+        ml: 330,
+        needsStop: true,
+      },
     ];
     const big = makeState(route, [vessel('flask', 500, ['gel', 'water'])], FOOD_LIB);
     const { fills, stops } = place(

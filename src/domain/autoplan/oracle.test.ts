@@ -48,7 +48,7 @@ const state = (gear: Vessel[]): PlanState => ({
   gear,
   fills: [],
   foods: [],
-  foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 }],
+  foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 }],
 });
 
 describe('oracle', () => {

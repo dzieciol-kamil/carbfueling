@@ -46,8 +46,8 @@ function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
     fills: [{ fid: 1, gid: 'g1', content: 'izo', from: 0, to: 50 }],
     foods: [{ id: 101, key: 'gel', name: 'Energy gel', carbs: 22, from: 10, to: 10 }],
     shops: [{ id: 1, at: 40, name: 'Shop' }],
-    foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', carbs: 22 }],
-    ui: { lang: 'en', viewMode: 'auto', xUnit: 'km', yMode: 'rate' },
+    foodLib: [{ key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 }],
+    ui: { lang: 'en', viewMode: 'auto', themeMode: 'auto', xUnit: 'km', yMode: 'rate' },
     nextGid: 2,
     nextFid: 2,
     nextFoodId: 102,
@@ -98,7 +98,7 @@ describe('settingsExport', () => {
     const badFiles = [
       { ...file, data: { ...file.data, route: undefined } },
       { ...file, data: { ...file.data, gear: [{ gid: 'g1' }] } },
-      { ...file, data: { ...file.data, ui: { ...file.data.ui, lang: 'de' } } },
+      { ...file, data: { ...file.data, ui: { ...file.data.ui, lang: 'fr' } } },
       {
         ...file,
         data: { ...file.data, fills: [{ fid: 1, gid: 'g1', content: 'soda', from: 0, to: 1 }] },
@@ -217,5 +217,22 @@ describe('settingsExport', () => {
     const file = buildSettingsExport(data);
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
+  test('rejects a themeMode value outside the known set', () => {
+    const data = makeData({ ui: { ...makeData().ui, themeMode: 'purple' as never } });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result).toEqual({ ok: false, reason: 'wrong-shape' });
+  });
+
+  test('imports an old export with no themeMode field, defaulting to auto', () => {
+    const legacyUi = { ...makeData().ui } as Record<string, unknown>;
+    delete legacyUi.themeMode;
+    const data = makeData({ ui: legacyUi as unknown as SettingsExportData['ui'] });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.ui.themeMode).toBe('auto');
   });
 });

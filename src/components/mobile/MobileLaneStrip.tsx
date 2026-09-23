@@ -52,7 +52,7 @@ export function MobileLaneStrip() {
       {vesselsWithFills.map((vessel) => (
         <div key={vessel.gid} style={{ display: 'flex', alignItems: 'center', gap: ROW_GAP }}>
           <span style={rowLabelStyle}>{vessel.name}</span>
-          <div style={trackStyle('#F4F5F2')}>
+          <div style={trackStyle('var(--track)')}>
             {fills
               .filter((f) => f.gid === vessel.gid)
               .map((fill) => {
@@ -102,7 +102,7 @@ export function MobileLaneStrip() {
                         style={{
                           fontFamily: "'JetBrains Mono', monospace",
                           fontSize: 9,
-                          color: '#fff',
+                          color: 'var(--on-brand)',
                           whiteSpace: 'nowrap',
                         }}
                       >
@@ -133,7 +133,7 @@ export function MobileLaneStrip() {
       {foods.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: ROW_GAP }}>
           <span style={rowLabelStyle}>{strings.foodSection2}</span>
-          <div style={trackStyle('#FAF3EF')}>
+          <div style={trackStyle('var(--surface-warm)')}>
             {foods.map((food) => {
               const key = 'x' + food.id;
               const selected = selKey === key;

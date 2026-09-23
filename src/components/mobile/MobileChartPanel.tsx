@@ -1,6 +1,9 @@
+import type { CSSProperties } from 'react';
 import { dist, fmtX } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
+import { PrintIcon } from '../print/PrintIcon';
+import { ShareIcon } from '../share/ShareIcon';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { MobileChart } from './MobileChart';
 import { MobileLaneStrip } from './MobileLaneStrip';
@@ -9,6 +12,25 @@ const Y_MODES: { mode: YMode; label: string }[] = [
   { mode: 'rate', label: 'g/h' },
   { mode: 'fluid', label: 'ml/h' },
 ];
+
+/** The icon chips sitting to the left of the km/hours switch: print, and the GPX peek toggle.
+ *  `active` is the toggle's on-state — an inverted fill, which is what tells the rider the peek
+ *  is on. Print is never active; it just borrows the box so the two read as one pair. */
+function chipButtonStyle(active: boolean): CSSProperties {
+  return {
+    width: 34,
+    height: 30,
+    borderRadius: 8,
+    border: '1px solid var(--chip-border)',
+    background: active ? 'var(--selected-bg)' : 'var(--surface)',
+    color: active ? 'var(--on-brand)' : 'var(--muted)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  };
+}
 
 export function MobileChartPanel() {
   const route = useAppStore((s) => s.route);
@@ -20,6 +42,7 @@ export function MobileChartPanel() {
   const toggleGpxPeek = useAppStore((s) => s.toggleGpxPeek);
   const lang = useAppStore((s) => s.ui.lang);
   const openChartHelp = useAppStore((s) => s.openChartHelp);
+  const openPanel = useAppStore((s) => s.openPanel);
   const strings = t(lang);
 
   const distanceKm = dist(route);
@@ -38,7 +61,7 @@ export function MobileChartPanel() {
     <>
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface)',
           padding: '11px 14px 9px',
           display: 'flex',
           flexDirection: 'column',
@@ -55,23 +78,32 @@ export function MobileChartPanel() {
             fullWidth={false}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => openPanel('share')}
+              title={strings.sharePlanButton}
+              aria-label={strings.sharePlanButton}
+              style={chipButtonStyle(false)}
+            >
+              <ShareIcon size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              title={strings.printPlanButton}
+              aria-label={strings.printPlanButton}
+              style={chipButtonStyle(false)}
+            >
+              {/* A denser glyph than the eye's open outline, so it needs to run smaller to read
+                  at the same weight beside it. */}
+              <PrintIcon size={14} />
+            </button>
             {showEye && (
               <button
                 type="button"
                 onClick={toggleGpxPeek}
                 aria-label="gpx"
-                style={{
-                  width: 34,
-                  height: 30,
-                  borderRadius: 8,
-                  border: '1px solid var(--chip-border)',
-                  background: gpxPeek ? 'var(--ink)' : '#fff',
-                  color: gpxPeek ? '#fff' : 'var(--ink)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                style={chipButtonStyle(gpxPeek)}
               >
                 <svg
                   width="16"
@@ -114,7 +146,7 @@ export function MobileChartPanel() {
               height: 30,
               borderRadius: '50%',
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               color: 'var(--muted)',
               fontSize: 13,
               fontWeight: 700,
@@ -142,7 +174,7 @@ export function MobileChartPanel() {
           position: 'sticky',
           top: 0,
           zIndex: 5,
-          background: '#fff',
+          background: 'var(--surface)',
           borderBottom: '1px solid var(--border-soft)',
           padding: '0 14px 9px',
           display: 'flex',

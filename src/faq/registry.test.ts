@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ARTICLES } from './registry';
+import { LANGS } from '../i18n/strings';
 
 // Real files on disk relative to this test file — no filesystem mocking needed. Vite's
 // import.meta.glob resolves these paths at build/test time, so a missing component file
 // shows up as a missing key here rather than a runtime import failure.
-const articleModules = import.meta.glob('./articles/*.tsx');
+const articleModules = import.meta.glob('./articles/*/*.tsx');
 
 describe('ARTICLES registry', () => {
   it('has a unique, URL-safe slug per article', () => {
@@ -15,9 +16,9 @@ describe('ARTICLES registry', () => {
     }
   });
 
-  it('has a non-empty en and pl title/description for every article', () => {
+  it('has a non-empty title/description in every language for every article', () => {
     for (const article of ARTICLES) {
-      for (const lang of ['en', 'pl'] as const) {
+      for (const lang of LANGS) {
         expect(article[lang].title.trim().length).toBeGreaterThan(0);
         expect(article[lang].description.trim().length).toBeGreaterThan(0);
       }
@@ -31,7 +32,7 @@ describe('ARTICLES registry', () => {
     }
   });
 
-  it('ships exactly the 16 articles scoped for this round', () => {
+  it('ships exactly the 17 articles scoped for this round', () => {
     expect(ARTICLES.map((a) => a.slug).sort()).toEqual(
       [
         'bonk-crisis',
@@ -47,6 +48,7 @@ describe('ARTICLES registry', () => {
         'hydration-water-per-hour',
         'malto-fructose-blend',
         'pace-power-absorption',
+        'rice-cake-bars',
         'running-vs-cycling-carbs',
         'sodium-electrolytes-cycling',
         'what-the-chart-shows',
@@ -56,8 +58,8 @@ describe('ARTICLES registry', () => {
 
   it('has a component file on disk for every {slug, lang} pair', () => {
     for (const article of ARTICLES) {
-      for (const lang of ['en', 'pl'] as const) {
-        const componentPath = `./articles/${article.slug}.${lang}.tsx`;
+      for (const lang of LANGS) {
+        const componentPath = `./articles/${lang}/${article.slug}.tsx`;
         expect(componentPath in articleModules, `missing ${componentPath}`).toBe(true);
       }
     }

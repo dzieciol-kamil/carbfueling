@@ -1,0 +1,181 @@
+/* The printed sheet (src/components/print/PrintSheet.tsx). It never shows on screen, and the app
+ * never shows on paper — the two swap places inside the @media print block below.
+ *
+ * Real classes, not the inline styles the rest of the app uses: a print rule can only override an
+ * inline style with !important, and the sheet needs a layout of its own anyway. */
+
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* Inline `style` on the app root, so this needs !important to win. */
+  .app-shell {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: flex;
+    align-items: flex-start;
+    gap: 8mm;
+    font-family: Archivo, sans-serif;
+    color: #000;
+  }
+
+  /* ---- left column: the strip for the top tube ---- */
+
+  .print-strip-col {
+    flex: 0 0 30mm;
+    width: 30mm;
+  }
+
+  .print-strip {
+    box-sizing: border-box;
+    width: 30mm;
+    padding: 3mm 2mm;
+    border: 1px dashed #000;
+    border-radius: 2mm;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7pt;
+    line-height: 1.35;
+  }
+
+  .print-strip__head {
+    font-weight: 700;
+    text-align: center;
+    padding-bottom: 1.5mm;
+    border-bottom: 1px solid #000;
+  }
+
+  .print-strip__section {
+    margin-top: 2.5mm;
+  }
+
+  .print-strip__section h2 {
+    margin: 0 0 1mm;
+    font-size: 6pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Label above, positions stacked under it. At 30 mm there is no room for both on one line,
+   * and a bottle refilled three times says its name once instead of three times. */
+  .print-strip__item + .print-strip__item {
+    margin-top: 1.2mm;
+  }
+
+  /* A rider can name a bottle anything; a long name wraps inside its own line. */
+  .print-strip__label {
+    overflow-wrap: anywhere;
+  }
+
+  /* A long food name may wrap; the gram figure must not be split from its unit. */
+  .print-strip__nb {
+    white-space: nowrap;
+  }
+
+  .print-strip__at {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .print-strip__cut {
+    margin-top: 1.5mm;
+    font-size: 5.5pt;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  /* ---- right column: the recipes ---- */
+
+  .print-recipe {
+    flex: 1;
+    min-width: 0;
+    font-size: 9.5pt;
+    line-height: 1.4;
+  }
+
+  .print-recipe h1 {
+    margin: 0 0 2mm;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .print-recipe section + section {
+    margin-top: 5mm;
+  }
+
+  .print-block {
+    break-inside: avoid;
+    margin-bottom: 3mm;
+    padding: 2mm 2.5mm;
+    border: 1px solid #000;
+    border-radius: 1.5mm;
+  }
+
+  .print-block__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 3mm;
+    padding-bottom: 1mm;
+    margin-bottom: 1.5mm;
+    border-bottom: 1px solid #000;
+    font-size: 9pt;
+  }
+
+  .print-fill + .print-fill {
+    margin-top: 2mm;
+    padding-top: 2mm;
+    border-top: 1px dotted #000;
+  }
+
+  .print-fill__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 3mm;
+    font-weight: 700;
+    margin-bottom: 0.8mm;
+  }
+
+  .print-lines {
+    margin: 0;
+  }
+
+  .print-lines > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 3mm;
+  }
+
+  .print-lines dt {
+    min-width: 0;
+  }
+
+  .print-lines dd {
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .print-pours {
+    margin-top: 1.5mm;
+    padding-top: 1.5mm;
+    border-top: 1px dotted #000;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5pt;
+  }
+
+  .print-pours__label {
+    font-family: Archivo, sans-serif;
+    font-size: 7.5pt;
+  }
+}

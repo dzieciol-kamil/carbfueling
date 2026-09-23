@@ -4,16 +4,26 @@ import { ChartHelpModal } from './components/chart/ChartHelpModal';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { MobileApp } from './components/mobile/MobileApp';
+import { PrintSheet } from './components/print/PrintSheet';
 import { FoodPanel } from './components/panels/FoodPanel';
 import { GearPanel } from './components/panels/GearPanel';
 import { MixPanel } from './components/panels/MixPanel';
 import { SettingsPanel } from './components/panels/SettingsPanel';
 import { RecipesSection } from './components/recipes/RecipesSection';
 import { RoutePanel } from './components/RoutePanel';
+import { SharedPlanPrompt } from './components/SharedPlanPrompt';
+import { SharePanel } from './components/share/SharePanel';
 import { SummaryCards } from './components/SummaryCards';
 import { TourOverlay } from './components/tour/TourOverlay';
-import { DESKTOP_BREAKPOINT, hasPlanData, isDesktopView, useAppStore } from './store/appStore';
+import {
+  DESKTOP_BREAKPOINT,
+  hasPlanData,
+  isDesktopView,
+  resolveTheme,
+  useAppStore,
+} from './store/appStore';
 import { nextLangPath } from './urls';
+import { LANGS, type Lang } from './i18n/strings';
 
 function App() {
   const panel = useAppStore((s) => s.ui.panel);
@@ -24,6 +34,9 @@ function App() {
   const autoView = useAppStore((s) => s.ui.autoView);
   const setAutoView = useAppStore((s) => s.setAutoView);
   const setLang = useAppStore((s) => s.setLang);
+  const themeMode = useAppStore((s) => s.ui.themeMode);
+  const autoTheme = useAppStore((s) => s.ui.autoTheme);
+  const setAutoTheme = useAppStore((s) => s.setAutoTheme);
 
   useEffect(() => {
     if (tourSeen || hasPlanData(useAppStore.getState())) return;
@@ -47,9 +60,12 @@ function App() {
   }, [lang]);
 
   useEffect(() => {
+    // Built from LANGS, not a literal list of codes — this regex/cast pair went stale once
+    // already (missed a language) by hardcoding what LANGS already knows.
+    const langSegment = new RegExp(`/(${LANGS.join('|')})/`);
     const onPopState = () => {
-      const match = location.pathname.match(/\/(en|pl)\//);
-      if (match) setLang(match[1] as 'en' | 'pl');
+      const match = location.pathname.match(langSegment);
+      if (match) setLang(match[1] as Lang);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -63,49 +79,78 @@ function App() {
     return () => window.removeEventListener('resize', update);
   }, [setAutoView]);
 
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => setAutoTheme(media.matches ? 'dark' : 'light');
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [setAutoTheme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolveTheme(themeMode, autoTheme);
+  }, [themeMode, autoTheme]);
+
   if (!isDesktopView(viewMode, autoView)) {
     return (
       <>
-        <MobileApp />
-        <TourOverlay />
-        <ChartHelpModal desktop={false} />
+        <div className="app-shell">
+          <MobileApp />
+          <TourOverlay />
+          <SharedPlanPrompt />
+          <SharePanel desktop={false} />
+          <ChartHelpModal desktop={false} />
+        </div>
+        <PrintSheet />
       </>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        padding: '14px 24px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 16,
-      }}
-    >
-      <Header />
-      {panel === 'gear' && <GearPanel />}
-      {panel === 'mix' && <MixPanel />}
-      {panel === 'food' && <FoodPanel />}
-      {panel === 'settings' && <SettingsPanel />}
+    <>
       <div
-        style={{ width: '100%', maxWidth: 1420, display: 'flex', flexDirection: 'column', gap: 16 }}
+        className="app-shell"
+        style={{
+          minHeight: '100vh',
+          padding: '14px 24px 40px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+        }}
       >
+        <Header />
+        {panel === 'gear' && <GearPanel />}
+        {panel === 'mix' && <MixPanel />}
+        {panel === 'food' && <FoodPanel />}
+        {panel === 'settings' && <SettingsPanel />}
         <div
-          data-tour="route-summary"
-          style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}
+          style={{
+            width: '100%',
+            maxWidth: 1420,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
         >
-          <RoutePanel />
-          <SummaryCards />
+          <div
+            data-tour="route-summary"
+            style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}
+          >
+            <RoutePanel />
+            <SummaryCards />
+          </div>
+          <ChartCard />
+          <RecipesSection />
         </div>
-        <ChartCard />
-        <RecipesSection />
+        <Footer />
+        <TourOverlay />
+        <SharedPlanPrompt />
+        <SharePanel desktop />
+        <ChartHelpModal desktop />
       </div>
-      <Footer />
-      <TourOverlay />
-      <ChartHelpModal desktop />
-    </div>
+      <PrintSheet />
+    </>
   );
 }
 

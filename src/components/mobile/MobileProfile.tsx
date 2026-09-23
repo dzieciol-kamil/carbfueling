@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { absCap } from '../../domain/fuel';
 import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { LANGS, t } from '../../i18n/strings';
@@ -8,12 +8,26 @@ import {
   useAppStore,
   type ViewMode,
 } from '../../store/appStore';
-import { CoffeeIcon, GitHubIcon } from '../Footer';
+import { CoffeeIcon, GitHubIcon, HeartIcon } from '../ui/BrandIcons';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { usePlanFileTransfer } from '../usePlanFileTransfer';
 import { MobileStepper } from './MobileStepper';
+
+/** Shared by the three plan-data buttons; `flex: 1` lets the pair below share one row. */
+const planBtnStyle: CSSProperties = {
+  flex: 1,
+  border: '1px solid var(--chip-border)',
+  background: 'var(--surface)',
+  color: 'var(--ink)',
+  borderRadius: 10,
+  padding: '11px 12px',
+  fontFamily: 'Archivo, sans-serif',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+};
 
 export function MobileProfile() {
   const lang = useAppStore((s) => s.ui.lang);
@@ -23,6 +37,8 @@ export function MobileProfile() {
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
   const setViewMode = useAppStore((s) => s.setViewMode);
+  const themeMode = useAppStore((s) => s.ui.themeMode);
+  const setThemeMode = useAppStore((s) => s.setThemeMode);
   const mix = useAppStore((s) => s.mix);
   const intensity = useAppStore((s) => s.route.intensity);
   const startTour = useAppStore((s) => s.startTour);
@@ -32,7 +48,9 @@ export function MobileProfile() {
   const cap = absCap(mix, 0, 0, intensity);
   const absorptionNote = strings.capNote + cap + ' g/h' + strings.capNote2;
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
+  const clearPlan = useAppStore((s) => s.clearPlan);
   const {
     fileInputRef,
     planFeedback,
@@ -148,6 +166,25 @@ export function MobileProfile() {
             </span>
           )}
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.themeLabel}</span>
+          <SegmentedControl
+            options={(['auto', 'light', 'dark'] as const).map((v) => ({
+              value: v,
+              label:
+                v === 'auto'
+                  ? strings.themeAuto
+                  : v === 'light'
+                    ? strings.themeLight
+                    : strings.themeDark,
+            }))}
+            value={themeMode}
+            onChange={setThemeMode}
+            minHeight={44}
+            style={{ flex: 1, minWidth: 160 }}
+          />
+        </div>
       </div>
 
       <div
@@ -172,41 +209,16 @@ export function MobileProfile() {
         <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--muted-2)' }}>
           {strings.planDataHint}
         </p>
+        {/* "Start over" leads here as it does on the desktop card, but on its own row: three
+            labels across a phone would wrap mid-word. */}
+        <button type="button" onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
+          {strings.clearPlanButton}
+        </button>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
-            onClick={handleExport}
-            style={{
-              flex: 1,
-              border: '1px solid var(--chip-border)',
-              background: '#fff',
-              color: 'var(--ink)',
-              borderRadius: 10,
-              padding: '11px 12px',
-              fontFamily: 'Archivo, sans-serif',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={handleExport} style={planBtnStyle}>
             {strings.exportPlanButton}
           </button>
-          <button
-            type="button"
-            onClick={handleImportPick}
-            style={{
-              flex: 1,
-              border: '1px solid var(--chip-border)',
-              background: '#fff',
-              color: 'var(--ink)',
-              borderRadius: 10,
-              padding: '11px 12px',
-              fontFamily: 'Archivo, sans-serif',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={handleImportPick} style={planBtnStyle}>
             {strings.importPlanButton}
           </button>
         </div>
@@ -223,7 +235,7 @@ export function MobileProfile() {
               margin: 0,
               fontSize: 12,
               lineHeight: 1.5,
-              color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
+              color: planFeedback === 'import-success' ? 'var(--muted-2)' : 'var(--danger)',
             }}
           >
             {planFeedback === 'import-error'
@@ -294,7 +306,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -326,12 +338,32 @@ export function MobileProfile() {
               height: 32,
               boxSizing: 'border-box',
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               color: 'var(--ink-soft)',
             }}
           >
             <GitHubIcon />
+          </a>
+          <a
+            href="https://github.com/sponsors/dzieciol-kamil"
+            target="_blank"
+            rel="noopener"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              border: '1px solid var(--chip-border)',
+              background: 'var(--surface)',
+              borderRadius: 999,
+              padding: '7px 13px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#db2777',
+            }}
+          >
+            <HeartIcon />
+            <span>{strings.ftSponsor}</span>
           </a>
           <a
             href="mailto:carbfueling@gmail.com"
@@ -340,7 +372,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -368,7 +400,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 9,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -386,7 +418,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -413,7 +445,7 @@ export function MobileProfile() {
               alignItems: 'center',
               gap: 8,
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               borderRadius: 999,
               padding: '7px 13px',
               fontSize: 12,
@@ -485,6 +517,20 @@ export function MobileProfile() {
           confirmLabel={strings.importPlanConfirmConfirm}
           onCancel={cancelImport}
           onConfirm={confirmImport}
+        />
+      )}
+
+      {clearConfirmOpen && (
+        <ConfirmDialog
+          title={strings.clearPlanConfirmTitle}
+          body={strings.clearPlanConfirmBody}
+          cancelLabel={strings.clearPlanConfirmCancel}
+          confirmLabel={strings.clearPlanConfirmConfirm}
+          onCancel={() => setClearConfirmOpen(false)}
+          onConfirm={() => {
+            clearPlan();
+            setClearConfirmOpen(false);
+          }}
         />
       )}
     </div>

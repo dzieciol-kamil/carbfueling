@@ -39,12 +39,18 @@ const ROOT_STYLE = `
   }
   :root { --ink:#16191c; --bg:#eff0ec; --surface:#fff; --border:#e3e5e0; --border-soft:#edefea;
     --chip-border:#dde0da; --muted:#7a817c; --muted-2:#6e7573; --muted-3:#9aa09b;
-    --ink-soft:#3d423e; --carb:#5aa33f; --gel:#c9922e; --food:#b4552f; --water:#3d8fbf; }
+    --ink-soft:#3d423e; --carb:#5aa33f; --gel:#c9922e; --food:#b4552f; --water:#3d8fbf;
+    --link-hover:#2f7099; --selected-bg:#16191c; --on-brand:#fff; --wash-rgb:239, 240, 236; }
+  [data-theme='dark'] {
+    --ink:#f0ebe0; --bg:#1c1a17; --surface:#26221d; --border:#383229; --border-soft:#2e2a24;
+    --chip-border:#443c30; --muted:#a89f8e; --muted-2:#c4bcac; --muted-3:#6e6658;
+    --ink-soft:#d8d2c6; --link-hover:#5aa8d6; --wash-rgb:28, 26, 23;
+  }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Archivo', Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased; }
   a { color: var(--water); text-decoration: none; }
-  a:hover { color: #2f7099; }
+  a:hover { color: var(--link-hover); }
 
   /* Language switch, shared by the landing and the FAQ pages (src/static/LangMenu.tsx).
      Shaped to match the calculator's own dropdown in Header.tsx — the values below are that
@@ -54,7 +60,7 @@ const ROOT_STYLE = `
   .lang-menu { position: relative; }
   .lang-menu > summary {
     display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
-    border: 1px solid var(--chip-border); background: #fff; border-radius: 999px;
+    border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
     padding: 7px 13px; color: var(--ink);
   }
   .lang-menu > summary::-webkit-details-marker { display: none; }
@@ -66,17 +72,33 @@ const ROOT_STYLE = `
   .lang-menu-list {
     display: flex; flex-direction: column; gap: 2px;
     position: absolute; top: calc(100% + 6px); right: 0; min-width: 178px;
-    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 6px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px;
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14); z-index: 60;
   }
   .lang-menu-list a { display: flex; align-items: center; gap: 9px; border-radius: 8px;
     padding: 8px 10px; color: var(--ink); }
-  .lang-menu-list a.is-current { background: #f2f5ef; }
+  .lang-menu-list a.is-current { background: var(--border-soft); }
   .lang-menu-list .lang-menu-code { flex: 0 0 22px; letter-spacing: normal; }
   .lang-menu-list .lang-menu-name { font-size: 12.5px; font-weight: 500; }
   .lang-menu-check { margin-left: auto; font-size: 11px; color: var(--carb);
     visibility: hidden; }
   .lang-menu-list a.is-current .lang-menu-check { visibility: visible; }
+
+  /* The dark-mode switch next to the language menu (src/static/ThemeToggle.tsx). These pages
+     ship no script except this one control's — theme.js sets [data-theme] (resolved light/dark,
+     for colors) and [data-theme-mode] (the raw auto/light/dark preference) on <html> before
+     paint, and cycles the mode on click. All three icons are always in the DOM; which one shows
+     is decided by [data-theme-mode], so the button never needs its own JS to redraw itself. */
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; box-sizing: border-box; flex: 0 0 32px;
+    border: 1px solid var(--chip-border); background: var(--surface); border-radius: 999px;
+    color: var(--ink-soft); cursor: pointer; font-size: 15px; line-height: 1;
+  }
+  .theme-toggle-icon { display: none; }
+  [data-theme-mode='auto'] .theme-toggle-icon-auto { display: inline-flex; }
+  [data-theme-mode='light'] .theme-toggle-icon-light { display: inline-flex; }
+  [data-theme-mode='dark'] .theme-toggle-icon-dark { display: inline-flex; }
 
   /* The FAQ pages carry the landing's opening photograph, held still behind the article:
      fixed, so it never scrolls with the text, and washed over the reading column so the
@@ -96,13 +118,18 @@ const ROOT_STYLE = `
     object-fit: cover; object-position: center center;
     opacity: 0.5; filter: saturate(0.7) contrast(0.98); pointer-events: none;
   }
+  /* Same light/dark pair-and-swap as the landing's .landing-bg (Landing.*.tsx) — the photo
+     itself needs a dark capture too, not just the wash tint over it. */
+  .faq-bg.is-dark { display: none; }
+  [data-theme='dark'] .faq-bg.is-dark { display: block; }
+  [data-theme='dark'] .faq-bg.is-light { display: none; }
   .faq-wash {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background: linear-gradient(90deg,
-      rgba(239, 240, 236, 0) 0%,
-      rgba(239, 240, 236, 0.86) calc(50% - 430px),
-      rgba(239, 240, 236, 0.86) calc(50% + 430px),
-      rgba(239, 240, 236, 0) 100%);
+      rgba(var(--wash-rgb), 0) 0%,
+      rgba(var(--wash-rgb), 0.86) calc(50% - 430px),
+      rgba(var(--wash-rgb), 0.86) calc(50% + 430px),
+      rgba(var(--wash-rgb), 0) 100%);
   }
 
   /* The band just above the phone breakpoint: the desktop bar still applies but no longer fits,
@@ -173,9 +200,21 @@ export function prefixInternalUrls(html, base) {
   return html.split('__BASE__').join(base.replace(/\/$/, ''));
 }
 
+// og:locale wants underscore-joined locale tags, not bare language codes. `<code>_<COUNTRY>`
+// is derivable for every language we ship except English (its country isn't its own code
+// uppercased) — so only the exception needs listing here, not every language, and a new
+// language needs no edit at all unless it's similarly irregular.
+const OG_LOCALE_EXCEPTIONS = { en: 'en_US' };
+function ogLocale(lang) {
+  return OG_LOCALE_EXCEPTIONS[lang] ?? `${lang}_${lang.toUpperCase()}`;
+}
+
 export function renderPage({
   urlPath,
-  altPath,
+  // The *other* language versions of this same page — NOT including the page's own
+  // language — as `{ lang, path }` pairs. One `hreflang` link and one `og:locale:alternate`
+  // tag is rendered per entry, alongside the page's own (`lang`/`urlPath`) entry.
+  alternates,
   lang,
   title,
   description,
@@ -184,12 +223,18 @@ export function renderPage({
   base = '',
   noindex = false,
   canonicalOverride,
-  langRedirectTarget,
+  langRedirectTargets,
 }) {
   const canonical = canonicalOverride ?? `${SITE}${urlPath}`;
-  const alternate = `${SITE}${altPath}`;
-  const enHref = lang === 'pl' ? alternate : canonical;
-  const plHref = lang === 'pl' ? canonical : alternate;
+  // Every language version of this page, including its own — this is what hreflang and
+  // og:locale:alternate both need: the full set, not just "the other one".
+  const allVersions = [
+    { lang, href: canonical },
+    ...alternates.map((a) => ({ lang: a.lang, href: `${SITE}${a.path}` })),
+  ];
+  // x-default has always pointed at the English version (falling back to this page's own
+  // href if it has no English sibling), regardless of which language is being rendered.
+  const defaultHref = (allVersions.find((v) => v.lang === 'en') ?? allVersions[0]).href;
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   // 'article' is correct for FAQ articles' own og:type — but FAQPage (the FAQ index) and
@@ -197,8 +242,10 @@ export function renderPage({
   // whole page/app, not a single piece of content, so both need 'website' too.
   const ogType = jsonLd['@type'] === 'Article' ? 'article' : 'website';
   const robotsTag = noindex ? '\n    <meta name="robots" content="noindex, nofollow" />' : '';
-  const langRedirectTag = langRedirectTarget
-    ? `\n    <script src="__BASE__/lang-redirect.js" data-pl-target="__BASE__${langRedirectTarget}"></script>`
+  const langRedirectTag = langRedirectTargets
+    ? `\n    <script src="__BASE__/lang-redirect.js"${Object.entries(langRedirectTargets)
+        .map(([code, target]) => ` data-${code}-target="__BASE__${target}"`)
+        .join('')}></script>`
     : '';
   const html = `<!doctype html>
 <html lang="${lang}">
@@ -211,9 +258,8 @@ export function renderPage({
     />
     <link rel="icon" type="image/svg+xml" href="__BASE__/favicon.svg" />
     <link rel="canonical" href="${canonical}" />
-    <link rel="alternate" hreflang="en" href="${enHref}" />
-    <link rel="alternate" hreflang="pl" href="${plHref}" />
-    <link rel="alternate" hreflang="x-default" href="${enHref}" />${robotsTag}
+    ${allVersions.map((v) => `<link rel="alternate" hreflang="${v.lang}" href="${v.href}" />`).join('\n    ')}
+    <link rel="alternate" hreflang="x-default" href="${defaultHref}" />${robotsTag}
     <meta name="theme-color" content="#16191c" />
     <title>${safeTitle}</title>
     <meta name="description" content="${safeDescription}" />
@@ -222,14 +268,16 @@ export function renderPage({
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDescription}" />
     <meta property="og:image" content="${SITE}/og-image.png" />
-    <meta property="og:locale" content="${lang === 'pl' ? 'pl_PL' : 'en_US'}" />
-    <meta property="og:locale:alternate" content="${lang === 'pl' ? 'en_US' : 'pl_PL'}" />
+    <meta property="og:locale" content="${ogLocale(lang)}" />
+    ${alternates.map((a) => `<meta property="og:locale:alternate" content="${ogLocale(a.lang)}" />`).join('\n    ')}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${safeTitle}" />
     <meta name="twitter:description" content="${safeDescription}" />
     <meta name="twitter:image" content="${SITE}/og-image.png" />
     <script type="application/ld+json">${safeJsonLd(jsonLd)}</script>
-    <script data-goatcounter="https://kddudi.goatcounter.com/count" async src="__BASE__/count.js"></script>${langRedirectTag}
+    <script data-goatcounter="https://kddudi.goatcounter.com/count" async src="__BASE__/count.js"></script>
+    <script src="__BASE__/strip-utm.js"></script>${langRedirectTag}
+    <script src="__BASE__/theme.js"></script>
     <style>${ROOT_STYLE}</style>
   </head>
   <body>

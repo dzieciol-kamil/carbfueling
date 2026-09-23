@@ -39,7 +39,7 @@ export function ConfirmDialog({
           position: 'relative',
           width: 340,
           maxWidth: 'calc(100vw - 28px)',
-          background: '#fff',
+          background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: 14,
           padding: '18px 20px',
@@ -57,7 +57,7 @@ export function ConfirmDialog({
             onClick={onCancel}
             style={{
               border: '1px solid var(--chip-border)',
-              background: '#fff',
+              background: 'var(--surface)',
               color: 'var(--ink-soft)',
               borderRadius: 8,
               padding: '7px 12px',
@@ -72,9 +72,9 @@ export function ConfirmDialog({
           <button
             onClick={onConfirm}
             style={{
-              border: '1px solid var(--ink)',
-              background: 'var(--ink)',
-              color: '#fff',
+              border: '1px solid var(--chip-border)',
+              background: 'var(--selected-bg)',
+              color: 'var(--on-brand)',
               borderRadius: 8,
               padding: '7px 14px',
               fontSize: 12,

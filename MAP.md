@@ -10,12 +10,11 @@ moved, trust the filesystem over this file and update it.
 - `docs/` — **gitignored**, local-only spec/planning docs (see `docs/backlog.md` for open epics/ideas,
   `docs/adr/` for architecture decisions, `docs/superpowers/` for plans/specs, `docs/tests/` for autoplan
   scenario fixtures).
-- `en/`, `pl/` — prerendered static output (e.g. `en/calculator/index.html`) committed by
+- `en/`, `pl/`, `de/`, `it/` — prerendered static output (e.g. `en/calculator/index.html`) committed by
   `scripts/build-static.mjs`, per ADR 0001 (language-prefixed static routing). Generated, but tracked in git.
 - `public/` — static assets served as-is by Vite.
-- `scripts/` — `dev.sh` (start dev server), `build-static.mjs` (prerender `en/`/`pl/`), `renderPage.mjs`.
+- `scripts/` — `dev.sh` (start dev server), `build-static.mjs` (prerender `en/`/`pl/`/`de/`/`it/`), `renderPage.mjs`.
 - `.github/` — CI workflows.
-- `TODO.md` — short-lived working notes (distinct from `docs/backlog.md`).
 
 ## src/
 
@@ -28,10 +27,14 @@ moved, trust the filesystem over this file and update it.
     curve), `score.ts` (distance to both green badges), `types.ts`; test-only `oracle.ts` +
     `oracleExpect.ts` (brute-force check of the search, run with `ORACLE=1`).
   - `combinedRefill.ts` — combined stop/refill logic.
+  - `printSheet.ts` — printable one-page plan (schedule strip + bottle recipes).
   - `gpx.ts` — GPX file parsing.
   - `dragMath.ts` — drag-and-drop geometry for lanes/timeline.
   - `laneLayout.ts` — lane layout calculations.
   - `settingsExport.ts` — settings import/export.
+  - `sharePlan.ts` — encode/decode a plan into the `?p=` share link.
+  - `shareSummary.ts` — the figures the share blurb/badge/chart PNG all quote.
+  - `shareQr.ts` — QR module matrix for the share panel's image formats.
   - `types.ts` — shared domain types.
   - `__fixtures__/` — sample route data (e.g. `kielceMarkiEle.ts`) used by domain tests.
 - `store/` — `appStore.ts` (zustand, single source of app state) + `persistStorage.ts`
@@ -47,13 +50,17 @@ moved, trust the filesystem over this file and update it.
   - `timeline/` — `TimelineSection.tsx`.
   - `recipes/` — `RecipesSection.tsx`.
   - `tour/` — onboarding tour overlay (`TourOverlay.tsx`, `tourSteps.ts`).
-  - `autoplan/` — autoplan UI flow (`AutoplanFlow.tsx`, `AutoplanPreflightModal.tsx`, `autoplanOptions.ts`).
+  - `print/` — printable plan sheet (`PrintSheet.tsx`, `PrintIcon.tsx`).
+  - `share/` — share panel and the canvas renderer behind its PNG formats
+    (`SharePanel.tsx`, `shareCanvas.ts`, `ShareIcon.tsx`).
   - `ui/` — generic reusable widgets (`ConfirmDialog.tsx`, `NumberInput.tsx`, `SegmentedControl.tsx`, etc.).
-  - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx` — top-level shared components.
-- `faq/` — FAQ pages (`FaqIndex.en/pl.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
-- `landing/` — marketing landing pages (`Landing.en/pl.tsx`, `SiteFooter.tsx`).
+  - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx`, `RoutePanel.tsx`,
+    `SharedPlanPrompt.tsx`, `usePlanFileTransfer.ts` — top-level shared components.
+- `faq/` — FAQ pages (`FaqIndex.en/pl/de/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
+- `landing/` — marketing landing pages (`Landing.en/pl/de/it.tsx`, `SiteFooter.tsx`).
 - `utils/` — `fileSave.ts`, `fileSystemAccess.d.ts`.
-- `styles/`, `assets/`, `static/` — CSS and static assets bundled into the app.
+- `static/` — components shared by the prerendered static pages (`LangMenu.tsx`, `ThemeToggle.tsx`).
+- `styles/`, `assets/` — CSS and static assets bundled into the app.
 
 ## Where to look for...
 

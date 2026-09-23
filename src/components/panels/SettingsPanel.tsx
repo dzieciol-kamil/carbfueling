@@ -1,11 +1,17 @@
 import { useState, type CSSProperties } from 'react';
 import { t } from '../../i18n/strings';
-import { shouldConfirmViewModeChange, useAppStore, type ViewMode } from '../../store/appStore';
+import {
+  shouldConfirmViewModeChange,
+  useAppStore,
+  type ThemeMode,
+  type ViewMode,
+} from '../../store/appStore';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { PanelShell } from './PanelShell';
 
 const VIEW_MODES: ViewMode[] = ['auto', 'desktop', 'mobile'];
+const THEME_MODES: ThemeMode[] = ['auto', 'light', 'dark'];
 
 const sectionTitleStyle: CSSProperties = {
   fontSize: 12,
@@ -23,6 +29,8 @@ export function SettingsPanel() {
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
   const setViewMode = useAppStore((s) => s.setViewMode);
+  const themeMode = useAppStore((s) => s.ui.themeMode);
+  const setThemeMode = useAppStore((s) => s.setThemeMode);
   const closePanel = useAppStore((s) => s.closePanel);
   const strings = t(lang);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
@@ -60,6 +68,32 @@ export function SettingsPanel() {
               {autoView === 'desktop' ? strings.desktop : strings.mobile}
             </span>
           )}
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            marginBottom: 20,
+          }}
+        >
+          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>{strings.themeLabel}</span>
+          <SegmentedControl
+            options={THEME_MODES.map((v) => ({
+              value: v,
+              label:
+                v === 'auto'
+                  ? strings.themeAuto
+                  : v === 'light'
+                    ? strings.themeLight
+                    : strings.themeDark,
+            }))}
+            value={themeMode}
+            onChange={setThemeMode}
+            style={{ flex: 1, minWidth: 160 }}
+          />
         </div>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 24 }}>

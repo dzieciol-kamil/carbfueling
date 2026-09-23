@@ -62,7 +62,7 @@ export function MobileGear() {
                   fontFamily: 'Archivo, sans-serif',
                   fontSize: 13,
                   fontWeight: 700,
-                  background: '#fff',
+                  background: 'var(--surface)',
                 }}
               />
               <span
@@ -104,8 +104,8 @@ export function MobileGear() {
                         padding: '11px 4px',
                         borderRadius: 9,
                         border: '1px solid ' + (active ? sourceColor(c) : 'var(--chip-border)'),
-                        background: active ? sourceColor(c) : '#fff',
-                        color: active ? '#fff' : 'var(--muted-2)',
+                        background: active ? sourceColor(c) : 'var(--surface)',
+                        color: active ? 'var(--on-brand)' : 'var(--muted-2)',
                         fontSize: 12,
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -135,10 +135,10 @@ export function MobileGear() {
               onClick={() => removeVessel(vessel.gid)}
               style={{
                 alignSelf: 'flex-start',
-                border: '1px solid #E3D3CD',
+                border: '1px solid var(--border-warm)',
                 borderRadius: 8,
                 padding: '6px 10px',
-                background: '#fff',
+                background: 'var(--surface)',
                 color: 'var(--food)',
                 fontSize: 11,
                 fontWeight: 600,
@@ -155,10 +155,10 @@ export function MobileGear() {
         type="button"
         onClick={addVessel}
         style={{
-          border: '1px dashed #C9CEC7',
+          border: '1px dashed var(--border-dashed)',
           borderRadius: 11,
           padding: 12,
-          background: '#F7F8F5',
+          background: 'var(--surface-soft)',
           fontSize: 13,
           fontWeight: 600,
           color: 'var(--ink-soft)',

@@ -57,6 +57,13 @@ export const CARB_PLATEAU_GPH = 40;
  */
 export const CARB_GRADING_MIN_HOURS = 1;
 
+/**
+ * The same cap on a low-intensity effort. Owner, 2026-09-23: on an easy ride the carbs are easy to
+ * deliver but don't have to be absorbed as aggressively, so 30 g/h already reads green there. Mid
+ * and high intensity keep `CARB_PLATEAU_GPH`.
+ */
+export const LOW_INTENSITY_PLATEAU_GPH = 30;
+
 /** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
 export const GUT_LIMIT = 60;
 
@@ -180,6 +187,8 @@ function tier(pct: number, targetPct: number, shortPct: number): CoverageStatus 
  * CARB_PLATEAU_GPH)` — see that constant for why a flat absolute floor and a flat percent-of-target
  * both failed live tests before this. Below 1h the rate doesn't get graded at all.
  *
+ * On a low-intensity effort the cap is `LOW_INTENSITY_PLATEAU_GPH` instead.
+ *
  * `plannedRateGph`/`capGph` are a second, independent pair for the overshoot check, checked first
  * and able to override even the 1h exemption: GI risk from unabsorbed CHO doesn't care whether the
  * ride is long enough for carbs to matter for performance. Deliberately not `rateGph` against a
@@ -194,11 +203,19 @@ export function coverageStatus(
   plannedRateGph: number,
   capGph: number,
   targetGph: number,
+  intensity: Intensity,
 ): CoverageStatus {
   if (plannedRateGph > capGph) return 'over';
   if (hrs < CARB_GRADING_MIN_HOURS) return 'unneeded';
-  const floor = Math.min(targetGph, CARB_PLATEAU_GPH);
+  const floor = carbFloorGph(targetGph, intensity);
   return tier(rateGph, floor, floor / 2);
+}
+
+/** The rate `coverageStatus` reads green from: the rider's own target, capped at the plateau for
+ *  this intensity. Exported so autoplan's scorer grades against the same number as the badge. */
+export function carbFloorGph(targetGph: number, intensity: Intensity): number {
+  const plateau = intensity === 'low' ? LOW_INTENSITY_PLATEAU_GPH : CARB_PLATEAU_GPH;
+  return Math.min(targetGph, plateau);
 }
 
 /**

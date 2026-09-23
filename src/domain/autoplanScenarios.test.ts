@@ -53,10 +53,26 @@ type ScenarioState = PlanState & { stops: Stop[] };
 const FINISH_GAP_FRACTION = 0.02;
 
 const FOOD_LIB: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel energetyczny', en: 'Energy gel', carbs: 22 },
-  { key: 'chew', pl: 'Żelki', en: 'Chews', carbs: 30, cont: true, span: 18 },
-  { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330 },
-  { key: 'banana', pl: 'Banan', en: 'Banana', carbs: 23 },
+  {
+    key: 'gel',
+    pl: 'Żel energetyczny',
+    en: 'Energy gel',
+    de: 'Energiegel',
+    it: 'Gel energetico',
+    carbs: 22,
+  },
+  {
+    key: 'chew',
+    pl: 'Żelki',
+    en: 'Chews',
+    de: 'Kaubonbons',
+    it: 'Caramelle gommose',
+    carbs: 30,
+    cont: true,
+    span: 18,
+  },
+  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', it: 'Cola', carbs: 35, ml: 330 },
+  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
 ];
 
 /** The `then` every scenario states, in the shape the rider asked for. */
@@ -204,6 +220,7 @@ function expectThen(r: Run, then: Then): void {
         summary.carbPlannedRateGph,
         summary.carbAbsCapGph,
         summary.carbTargetGph,
+        r.state.route.intensity,
       ),
     ).toBe(then.carbs);
   }

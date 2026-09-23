@@ -22,7 +22,7 @@
 import {
   CARB_GRADING_MIN_HOURS,
   dist,
-  CARB_PLATEAU_GPH,
+  carbFloorGph,
   SURPLUS_WARN_PCT,
   allowedDeficitPct,
   planSummary,
@@ -177,10 +177,10 @@ export function score(state: PlanState, draft: Draft): Score {
   const s = planSummary(materialize(state, draft));
 
   // The floor `coverageStatus` grades `carbRateGph` against: the rider's own target, capped at the
-  // plateau past which another g/h stops being worth grading. Read from `fuel.ts`, not restated.
+  // plateau for this intensity (30 g/h on low, 40 otherwise). Read from `fuel.ts`, not restated.
   // Zero below the hour boundary, which is how "there is nothing to fall short of" is said here.
   const graded = totalHours(state.route) >= CARB_GRADING_MIN_HOURS;
-  const floor = graded ? Math.min(s.carbTargetGph, CARB_PLATEAU_GPH) : 0;
+  const floor = graded ? carbFloorGph(s.carbTargetGph, state.route.intensity) : 0;
   // The largest deficit that still reads green at this temperature — `hydrationStatus`'s own limit.
   const allowedDeficit = allowedDeficitPct(state.route.temp);
   const deficit = Math.max(0, -s.waterBalancePct);

@@ -8,6 +8,8 @@ import { FoodLibraryChips } from '../FoodLibraryChips';
 import { LanesSection } from '../lanes/LanesSection';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { PrintIcon } from '../print/PrintIcon';
+import { ShareIcon } from '../share/ShareIcon';
 import { usePlanFileTransfer } from '../usePlanFileTransfer';
 import { ShopMarkers } from './ShopMarkers';
 import { TimelineSection } from '../timeline/TimelineSection';
@@ -18,6 +20,15 @@ import { CHART_COLORS } from './theme';
 const CHART_HEIGHT = 300;
 const CHART_PB = 22;
 const ELEVATION_SHARE = 0.62;
+
+/**
+ * The explanatory column to the left of the chart, and the gap between it and the plot. The header
+ * row above reserves the same two widths for its title, so the plan buttons begin exactly where the
+ * chart does rather than trailing the word "Planning" — which is why these are named rather than
+ * repeated: the two rows cannot drift apart.
+ */
+const SIDE_COL_W = 168;
+const SIDE_COL_GAP = 12;
 
 const legendItemStyle: CSSProperties = {
   display: 'flex',
@@ -32,7 +43,7 @@ const planBtnStyle: CSSProperties = {
   alignItems: 'center',
   gap: 7,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: 999,
   padding: '7px 12px',
   fontFamily: 'Archivo, sans-serif',
@@ -53,6 +64,7 @@ export function ChartCard() {
   const addShop = useAppStore((s) => s.addShop);
   const openChartHelp = useAppStore((s) => s.openChartHelp);
   const clearPlan = useAppStore((s) => s.clearPlan);
+  const openPanel = useAppStore((s) => s.openPanel);
   const strings = t(lang);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const {
@@ -100,7 +112,7 @@ export function ChartCard() {
   return (
     <div
       style={{
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 16,
         padding: '20px 24px 18px',
@@ -116,9 +128,11 @@ export function ChartCard() {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SIDE_COL_GAP, flexWrap: 'wrap' }}>
           <div
             style={{
+              width: SIDE_COL_W,
+              flex: `0 0 ${SIDE_COL_W}px`,
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: '0.1em',
@@ -127,13 +141,14 @@ export function ChartCard() {
           >
             {strings.curve}
           </div>
-          <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
-            <StartOverIcon />
-            <span>{strings.clearPlanButton}</span>
-          </button>
-          <AutoplanFlow variant="desktop" />
           <div style={{ position: 'relative' }}>
+            {/* They all share one gap, so the row reads as a single group of actions. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
+                <StartOverIcon />
+                <span>{strings.clearPlanButton}</span>
+              </button>
+              <AutoplanFlow variant="desktop" />
               <button onClick={handleExport} style={planBtnStyle}>
                 <DownloadIcon />
                 <span>{strings.exportPlanButton}</span>
@@ -141,6 +156,14 @@ export function ChartCard() {
               <button onClick={handleImportPick} style={planBtnStyle}>
                 <UploadIcon />
                 <span>{strings.importPlanButton}</span>
+              </button>
+              <button onClick={() => window.print()} style={planBtnStyle}>
+                <PrintIcon />
+                <span>{strings.printPlanButton}</span>
+              </button>
+              <button onClick={() => openPanel('share')} style={planBtnStyle}>
+                <ShareIcon />
+                <span>{strings.sharePlanButton}</span>
               </button>
             </div>
             <input
@@ -158,14 +181,14 @@ export function ChartCard() {
                   left: 0,
                   minWidth: 220,
                   maxWidth: 280,
-                  background: '#fff',
+                  background: 'var(--surface)',
                   border: '1px solid var(--border)',
                   borderRadius: 10,
                   padding: '9px 12px',
                   boxShadow: '0 14px 34px rgba(0,0,0,0.14)',
                   fontSize: 12,
                   lineHeight: 1.5,
-                  color: planFeedback === 'import-success' ? 'var(--muted-2)' : '#B3402A',
+                  color: planFeedback === 'import-success' ? 'var(--muted-2)' : 'var(--danger)',
                   zIndex: 60,
                 }}
               >
@@ -204,11 +227,11 @@ export function ChartCard() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: SIDE_COL_GAP }}>
         <div
           style={{
-            width: 168,
-            flex: '0 0 168px',
+            width: SIDE_COL_W,
+            flex: `0 0 ${SIDE_COL_W}px`,
             height: CHART_HEIGHT,
             display: 'flex',
             flexDirection: 'column',
@@ -216,17 +239,17 @@ export function ChartCard() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
             {showGutLane && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
+              <span style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted-4)' }}>
                 {strings.gutHint}
               </span>
             )}
             {yMode === 'rate' && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
+              <span style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted-4)' }}>
                 {strings.curveHint}
               </span>
             )}
             {yMode === 'fluid' && (
-              <span style={{ fontSize: 11, lineHeight: 1.45, color: '#8A918C' }}>
+              <span style={{ fontSize: 11, lineHeight: 1.45, color: 'var(--muted-4)' }}>
                 {strings.capNoteFluid}
               </span>
             )}
@@ -243,7 +266,7 @@ export function ChartCard() {
                 {legMain}
               </span>
               <span style={legendItemStyle}>
-                <span style={{ width: 14, height: 0, borderTop: '2px dashed #A8AEA9' }} />
+                <span style={{ width: 14, height: 0, borderTop: '2px dashed var(--muted-4)' }} />
                 {legNeed}
               </span>
               <span style={legendItemStyle}>
@@ -274,7 +297,7 @@ export function ChartCard() {
                 height: 20,
                 borderRadius: '50%',
                 border: '1px solid var(--chip-border)',
-                background: '#fff',
+                background: 'var(--surface)',
                 color: 'var(--muted)',
                 fontSize: 11,
                 fontWeight: 700,
@@ -313,8 +336,8 @@ export function ChartCard() {
               height: 24,
               borderRadius: 7,
               cursor: 'pointer',
-              border: '1px dashed #B9C0B7',
-              background: '#F7F8F5',
+              border: '1px dashed var(--border-dashed)',
+              background: 'var(--surface-soft)',
               color: 'var(--ink-soft)',
               fontSize: 13,
               fontWeight: 700,

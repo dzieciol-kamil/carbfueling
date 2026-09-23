@@ -100,6 +100,7 @@ function badges(d: Draft): { carbs: string; hydration: string } {
       s.carbPlannedRateGph,
       s.carbAbsCapGph,
       s.carbTargetGph,
+      route.intensity,
     ),
     hydration: hydrationStatus(s.waterBalancePct, route.temp),
   };

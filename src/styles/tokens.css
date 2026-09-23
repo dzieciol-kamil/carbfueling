@@ -45,6 +45,7 @@
 }
 
 :root {
+  color-scheme: light;
   --ink: #16191c;
   --bg: #eff0ec;
   --surface: #ffffff;
@@ -61,6 +62,61 @@
   --food: #b4552f;
   --water: #3d8fbf;
   --climb: #d2703f;
+  --surface-soft: #f4f5f2;
+  --surface-warm: #faf3ef;
+  --muted-4: #a8aea9;
+  --border-dashed: #c9cec7;
+  --border-warm: #e3d3cd;
+  --danger: #b3402a;
+  --on-brand: #ffffff;
+  --on-brand-muted: rgba(255, 255, 255, 0.62);
+  --selected-bg: #16191c;
+  --popover-bg: #2b2f2a;
+  --link-hover: #2f7099;
+  --status-good-bg: #e7f2e1;
+  --status-good-fg: #3d7a26;
+  --status-partial-bg: #fbeae1;
+  --status-partial-fg: #a3512a;
+  --status-short-bg: #f8ded5;
+  --status-short-fg: #8f3d1f;
+  --status-over-bg: #f6dbe0;
+  --status-over-fg: #8c2f39;
+  --status-unneeded-bg: #ebebe8;
+  --status-unneeded-fg: #5f655f;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #f0ebe0;
+  --bg: #1c1a17;
+  --surface: #26221d;
+  --border: #383229;
+  --border-soft: #2e2a24;
+  --chip-border: #443c30;
+  --muted: #a89f8e;
+  --muted-2: #c4bcac;
+  --muted-3: #6e6658;
+  --ink-soft: #d8d2c6;
+  --track: #241f1a;
+  /* --carb/--gel/--food/--water/--climb intentionally omitted — same in both themes */
+  --surface-soft: #2c2721;
+  --surface-warm: #362c21;
+  --muted-4: #6b6255;
+  --border-dashed: #453d31;
+  --border-warm: #46392b;
+  --danger: #e2926c;
+  --link-hover: #5aa8d6;
+  /* --on-brand, --on-brand-muted, --selected-bg, --popover-bg intentionally omitted — fixed in both themes */
+  --status-good-bg: #1f2a1a;
+  --status-good-fg: #7fc468;
+  --status-partial-bg: #332218;
+  --status-partial-fg: #e0956b;
+  --status-short-bg: #33201a;
+  --status-short-fg: #e37f55;
+  --status-over-bg: #331a1e;
+  --status-over-fg: #e8919b;
+  --status-unneeded-bg: #29251e;
+  --status-unneeded-fg: #a6aca4;
 }
 
 * {
@@ -81,7 +137,14 @@ a {
 }
 
 a:hover {
-  color: #2f7099;
+  color: var(--link-hover);
+}
+
+input,
+textarea,
+select {
+  color: var(--ink);
+  background: transparent;
 }
 
 input[type='range'] {
@@ -112,6 +175,15 @@ select:focus {
   outline-offset: 1px;
 }
 
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--carb);
+  outline-offset: 1px;
+}
+
 /* The design's numeric fields are sized for their text alone — native spinner
    arrows aren't part of the prototype's renderer and would clip the value. */
 input[type='number']::-webkit-outer-spin-button,
@@ -123,4 +195,81 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Share panel carousel affordance. The landing's chevron construction (two rotated borders,
+   no SVG) reused here — but the bounce lives on the wrapper as a plain translateX while the
+   rotate lives on the inner element. Combining rotate() and translate() on one element mixes
+   local coordinate frames, which is what sent one of the two arrows bouncing diagonally. */
+.share-cue {
+  display: inline-block;
+  color: var(--muted-2);
+  animation: share-cue-right 2.1s ease-in-out infinite;
+}
+
+.share-cue-left {
+  animation-name: share-cue-left;
+}
+
+.share-cue i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-right: 2.2px solid currentColor;
+  border-bottom: 2.2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.share-cue-left i {
+  transform: rotate(135deg);
+}
+
+@keyframes share-cue-right {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes share-cue-left {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(-3px);
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-cue {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+/* Which format of the carousel you are on — the landing's dot row, laid out horizontally. */
+.share-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.share-dots i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--chip-border);
+}
+
+.share-dots i.is-current {
+  background: var(--ink-soft);
 }

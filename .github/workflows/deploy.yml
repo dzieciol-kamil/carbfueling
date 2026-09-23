@@ -5,6 +5,10 @@ on:
     branches: [master]
     tags: ['v*']
   workflow_dispatch:
+  # Called as a job by release.yml. A tag pushed by a workflow using GITHUB_TOKEN does not
+  # start new workflow runs, so the `tags: ['v*']` trigger above stays dormant for a release
+  # cut from the Actions tab — release.yml invokes this workflow directly instead.
+  workflow_call:
 
 permissions:
   contents: read
@@ -19,11 +23,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -62,12 +66,15 @@ jobs:
           npm test
           npx vite build --base=/preview/
           BASE=/preview node scripts/build-static.mjs
+          # Globbed, never hand-listed per language: the old explicit en/pl/de list silently
+          # missed it/ when Italian shipped, leaving /preview/it/calculator/ indexable. An
+          # empty glob makes sed fail the build rather than ship an unpatched preview.
           sed -i 's#<head>#<head>\n    <meta name="robots" content="noindex, nofollow" />#' \
-            "dist/en/calculator/index.html" "dist/pl/calculator/index.html"
+            dist/*/calculator/index.html
           mkdir -p "$RUNNER_TEMP/site/preview"
           cp -r dist/. "$RUNNER_TEMP/site/preview/"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ runner.temp }}/site
 
@@ -79,4 +86,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

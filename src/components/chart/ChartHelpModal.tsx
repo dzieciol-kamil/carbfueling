@@ -44,7 +44,7 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
         width: 460,
         maxWidth: 'calc(100vw - 28px)',
         maxHeight: 'calc(100vh - 40px)',
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 14,
         boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
@@ -61,7 +61,7 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
         right: 0,
         bottom: 0,
         maxHeight: '94vh',
-        background: '#fff',
+        background: 'var(--surface)',
         borderRadius: '16px 16px 0 0',
         boxShadow: '0 -12px 40px rgba(0,0,0,0.22)',
         padding: `${panelPadTop}px ${panelPadX}px calc(16px + env(safe-area-inset-bottom))`,
@@ -96,7 +96,7 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
                 paddingLeft: panelPadX,
                 paddingRight: panelPadX,
                 paddingBottom: 6,
-                background: '#fff',
+                background: 'var(--surface)',
                 zIndex: 1,
               }}
             >

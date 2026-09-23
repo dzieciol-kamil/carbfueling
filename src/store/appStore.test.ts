@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { hasPlanData, shouldConfirmViewModeChange, useAppStore } from './appStore';
+import { hasPlanData, resolveTheme, shouldConfirmViewModeChange, useAppStore } from './appStore';
 import type { Fill, RouteInput } from '../domain/types';
 
 function route(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -82,58 +82,106 @@ beforeEach(() => {
   useAppStore.setState(initialState, true);
 });
 
-describe('setMode reconciling existing plan items', () => {
-  test('pulls a fill back onto the route when switching to time mode shrinks the domain', () => {
+// Every edit that moves the plan's distance domain rescales the plan proportionally: an item
+// at 68% of the route stays at 68% of it. The point is reversibility — see the round-trip tests.
+describe('rescaling the plan when the distance domain moves', () => {
+  const planFill = { fid: 1, gid: 'g1', content: 'water' as const, from: 34, to: 68 };
+
+  test('setMode to time scales the plan onto the virtual distance', () => {
     useAppStore.setState({
       route: route({ mode: 'route', distance: 100, hours: 1, minutes: 0 }),
-      fills: [{ fid: 1, gid: 'g1', content: 'water', from: 70, to: 90 }],
+      fills: [{ ...planFill, from: 70, to: 90 }],
     });
     useAppStore.getState().setMode('time'); // dist() in time mode = round(1h * 28 km/h cycling-mid) = 28
-    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 8, to: 28 });
+    expect(useAppStore.getState().fills[0].from).toBeCloseTo(19.6, 9);
+    expect(useAppStore.getState().fills[0].to).toBeCloseTo(25.2, 9);
   });
-});
 
-describe('setDistance (live typing) vs reconcilePlan (commit)', () => {
-  test('setDistance alone does not touch existing fills, even once the new distance no longer fits them', () => {
-    // This mirrors typing a new distance character by character: each keystroke calls
-    // setDistance with a transient value before the field settles. Fills must not be
-    // destructively clamped against those in-progress numbers.
-    const fills = [{ fid: 1, gid: 'g1', content: 'water' as const, from: 70, to: 90 }];
-    useAppStore.setState({ route: route({ distance: 100 }), fills });
+  test('setDistance scales live, on every keystroke', () => {
+    useAppStore.setState({ route: route({ distance: 100 }), fills: [planFill] });
     useAppStore.getState().setDistance(50);
-    expect(useAppStore.getState().fills[0]).toEqual(fills[0]);
+    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 17, to: 34 });
   });
 
-  test('reconcilePlan pulls a fill back onto the route once the smaller distance is committed', () => {
-    useAppStore.setState({
-      route: route({ distance: 100 }),
-      fills: [{ fid: 1, gid: 'g1', content: 'water', from: 70, to: 90 }],
-    });
+  test('typing digit by digit lands where the finished number would', () => {
+    // "100" overtyped as "50" passes through 5 (and an empty field, committed as 0). Scaling
+    // composes, so those transient values cost nothing — unlike the clamping this replaced.
+    useAppStore.setState({ route: route({ distance: 100 }), fills: [planFill] });
+    useAppStore.getState().setDistance(0);
+    useAppStore.getState().setDistance(5);
     useAppStore.getState().setDistance(50);
     useAppStore.getState().reconcilePlan();
-    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 30, to: 50 });
+    expect(useAppStore.getState().fills[0].from).toBeCloseTo(17, 9);
+    expect(useAppStore.getState().fills[0].to).toBeCloseTo(34, 9);
   });
 
-  test('reconcilePlan pulls a food marker and a shop stop back too', () => {
+  test('restoring the previous distance restores the plan', () => {
     useAppStore.setState({
       route: route({ distance: 100 }),
+      fills: [planFill],
       foods: [{ id: 1, key: 'gel', name: 'Gel', carbs: 25, from: 80, to: 80 }],
       shops: [{ id: 1, at: 95, name: 'Shop' }],
     });
-    useAppStore.getState().setDistance(50);
-    useAppStore.getState().reconcilePlan();
+    useAppStore.getState().setDistance(37);
+    useAppStore.getState().setDistance(100);
     const s = useAppStore.getState();
-    expect(s.foods[0].from).toBeLessThanOrEqual(50);
-    expect(s.foods[0].to).toBeLessThanOrEqual(50);
-    expect(s.shops[0].at).toBeLessThanOrEqual(50);
+    expect(s.fills[0].from).toBeCloseTo(34, 9);
+    expect(s.fills[0].to).toBeCloseTo(68, 9);
+    expect(s.foods[0].from).toBeCloseTo(80, 9);
+    expect(s.shops[0].at).toBeCloseTo(95, 9);
   });
 
-  test('reconcilePlan leaves items untouched when the distance still fits them', () => {
-    const fills = [{ fid: 1, gid: 'g1', content: 'water' as const, from: 10, to: 20 }];
-    useAppStore.setState({ route: route({ distance: 100 }), fills });
-    useAppStore.getState().setDistance(80);
+  test('reconcilePlan does not scale a second time on commit', () => {
+    useAppStore.setState({ route: route({ distance: 100 }), fills: [planFill] });
+    useAppStore.getState().setDistance(50);
     useAppStore.getState().reconcilePlan();
-    expect(useAppStore.getState().fills[0]).toEqual(fills[0]);
+    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 17, to: 34 });
+  });
+
+  test('an hours edit scales the plan in time mode', () => {
+    useAppStore.setState({
+      route: route({ mode: 'time', hours: 3, minutes: 0 }), // dist = round(3 * 28) = 84
+      fills: [{ ...planFill, from: 42, to: 84 }],
+    });
+    useAppStore.getState().setHours(6); // dist = 168
+    expect(useAppStore.getState().fills[0]).toMatchObject({ from: 84, to: 168 });
+  });
+
+  test('setSport scales the plan in time mode, where the virtual distance follows the sport', () => {
+    useAppStore.setState({
+      route: route({ mode: 'time', sport: 'cycling', hours: 3, minutes: 0 }), // dist = 84
+      fills: [{ ...planFill, from: 42, to: 84 }],
+      shops: [{ id: 1, at: 84, name: 'Shop' }],
+    });
+    useAppStore.getState().setSport('running'); // dist = round(3 * 10.9) = 33
+    const s = useAppStore.getState();
+    expect(s.fills[0].from).toBeCloseTo(16.5, 9);
+    expect(s.fills[0].to).toBeCloseTo(33, 9);
+    expect(s.shops[0].at).toBeCloseTo(33, 9);
+  });
+
+  test('setSport leaves the plan alone in route mode, where the distance is the distance', () => {
+    const fills = [planFill];
+    useAppStore.setState({ route: route({ mode: 'route', distance: 100 }), fills });
+    useAppStore.getState().setSport('running');
+    expect(useAppStore.getState().fills).toBe(fills);
+  });
+
+  test('setIntensity scales the plan in time mode, where it changes the assumed pace', () => {
+    useAppStore.setState({
+      route: route({ mode: 'time', intensity: 'mid', hours: 3, minutes: 0 }), // dist = 84
+      fills: [{ ...planFill, from: 42, to: 84 }],
+    });
+    useAppStore.getState().setIntensity('high'); // dist = round(3 * 28 * 1.15) = 97
+    expect(useAppStore.getState().fills[0].from).toBeCloseTo(48.5, 9);
+    expect(useAppStore.getState().fills[0].to).toBeCloseTo(97, 9);
+  });
+
+  test('a speed edit leaves the plan alone — km stay km, only the clock moves', () => {
+    const fills = [planFill];
+    useAppStore.setState({ route: route({ mode: 'route', distance: 100, speed: 28 }), fills });
+    useAppStore.getState().setSpeed(20);
+    expect(useAppStore.getState().fills).toBe(fills);
   });
 });
 
@@ -525,6 +573,18 @@ describe('shouldConfirmViewModeChange', () => {
   });
 });
 
+describe('resolveTheme', () => {
+  test('auto resolves to the detected OS theme', () => {
+    expect(resolveTheme('auto', 'dark')).toBe('dark');
+    expect(resolveTheme('auto', 'light')).toBe('light');
+  });
+
+  test('an explicit choice overrides auto-detection', () => {
+    expect(resolveTheme('light', 'dark')).toBe('light');
+    expect(resolveTheme('dark', 'light')).toBe('dark');
+  });
+});
+
 describe('addFillInGap', () => {
   function overlaps(fills: Fill[]): boolean {
     const sorted = fills.slice().sort((a, b) => a.from - b.from);
@@ -860,6 +920,29 @@ describe('persisted ui merge — autoView is derived, not remembered', () => {
   });
 });
 
+describe('persisted ui merge — autoTheme is derived, not remembered', () => {
+  test('a stale autoTheme from another device loses to the one computed for this session', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, autoTheme: 'dark', themeMode: 'auto' } },
+      { ...currentState, ui: { ...currentState.ui, autoTheme: 'light' } },
+    ) as typeof currentState;
+    expect(merged.ui.autoTheme).toBe('light');
+    expect(merged.ui.themeMode).toBe('auto');
+  });
+
+  test('an explicitly forced themeMode is still restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, themeMode: 'dark' } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.themeMode).toBe('dark');
+  });
+});
+
 describe('persisted ui merge — HTML-seeded language precedence', () => {
   // Un-stubbing here rather than at the end of each test: an assertion that fails leaves the
   // rest of its test body unrun, so a trailing unstubAllGlobals() would leak a fake `document`
@@ -974,5 +1057,25 @@ describe('migrate: 1.5:1 preset re-tagging (v3 -> v4)', () => {
     const migrated = migrate(legacy, 3) as ReturnType<typeof useAppStore.getState>;
     expect(migrated.mix.ratioPreset).toBe('custom');
     expect(migrated.mix.gelRatioPreset).toBe('iso');
+  });
+});
+
+describe('share preferences', () => {
+  test('shareIncludeWeight defaults to false', () => {
+    expect(useAppStore.getState().ui.shareIncludeWeight).toBe(false);
+  });
+
+  test('setShareIncludeWeight persists the choice for the next share', () => {
+    useAppStore.getState().setShareIncludeWeight(true);
+    expect(useAppStore.getState().ui.shareIncludeWeight).toBe(true);
+    useAppStore.getState().setShareIncludeWeight(false);
+    expect(useAppStore.getState().ui.shareIncludeWeight).toBe(false);
+  });
+
+  test('the share panel opens and closes like every other panel', () => {
+    useAppStore.getState().openPanel('share');
+    expect(useAppStore.getState().ui.panel).toBe('share');
+    useAppStore.getState().closePanel();
+    expect(useAppStore.getState().ui.panel).toBeNull();
   });
 });

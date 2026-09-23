@@ -301,7 +301,7 @@ const TourTooltip = forwardRef<HTMLDivElement, TourTooltipProps>(function TourTo
       style={{
         ...pos,
         width,
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 14,
         padding: '16px 18px',

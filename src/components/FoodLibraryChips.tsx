@@ -8,7 +8,7 @@ const chipStyle: CSSProperties = {
   alignItems: 'center',
   gap: 8,
   border: '1px solid var(--chip-border)',
-  background: '#fff',
+  background: 'var(--surface)',
   borderRadius: 999,
   cursor: 'pointer',
   fontFamily: 'Archivo, sans-serif',

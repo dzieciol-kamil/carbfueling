@@ -37,8 +37,8 @@ const btnBase: CSSProperties = {
   color: 'var(--ink)',
   flex: '0 0 auto',
 };
-const bigBtnStyle: CSSProperties = { ...btnBase, background: '#F4F5F2', fontSize: 12 };
-const smallBtnStyle: CSSProperties = { ...btnBase, background: '#fff' };
+const bigBtnStyle: CSSProperties = { ...btnBase, background: 'var(--surface-soft)', fontSize: 12 };
+const smallBtnStyle: CSSProperties = { ...btnBase, background: 'var(--surface)' };
 const valueStyle: CSSProperties = {
   minWidth: 44,
   height: 44,

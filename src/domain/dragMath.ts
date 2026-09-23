@@ -213,6 +213,39 @@ export function moveShop(shop: ShopStop, distanceKm: number, deltaKm: number): n
   return Math.max(0, Math.min(distanceKm, Math.round(shop.at + deltaKm)));
 }
 
+/**
+ * Maps a whole plan from one distance domain onto another, proportionally: an item sitting at
+ * 68% of the route stays at 68% of it. Used for every edit that moves `dist()` — distance,
+ * duration, sport, intensity, mode, a fresh GPX track.
+ *
+ * Proportional rather than clamped because it is *reversible*: clamping a fill at km 80 onto a
+ * 50 km route pins it to 50 and forgets 80, so undoing the route edit does not undo the damage.
+ * Scaling composes, so mistyping a distance — or passing through the transient digits of one —
+ * costs nothing as long as the number eventually comes back.
+ *
+ * Deliberately unrounded: rounding here would make each edit lossy and let the plan creep across
+ * a run of them. Everything that shows a position to the user rounds it there (see `fmtX`).
+ */
+export function scalePlan(
+  prevKm: number,
+  nextKm: number,
+  fills: Fill[],
+  foods: FoodItem[],
+  shops: ShopStop[],
+): { fills: Fill[]; foods: FoodItem[]; shops: ShopStop[] } {
+  if (nextKm === prevKm) return { fills, foods, shops };
+  const scale = (v: number) => (v * nextKm) / prevKm;
+  return {
+    fills: fills.map((f) => {
+      const from = scale(f.from);
+      const to = scale(f.to);
+      return { ...f, from, to, pos: rescalePositions(f.pos, f.from, f.to, from, to) };
+    }),
+    foods: foods.map((f) => ({ ...f, from: scale(f.from), to: scale(f.to) })),
+    shops: shops.map((sh) => ({ ...sh, at: scale(sh.at) })),
+  };
+}
+
 export function clampFillToDistance(fill: Fill, distanceKm: number): Fill {
   if (fill.to <= distanceKm) return fill;
   const width = Math.min(fill.to - fill.from, distanceKm);

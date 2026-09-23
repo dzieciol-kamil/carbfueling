@@ -285,7 +285,7 @@ export function MobileMix() {
               onClick={clearCombinedFills}
               style={{
                 border: '1px solid var(--chip-border)',
-                background: '#fff',
+                background: 'var(--surface)',
                 borderRadius: 8,
                 padding: '5px 10px',
                 fontFamily: 'Archivo, sans-serif',
@@ -306,7 +306,7 @@ export function MobileMix() {
               fontSize: 11,
               lineHeight: 1.5,
               color: 'var(--muted-2)',
-              background: '#F4F5F2',
+              background: 'var(--surface-soft)',
               border: '1px solid var(--chip-border)',
               borderRadius: 8,
               padding: '8px 10px',
@@ -365,7 +365,7 @@ export function MobileMix() {
           border: '1px solid var(--chip-border)',
           borderRadius: 11,
           padding: '13px',
-          background: '#fff',
+          background: 'var(--surface)',
           fontSize: 13,
           fontWeight: 600,
           color: 'var(--ink-soft)',

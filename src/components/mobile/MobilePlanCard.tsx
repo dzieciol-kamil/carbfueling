@@ -13,7 +13,7 @@ export type PlanCardItem =
 const CONTENT_OPTIONS: Content[] = ['water', 'izo', 'gel'];
 
 const cardStyle: CSSProperties = {
-  border: '1px solid #E9EBE5',
+  border: '1px solid var(--border)',
   borderRadius: 13,
   overflow: 'hidden',
 };
@@ -33,8 +33,8 @@ const chipStyle = (active: boolean, color: string): CSSProperties => ({
   padding: '10px 4px',
   borderRadius: 9,
   border: '1px solid ' + (active ? color : 'var(--chip-border)'),
-  background: active ? color : '#fff',
-  color: active ? '#fff' : 'var(--muted-2)',
+  background: active ? color : 'var(--surface)',
+  color: active ? 'var(--on-brand)' : 'var(--muted-2)',
   fontSize: 12,
   fontWeight: 600,
   cursor: 'pointer',
@@ -76,8 +76,8 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
     top: 8,
     right: 12,
     zIndex: 10,
-    background: 'var(--ink)',
-    color: '#fff',
+    background: 'var(--selected-bg)',
+    color: 'var(--on-brand)',
     fontSize: 11,
     fontWeight: 600,
     borderRadius: 7,
@@ -159,7 +159,7 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
             style={{
               position: 'relative',
               borderTop: '1px solid var(--border-soft)',
-              background: '#FBFCFA',
+              background: 'var(--surface-soft)',
               padding: '11px 12px 12px',
               display: 'flex',
               flexDirection: 'column',
@@ -321,10 +321,10 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
                 type="button"
                 onClick={() => removeFill(fill.fid)}
                 style={{
-                  border: '1px solid #E3D3CD',
+                  border: '1px solid var(--border-warm)',
                   borderRadius: 8,
                   padding: '6px 10px',
-                  background: '#fff',
+                  background: 'var(--surface)',
                   color: 'var(--food)',
                   fontSize: 11,
                   fontWeight: 600,
@@ -353,7 +353,7 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
               width: 9,
               height: 9,
               borderRadius: '50%',
-              background: '#9AA09B',
+              background: 'var(--muted-3)',
               flex: '0 0 auto',
             }}
           />
@@ -376,13 +376,37 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
           <div
             style={{
               borderTop: '1px solid var(--border-soft)',
-              background: '#FBFCFA',
+              background: 'var(--surface-soft)',
               padding: '11px 12px 12px',
               display: 'flex',
               flexDirection: 'column',
               gap: 10,
             }}
           >
+            {/* The name could only ever be typed while adding the stop (MobileShopSheet); an
+                existing one had no field to rename it in, on this screen or any other. */}
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--muted-2)' }}>{strings.shopSheetName}</span>
+              <input
+                type="text"
+                value={shop.name}
+                maxLength={10}
+                placeholder={strings.shopDefaultName}
+                onChange={(e) => updateShop(shop.id, { name: e.target.value })}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  border: '1px solid var(--chip-border)',
+                  borderRadius: 9,
+                  padding: '9px 11px',
+                  fontFamily: 'Archivo, sans-serif',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: 'var(--surface)',
+                }}
+              />
+            </label>
+
             <MobileStepper
               label="na"
               value={shop.at}
@@ -398,10 +422,10 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
                 type="button"
                 onClick={() => removeShop(shop.id)}
                 style={{
-                  border: '1px solid #E3D3CD',
+                  border: '1px solid var(--border-warm)',
                   borderRadius: 8,
                   padding: '6px 10px',
-                  background: '#fff',
+                  background: 'var(--surface)',
                   color: 'var(--food)',
                   fontSize: 11,
                   fontWeight: 600,
@@ -464,7 +488,7 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
         <div
           style={{
             borderTop: '1px solid var(--border-soft)',
-            background: '#FBFCFA',
+            background: 'var(--surface-soft)',
             padding: '11px 12px 12px',
             display: 'flex',
             flexDirection: 'column',
@@ -525,10 +549,10 @@ export function MobilePlanCard({ item }: { item: PlanCardItem }) {
               type="button"
               onClick={() => removeFood(food.id)}
               style={{
-                border: '1px solid #E3D3CD',
+                border: '1px solid var(--border-warm)',
                 borderRadius: 8,
                 padding: '6px 10px',
-                background: '#fff',
+                background: 'var(--surface)',
                 color: 'var(--food)',
                 fontSize: 11,
                 fontWeight: 600,
