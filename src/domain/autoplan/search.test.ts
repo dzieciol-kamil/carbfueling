@@ -270,6 +270,28 @@ describe('fewer stops wins when the objective cannot separate two plans', () => 
   });
 });
 
+describe('a bottle that adds nothing stays at home', () => {
+  /**
+   * R24, the owner's vessel-set rule: fewest stops first, then the fewest bottles that still work.
+   * Ruled on again 2026-09-23 (Q9) — *"tak, pozwól na mniej bidonów"*. The climb used to start
+   * every vessel at one load and never go lower, so a bottle the plan did not need was carried
+   * anyway. Here a litre of water covers a 60 km ride on its own, green on both badges and with
+   * no stop, so the half-litre bottle has nothing to do.
+   */
+  test('a second water bottle the ride does not need is left out', () => {
+    const state = makeState(makeRoute({ distance: 60 }), [
+      vessel('g1', 1000, ['water']),
+      vessel('g2', 500, ['water']),
+    ]);
+    const draft = search(state);
+    expect(hydrationOf(state, draft)).toBe('good');
+    expect(draft.stops).toEqual([]);
+    // Either bottle alone keeps the badge green; which one goes is the rest of the ranking's call
+    // ("pour the least the vessels allow" picks the smaller). What R24 asks is that only one does.
+    expect(new Set(draft.fills.map((f) => f.gid)).size).toBe(1);
+  });
+});
+
 describe('the selection is an offer', () => {
   test('an empty selection places no food', () => {
     for (const { state } of SHAPES) expect(search(state).foods).toEqual([]);

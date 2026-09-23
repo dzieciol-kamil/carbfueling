@@ -401,8 +401,21 @@ describe('compareScore', () => {
     toGreen,
     shapeShort,
     stops,
+    bottles: 0,
     powderCarried,
     gutPeak,
+  });
+
+  test('equal on stops and sachets, fewer bottles wins (R24)', () => {
+    const b = (stops: number, powder: number, bottles: number): Score => ({
+      ...s(0, stops, powder),
+      bottles,
+    });
+    expect(compareScore(b(2, 0, 1), b(2, 0, 2))).toBeLessThan(0);
+    // Powder is the last resort: a second bottle of water beats a sachet in the first.
+    expect(compareScore(b(2, 0, 2), b(2, 1, 1))).toBeLessThan(0);
+    // And stops outrank both.
+    expect(compareScore(b(1, 0, 3), b(2, 0, 1))).toBeLessThan(0);
   });
 
   test('equal on everything else, the lower gut peak wins', () => {

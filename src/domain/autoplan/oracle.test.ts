@@ -52,10 +52,10 @@ const state = (gear: Vessel[]): PlanState => ({
 });
 
 describe('oracle', () => {
-  test('the space is every allowed content × loads 1..cap, times every product count', () => {
+  test('the space is leaving it home, or every allowed content × loads 1..cap, times every product count', () => {
     const s = space(state([bottle('g1', ['izo', 'water'])]), [{ key: 'gel', count: 2 }]);
     expect(s.vessels).toHaveLength(1);
-    expect(s.vessels[0].every((a) => a.loads >= 1)).toBe(true);
+    expect(s.vessels[0].filter((a) => a.loads === 0)).toHaveLength(1);
     expect(new Set(s.vessels[0].map((a) => a.content))).toEqual(new Set(['izo', 'water']));
     expect(s.size).toBe(s.vessels[0].length * 3);
   });

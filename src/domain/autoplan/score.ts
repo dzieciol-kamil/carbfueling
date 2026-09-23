@@ -41,6 +41,12 @@ export type Score = {
   shapeShort: number;
   /** Tie-break: fewer stops wins. */
   stops: number;
+  /** Tie-break after sachets: fewer vessels used wins — R24, the owner's vessel-set rule, "fewest
+   *  stops first, then the fewest bottles that still work" (confirmed again 2026-09-23, Q9). After
+   *  sachets, not before, because powder is the last resort (R12): a second bottle of water beats
+   *  mixing a sachet into the first. Never below one — the rider's own short-ride builds carry a
+   *  bottle even where not drinking would read green, so leaving the *last* one home is a tie. */
+  bottles: number;
   /** Tie-break: fewer sachets carried from home wins — izo powder or gel concentrate alike. */
   powderCarried: number;
   /** Last tie-break: the lower gut peak (grams) wins — among plans equal on everything above, the
@@ -241,12 +247,14 @@ export function score(state: PlanState, draft: Draft): Score {
     toGreen,
     shapeShort,
     stops: draft.stops.length,
+    bottles: Math.max(1, new Set(draft.fills.map((f) => f.gid)).size),
     powderCarried,
     gutPeak: s.gutPeakG,
   };
 }
 
-/** Strictly lexicographic: `toGreen`, `shapeShort`, `stops`, `powderCarried`, then `gutPeak`.
+/** Strictly lexicographic: `toGreen`, `shapeShort`, `stops`, `powderCarried`, `bottles`, then
+ *  `gutPeak`.
  *  Negative when `a` is the better plan. Shape comes before stops because a stretch fed by
  *  nothing is worth a stop to fix — the rider's own izo-6 build takes two stops where one reads
  *  green — and once every fifth reaches the floor it is 0 and stops decide again. The two real
@@ -257,6 +265,7 @@ export function compareScore(a: Score, b: Score): number {
   if (Math.abs(a.shapeShort - b.shapeShort) > TO_GREEN_EPSILON) return a.shapeShort - b.shapeShort;
   if (a.stops !== b.stops) return a.stops - b.stops;
   if (a.powderCarried !== b.powderCarried) return a.powderCarried - b.powderCarried;
+  if (a.bottles !== b.bottles) return a.bottles - b.bottles;
   if (Math.abs(a.gutPeak - b.gutPeak) > TO_GREEN_EPSILON) return a.gutPeak - b.gutPeak;
   return 0;
 }

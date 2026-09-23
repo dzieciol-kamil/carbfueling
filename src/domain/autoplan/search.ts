@@ -291,6 +291,9 @@ function movesInTier(tier: number, d: Decision, gear: Vessel[], offers: Offer[])
         if (c !== a.content)
           out.push({ ...d, assignment: withAt(d.assignment, i, { ...a, content: c }) });
       }
+      // Leave it at home — R24, fewest bottles that still work. A vessel left home comes back
+      // through tier 2 or 3, which add a load to it like to any other.
+      if (a.loads > 0) out.push({ ...d, assignment: withAt(d.assignment, i, { ...a, loads: 0 }) });
     });
     return out;
   }
@@ -322,8 +325,8 @@ function movesInTier(tier: number, d: Decision, gear: Vessel[], offers: Offer[])
 
 /**
  * The whole space the search can reach: every usable vessel × every content its `allowed` list
- * permits × `1..cap` loads, times every product count `0..max`. `loads: 0` is left out because the
- * climb cannot reach it. `cap` is the number of loads that would cover the whole ride's need from
+ * permits × `1..cap` loads, plus leaving it at home (`loads: 0`), times every product count
+ * `0..max`. `cap` is the number of loads that would cover the whole ride's need from
  * that vessel alone, plus one, never more than `MAX_LOADS` — more pours past the finish.
  */
 const MAX_LOADS = 14;
@@ -341,15 +344,17 @@ function loadCap(state: PlanState, v: Vessel, content: VesselAssignment['content
 export type Space = { vessels: VesselAssignment[][]; offers: Offer[]; size: number };
 
 export function space(state: PlanState, selection: FoodSelectionEntry[]): Space {
-  const vessels = usableGear(state.gear).map((v) =>
-    v.allowed.flatMap((content) =>
+  const vessels = usableGear(state.gear).map((v) => [
+    // Left at home: one entry, whatever it would have carried (R24).
+    { gid: v.gid, content: v.allowed[0], loads: 0 },
+    ...v.allowed.flatMap((content) =>
       Array.from({ length: loadCap(state, v, content) }, (_, i) => ({
         gid: v.gid,
         content,
         loads: i + 1,
       })),
     ),
-  );
+  ]);
   const offers = offersFor(state, selection);
   const size =
     vessels.reduce((n, opts) => n * opts.length, 1) * offers.reduce((n, o) => n * (o.max + 1), 1);
