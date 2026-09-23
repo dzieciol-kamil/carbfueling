@@ -9,9 +9,10 @@
  */
 import { expect } from 'vitest';
 import type { PlanState } from '../types';
+import { improve } from './exhaustive';
 import { oracle } from './oracle';
 import { compareScore, score } from './score';
-import { search } from './search';
+import { climb, search } from './search';
 import type { FoodSelectionEntry } from './types';
 
 // The app's tsconfig carries no Node types, so the environment is read without them.
@@ -35,4 +36,18 @@ export function expectNotBeatenByOracle(state: PlanState, selection: FoodSelecti
       `${r.best.score.powderCarried} sachets) vs engine (toGreen ${engine.toGreen.toFixed(3)}, ` +
       `${engine.stops} stops, ${engine.powderCarried} sachets)`,
   ).toBeLessThanOrEqual(0);
+}
+
+/** The pruned search lands exactly on the oracle's best — the proof that no cut lost it. */
+export function expectImproveMatchesOracle(
+  state: PlanState,
+  selection: FoodSelectionEntry[],
+): void {
+  if (!ORACLE_ON) return;
+  const r = oracle(state, selection, LIMIT);
+  if (r === null) return;
+  const start = climb(state, selection);
+  let best = start;
+  for (const e of improve(state, selection, start)) best = e;
+  expect(compareScore(best.score, r.best.score), 'improve() missed the oracle best').toBe(0);
 }

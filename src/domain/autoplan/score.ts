@@ -82,7 +82,7 @@ const TO_GREEN_EPSILON = 1e-9;
 /** A shape miss this small counts as met — owner, 2026-09-23, after a 2.5 % miss bought two izo
  *  sachets over a plan of water and a gel flask ("niech będzie te 5 %"). In `shapeShort`'s own
  *  unit: the fraction of the most grams the plan could miss. */
-const SHAPE_TOLERANCE = 0.05;
+export const SHAPE_TOLERANCE = 0.05;
 const SEGMENT_TARGET = 0.8;
 const SEGMENT_DIP = 0.7;
 const LAST_SEGMENT_FLOOR = 0.5;

@@ -24,8 +24,10 @@ moved, trust the filesystem over this file and update it.
   - `fuel.ts` — supply/demand fueling math (the core model).
   - `autoplan/` — **autoplan v3** (greedy loop): `index.ts` (entry), `search.ts` (the only module
     that chooses), `layout.ts` (a decision → fills/stops), `spans.ts` (fill reach from the need
-    curve), `score.ts` (distance to both green badges), `types.ts`; test-only `oracle.ts` +
-    `oracleExpect.ts` (brute-force check of the search, run with `ORACLE=1`).
+    curve), `score.ts` (distance to both green badges), `exhaustive.ts` (`improve()` — pruned
+    exhaustive search yielding each strictly-better plan, for the thinking modal), `types.ts`;
+    test-only `oracle.ts` + `oracleExpect.ts` (brute-force check of the search, run with
+    `ORACLE=1`).
   - `combinedRefill.ts` — combined stop/refill logic.
   - `printSheet.ts` — printable one-page plan (schedule strip + bottle recipes).
   - `gpx.ts` — GPX file parsing.

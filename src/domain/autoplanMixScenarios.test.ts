@@ -21,7 +21,7 @@
 import { describe, expect, test } from 'vitest';
 import { autoplan } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan/types';
-import { expectNotBeatenByOracle } from './autoplan/oracleExpect';
+import { expectImproveMatchesOracle, expectNotBeatenByOracle } from './autoplan/oracleExpect';
 import { coverageStatus, dist, hydrationStatus, planSummary, samples, totalHours } from './fuel';
 import type { CoverageStatus } from './fuel';
 import type {
@@ -175,6 +175,7 @@ function run(state: ScenarioState, selection: FoodSelectionEntry[] = []): Run {
   const result = autoplan(state, selection);
   // Off unless ORACLE=1 — see `autoplan/oracleExpect.ts`.
   expectNotBeatenByOracle(state, selection);
+  expectImproveMatchesOracle(state, selection);
   let fid = 1;
   const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
   let foodId = 1;
