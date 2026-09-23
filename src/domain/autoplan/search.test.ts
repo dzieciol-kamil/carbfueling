@@ -449,17 +449,20 @@ describe('degenerate inputs give a plan rather than throwing', () => {
    * `dist()` floors at 1 km, so "zero distance" is really a one-kilometre ride — and one that costs
    * no time at all, because `totalHours` reads `route.distance` and not `dist()`. A ride of no hours
    * has a carb target of zero and a sweat loss of zero, so there is nothing for a plan to fall short
-   * of: the score is already zero and no move can beat it. What comes back is exactly the plan the
-   * climb started from, which is the honest answer and not an accident of the guards.
+   * of — and a full 750 ml poured on it is past the overhydration warning.
+   *
+   * Changed 2026-09-23 with the owner's OK (R24, Q9 — option "a"). This used to expect the packed
+   * bottle back, because the climb could never take a vessel below one load. Now it may leave one
+   * at home, and on a ride that asks for no water at all the empty plan is the better one. The plan
+   * shows the bottles the ride needs; the rider may still carry a spare the app does not draw.
    */
-  test('a zero-distance route is left as the rider packed it', () => {
+  test('a zero-distance route needs nothing, so nothing is planned', () => {
     const state = makeState(makeRoute({ distance: 0 }), [vessel('g1', 750, ['water', 'izo'])]);
     expect(totalHours(state.route)).toBe(0);
     const draft = search(state, [{ key: 'gel', count: 3 }]);
-    expect(draft).toEqual(startingDraft(state));
     expect(draft.stops).toEqual([]);
     expect(draft.foods).toEqual([]);
-    expect(draft.fills).toEqual([{ gid: 'g1', content: 'water', from: 0, to: dist(state.route) }]);
+    expect(draft.fills).toEqual([]);
   });
 
   /**
