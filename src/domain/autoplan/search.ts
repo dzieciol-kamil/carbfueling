@@ -226,16 +226,20 @@ function placeFoods(
   const end = D * (1 - FINISH_GAP_FRACTION);
   if (!(end > 0) || chosen.length === 0) return [];
 
-  const pinned = chosen.filter((c) => c.needsStop);
+  let pinned = chosen.filter((c) => c.needsStop);
   const loose = chosen.filter((c) => !c.needsStop);
 
   // The bought products, evenly spaced strictly inside `(0, end)`: `k` purchases cut the ride into
   // `k + 1` equal stretches, which is both the widest they can be spread and the one arrangement
   // that puts none of them on the start line.
   const k = pinned.length;
-  const at: number[] = [];
+  let at: number[] = [];
   for (let j = 0; j < k; j++) at.push(((j + 1) * end) / (k + 1));
-  if (snapTo) snapPurchases(at, snapTo, end, stack);
+  if (snapTo) {
+    const snapped = snapPurchases(pinned, at, snapTo, end, stack ? MAX_PURCHASES_PER_STOP : 1);
+    pinned = snapped.map((p) => p.c);
+    at = snapped.map((p) => p.pos);
+  }
 
   const bounds = [0, ...at, end];
   const widths = bounds.slice(1).map((b, i) => b - bounds[i]);
@@ -283,24 +287,39 @@ function placeFoods(
 const STACKED_GUT_CEILING_G = 100;
 
 /**
- * Moves each even-spaced purchase onto the nearest stop the refills already have — *"obiad powinien
- * wymuszać postój"*, but a stop the plan pays for anyway is the cheapest place to buy it. Taken in
- * ride order. With `stack` off each stop serves one purchase at most and a purchase with no stop
- * left keeps its even position; with it on, purchases may share a stop. The result is re-sorted so
+ * At most this many purchases share one stop, and never two of the same product — owner,
+ * 2026-09-23: *"2-3 rzeczy, ale nie 2 te same"*. A cola and a meal at one stop, yes; two colas, no.
+ */
+const MAX_PURCHASES_PER_STOP = 3;
+
+/**
+ * Moves each even-spaced purchase onto the nearest stop the refills already have that can still
+ * take it — *"obiad powinien wymuszać postój"*, but a stop the plan pays for anyway is the cheapest
+ * place to buy it. Taken in ride order. A stop takes at most `perStop` purchases and never two of
+ * the same product; a purchase with no stop left keeps its even position. Returned in ride order so
  * the gaps between purchases stay well formed.
  */
-function snapPurchases(at: number[], stops: number[], end: number, stack: boolean): void {
-  const free = stops.filter((x) => x > 0 && x < end);
-  for (let j = 0; j < at.length; j++) {
-    if (free.length === 0) break;
-    let best = 0;
-    for (let i = 1; i < free.length; i++) {
-      if (Math.abs(free[i] - at[j]) < Math.abs(free[best] - at[j])) best = i;
+function snapPurchases(
+  pinned: Offer[],
+  at: number[],
+  stops: number[],
+  end: number,
+  perStop: number,
+): { c: Offer; pos: number }[] {
+  const taken = new Map<number, string[]>();
+  const usable = stops.filter((x) => x > 0 && x < end);
+  const out = pinned.map((c, j) => {
+    let best: number | null = null;
+    for (const x of usable) {
+      const keys = taken.get(x) ?? [];
+      if (keys.length >= perStop || keys.includes(c.key)) continue;
+      if (best === null || Math.abs(x - at[j]) < Math.abs(best - at[j])) best = x;
     }
-    at[j] = free[best];
-    if (!stack) free.splice(best, 1);
-  }
-  at.sort((a, b) => a - b);
+    if (best === null) return { c, pos: at[j] };
+    taken.set(best, [...(taken.get(best) ?? []), c.key]);
+    return { c, pos: best };
+  });
+  return out.sort((p, q) => p.pos - q.pos);
 }
 
 /**
@@ -309,10 +328,10 @@ function snapPurchases(at: number[], stops: number[], end: number, stack: boolea
  *
  * With a bought product in the mix, up to three placements are laid out and the best one kept: the
  * even spread `placeFoods` gives by default; the same purchases moved onto the stops the refills
- * make without them, one per stop; and the same again with purchases allowed to share a stop, as
- * long as the gut stays under `STACKED_GUT_CEILING_G`. The snapped ones are what a rider does by
- * hand — the meal at the stop they pull over at anyway — and the even spread stays for rides where
- * no refill stop sits anywhere useful. Ties go to the earlier of the three, so purchases share a
+ * make without them, one per stop; and the same again with purchases allowed to share a stop
+ * (see `MAX_PURCHASES_PER_STOP`), as long as the gut stays under `STACKED_GUT_CEILING_G`. The
+ * snapped ones are what a rider does by hand — the meal at the stop they pull over at anyway — and
+ * the even spread stays for rides where no refill stop sits anywhere useful. Ties go to the earlier of the three, so purchases share a
  * stop only when nothing else does better.
  */
 export function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {

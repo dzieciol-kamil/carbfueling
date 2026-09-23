@@ -355,25 +355,38 @@ describe('the selection is an offer', () => {
   });
 
   /**
-   * Purchases may share a stop, but only when no other placement does better and the gut stays at
-   * or under 100 g — owner, 2026-09-23: *"dodawaj jak żołądek pozwala i jak nie ma lepszego
-   * wyjścia"*. On this ride the refills make one stop at most, so two colas either share it or
-   * cost a second pull-over; sharing wins. Across more colas, any plan that puts two at one
-   * kilometre keeps the gut under the ceiling.
+   * Purchases may share a stop, but only when no other placement does better, the gut stays at or
+   * under 100 g, and they are different products — owner, 2026-09-23: *"dodawaj jak żołądek
+   * pozwala i jak nie ma lepszego wyjścia"*, *"2-3 rzeczy, ale nie 2 te same"* (a meal and a cola,
+   * yes; two colas, two ice creams or two meals, no). On this ride the refills make one stop at
+   * most, so a cola and a meal share it rather than cost a second pull-over, while two colas never
+   * do.
    */
-  test('bought products share a stop only while the gut allows it', () => {
-    const state = makeState(makeRoute({ distance: 80, temp: 20 }), [vessel('g1', 750, ['water'])]);
-    const two = search(state, [{ key: 'cola', count: 2 }]);
-    const colas = two.foods.filter((f) => f.key === 'cola');
-    expect(colas).toHaveLength(2);
+  test('different bought products may share a stop, the same one twice never', () => {
+    const lib: FoodLibEntry[] = [
+      ...FOOD_LIB,
+      { key: 'meal', pl: 'Obiad', en: 'Meal', carbs: 60, needsStop: true },
+    ];
+    const state = makeState(
+      makeRoute({ distance: 80, temp: 20 }),
+      [vessel('g1', 750, ['water'])],
+      lib,
+    );
+    const mixed = search(state, [
+      { key: 'cola', count: 1 },
+      { key: 'meal', count: 1 },
+    ]);
+    const bought = mixed.foods.filter((f) => f.key === 'cola' || f.key === 'meal');
+    expect(bought).toHaveLength(2);
     // One after the other at the same stop: `placeFoods` keeps a millimetre between two products.
-    expect(colas[1].from).toBeCloseTo(colas[0].from, 3);
-    expect(two.stops).toHaveLength(1);
+    expect(bought[1].from).toBeCloseTo(bought[0].from, 3);
+    expect(mixed.stops).toHaveLength(1);
+    expect(score(state, mixed).gutPeak).toBeLessThanOrEqual(100);
 
     for (let n = 2; n <= 5; n++) {
       const d = search(state, [{ key: 'cola', count: n }]);
       const at = d.foods.filter((f) => f.key === 'cola').map((f) => f.from.toFixed(3));
-      if (new Set(at).size < at.length) expect(score(state, d).gutPeak).toBeLessThanOrEqual(100);
+      expect(new Set(at).size).toBe(at.length);
     }
   });
 
