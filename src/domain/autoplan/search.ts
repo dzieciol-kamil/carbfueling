@@ -75,7 +75,7 @@ export const MAX_STEPS = 200;
 const FIRST_IMPROVING_TIER = 1;
 
 /** One line of the rider's selection, resolved against his food library. */
-type Offer = {
+export type Offer = {
   key: string;
   carbs: number;
   ml?: number;
@@ -88,13 +88,13 @@ type Offer = {
 };
 
 /** Everything the search gets to decide. */
-type Decision = {
+export type Decision = {
   assignment: VesselAssignment[];
   /** One entry per offer, in the selection's own priority order: how many units the plan takes. */
   counts: number[];
 };
 
-type Evaluated = { decision: Decision; draft: Draft; score: Score };
+export type Evaluated = { decision: Decision; draft: Draft; score: Score };
 
 /** A copy of `xs` with index `i` replaced — the whole of how a move is made. */
 function withAt<T>(xs: T[], i: number, x: T): T[] {
@@ -111,7 +111,7 @@ function withAt<T>(xs: T[], i: number, x: T): T[] {
  * handed. So the two cases a persisted kit can actually be in are filtered out here instead, at the
  * point where they are still a question about the *gear* rather than about the plan.
  */
-function usableGear(gear: Vessel[]): Vessel[] {
+export function usableGear(gear: Vessel[]): Vessel[] {
   return gear.filter(
     (v, i) => v.allowed.length > 0 && gear.findIndex((o) => o.gid === v.gid) === i,
   );
@@ -119,7 +119,7 @@ function usableGear(gear: Vessel[]): Vessel[] {
 
 /** The rider's selection, resolved against his food library. Unknown keys and empty lines drop
  *  out here rather than being carried through the loop as offers of nothing. */
-function offersOf(state: PlanState, selection: FoodSelectionEntry[]): Offer[] {
+export function offersOf(state: PlanState, selection: FoodSelectionEntry[]): Offer[] {
   const out: Offer[] = [];
   for (const s of selection) {
     const e = state.foodLib.find((x) => x.key === s.key);
@@ -136,6 +136,12 @@ function offersOf(state: PlanState, selection: FoodSelectionEntry[]): Offer[] {
     });
   }
   return out;
+}
+
+/** The offers the search works with: none under `CARB_GRADING_MIN_HOURS` (see `search`), the
+ *  resolved selection otherwise. Exported so the test-only oracle enumerates the same space. */
+export function offersFor(state: PlanState, selection: FoodSelectionEntry[]): Offer[] {
+  return totalHours(state.route) >= CARB_GRADING_MIN_HOURS ? offersOf(state, selection) : [];
 }
 
 /** The chosen units, flattened into the order they will be eaten: the selection's own priority
@@ -259,7 +265,7 @@ function placeFoods(state: PlanState, chosen: Offer[]): DraftFood[] {
 
 /** One decision, laid out and scored. Food placement is a pure function of the decision, so a
  *  decision determines its draft exactly and the memo below is sound. */
-function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {
+export function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {
   const chosen = chosenOf(offers, decision.counts);
   const draft = layout(state, decision.assignment, placeFoods(state, chosen));
   return { decision, draft, score: score(state, draft) };
@@ -336,8 +342,7 @@ export function search(state: PlanState, selection: FoodSelectionEntry[] = []): 
   // switching its carb shortfall term off. The bottles are still planned — water is graded on sweat
   // loss against body mass and does not know about the hour rule (see `hydrationStatus`, which never
   // answers 'unneeded'), and a 24 km ride at 35 C still costs the rider a litre.
-  const offers =
-    totalHours(state.route) >= CARB_GRADING_MIN_HOURS ? offersOf(state, selection) : [];
+  const offers = offersFor(state, selection);
   const start: Decision = {
     assignment: gear.map((v) => ({ gid: v.gid, content: v.allowed[0], loads: 1 })),
     counts: offers.map(() => 0),

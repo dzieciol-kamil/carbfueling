@@ -185,7 +185,7 @@ describe('autoplan pacing (the rider 194km ride)', () => {
    * service or the rider should have left it at home; the plan may not have it both ways." That is
    * dead weight — a vessel whose absence would have cost the plan nothing — and it is directly
    * testable: drop the vessel from `gear` and re-run autoplan(). If the reduced-gear plan needs no
-   * more stops and scores no worse on the app's own coverage/water numbers, the vessel was never
+   * more stops and scores no worse on the app's own carb-rate/water numbers, the vessel was never
    * earning its keep.
    *
    * The water side of that is measured on `waterBalancePct`, not on `hydrationPct` — *"tak, test
@@ -212,16 +212,16 @@ describe('autoplan pacing (the rider 194km ride)', () => {
 
       const costsSomething =
         reducedResult.newStops.length > result.newStops.length ||
-        after.coverage < before.coverage ||
+        after.carbRateGph < before.carbRateGph ||
         (carriesWater && after.waterBalancePct < before.waterBalancePct);
 
       const bal = (s: { waterBalancePct: number }) => `${s.waterBalancePct.toFixed(2)}% balance`;
       expect(
         costsSomething,
         `${v.name} (${v.gid}) drains at ${last.toFixed(0)}km, but dropping it from gear leaves the ` +
-          `plan just as good (${reducedResult.newStops.length} stops / ${after.coverage}% coverage` +
+          `plan just as good (${reducedResult.newStops.length} stops / ${after.carbRateGph.toFixed(1)} g/h` +
           `${carriesWater ? ` / ${bal(after)}` : ''} vs ${result.newStops.length} ` +
-          `stops / ${before.coverage}% coverage` +
+          `stops / ${before.carbRateGph.toFixed(1)} g/h` +
           `${carriesWater ? ` / ${bal(before)}` : ''}) — dead weight`,
       ).toBe(true);
     }

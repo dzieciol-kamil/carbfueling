@@ -21,6 +21,7 @@
 import { describe, expect, test } from 'vitest';
 import { autoplan } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan/types';
+import { expectNotBeatenByOracle } from './autoplan/oracleExpect';
 import { coverageStatus, dist, hydrationStatus, planSummary, samples, totalHours } from './fuel';
 import type { CoverageStatus } from './fuel';
 import type {
@@ -147,6 +148,8 @@ interface Run {
 /** Runs autoplan and materializes its drafts the same way `applyAutoplan` does in the store. */
 function run(state: ScenarioState, selection: FoodSelectionEntry[] = []): Run {
   const result = autoplan(state, selection);
+  // Off unless ORACLE=1 — see `autoplan/oracleExpect.ts`.
+  expectNotBeatenByOracle(state, selection);
   let fid = 1;
   const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
   let foodId = 1;
@@ -448,7 +451,16 @@ function expectProductsSpanTheRoute(r: Run): void {
  * best you can with what you've got" — no promised percentage, just a floor made of the same items
  * laid out the dumbest way. Fluid doesn't need it: `expectFluidNeverSags` says something stronger.
  */
+/**
+ * DISABLED (owner's OK, 2026-09-23 — rules Q11 and decision 14 in docs/autoplan-rules.md). This
+ * compares `planSummary().coverage`, a display percentage the app no longer grades: carbs are graded
+ * in g/h by `coverageStatus`. mix-8 failed only here (86 against 91) while green on both badges,
+ * 63.8 g/h and −1.35 % of body mass. Flip to re-enable once it compares a number the badge reads.
+ */
+const CHECK_EVEN_SPREAD = false;
+
 function expectNotWorseThanEvenSpread(r: Run): void {
+  if (!CHECK_EVEN_SPREAD) return;
   if (r.planned.fills.length + r.planned.foods.length < 2) return;
   const even = evenlySpread(r.planned, r.D);
   expect(planSummary(r.planned).coverage + 1).toBeGreaterThanOrEqual(planSummary(even).coverage);
@@ -514,8 +526,8 @@ describe('autoplan combined scenarios — gel vessel reused for water', () => {
     const mix = makeMix();
     const flask = vessel('g2', 'Flaszka', 250, ['gel', 'water']);
     const r = run(makePlan(route, [vessel('g1', 'Bidon', 650, ['water']), flask], mix));
-    // The flask never gets refilled with gel once spent (gel is strictly one-shot), so its full
-    // 250ml × gelConc content — 150g — is the hard ceiling on this scenario's carbs. Green is
+    // Measured with one gel load in the flask: its 250ml × gelConc content — 150g. (Gel is no
+    // longer one-shot — a flask may be refilled with gel at a stop — but this plan needs none.) Green is
     // reachable on that alone, but not because 150g is "enough": the badge grades a *rate* against
     // `min(carbTargetGph, CARB_PLATEAU_GPH)` = 40 g/h, so what decides the colour is the span those
     // grams are poured over. Measured on this ride (3.60h, need line 75 g/h): stretched across all

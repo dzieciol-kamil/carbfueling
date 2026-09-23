@@ -18,6 +18,7 @@
 import { describe, expect, test } from 'vitest';
 import { autoplan } from './autoplan';
 import type { AutoplanResult, FoodSelectionEntry } from './autoplan/types';
+import { expectNotBeatenByOracle } from './autoplan/oracleExpect';
 import { coverageStatus, dist, hydrationStatus, planSummary, totalHours } from './fuel';
 import type { CoverageStatus } from './fuel';
 import type {
@@ -143,6 +144,8 @@ interface Run {
 /** Runs autoplan and materializes its drafts the same way `applyAutoplan` does in the store. */
 function run(state: ScenarioState, selection: FoodSelectionEntry[] = []): Run {
   const result = autoplan(state, selection);
+  // Off unless ORACLE=1 — see `autoplan/oracleExpect.ts`.
+  expectNotBeatenByOracle(state, selection);
   let fid = 1;
   const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
   let foodId = 1;
@@ -553,9 +556,13 @@ describe('autoplan scenarios — izo only', () => {
     // pull-over has stopped describing what the rider wants; the title's "two stops" was an
     // observation about the old engine, not a requirement. The `maxStops` ceiling in the `then`
     // above still holds it from the side that matters, and the finish-gap check below is untouched.
-    // Carbs poured in at the finish never drain out of `gut`, so they score as unabsorbed.
-    const last = Math.max(...r.result.fills.map((f) => f.to));
-    expect(last).toBeLessThanOrEqual(100 * (1 - FINISH_GAP_FRACTION));
+    //
+    // DISABLED: `expect(last fill's to).toBeLessThanOrEqual(98)` (owner's OK, 2026-09-23 — rules
+    // Q1/Q12, R45 in docs/autoplan-rules.md). Ruling: izo may run to the finish line, it does not
+    // have to — "jak to izo, to może być i do mety, dużej różnicy to nie wnosi"; only gel stays off
+    // the line. Measured on this ride: ending the last izo load at 98 or at 100 both read 42.0 g/h,
+    // so the gap bought nothing the badge can see. izo-4, which runs its only load to the line, was
+    // already right.
   });
 });
 
@@ -674,8 +681,15 @@ describe('autoplan scenarios — products only', () => {
       { key: 'cola', count: 3 },
     ]);
     // 1000ml carried + 990ml of cola against 1680ml of sweat loss — green without stopping.
+    //
+    // DISABLED: `carbs: 'good'` (owner's OK, 2026-09-23 — decision 14, rule R15 in
+    // docs/autoplan-rules.md). Three colas cannot reach the carb badge's floor on this ride: 105 g
+    // is 43.8 g/h planned but at most 36.0 g/h credited, against a floor of 40. Measured over every
+    // placement of the three colas on a 1 km grid (34 k of them, the rider's own 5/23/42 included) —
+    // none beats 36.0. Green would need more carbs than the selection allows, and the selection is a
+    // cap. The scenario's subject — the colas' fluid, so the bottle needs no refill — still holds.
     expectThen(r, {
-      carbs: 'good',
+      carbs: null,
       hydration: 'good',
       maxStops: 0,
       maxRefills: 0,

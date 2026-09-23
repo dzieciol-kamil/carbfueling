@@ -23,12 +23,11 @@ moved, trust the filesystem over this file and update it.
 - `urls.ts` — URL/route helpers (language-prefixed routing).
 - `domain/` — **pure calculation logic, no React**, unit-tested (`*.test.ts` next to each file):
   - `fuel.ts` — supply/demand fueling math (the core model).
-  - `autoplan.ts` — v1 rule-based fueling-plan search/generator (large; being superseded — see
-    `domain/planner/`).
-  - `combinedRefill.ts` — combined stop/refill logic used by autoplan.
-  - `planner/` — **autoplan v2** (service model + DP stop skeleton, in progress on `feat/autoplan`):
-    `types.ts`, `services.ts` (services→fills conversion), `skeleton.ts` (L1 stop-skeleton search),
-    `assignWater.ts` (L2 water service assignment).
+  - `autoplan/` — **autoplan v3** (greedy loop): `index.ts` (entry), `search.ts` (the only module
+    that chooses), `layout.ts` (a decision → fills/stops), `spans.ts` (fill reach from the need
+    curve), `score.ts` (distance to both green badges), `types.ts`; test-only `oracle.ts` +
+    `oracleExpect.ts` (brute-force check of the search, run with `ORACLE=1`).
+  - `combinedRefill.ts` — combined stop/refill logic.
   - `gpx.ts` — GPX file parsing.
   - `dragMath.ts` — drag-and-drop geometry for lanes/timeline.
   - `laneLayout.ts` — lane layout calculations.
@@ -59,8 +58,8 @@ moved, trust the filesystem over this file and update it.
 ## Where to look for...
 
 - Fueling math / carb-hydration calculations → `src/domain/fuel.ts`.
-- Autoplan (auto-generate a fueling plan) → `src/domain/autoplan.ts` (v1, being replaced) and
-  `src/domain/planner/` (v2, current work — see `docs/backlog.md` and `docs/adr/` for design context).
+- Autoplan (auto-generate a fueling plan) → `src/domain/autoplan/` (v3); rules in
+  `docs/autoplan-rules.md` (local, gitignored).
 - App state / persistence → `src/store/appStore.ts`.
 - Any user-visible text → `src/i18n/strings.ts`.
 - Mobile UI → `src/components/mobile/`.
