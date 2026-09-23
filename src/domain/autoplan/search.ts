@@ -216,7 +216,12 @@ function allocate(m: number, widths: number[]): number[] {
  * - **Nothing is open twice and nothing lands on the line.** A continuous product ends where the
  *   next one starts at the latest, and the last `FINISH_GAP_FRACTION` of the route is left clear.
  */
-function placeFoods(state: PlanState, chosen: Offer[], snapTo?: number[]): DraftFood[] {
+function placeFoods(
+  state: PlanState,
+  chosen: Offer[],
+  snapTo?: number[],
+  stack = false,
+): DraftFood[] {
   const D = dist(state.route);
   const end = D * (1 - FINISH_GAP_FRACTION);
   if (!(end > 0) || chosen.length === 0) return [];
@@ -230,7 +235,7 @@ function placeFoods(state: PlanState, chosen: Offer[], snapTo?: number[]): Draft
   const k = pinned.length;
   const at: number[] = [];
   for (let j = 0; j < k; j++) at.push(((j + 1) * end) / (k + 1));
-  if (snapTo) snapPurchases(at, snapTo, end);
+  if (snapTo) snapPurchases(at, snapTo, end, stack);
 
   const bounds = [0, ...at, end];
   const widths = bounds.slice(1).map((b, i) => b - bounds[i]);
@@ -271,12 +276,20 @@ function placeFoods(state: PlanState, chosen: Offer[], snapTo?: number[]): Draft
 }
 
 /**
+ * The most the gut may hold when several purchases share one stop, in grams — owner, 2026-09-23:
+ * *"dodawaj jak żołądek pozwala"*. His own 194 km plan, cola and meal at one stop, peaks at 92 g;
+ * the pacing suite's ceiling is this same 100.
+ */
+const STACKED_GUT_CEILING_G = 100;
+
+/**
  * Moves each even-spaced purchase onto the nearest stop the refills already have — *"obiad powinien
  * wymuszać postój"*, but a stop the plan pays for anyway is the cheapest place to buy it. Taken in
- * ride order, each stop serves one purchase at most, and a purchase with no stop left keeps its even
- * position. The result is re-sorted so the gaps between purchases stay well formed.
+ * ride order. With `stack` off each stop serves one purchase at most and a purchase with no stop
+ * left keeps its even position; with it on, purchases may share a stop. The result is re-sorted so
+ * the gaps between purchases stay well formed.
  */
-function snapPurchases(at: number[], stops: number[], end: number): void {
+function snapPurchases(at: number[], stops: number[], end: number, stack: boolean): void {
   const free = stops.filter((x) => x > 0 && x < end);
   for (let j = 0; j < at.length; j++) {
     if (free.length === 0) break;
@@ -285,7 +298,7 @@ function snapPurchases(at: number[], stops: number[], end: number): void {
       if (Math.abs(free[i] - at[j]) < Math.abs(free[best] - at[j])) best = i;
     }
     at[j] = free[best];
-    free.splice(best, 1);
+    if (!stack) free.splice(best, 1);
   }
   at.sort((a, b) => a - b);
 }
@@ -294,17 +307,22 @@ function snapPurchases(at: number[], stops: number[], end: number): void {
  * One decision, laid out and scored. Food placement is a pure function of the decision, so a
  * decision determines its draft exactly and the memo below is sound.
  *
- * With a bought product in the mix, two placements are laid out and the better one kept: the even
- * spread `placeFoods` gives by default, and the same purchases moved onto the stops the refills
- * make without them. The second is what a rider does by hand — the meal at the stop they pull over
- * at anyway — and the first stays for rides where no refill stop sits anywhere useful. Ties keep the
- * even spread.
+ * With a bought product in the mix, up to three placements are laid out and the best one kept: the
+ * even spread `placeFoods` gives by default; the same purchases moved onto the stops the refills
+ * make without them, one per stop; and the same again with purchases allowed to share a stop, as
+ * long as the gut stays under `STACKED_GUT_CEILING_G`. The snapped ones are what a rider does by
+ * hand — the meal at the stop they pull over at anyway — and the even spread stays for rides where
+ * no refill stop sits anywhere useful. Ties go to the earlier of the three, so purchases share a
+ * stop only when nothing else does better.
  */
 export function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {
   const chosen = chosenOf(offers, decision.counts);
-  const draft = layout(state, decision.assignment, placeFoods(state, chosen));
-  const even: Evaluated = { decision, draft, score: score(state, draft) };
-  if (!chosen.some((c) => c.needsStop)) return even;
+  const look = (snapTo?: number[], stack = false): Evaluated => {
+    const draft = layout(state, decision.assignment, placeFoods(state, chosen, snapTo, stack));
+    return { decision, draft, score: score(state, draft) };
+  };
+  let best = look();
+  if (!chosen.some((c) => c.needsStop)) return best;
 
   const refillStops = layout(
     state,
@@ -314,10 +332,13 @@ export function evaluate(state: PlanState, offers: Offer[], decision: Decision):
       chosen.filter((c) => !c.needsStop),
     ),
   ).stops.map((s) => s.at);
-  if (refillStops.length === 0) return even;
-  const snappedDraft = layout(state, decision.assignment, placeFoods(state, chosen, refillStops));
-  const snapped: Evaluated = { decision, draft: snappedDraft, score: score(state, snappedDraft) };
-  return compareScore(snapped.score, even.score) < 0 ? snapped : even;
+  if (refillStops.length === 0) return best;
+  const spread = look(refillStops);
+  if (compareScore(spread.score, best.score) < 0) best = spread;
+  const stacked = look(refillStops, true);
+  if (stacked.score.gutPeak <= STACKED_GUT_CEILING_G && compareScore(stacked.score, best.score) < 0)
+    best = stacked;
+  return best;
 }
 
 /**

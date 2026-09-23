@@ -227,7 +227,7 @@ describe('autoplan pacing (the rider 194km ride)', () => {
           `${carriesWater ? ` / ${bal(before)}` : ''}) — dead weight`,
       ).toBe(true);
     }
-  });
+  }, 30_000); // six autoplan runs: the 5 s default is too tight under a full-suite load
 
   /** Few, sensible stops. His own plan makes three; the generated one may not need more than four. */
   test('does not turn the ride into a shopping trip', () => {

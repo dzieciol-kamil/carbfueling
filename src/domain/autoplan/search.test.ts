@@ -355,6 +355,29 @@ describe('the selection is an offer', () => {
   });
 
   /**
+   * Purchases may share a stop, but only when no other placement does better and the gut stays at
+   * or under 100 g — owner, 2026-09-23: *"dodawaj jak żołądek pozwala i jak nie ma lepszego
+   * wyjścia"*. On this ride the refills make one stop at most, so two colas either share it or
+   * cost a second pull-over; sharing wins. Across more colas, any plan that puts two at one
+   * kilometre keeps the gut under the ceiling.
+   */
+  test('bought products share a stop only while the gut allows it', () => {
+    const state = makeState(makeRoute({ distance: 80, temp: 20 }), [vessel('g1', 750, ['water'])]);
+    const two = search(state, [{ key: 'cola', count: 2 }]);
+    const colas = two.foods.filter((f) => f.key === 'cola');
+    expect(colas).toHaveLength(2);
+    // One after the other at the same stop: `placeFoods` keeps a millimetre between two products.
+    expect(colas[1].from).toBeCloseTo(colas[0].from, 3);
+    expect(two.stops).toHaveLength(1);
+
+    for (let n = 2; n <= 5; n++) {
+      const d = search(state, [{ key: 'cola', count: n }]);
+      const at = d.foods.filter((f) => f.key === 'cola').map((f) => f.from.toFixed(3));
+      if (new Set(at).size < at.length) expect(score(state, d).gutPeak).toBeLessThanOrEqual(100);
+    }
+  });
+
+  /**
    * The list's order is the rider's priority — *"pierwszeństwo ma góra listy"* — so tier 1 takes the
    * first entry that improves the plan rather than the best-scoring one.
    *
