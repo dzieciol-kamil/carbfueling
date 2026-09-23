@@ -12,7 +12,7 @@
  * phrased as a comparison against a hand-built plan instead.
  */
 import { describe, expect, test } from 'vitest';
-import { MAX_STEPS, search } from './search';
+import { MAX_STEPS, climb, search } from './search';
 import { layout } from './layout';
 import { compareScore, score } from './score';
 import type { Draft } from './score';
@@ -121,6 +121,17 @@ const SHAPES: { label: string; state: PlanState }[] = [
     state: makeState(makeRoute({ distance: 90 }), [vessel('g1', 250, ['gel'])]),
   },
 ];
+
+describe('climb() hands back the scored plan', () => {
+  /** `search()` is now a thin wrapper over `climb()`'s `draft`, and its score must be the one
+   *  `score()` itself would give that draft — not a stale value from an earlier step. */
+  test('climb returns the same draft search does, with its score', () => {
+    const st = SHAPES[0].state;
+    const e = climb(st, []);
+    expect(e.draft).toEqual(search(st, []));
+    expect(compareScore(e.score, score(st, e.draft))).toBe(0);
+  });
+});
 
 describe('the climb terminates', () => {
   /**

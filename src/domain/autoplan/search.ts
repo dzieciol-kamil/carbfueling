@@ -479,7 +479,7 @@ function keyOf(d: Decision): string {
  * load count on the same bottle. Widening the move set to pairs is a real answer to this, and a much
  * bigger search than the owner asked for; it is deliberately not attempted here.
  */
-export function search(state: PlanState, selection: FoodSelectionEntry[] = []): Draft {
+export function climb(state: PlanState, selection: FoodSelectionEntry[] = []): Evaluated {
   const gear = usableGear(state.gear);
   // Under `CARB_GRADING_MIN_HOURS` the app greys the carb chart out and `coverageStatus` answers
   // 'unneeded', so the owner's ruling is that the planner hands back an empty product list there:
@@ -546,5 +546,10 @@ export function search(state: PlanState, selection: FoodSelectionEntry[] = []): 
       if (compareScore(e.score, current.score) < 0) current = e;
     }
   }
-  return current.draft;
+  return current;
+}
+
+/** Just the draft `climb()` settles on, for callers that do not need its score. */
+export function search(state: PlanState, selection: FoodSelectionEntry[] = []): Draft {
+  return climb(state, selection).draft;
 }
