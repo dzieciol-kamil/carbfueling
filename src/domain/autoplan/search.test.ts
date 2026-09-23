@@ -334,6 +334,27 @@ describe('the selection is an offer', () => {
   });
 
   /**
+   * A purchase goes to a stop the plan pays for anyway before it makes one of its own — the meal
+   * at the stop the rider pulls over at to refill, not a second pull-over half-way between two.
+   * The ride is chosen so the refills alone need several stops: a 500 ml bottle on 100 km at 25 °C.
+   * The cola has to sit exactly on one of the stops the same ride makes without it, and buying it
+   * must not add a stop.
+   */
+  test('a bought product lands on a stop the refills already make', () => {
+    const state = makeState(makeRoute({ distance: 100, temp: 25 }), [
+      vessel('g1', 500, ['water', 'izo']),
+    ]);
+    const plain = search(state);
+    expect(plain.stops.length).toBeGreaterThan(1);
+
+    const bought = search(state, [{ key: 'cola', count: 1 }]);
+    const cola = bought.foods.find((f) => f.key === 'cola');
+    expect(cola).toBeDefined();
+    expect(plain.stops.map((s) => s.at)).toContain(cola!.from);
+    expect(bought.stops.length).toBeLessThanOrEqual(plain.stops.length);
+  });
+
+  /**
    * The list's order is the rider's priority — *"pierwszeństwo ma góra listy"* — so tier 1 takes the
    * first entry that improves the plan rather than the best-scoring one.
    *

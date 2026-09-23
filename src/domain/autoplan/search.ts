@@ -216,7 +216,7 @@ function allocate(m: number, widths: number[]): number[] {
  * - **Nothing is open twice and nothing lands on the line.** A continuous product ends where the
  *   next one starts at the latest, and the last `FINISH_GAP_FRACTION` of the route is left clear.
  */
-function placeFoods(state: PlanState, chosen: Offer[]): DraftFood[] {
+function placeFoods(state: PlanState, chosen: Offer[], snapTo?: number[]): DraftFood[] {
   const D = dist(state.route);
   const end = D * (1 - FINISH_GAP_FRACTION);
   if (!(end > 0) || chosen.length === 0) return [];
@@ -230,6 +230,7 @@ function placeFoods(state: PlanState, chosen: Offer[]): DraftFood[] {
   const k = pinned.length;
   const at: number[] = [];
   for (let j = 0; j < k; j++) at.push(((j + 1) * end) / (k + 1));
+  if (snapTo) snapPurchases(at, snapTo, end);
 
   const bounds = [0, ...at, end];
   const widths = bounds.slice(1).map((b, i) => b - bounds[i]);
@@ -269,12 +270,54 @@ function placeFoods(state: PlanState, chosen: Offer[]): DraftFood[] {
   return out;
 }
 
-/** One decision, laid out and scored. Food placement is a pure function of the decision, so a
- *  decision determines its draft exactly and the memo below is sound. */
+/**
+ * Moves each even-spaced purchase onto the nearest stop the refills already have — *"obiad powinien
+ * wymuszać postój"*, but a stop the plan pays for anyway is the cheapest place to buy it. Taken in
+ * ride order, each stop serves one purchase at most, and a purchase with no stop left keeps its even
+ * position. The result is re-sorted so the gaps between purchases stay well formed.
+ */
+function snapPurchases(at: number[], stops: number[], end: number): void {
+  const free = stops.filter((x) => x > 0 && x < end);
+  for (let j = 0; j < at.length; j++) {
+    if (free.length === 0) break;
+    let best = 0;
+    for (let i = 1; i < free.length; i++) {
+      if (Math.abs(free[i] - at[j]) < Math.abs(free[best] - at[j])) best = i;
+    }
+    at[j] = free[best];
+    free.splice(best, 1);
+  }
+  at.sort((a, b) => a - b);
+}
+
+/**
+ * One decision, laid out and scored. Food placement is a pure function of the decision, so a
+ * decision determines its draft exactly and the memo below is sound.
+ *
+ * With a bought product in the mix, two placements are laid out and the better one kept: the even
+ * spread `placeFoods` gives by default, and the same purchases moved onto the stops the refills
+ * make without them. The second is what a rider does by hand — the meal at the stop they pull over
+ * at anyway — and the first stays for rides where no refill stop sits anywhere useful. Ties keep the
+ * even spread.
+ */
 export function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {
   const chosen = chosenOf(offers, decision.counts);
   const draft = layout(state, decision.assignment, placeFoods(state, chosen));
-  return { decision, draft, score: score(state, draft) };
+  const even: Evaluated = { decision, draft, score: score(state, draft) };
+  if (!chosen.some((c) => c.needsStop)) return even;
+
+  const refillStops = layout(
+    state,
+    decision.assignment,
+    placeFoods(
+      state,
+      chosen.filter((c) => !c.needsStop),
+    ),
+  ).stops.map((s) => s.at);
+  if (refillStops.length === 0) return even;
+  const snappedDraft = layout(state, decision.assignment, placeFoods(state, chosen, refillStops));
+  const snapped: Evaluated = { decision, draft: snappedDraft, score: score(state, snappedDraft) };
+  return compareScore(snapped.score, even.score) < 0 ? snapped : even;
 }
 
 /**
