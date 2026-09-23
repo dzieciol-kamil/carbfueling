@@ -43,7 +43,7 @@ const backdropStyle: CSSProperties = {
 };
 const cardBaseStyle: CSSProperties = {
   position: 'relative',
-  background: '#fff',
+  background: 'var(--surface)',
   display: 'flex',
   flexDirection: 'column',
   boxSizing: 'border-box',
@@ -121,7 +121,7 @@ const mobileFooterStyle: CSSProperties = {
   ...buttonRowStyle,
   flexShrink: 0,
   padding: '12px 18px 24px',
-  background: '#fff',
+  background: 'var(--surface)',
   borderTop: '1px solid var(--border-soft)',
 };
 const gearRowStyle: CSSProperties = {
@@ -310,7 +310,7 @@ export function AutoplanPreflightModal({
                 border: '1px solid var(--chip-border)',
                 borderRadius: 12,
                 padding: '9px 10px',
-                background: dragKey === entry.key ? '#F2F5EF' : '#fff',
+                background: dragKey === entry.key ? 'var(--surface-soft)' : 'var(--surface)',
               }}
             >
               <span
@@ -360,7 +360,7 @@ export function AutoplanPreflightModal({
         onClick={onCancel}
         style={{
           border: '1px solid var(--chip-border)',
-          background: '#fff',
+          background: 'var(--surface)',
           color: 'var(--ink-soft)',
           borderRadius: 8,
           padding: '8px 14px',
@@ -375,9 +375,9 @@ export function AutoplanPreflightModal({
       <button
         onClick={handleConfirm}
         style={{
-          border: '1px solid var(--ink)',
-          background: 'var(--ink)',
-          color: '#fff',
+          border: '1px solid var(--chip-border)',
+          background: 'var(--selected-bg)',
+          color: 'var(--on-brand)',
           borderRadius: 8,
           padding: '8px 16px',
           fontSize: 12,
