@@ -369,7 +369,7 @@ describe('the selection is an offer', () => {
    * "Needs" includes R50 since 2026-09-23: a plan green on the badge but with a fifth of the ride
    * fed under 70 % still reaches further down the list — *"jak trzeba sięgnąć po te niżej też ok"*.
    * So this offers more gels than the shape can use and checks that the run stops strictly inside
-   * the offer, green on the badge and on the shape where it stopped.
+   * the offer, green on the badge and on the shape (within its 5 % tolerance) where it stopped.
    */
   test('a green plan with every fifth fed leaves the rest of the list unopened', () => {
     const state = makeState(makeRoute({ distance: 90 }), [vessel('g1', 750, ['water'])]);
@@ -377,7 +377,8 @@ describe('the selection is an offer', () => {
     expect(draft.foods.length).toBeGreaterThan(0);
     expect(draft.foods.length).toBeLessThan(20);
     expect(score(state, draft).toGreen).toBe(0);
-    expect(score(state, draft).shapeShort).toBe(0);
+    // Met within the 5 % tolerance the ranking allows.
+    expect(score(state, draft).shapeShort).toBeLessThanOrEqual(0.05);
   });
 
   /** Nothing is ever taken that the rider did not offer, and never more of it than he offered. */

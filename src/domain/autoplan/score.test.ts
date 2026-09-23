@@ -406,6 +406,14 @@ describe('compareScore', () => {
     gutPeak,
   });
 
+  test('a shape miss of up to 5 % counts as met (R50 tolerance)', () => {
+    // Owner, 2026-09-23: a 2.5 % miss must not buy two sachets.
+    expect(compareScore(s(0, 2, 0, 0.025), s(0, 2, 2, 0))).toBeLessThan(0);
+    expect(compareScore(s(0, 2, 0, 0.05), s(0, 2, 1, 0))).toBeLessThan(0);
+    // Past the tolerance the shape decides again, before stops.
+    expect(compareScore(s(0, 3, 0, 0), s(0, 2, 0, 0.08))).toBeLessThan(0);
+  });
+
   test('equal on stops and sachets, fewer bottles wins (R24)', () => {
     const b = (stops: number, powder: number, bottles: number): Score => ({
       ...s(0, stops, powder),

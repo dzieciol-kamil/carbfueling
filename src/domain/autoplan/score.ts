@@ -79,6 +79,10 @@ const TO_GREEN_EPSILON = 1e-9;
  * four" (PARK §0). It buckets `fuel.ts`'s own crediting walk (`creditSteps`), so there is no second
  * model of the gut.
  */
+/** A shape miss this small counts as met — owner, 2026-09-23, after a 2.5 % miss bought two izo
+ *  sachets over a plan of water and a gel flask ("niech będzie te 5 %"). In `shapeShort`'s own
+ *  unit: the fraction of the most grams the plan could miss. */
+const SHAPE_TOLERANCE = 0.05;
 const SEGMENT_TARGET = 0.8;
 const SEGMENT_DIP = 0.7;
 const LAST_SEGMENT_FLOOR = 0.5;
@@ -262,7 +266,9 @@ export function score(state: PlanState, draft: Draft): Score {
  *  equal plans look different and rob the tie-breaks of their say. */
 export function compareScore(a: Score, b: Score): number {
   if (Math.abs(a.toGreen - b.toGreen) > TO_GREEN_EPSILON) return a.toGreen - b.toGreen;
-  if (Math.abs(a.shapeShort - b.shapeShort) > TO_GREEN_EPSILON) return a.shapeShort - b.shapeShort;
+  const shapeA = Math.max(0, a.shapeShort - SHAPE_TOLERANCE);
+  const shapeB = Math.max(0, b.shapeShort - SHAPE_TOLERANCE);
+  if (Math.abs(shapeA - shapeB) > TO_GREEN_EPSILON) return shapeA - shapeB;
   if (a.stops !== b.stops) return a.stops - b.stops;
   if (a.powderCarried !== b.powderCarried) return a.powderCarried - b.powderCarried;
   if (a.bottles !== b.bottles) return a.bottles - b.bottles;
