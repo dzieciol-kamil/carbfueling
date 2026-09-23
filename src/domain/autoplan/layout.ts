@@ -220,8 +220,14 @@ function gutClearKm(curve: Sample[], from: number): number {
   return curve[i].x;
 }
 
-/** One vessel's part in a relay: how many turns it takes, and how far each turn reaches. */
-type Leg = { a: VesselAssignment; turns: number; spanEnd: (from: number) => number };
+/** One vessel's part in a relay: how many turns it takes, how far each turn reaches, and — for
+ *  gel — the last km at which one of its turns may still open (see `relay`). */
+type Leg = {
+  a: VesselAssignment;
+  turns: number;
+  spanEnd: (from: number) => number;
+  latestStart?: number;
+};
 
 /**
  * Where the next load may start, given the ones already placed. See `carbGate` in `layout`.
@@ -254,6 +260,9 @@ function relay(legs: Leg[], D: number, gate: Gate = NO_GATE): Load[] {
       if (leg.turns <= r) continue;
       x = Math.max(x, gate(x, stream));
       if (x >= D) break;
+      // A turn that would open past its leg's last start is not taken; the relay moves on to the
+      // next vessel, which may still have somewhere to go.
+      if (leg.latestStart !== undefined && x >= leg.latestStart) continue;
       const to = Math.min(D, leg.spanEnd(x));
       if (!(to > x)) continue;
       const { gid, content } = leg.a;
@@ -437,6 +446,13 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
     return gutClearKm(curve, from);
   };
 
+  // A gel dose never lands in the last `GEL_FINISH_GAP_FRACTION` of the route — *"jak to żel, to
+  // nie na mecie"*. Two guards say it: a gel load may not *open* past this km (`latestStart`
+  // below), and the one that runs into it is trimmed back to it (the guard after the top-ups). The
+  // first used to be missing, so a relay turn that came due at 184.5 of 188 km was placed anyway —
+  // a dose on the line, and since it was a refill, a stop 3.5 km from the finish.
+  const gelCap = D * (1 - GEL_FINISH_GAP_FRACTION);
+
   // --- Tile the carb stream ------------------------------------------------------------------
   //
   // izo and gel are two sources of one need, so they share one relay and tile the carb requirement
@@ -453,6 +469,7 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
           a,
           turns: loadCount(a.loads),
           spanEnd: (from: number) => loadSpanEnd(state, vessel, a.content, from),
+          ...(a.content === 'gel' ? { latestStart: gelCap } : {}),
         };
       }),
     D,
@@ -538,24 +555,30 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
 
   // --- Merge nearby stops -------------------------------------------------------------------
   //
-  // A cluster is closed as soon as a candidate sits `mergeWindowKm` or more past the one that
-  // opened it — so every cluster is narrower than the window and no boundary is ever dragged
-  // further than that, which is what makes the move affordable. (Chaining on the *previous*
-  // member instead would let a run of near-misses walk a boundary arbitrarily far.)
-  //
   // The representative is the earliest immovable candidate in the cluster if it has one, and
   // otherwise its earliest candidate. Immovable first because a product must be bought where it
   // is; earliest because a boundary that moves earlier means topping up slightly before the bottle
   // ran dry, while one that moves later means riding on an empty bottle — and `fuel.ts` carries
   // unspent credit forward but cannot invent delivery that never happened.
+  //
+  // A candidate joins the open cluster when it sits less than `mergeWindowKm` past that cluster's
+  // representative *so far* — where the rider will actually pull over — and otherwise opens the
+  // next one. Measuring from the cluster's first member instead let two stops land inside one
+  // window: a refill at 12.3 km and a cola at 16.3 km merged onto the cola, and a refill at 22.6
+  // km, 10.3 km past the refill but only 6.3 km past the stop, bought a second stop. Measured this
+  // way every member still lies within the window of the representative (members before the first
+  // immovable one sit between the cluster's opening and it), so no boundary is dragged further than
+  // the window, and consecutive stops are always at least a window apart. (Chaining on the
+  // *previous* member instead would let a run of near-misses walk a boundary arbitrarily far.)
   const w = mergeWindowKm(D);
+  const repOfCluster = (cl: Candidate[]): number => (cl.find((c) => !c.movable) ?? cl[0]).at;
   const clusters: Candidate[][] = [];
   for (const c of candidates) {
     const open = clusters[clusters.length - 1];
-    if (open && c.at - open[0].at < w) open.push(c);
+    if (open && c.at - repOfCluster(open) < w) open.push(c);
     else clusters.push([c]);
   }
-  const reps = clusters.map((cl) => (cl.find((c) => !c.movable) ?? cl[0]).at);
+  const reps = clusters.map(repOfCluster);
   const repOf = (at: number): number => {
     const i = clusters.findIndex((cl) => cl.some((c) => c.at === at));
     return i < 0 ? at : reps[i];
@@ -689,8 +712,8 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
   // lands somewhere it can neither absorb nor do anything. Applied last, on the finished fill list,
   // so that nothing upstream — the relay's handovers, the merge, the stop list, the top-ups — is
   // reasoning about a span that this then changes underneath it. A gel fill that starts inside the
-  // gap already is left alone: trimming it would leave a fill of no length, which is not a plan.
-  const gelCap = D * (1 - GEL_FINISH_GAP_FRACTION);
+  // gap already is left alone: trimming it would leave a fill of no length, which is not a plan —
+  // and the relay no longer opens one there (see `gelCap` above).
   const lastGel = fills
     .filter((f) => f.content === 'gel')
     .sort((a, b) => a.from - b.from)

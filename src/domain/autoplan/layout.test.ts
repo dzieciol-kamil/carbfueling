@@ -671,6 +671,31 @@ describe('where a stream ends', () => {
     expectFillsClose(fills, [{ gid: 'f', content: 'gel', from: 0, to: 50 }]);
   });
 
+  /**
+   * Found by the property suite (P9, seed 4). Two gel flasks relaying on a 188 km ride: the sixth
+   * load's turn came at 184.5 km, already inside the last 2%. The guard above trims a load that
+   * *runs into* the gap and deliberately leaves one that *starts* there alone — so a dose sat on
+   * the line, and worse, it was a refill, so it bought a stop 3.5 km from the finish. A gel load
+   * that would open inside the gap is not planned at all: "jak to żel, to nie na mecie".
+   */
+  test('no gel load starts inside the last stretch of the route, and none buys a stop there', () => {
+    const r = makeRoute({ distance: 188, speed: 15, temp: 5, weight: 55, intensity: 'low' });
+    const Dr = dist(r);
+    const gear = [vessel('g1', 250, ['water', 'gel'], 4), vessel('g2', 150, ['water', 'gel'], 4)];
+    const state = makeState(r, gear, [], { ...DEFAULT_MIX, conc: 6 });
+    const { fills, stops } = place(
+      state,
+      [
+        { gid: 'g1', content: 'gel', loads: 3 },
+        { gid: 'g2', content: 'gel', loads: 3 },
+      ],
+      [],
+    );
+    for (const f of fills) expect(f.from).toBeLessThan(Dr * 0.98);
+    for (const x of stopXs(stops)) expect(x).toBeLessThan(Dr * 0.98);
+    expectStopsMatchRefills(fills, stops);
+  });
+
   /** izo has no finish gap of its own: four loads of 50 km tile this route exactly, and the last of
    *  them ends on the line rather than being pulled back the way the gel one is. */
   test('an izo load is left where the tiling put it', () => {
@@ -790,6 +815,48 @@ describe('merging nearby stops', () => {
     expect(stopXs(stops)[0]).toBeCloseTo(step, 9);
     expectTiled(fills, D);
     expectStopsMatchRefills(fills, stops);
+  });
+
+  /**
+   * Found by the property suite (P7). A water refill due at 12.3 km and a cola bought at 16.3 km
+   * fall into one window, and the stop lands on the cola — 4 km *later* than the window was opened.
+   * The next refill, at 22.6, was measured against 12.3 (10.3 km: a new stop) instead of against
+   * the 16.3 where the rider actually pulls over (6.3 km: the same stop). A window has to be
+   * measured from where its stop is, or two stops end up inside one window.
+   */
+  test('the window is measured from where the stop lands, not from where the cluster opened', () => {
+    const r = makeRoute({ distance: 50, speed: 20, temp: 34, weight: 93, intensity: 'low' });
+    const lib: FoodLibEntry[] = [
+      { key: 'cola', pl: 'Cola', en: 'Cola', carbs: 35, ml: 330, needsStop: true },
+    ];
+    const state = makeState(r, [vessel('g1', 750, ['water']), vessel('g2', 150, ['water'])], lib);
+    const end = dist(r) * 0.98;
+    const colas: DraftFood[] = [1, 2].map((j) => ({
+      key: 'cola',
+      carbs: 35,
+      ml: 330,
+      from: (j * end) / 3,
+      to: (j * end) / 3,
+    }));
+
+    const { fills, stops } = place(
+      state,
+      [
+        { gid: 'g1', content: 'water', loads: 3 },
+        { gid: 'g2', content: 'water', loads: 1 },
+      ],
+      colas,
+    );
+
+    const xs = stopXs(stops);
+    for (let i = 1; i < xs.length; i++) {
+      expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(mergeWindowKm(dist(r)));
+    }
+    expectStopsMatchRefills(
+      fills,
+      stops,
+      colas.map((c) => c.from),
+    );
   });
 });
 
