@@ -43,7 +43,7 @@
  * Tier 1 still goes both ways — a product that stopped earning its place is dropped again — so
  * nothing here needs a separate pruning pass.
  */
-import { CARB_GRADING_MIN_HOURS, dist, totalHours } from '../fuel';
+import { CARB_GRADING_MIN_HOURS, carbsFill, cph, dist, sweat, totalHours } from '../fuel';
 import type { Content, PlanState, Vessel } from '../types';
 import { layout } from './layout';
 import type { VesselAssignment } from './layout';
@@ -69,6 +69,12 @@ const MIN_STEP_KM = 1e-6;
  * below, so the loop stops on its own; this only bounds the damage if that ever stops being true.
  */
 export const MAX_STEPS = 200;
+
+/**
+ * Past this many Decisions the search does not look at the whole space. A Decision costs 1-12 ms
+ * to lay out and score, so this keeps the exhaustive pass under a few seconds.
+ */
+export const EXHAUSTIVE_LIMIT = 500;
 
 /** The one tier whose candidates come in an order that means something — the rider's own priority
  *  list — so it takes the first that improves rather than weighing them all. See `movesInTier`. */
@@ -314,6 +320,58 @@ function movesInTier(tier: number, d: Decision, gear: Vessel[], offers: Offer[])
   return out;
 }
 
+/**
+ * The whole space the search can reach: every usable vessel × every content its `allowed` list
+ * permits × `1..cap` loads, times every product count `0..max`. `loads: 0` is left out because the
+ * climb cannot reach it. `cap` is the number of loads that would cover the whole ride's need from
+ * that vessel alone, plus one, never more than `MAX_LOADS` — more pours past the finish.
+ */
+const MAX_LOADS = 14;
+
+function loadCap(state: PlanState, v: Vessel, content: VesselAssignment['content']): number {
+  const hrs = totalHours(state.route);
+  if (content === 'water') {
+    return Math.min(MAX_LOADS, Math.ceil((sweat(state.route) * hrs) / v.vol) + 1);
+  }
+  const perLoad = carbsFill({ fid: 0, gid: v.gid, content, from: 0, to: 1 }, state.gear, state.mix);
+  if (!(perLoad > 0)) return 1;
+  return Math.min(MAX_LOADS, Math.ceil((cph(state.route) * hrs) / perLoad) + 1);
+}
+
+export type Space = { vessels: VesselAssignment[][]; offers: Offer[]; size: number };
+
+export function space(state: PlanState, selection: FoodSelectionEntry[]): Space {
+  const vessels = usableGear(state.gear).map((v) =>
+    v.allowed.flatMap((content) =>
+      Array.from({ length: loadCap(state, v, content) }, (_, i) => ({
+        gid: v.gid,
+        content,
+        loads: i + 1,
+      })),
+    ),
+  );
+  const offers = offersFor(state, selection);
+  const size =
+    vessels.reduce((n, opts) => n * opts.length, 1) * offers.reduce((n, o) => n * (o.max + 1), 1);
+  return { vessels, offers, size };
+}
+
+/** The `n`-th Decision of the space, read as a mixed-radix number. */
+export function decisionAt(s: Space, n: number): Decision {
+  let r = n;
+  const assignment = s.vessels.map((opts) => {
+    const a = opts[r % opts.length];
+    r = Math.floor(r / opts.length);
+    return a;
+  });
+  const counts = s.offers.map((o) => {
+    const c = r % (o.max + 1);
+    r = Math.floor(r / (o.max + 1));
+    return c;
+  });
+  return { assignment, counts };
+}
+
 function keyOf(d: Decision): string {
   return `${d.assignment.map((a) => `${a.gid}:${a.content}:${a.loads}`).join('|')}#${d.counts.join(',')}`;
 }
@@ -387,6 +445,18 @@ export function search(state: PlanState, selection: FoodSelectionEntry[] = []): 
       }
     }
     if (!accepted) break;
+  }
+
+  // The climb changes one thing at a time, and some kits need three changed together to get across
+  // — mix-1 needs one izo load more *and* two water loads fewer. Where the whole space is small,
+  // look at all of it and take anything strictly better than where the climb stopped. Ties keep the
+  // climb's answer, so the rider's priority order (tier 1) still decides between equals.
+  const s = space(state, selection);
+  if (s.size <= EXHAUSTIVE_LIMIT) {
+    for (let n = 0; n < s.size; n++) {
+      const e = look(decisionAt(s, n));
+      if (compareScore(e.score, current.score) < 0) current = e;
+    }
   }
   return current.draft;
 }

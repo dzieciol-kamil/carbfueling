@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import type { MixSettings, PlanState, RouteInput, Vessel } from '../types';
-import { oracle, space } from './oracle';
+import { oracle } from './oracle';
 import { compareScore, score } from './score';
-import { search } from './search';
+import { search, space } from './search';
 
 const route: RouteInput = {
   sport: 'cycling',

@@ -117,8 +117,9 @@ function check(name: string, rule: string, body: (c: Case, r: AutoplanResult, D:
       }),
       { seed: SEED, numRuns: RUNS },
     );
-    // Sixty full plans on the first property that sees them (P1 builds every one twice).
-  }, 30_000);
+    // Sixty full plans, up to ~2.4 s each, on the first property that sees them (P1 builds every
+    // one twice) — the limit is for a slow CI machine, not a target.
+  }, 120_000);
 }
 
 describe('autoplan properties', () => {
