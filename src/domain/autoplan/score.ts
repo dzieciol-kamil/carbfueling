@@ -21,6 +21,7 @@
  */
 import {
   CARB_GRADING_MIN_HOURS,
+  dist,
   CARB_PLATEAU_GPH,
   SURPLUS_WARN_PCT,
   allowedDeficitPct,
@@ -35,8 +36,8 @@ export type Score = {
   /** 0 = both badges green. Otherwise the summed distance to green, in units of "fraction of the
    *  limit that was missed" — see the four terms in `score()`. */
   toGreen: number;
-  /** R50, autoplan's own shape rule: how far the plan falls short of feeding every fifth of the
-   *  ride to `FIFTH_FLOOR` of that fifth's need, in [0, 1]. 0 = every fifth is fed well enough. */
+  /** R50, autoplan's own shape rule — see `SEGMENT_TARGET`. 0 = the ride is fed well enough along
+   *  its length; otherwise the grams missing, as a fraction of the most that could be, in [0, 1]. */
   shapeShort: number;
   /** Tie-break: fewer stops wins. */
   stops: number;
@@ -51,16 +52,42 @@ export type Draft = { fills: DraftFill[]; foods: DraftFood[]; stops: DraftStop[]
 const TO_GREEN_EPSILON = 1e-9;
 
 /**
- * R50 — the owner's 2026-09-23 ruling: every fifth of the ride is fed to about 80 % of what that
- * fifth needs, the way he builds a plan by hand (his 130 km ride read 100 % in every fifth, his
- * 300 km 87/81/80/84/84). Autoplan's own rule: *"to nie jest coś co chcę widzieć na wykresie, ale
- * na potrzeby autoplanu jest ok"* — the badge and the chart are untouched.
+ * R50 — the owner's 2026-09-23 rulings on how a ride is fed along its length. The ride is cut into
+ * stretches of about an hour — as many as the ride has hours, rounded (1 h 45 → 2, 2 h 30 → 3):
+ * *"może to powinien być zakres np. 1h"*. Fifths of the distance were tried first; on a 194 km ride
+ * the last fifth alone was 1 h 46 of riding.
  *
- * It exists because the carb badge grades a whole-ride average and so cannot tell "fed evenly"
- * from "fed hard for six hours and nothing for four" (PARK §0). It is computed from `fuel.ts`'s
- * own crediting walk (`creditByFifth`), not from a second model of the gut.
+ * - every stretch but the last gets 80 % of what it needs — but one may dip to 70 %, as long as the
+ *   next one does not: *"nie może mieć 70-80 na 2 kolejnych odcinkach, jednorazowo dopuszczalne,
+ *   bo np. odcinek akurat przed postojem i obiadem"*;
+ * - the last stretch gets `LAST_SEGMENT_FLOOR`: *"lecimy do domu, na oparach ale dajemy radę - o
+ *   ile sumarycznie jest zielone"*.
+ *
+ * Autoplan's own rule — *"to nie jest coś co chcę widzieć na wykresie, ale na potrzeby autoplanu
+ * jest ok"* — the badge and the chart are untouched. It exists because the carb badge grades a
+ * whole-ride average and so cannot tell "fed evenly" from "fed hard for six hours and nothing for
+ * four" (PARK §0). It buckets `fuel.ts`'s own crediting walk (`creditSteps`), so there is no second
+ * model of the gut.
  */
-const FIFTH_FLOOR = 0.7;
+const SEGMENT_TARGET = 0.8;
+const SEGMENT_DIP = 0.7;
+const LAST_SEGMENT_FLOOR = 0.5;
+
+/** The grams each stretch needed and was credited, the ride cut into `round(hours)` stretches. */
+function segments(
+  steps: { x: number; need: number; credit: number }[],
+  D: number,
+  hrs: number,
+): { need: number; credit: number }[] {
+  const n = Math.max(1, Math.round(hrs));
+  const out = Array.from({ length: n }, () => ({ need: 0, credit: 0 }));
+  for (const st of steps) {
+    const i = D > 0 ? Math.min(n - 1, Math.floor((st.x / D) * n - 1e-9)) : 0;
+    out[Math.max(0, i)].need += st.need;
+    out[Math.max(0, i)].credit += st.credit;
+  }
+  return out;
+}
 
 /**
  * One penalty term: how far `over` runs past a limit, as a fraction of that limit.
@@ -166,16 +193,25 @@ export function score(state: PlanState, draft: Draft): Score {
     // Too wet — the EAH warning. `waterBalancePct` is signed, so this term only exists above zero.
     penalty(s.waterBalancePct - SURPLUS_WARN_PCT, SURPLUS_WARN_PCT);
 
-  // R50: the grams each fifth falls short of `FIFTH_FLOOR` of its need, summed, as a fraction of
-  // the most it could fall short. Grams rather than per-fifth percentages, so a stretch that needs
-  // little — a long descent to the finish — cannot outweigh one that needs a lot. Not graded where
-  // the carb badge is not graded either.
-  const floorNeed = s.creditByFifth.reduce((a, b) => a + FIFTH_FLOOR * b.need, 0);
+  // R50, in grams rather than per-stretch percentages, so a stretch that needs little — a long
+  // descent to the finish — cannot outweigh one that needs a lot. Three parts: any stretch before
+  // the last under the 70 % dip floor; any two neighbours among them both under 80 % (the grams to
+  // lift the cheaper one back to 80); the last stretch under its floor. Divided by the most the plan
+  // could miss, so it lands in [0, 1]. A ride of one stretch is the badge's to grade, and a ride the
+  // badge does not grade is not graded here either.
+  const seg = segments(s.creditSteps, dist(state.route), totalHours(state.route));
+  const last = seg.length - 1;
+  const shortOf = (i: number, floor: number) => Math.max(0, floor * seg[i].need - seg[i].credit);
+  let shapeMiss = shortOf(last, LAST_SEGMENT_FLOOR);
+  for (let i = 0; i < last; i++) shapeMiss += shortOf(i, SEGMENT_DIP);
+  for (let i = 0; i + 1 < last; i++) {
+    shapeMiss += Math.min(shortOf(i, SEGMENT_TARGET), shortOf(i + 1, SEGMENT_TARGET));
+  }
+  const shapeMax =
+    seg.slice(0, last).reduce((a, b) => a + SEGMENT_TARGET * b.need, 0) +
+    LAST_SEGMENT_FLOOR * seg[last].need;
   const shapeShort =
-    graded && floorNeed > 0
-      ? s.creditByFifth.reduce((a, b) => a + Math.max(0, FIFTH_FLOOR * b.need - b.credit), 0) /
-        floorNeed
-      : 0;
+    graded && seg.length > 1 && shapeMax > 0 ? Math.min(1, shapeMiss / shapeMax) : 0;
 
   // Two different things happen at a fill boundary. A *handover* — one vessel runs dry and the next
   // takes over on the load it left home with — carried nothing, however late in the ride the second

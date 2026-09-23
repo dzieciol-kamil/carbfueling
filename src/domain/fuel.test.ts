@@ -1099,22 +1099,23 @@ describe('rateStats coverage', () => {
     expect(planSummary(plan).totalCarbs).toBe(0);
   });
 
-  test('creditByFifth splits the same credit into five stretches of the route', () => {
-    // The bucketed view autoplan grades its shape on (R50). Same walk as `coverage`, so the five
-    // buckets add up to exactly what the badge credits, and their need to the whole requirement.
+  test('creditSteps is the same credit, step by step along the route', () => {
+    // What autoplan buckets to grade the plan's shape. Same walk as `coverage`, so the steps add up
+    // to exactly what the badge credits, and their need to the whole requirement.
     const even = rateStats(withFood(TARGET, 0, 100));
-    expect(even.creditByFifth).toHaveLength(5);
-    const credit = even.creditByFifth.reduce((a, b) => a + b.credit, 0);
-    const need = even.creditByFifth.reduce((a, b) => a + b.need, 0);
+    const credit = even.creditSteps.reduce((a, b) => a + b.credit, 0);
+    const need = even.creditSteps.reduce((a, b) => a + b.need, 0);
     expect(credit).toBeCloseTo(even.coveredCarbs, 6);
     expect(need).toBeCloseTo(TARGET, 6);
-    for (const b of even.creditByFifth) expect(b.credit / b.need).toBeGreaterThan(0.95);
+    expect(even.creditSteps.at(-1)?.x).toBe(100);
 
     // Half the requirement eaten in the first 20 km: the gut passes it on at up to 90 g/h, so it
     // still feeds the next stretch, but it is gone long before the last one.
     const front = rateStats(withFood(TARGET / 2, 0, 20));
-    expect(front.creditByFifth[0].credit / front.creditByFifth[0].need).toBeGreaterThan(0.95);
-    expect(front.creditByFifth[4].credit / front.creditByFifth[4].need).toBeLessThan(0.2);
+    const lateCredit = front.creditSteps
+      .filter((st) => st.x > 80)
+      .reduce((a, b) => a + b.credit, 0);
+    expect(lateCredit).toBeLessThan(1);
   });
 
   test('exactly the required carbs, spread evenly across the ride: ~100%', () => {

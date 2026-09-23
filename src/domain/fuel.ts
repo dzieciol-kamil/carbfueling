@@ -323,11 +323,11 @@ export interface RateStats {
   /** Grams behind `coverage` — the numerator, so the UI can print "X / target g" without
    *  reaching for a different quantity than the percentage was computed from. */
   coveredCarbs: number;
-  /** The same credit, split into five equal stretches of the route by distance: the grams each
-   *  stretch needed and the grams it was credited. Not shown in the app — autoplan grades its
-   *  shape on it (every fifth fed to ~80 % of its need), because `coverage` is a whole-ride
-   *  average and cannot tell "fed evenly" from "fed hard, then nothing". */
-  creditByFifth: { need: number; credit: number }[];
+  /** The same credit, step by step along the route: at each sample `x` (km), the grams that step
+   *  needed and the grams it was credited. Not shown in the app — autoplan buckets it to grade the
+   *  plan's shape, because `coverage` is a whole-ride average and cannot tell "fed evenly" from
+   *  "fed hard, then nothing". */
+  creditSteps: { x: number; need: number; credit: number }[];
   samples: Sample[];
 }
 
@@ -1101,8 +1101,7 @@ export function rateStats(state: PlanState): RateStats {
   const carryCap = (cph(state.route) * COVERAGE_CARRY_MINUTES) / 60;
   let covered = 0;
   let surplus = 0;
-  const D = S[S.length - 1].x;
-  const creditByFifth = Array.from({ length: 5 }, () => ({ need: 0, credit: 0 }));
+  const creditSteps: { x: number; need: number; credit: number }[] = [];
 
   S.forEach((p, i) => {
     if (i > 0) {
@@ -1111,10 +1110,7 @@ export function rateStats(state: PlanState): RateStats {
       const credited = Math.min(available, need);
       covered += credited;
       surplus = Math.min(carryCap, available - credited);
-      // A step belongs to the fifth its far end lies in; the last sample sits exactly on D.
-      const b = D > 0 ? Math.min(4, Math.floor((p.x / D) * 5)) : 0;
-      creditByFifth[b].need += need;
-      creditByFifth[b].credit += credited;
+      creditSteps.push({ x: p.x, need, credit: credited });
     }
   });
 
@@ -1134,7 +1130,7 @@ export function rateStats(state: PlanState): RateStats {
     // right, desktop is where it will show first.
     coverage: target > 0 ? Math.round((covered / target) * 100) : 100,
     coveredCarbs: covered,
-    creditByFifth,
+    creditSteps,
     samples: S,
   };
 }
@@ -1200,8 +1196,8 @@ export interface PlanSummary {
   /** Grams counted toward `coverage` — pair this with `target` when showing the ratio in grams.
    *  Not the same as `absorbedTotal`, which ignores whether a gram arrived when it was needed. */
   coveredCarbs: number;
-  /** See `RateStats.creditByFifth` — autoplan's shape input, not shown in the app. */
-  creditByFifth: { need: number; credit: number }[];
+  /** See `RateStats.creditSteps` — autoplan's shape input, not shown in the app. */
+  creditSteps: { x: number; need: number; credit: number }[];
   /** `coveredCarbs` averaged over the ride — the number `coverageStatus` actually grades and
    *  colours the badge from. Deliberately not `totalCarbs / hrs`: that would drift from the badge
    *  on a plan whose timing doesn't match its need (front-loaded carbs, a big pre-ride meal), and
@@ -1252,7 +1248,7 @@ export function planSummary(state: PlanState): PlanSummary {
   // This used to answer a flat 100 below the short-ride buffer gate, which is how a minute of
   // extra ride time flipped the badge from 100% and green to 0% and red — the tolerance now lives
   // in `hydrationStatus`, where it can be continuous, so nothing here needs to lie.
-  const { coverage, coveredCarbs, creditByFifth, samples: S } = rateStats(state);
+  const { coverage, coveredCarbs, creditSteps, samples: S } = rateStats(state);
   const fluidAbsorbedTotal = S[S.length - 1].mlAbsorbed;
   const hydrationPct = sweatLoss > 0 ? Math.round((fluidAbsorbedTotal / sweatLoss) * 100) : 100;
 
@@ -1268,7 +1264,7 @@ export function planSummary(state: PlanState): PlanSummary {
     waterBalancePct: waterBalancePct({ sweatLoss, fluidPlanned, weight: route.weight }),
     coverage,
     coveredCarbs,
-    creditByFifth,
+    creditSteps,
     carbRateGph: hrs > 0 ? coveredCarbs / hrs : 0,
     carbPlannedRateGph: hrs > 0 ? totalCarbs / hrs : 0,
     carbTargetGph: hrs > 0 ? cph(route) : 0,

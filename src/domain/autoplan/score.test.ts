@@ -338,26 +338,43 @@ describe('score', () => {
   });
 });
 
-describe('shapeShort (R50: every fifth of the ride fed to 70 % of its need)', () => {
-  const needPerFifth = (cph(route) * HRS) / 5;
-  /** One cont product per fifth, each carrying exactly that fifth's need. */
-  const evenFoods: DraftFood[] = Array.from({ length: 5 }, (_, i) => ({
-    key: 'bar',
-    carbs: needPerFifth,
-    cont: true,
-    from: (D * i) / 5,
-    to: (D * (i + 1)) / 5,
-  }));
+describe('shapeShort (R50: hour-long stretches at 80 %, one lone dip to 70 %, the last at 50 %)', () => {
+  // 3.6 h of riding: four stretches of 22.5 km.
+  const n = Math.round(HRS);
+  const needPer = (cph(route) * HRS) / n;
+  const fed = (pcts: number[]): DraftFood[] =>
+    pcts.map((p, i) => ({
+      key: 'bar',
+      carbs: p * needPer,
+      cont: true,
+      from: (D * i) / n,
+      to: (D * (i + 1)) / n,
+    }));
+
+  test('the ride is cut into as many stretches as it has hours', () => {
+    expect(n).toBe(4);
+  });
 
   test('a plan fed evenly across the ride has no shape shortfall', () => {
-    expect(score(state, draft([], evenFoods)).shapeShort).toBeLessThan(0.05);
+    expect(score(state, draft([], fed([1, 1, 1, 1]))).shapeShort).toBeLessThan(0.01);
   });
 
   test('the same gel poured into the first stretch only leaves the rest short', () => {
     const front = score(state, draft([gelMatched])).shapeShort;
-    expect(front).toBeGreaterThan(0.2);
+    expect(front).toBeGreaterThan(0.1);
     expect(front).toBeLessThanOrEqual(1);
-    expect(score(state, draft([], evenFoods)).shapeShort).toBeLessThan(front);
+  });
+
+  test('the last stretch needs only half its need: riding home on fumes is fine', () => {
+    expect(score(state, draft([], fed([1, 1, 1, 0.55]))).shapeShort).toBeLessThan(0.01);
+    expect(score(state, draft([], fed([1, 1, 1, 0.3]))).shapeShort).toBeGreaterThan(0.01);
+  });
+
+  test('one stretch may dip to 70-80 %, two neighbours may not', () => {
+    expect(score(state, draft([], fed([1, 0.75, 1, 1]))).shapeShort).toBeLessThan(0.01);
+    expect(score(state, draft([], fed([0.75, 0.75, 1, 1]))).shapeShort).toBeGreaterThan(0.01);
+    // Under 70 % is short even on its own.
+    expect(score(state, draft([], fed([1, 0.6, 1, 1]))).shapeShort).toBeGreaterThan(0.01);
   });
 
   test('under an hour the shape is not graded, like the carb badge', () => {
