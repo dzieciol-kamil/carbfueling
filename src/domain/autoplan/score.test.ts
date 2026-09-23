@@ -338,11 +338,46 @@ describe('score', () => {
   });
 });
 
+describe('shapeShort (R50: every fifth of the ride fed to 70 % of its need)', () => {
+  const needPerFifth = (cph(route) * HRS) / 5;
+  /** One cont product per fifth, each carrying exactly that fifth's need. */
+  const evenFoods: DraftFood[] = Array.from({ length: 5 }, (_, i) => ({
+    key: 'bar',
+    carbs: needPerFifth,
+    cont: true,
+    from: (D * i) / 5,
+    to: (D * (i + 1)) / 5,
+  }));
+
+  test('a plan fed evenly across the ride has no shape shortfall', () => {
+    expect(score(state, draft([], evenFoods)).shapeShort).toBeLessThan(0.05);
+  });
+
+  test('the same gel poured into the first stretch only leaves the rest short', () => {
+    const front = score(state, draft([gelMatched])).shapeShort;
+    expect(front).toBeGreaterThan(0.2);
+    expect(front).toBeLessThanOrEqual(1);
+    expect(score(state, draft([], evenFoods)).shapeShort).toBeLessThan(front);
+  });
+
+  test('under an hour the shape is not graded, like the carb badge', () => {
+    const short: PlanState = { ...state, route: { ...route, distance: 20 } };
+    expect(score(short, draft([])).shapeShort).toBe(0);
+  });
+});
+
 describe('compareScore', () => {
-  const s = (toGreen: number, stops: number, powderCarried: number): Score => ({
+  const s = (toGreen: number, stops: number, powderCarried: number, shapeShort = 0): Score => ({
     toGreen,
+    shapeShort,
     stops,
     powderCarried,
+  });
+
+  test('shape decides after toGreen and before stops (R50)', () => {
+    expect(compareScore(s(0, 3, 0, 0), s(0, 1, 0, 0.2))).toBeLessThan(0);
+    expect(compareScore(s(0, 9, 9, 0.5), s(0.1, 0, 0, 0))).toBeLessThan(0);
+    expect(compareScore(s(0, 2, 0, 0.1), s(0, 1, 0, 0.1))).toBeGreaterThan(0);
   });
 
   test('toGreen decides first, whatever the tie-breaks say', () => {

@@ -340,18 +340,22 @@ describe('the selection is an offer', () => {
   /**
    * The other half of the same rule: what sits further down the list is carried in case, and stays
    * in the pocket once the plan no longer needs it. No mechanism enforces that — one more product
-   * moves neither `stops` nor `powderCarried`, so once `toGreen` is 0 an extra item ties instead of
-   * improving and the loop's "strictly better or it is not a move" rule refuses it.
+   * moves neither `stops` nor `powderCarried`, so once `toGreen` and `shapeShort` are both 0 an
+   * extra item ties instead of improving and the loop's "strictly better or it is not a move" rule
+   * refuses it.
    *
-   * Measured against the plan's own badge rather than a count: the run stops somewhere strictly
-   * inside the ten it was offered, and it is green where it stopped.
+   * "Needs" includes R50 since 2026-09-23: a plan green on the badge but with a fifth of the ride
+   * fed under 70 % still reaches further down the list — *"jak trzeba sięgnąć po te niżej też ok"*.
+   * So this offers more gels than the shape can use and checks that the run stops strictly inside
+   * the offer, green on the badge and on the shape where it stopped.
    */
-  test('a green plan leaves the rest of the list unopened', () => {
+  test('a green plan with every fifth fed leaves the rest of the list unopened', () => {
     const state = makeState(makeRoute({ distance: 90 }), [vessel('g1', 750, ['water'])]);
-    const draft = search(state, [{ key: 'gel', count: 10 }]);
+    const draft = search(state, [{ key: 'gel', count: 20 }]);
     expect(draft.foods.length).toBeGreaterThan(0);
-    expect(draft.foods.length).toBeLessThan(10);
+    expect(draft.foods.length).toBeLessThan(20);
     expect(score(state, draft).toGreen).toBe(0);
+    expect(score(state, draft).shapeShort).toBe(0);
   });
 
   /** Nothing is ever taken that the rider did not offer, and never more of it than he offered. */

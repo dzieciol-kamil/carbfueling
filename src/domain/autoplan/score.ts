@@ -35,6 +35,9 @@ export type Score = {
   /** 0 = both badges green. Otherwise the summed distance to green, in units of "fraction of the
    *  limit that was missed" — see the four terms in `score()`. */
   toGreen: number;
+  /** R50, autoplan's own shape rule: how far the plan falls short of feeding every fifth of the
+   *  ride to `FIFTH_FLOOR` of that fifth's need, in [0, 1]. 0 = every fifth is fed well enough. */
+  shapeShort: number;
   /** Tie-break: fewer stops wins. */
   stops: number;
   /** Tie-break: fewer sachets carried from home wins — izo powder or gel concentrate alike. */
@@ -46,6 +49,18 @@ export type Draft = { fills: DraftFill[]; foods: DraftFood[]; stops: DraftStop[]
 /** Below this the two `toGreen` values are the same plan seen twice, not a real difference — see
  *  `compareScore`. Floating-point noise only; nothing about the domain is calibrated to it. */
 const TO_GREEN_EPSILON = 1e-9;
+
+/**
+ * R50 — the owner's 2026-09-23 ruling: every fifth of the ride is fed to about 80 % of what that
+ * fifth needs, the way he builds a plan by hand (his 130 km ride read 100 % in every fifth, his
+ * 300 km 87/81/80/84/84). Autoplan's own rule: *"to nie jest coś co chcę widzieć na wykresie, ale
+ * na potrzeby autoplanu jest ok"* — the badge and the chart are untouched.
+ *
+ * It exists because the carb badge grades a whole-ride average and so cannot tell "fed evenly"
+ * from "fed hard for six hours and nothing for four" (PARK §0). It is computed from `fuel.ts`'s
+ * own crediting walk (`creditByFifth`), not from a second model of the gut.
+ */
+const FIFTH_FLOOR = 0.7;
 
 /**
  * One penalty term: how far `over` runs past a limit, as a fraction of that limit.
@@ -151,6 +166,17 @@ export function score(state: PlanState, draft: Draft): Score {
     // Too wet — the EAH warning. `waterBalancePct` is signed, so this term only exists above zero.
     penalty(s.waterBalancePct - SURPLUS_WARN_PCT, SURPLUS_WARN_PCT);
 
+  // R50: the grams each fifth falls short of `FIFTH_FLOOR` of its need, summed, as a fraction of
+  // the most it could fall short. Grams rather than per-fifth percentages, so a stretch that needs
+  // little — a long descent to the finish — cannot outweigh one that needs a lot. Not graded where
+  // the carb badge is not graded either.
+  const floorNeed = s.creditByFifth.reduce((a, b) => a + FIFTH_FLOOR * b.need, 0);
+  const shapeShort =
+    graded && floorNeed > 0
+      ? s.creditByFifth.reduce((a, b) => a + Math.max(0, FIFTH_FLOOR * b.need - b.credit), 0) /
+        floorNeed
+      : 0;
+
   // Two different things happen at a fill boundary. A *handover* — one vessel runs dry and the next
   // takes over on the load it left home with — carried nothing, however late in the ride the second
   // bottle comes out of the jersey: its izo was mixed in the kitchen. A *refill* — a vessel that has
@@ -173,16 +199,21 @@ export function score(state: PlanState, draft: Draft): Score {
 
   return {
     toGreen,
+    shapeShort,
     stops: draft.stops.length,
     powderCarried,
   };
 }
 
-/** Strictly lexicographic: `toGreen`, then `stops`, then `powderCarried`. Negative when `a` is the
- *  better plan. `toGreen` is compared with a tolerance so that float noise in `planSummary` cannot
- *  make two plans that are equally green look different and rob the tie-breaks of their say. */
+/** Strictly lexicographic: `toGreen`, then `shapeShort`, then `stops`, then `powderCarried`.
+ *  Negative when `a` is the better plan. Shape comes before stops because a stretch fed by
+ *  nothing is worth a stop to fix — the rider's own izo-6 build takes two stops where one reads
+ *  green — and once every fifth reaches the floor it is 0 and stops decide again. The two real
+ *  numbers are compared with a tolerance so that float noise in `planSummary` cannot make two
+ *  equal plans look different and rob the tie-breaks of their say. */
 export function compareScore(a: Score, b: Score): number {
   if (Math.abs(a.toGreen - b.toGreen) > TO_GREEN_EPSILON) return a.toGreen - b.toGreen;
+  if (Math.abs(a.shapeShort - b.shapeShort) > TO_GREEN_EPSILON) return a.shapeShort - b.shapeShort;
   if (a.stops !== b.stops) return a.stops - b.stops;
   return a.powderCarried - b.powderCarried;
 }
