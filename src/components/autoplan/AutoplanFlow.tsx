@@ -28,31 +28,35 @@ export function holdMs(startedAt: number, now: number): number {
   return Math.max(0, 1000 - (now - startedAt));
 }
 
+/** A soft green — the carb and hydration badges' own "good" — so the one button that plans for the
+ *  rider stands out from the plain ones around it. */
+const ACCENT_BORDER = '1px solid color-mix(in srgb, var(--status-good-fg) 35%, transparent)';
+
 const desktopButtonStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 7,
-  border: '1px solid var(--chip-border)',
-  background: 'var(--surface)',
+  border: ACCENT_BORDER,
+  background: 'var(--status-good-bg)',
   borderRadius: 999,
   padding: '7px 12px',
   fontFamily: 'Archivo, sans-serif',
   fontSize: 12,
   fontWeight: 600,
-  color: 'var(--ink)',
+  color: 'var(--status-good-fg)',
   cursor: 'pointer',
   whiteSpace: 'nowrap',
 };
 
 const mobileButtonStyle: CSSProperties = {
-  border: '1px solid var(--chip-border)',
+  border: ACCENT_BORDER,
   borderRadius: 999,
   padding: '6px 11px',
   fontFamily: 'Archivo, sans-serif',
   fontSize: 11,
   fontWeight: 600,
-  color: 'var(--ink)',
-  background: 'var(--surface)',
+  color: 'var(--status-good-fg)',
+  background: 'var(--status-good-bg)',
   cursor: 'pointer',
   whiteSpace: 'nowrap',
 };
