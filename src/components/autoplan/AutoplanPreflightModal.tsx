@@ -327,6 +327,19 @@ export function AutoplanPreflightModal({
               <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600 }}>
                 {entry[lang] || entry.en}
               </span>
+              {entry.needsStop && (
+                <span
+                  title={strings.autoplanDialogNeedsStop}
+                  aria-label={strings.autoplanDialogNeedsStop}
+                  role="img"
+                  style={{ display: 'flex', cursor: 'help' }}
+                >
+                  <svg width="8" height="16" viewBox="0 0 8 16" style={{ display: 'block' }}>
+                    <line x1="4" y1="6" x2="4" y2="16" stroke="var(--ink)" strokeWidth="1.5" />
+                    <circle cx="4" cy="4" r="3.5" fill="var(--ink)" />
+                  </svg>
+                </span>
+              )}
               <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
                 {strings.autoplanDialogCountLabel}
               </span>

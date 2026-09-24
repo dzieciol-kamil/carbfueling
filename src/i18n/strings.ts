@@ -425,6 +425,8 @@ export interface StringTable {
   autoplanFoodTitle: string;
   autoplanDialogHint: string;
   autoplanDialogCountLabel: string;
+  /** Tooltip on the pin before the count of a product marked "at a stop". */
+  autoplanDialogNeedsStop: string;
   autoplanDialogCancel: string;
   autoplanShortRideNote: string;
   autoplanNeedsDuration: string;
@@ -917,6 +919,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogHint:
       'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
     autoplanDialogCountLabel: 'Ile sztuk',
+    autoplanDialogNeedsStop: 'Ten produkt wymaga postoju',
     autoplanDialogCancel: 'Anuluj',
     autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
     autoplanShortRideNote:
@@ -1443,6 +1446,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogHint:
       "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
     autoplanDialogCountLabel: 'Count',
+    autoplanDialogNeedsStop: 'This product needs a stop',
     autoplanDialogCancel: 'Cancel',
     autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
     autoplanShortRideNote:
@@ -1845,6 +1849,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogHint:
       'Lege fest, wie viel du von jedem mitnimmst, und ziehe die Einträge in die Reihenfolge, in der du danach greifst — oben ist die erste Wahl.',
     autoplanDialogCountLabel: 'Anzahl',
+    autoplanDialogNeedsStop: 'Dieses Produkt braucht einen Stopp',
     autoplanDialogCancel: 'Abbrechen',
     autoplanShortRideNote:
       'Diese Fahrt dauert unter einer Stunde — so kurze Belastungen brauchen meist keine Kohlenhydrate, daher haben wir nur Wasser eingeplant.',
@@ -2380,6 +2385,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanDialogHint:
       "Indica quanti ne porti di ciascuno e trascinali nell'ordine in cui li useresti — in alto la prima scelta.",
     autoplanDialogCountLabel: 'Quantità',
+    autoplanDialogNeedsStop: 'Questo prodotto richiede una sosta',
     autoplanDialogCancel: 'Annulla',
     autoplanShortRideNote:
       "Questa uscita dura meno di un'ora — sforzi così brevi di solito non richiedono carboidrati, quindi abbiamo pianificato solo acqua.",
