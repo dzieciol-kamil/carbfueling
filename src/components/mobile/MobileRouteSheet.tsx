@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useRef } from 'react';
-import { paceToSpeed, prof, speedToPace } from '../../domain/fuel';
+import { hasGpxTrack, paceToSpeed, prof, speedToPace } from '../../domain/fuel';
 import type { Intensity, RouteInput } from '../../domain/types';
 import { t, type StringTable } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
@@ -62,6 +62,7 @@ export function MobileRouteSheet() {
   const open = useAppStore((s) => s.ui.routeSheet);
   const closeRouteSheet = useAppStore((s) => s.closeRouteSheet);
   const route = useAppStore((s) => s.route);
+  const hasTrack = hasGpxTrack(route);
   const lang = useAppStore((s) => s.ui.lang);
   const setDistance = useAppStore((s) => s.setDistance);
   const setSpeed = useAppStore((s) => s.setSpeed);
@@ -266,18 +267,20 @@ export function MobileRouteSheet() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {route.gpxName || strings.gpxFile}
+                {hasTrack ? route.gpxName : strings.gpxNone}
               </span>
             </span>
-            <span
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 12,
-                color: 'var(--muted-2)',
-              }}
-            >
-              +{elevationGain(route)} m
-            </span>
+            {hasTrack && (
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 12,
+                  color: 'var(--muted-2)',
+                }}
+              >
+                +{elevationGain(route)} m
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <label
@@ -307,26 +310,32 @@ export function MobileRouteSheet() {
                 style={{ display: 'none' }}
               />
             </label>
-            <button
-              type="button"
-              onClick={toggleGpx}
-              style={{
-                width: 96,
-                border: '1px solid var(--chip-border)',
-                background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
-                color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
-                borderRadius: 10,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {strings.gpxOn}
-            </button>
+            {hasTrack && (
+              <button
+                type="button"
+                onClick={toggleGpx}
+                aria-pressed={route.useGpx}
+                aria-label={strings.gpx}
+                style={{
+                  width: 96,
+                  border: '1px solid var(--chip-border)',
+                  background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
+                  color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
+                  borderRadius: 10,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {route.useGpx ? strings.gpxOn : strings.gpxOff}
+              </button>
+            )}
           </div>
-          <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-3)' }}>
-            {strings.routeSheetGpxNote}
-          </p>
+          {hasTrack && (
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-3)' }}>
+              {strings.routeSheetGpxNote}
+            </p>
+          )}
 
           <button
             type="button"

@@ -143,8 +143,9 @@ export interface StringTable {
   hydOk: string;
   hydLow: string;
   gpx: string;
-  gpxFile: string;
+  gpxNone: string;
   gpxOn: string;
+  gpxOff: string;
   gpxPick: string;
   gpxBad: string;
   shot: string;
@@ -580,8 +581,9 @@ export const STR: Record<Lang, StringTable> = {
     hydOk: 'Płyny pokrywają utratę. Uzupełniaj równomiernie.',
     hydLow: 'Zaplanuj dolewkę lub dodatkowy bidon.',
     gpx: 'Profil GPX',
-    gpxFile: 'track.gpx (demo)',
+    gpxNone: 'Brak pliku GPX · płaski profil',
     gpxOn: 'Wł.',
+    gpxOff: 'Wył.',
     gpxPick: 'Wczytaj',
     gpxBad: 'Nie udało się odczytać pliku GPX.',
     shot: 'jednorazowo',
@@ -1117,8 +1119,9 @@ export const STR: Record<Lang, StringTable> = {
     hydOk: 'Fluids cover the loss. Sip steadily.',
     hydLow: 'Plan a refill or an extra bottle.',
     gpx: 'GPX profile',
-    gpxFile: 'track.gpx (demo)',
+    gpxNone: 'No GPX file · flat profile',
     gpxOn: 'On',
+    gpxOff: 'Off',
     gpxPick: 'Load',
     gpxBad: 'Could not read that GPX file.',
     shot: 'shot',
@@ -1651,8 +1654,9 @@ export const STR: Record<Lang, StringTable> = {
     hydOk: 'Die Flüssigkeitszufuhr deckt den Verlust. Gleichmäßig trinken.',
     hydLow: 'Plane eine Nachfüllung oder eine zusätzliche Flasche.',
     gpx: 'GPX-Profil',
-    gpxFile: 'track.gpx (demo)',
+    gpxNone: 'Keine GPX-Datei · flaches Profil',
     gpxOn: 'An',
+    gpxOff: 'Aus',
     gpxPick: 'Laden',
     gpxBad: 'Die GPX-Datei konnte nicht gelesen werden.',
     shot: 'Shot',
@@ -2190,8 +2194,9 @@ export const STR: Record<Lang, StringTable> = {
     hydOk: 'I liquidi coprono la perdita. Bevi con regolarità.',
     hydLow: 'Pianifica una ricarica o una borraccia in più.',
     gpx: 'Profilo GPX',
-    gpxFile: 'track.gpx (demo)',
+    gpxNone: 'Nessun file GPX · profilo piatto',
     gpxOn: 'Attivo',
+    gpxOff: 'Spento',
     gpxPick: 'Carica',
     gpxBad: 'Impossibile leggere questo file GPX.',
     shot: 'in un colpo',

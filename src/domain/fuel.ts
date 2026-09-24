@@ -462,19 +462,11 @@ export function preRideGut(route: RouteInput): number {
   return Math.max(0, route.preMealCarbs - PRE_RIDE_DIGESTION_GPH * preRideHours);
 }
 
-const SYNTHETIC_ANCHORS: [number, number][] = [
-  [0, 120],
-  [0.1, 165],
-  [0.16, 185],
-  [0.3, 620],
-  [0.38, 300],
-  [0.5, 345],
-  [0.56, 300],
-  [0.72, 900],
-  [0.8, 520],
-  [0.88, 610],
-  [1, 140],
-];
+/** A loaded GPX file with at least one elevation point. Without one the profile is flat: made-up
+ *  climbs would move the requirement curve around for a rider who never gave us their terrain. */
+export function hasGpxTrack(route: RouteInput): boolean {
+  return !!route.gpxTrack && route.gpxTrack.ele.length > 0;
+}
 
 /**
  * Last profile built per route object, so `eff`/`timeAtDistance`/`distanceAtTime` stop rebuilding
@@ -514,7 +506,7 @@ function buildProf(route: RouteInput): Profile {
   const D = dist(route);
   const N = PROFILE_SAMPLES;
   const pts: ProfilePoint[] = [];
-  const hasTrackPoints = !!T && T.ele.length > 0;
+  const hasTrackPoints = hasGpxTrack(route);
 
   for (let i = 0; i <= N; i++) {
     const f = i / N;
@@ -525,24 +517,11 @@ function buildProf(route: RouteInput): Profile {
       pts.push({ x: D * f, ele: T.ele[a] + (T.ele[b] - T.ele[a]) * (g - a), grad: 0, effort: 1 });
       continue;
     }
-    // T.ele can end up empty from corrupted/hand-edited persisted state (the zustand `merge`
-    // above applies persisted JSON with no shape validation) or a settings import that predates
-    // the length check in settingsExport.ts. A single point is fine — the interpolation above
-    // resolves it to that one elevation for every sample — but an empty array makes
-    // `f * (T.ele.length - 1)` go negative and index out of bounds, producing NaN. Flat 0 here
-    // avoids that without flashing the synthetic demo terrain (which implies no track at all)
-    // for what is nominally real GPX data.
-    if (T) {
-      pts.push({ x: D * f, ele: 0, grad: 0, effort: 1 });
-      continue;
-    }
-    let j = 1;
-    while (j < SYNTHETIC_ANCHORS.length - 1 && SYNTHETIC_ANCHORS[j][0] < f) j++;
-    const [f0, e0] = SYNTHETIC_ANCHORS[j - 1];
-    const [f1, e1] = SYNTHETIC_ANCHORS[j];
-    const k = (f - f0) / (f1 - f0);
-    const noise = Math.sin(f * 91) * 16 + Math.sin(f * 233) * 8 + Math.sin(f * 37) * 22;
-    pts.push({ x: D * f, ele: Math.max(40, e0 + (e1 - e0) * k + noise), grad: 0, effort: 1 });
+    // No track — or T.ele ended up empty from corrupted/hand-edited persisted state (the zustand
+    // `merge` applies persisted JSON with no shape validation) or a settings import that predates
+    // the length check in settingsExport.ts, where `f * (T.ele.length - 1)` would go negative and
+    // index out of bounds. Either way the honest profile is flat: effort 1 everywhere.
+    pts.push({ x: D * f, ele: 0, grad: 0, effort: 1 });
   }
 
   for (let i = 0; i <= N; i++) {
