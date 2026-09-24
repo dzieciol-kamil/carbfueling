@@ -5,7 +5,7 @@
  * tested here for the same reason nothing else in `src/domain/` imports `jsdom`'s worker shims.
  */
 import { describe, expect, test, vi } from 'vitest';
-import { DEFAULT_MIX } from '../types';
+import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 import { compareScore, score } from './score';
 import type { Draft } from './score';
@@ -53,7 +53,7 @@ const FOOD_LIB: FoodLibEntry[] = [
 ];
 
 function makeState(route: RouteInput, gear: Vessel[]): PlanState {
-  return { route, mix: DEFAULT_MIX, gear, fills: [], foods: [], foodLib: FOOD_LIB };
+  return { route, mix: LEGACY_TEST_MIX, gear, fills: [], foods: [], foodLib: FOOD_LIB };
 }
 
 // Small enough to run fast, big enough that `improve()` still has at least one strictly-better

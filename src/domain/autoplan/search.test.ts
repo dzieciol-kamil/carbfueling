@@ -25,7 +25,7 @@ import {
   totalHours,
 } from '../fuel';
 import type { CoverageStatus } from '../fuel';
-import { DEFAULT_MIX } from '../types';
+import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 
 function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
@@ -68,7 +68,7 @@ const FOOD_LIB: FoodLibEntry[] = [
 ];
 
 function makeState(route: RouteInput, gear: Vessel[], foodLib = FOOD_LIB): PlanState {
-  return { route, mix: DEFAULT_MIX, gear, fills: [], foods: [], foodLib };
+  return { route, mix: LEGACY_TEST_MIX, gear, fills: [], foods: [], foodLib };
 }
 
 /** The plan the rider would have without thinking: every vessel filled once with the first content

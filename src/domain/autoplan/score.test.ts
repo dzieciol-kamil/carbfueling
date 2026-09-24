@@ -20,7 +20,7 @@ import {
   totalHours,
   waterBalancePct,
 } from '../fuel';
-import { DEFAULT_MIX } from '../types';
+import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { PlanState, RouteInput, Vessel } from '../types';
 
 /** 90 km at 25 km/h is 3.6 h, so the carb badge is graded rather than 'unneeded'; 30 C is where
@@ -50,11 +50,18 @@ const gear: Vessel[] = [
   { gid: 'f1', name: 'Flask', vol: 250, allowed: ['gel'], gelParts: 4 },
 ];
 
-const state: PlanState = { route, mix: DEFAULT_MIX, gear, fills: [], foods: [], foodLib: [] };
+const state: PlanState = {
+  route,
+  mix: LEGACY_TEST_MIX,
+  gear,
+  fills: [],
+  foods: [],
+  foodLib: [],
+};
 
 const D = dist(route);
 const HRS = totalHours(route);
-const GEL_CARBS = (250 / 100) * DEFAULT_MIX.gelConc;
+const GEL_CARBS = (250 / 100) * LEGACY_TEST_MIX.gelConc;
 
 /**
  * The span over which the gel's 150 g exactly matches the route's requirement. Written out by hand

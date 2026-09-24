@@ -10,7 +10,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import { planSummary } from '../fuel';
-import { DEFAULT_MIX } from '../types';
+import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 import { improve, packedCaps } from './exhaustive';
 import { oracle } from './oracle';
@@ -59,7 +59,7 @@ const FOOD_LIB: FoodLibEntry[] = [
 ];
 
 function makeState(route: RouteInput, gear: Vessel[]): PlanState {
-  return { route, mix: DEFAULT_MIX, gear, fills: [], foods: [], foodLib: FOOD_LIB };
+  return { route, mix: LEGACY_TEST_MIX, gear, fills: [], foods: [], foodLib: FOOD_LIB };
 }
 
 /** Every fixture offers the same selection: two gels and a bought cola. */

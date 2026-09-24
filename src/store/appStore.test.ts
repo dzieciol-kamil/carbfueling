@@ -779,29 +779,29 @@ describe('citric source setters', () => {
     useAppStore.setState(initialState, true);
   });
 
-  test('defaults to citric acid for both izo and gel', () => {
-    expect(useAppStore.getState().mix.citricSource).toBe('citric');
-    expect(useAppStore.getState().mix.gelCitricSource).toBe('citric');
+  test('defaults to lemon for both izo and gel', () => {
+    expect(useAppStore.getState().mix.citricSource).toBe('lemon');
+    expect(useAppStore.getState().mix.gelCitricSource).toBe('lemon');
   });
 
   test('setCitricSource only changes the izo source', () => {
-    useAppStore.getState().setCitricSource('lemon');
-    expect(useAppStore.getState().mix.citricSource).toBe('lemon');
-    expect(useAppStore.getState().mix.gelCitricSource).toBe('citric');
+    useAppStore.getState().setCitricSource('citric');
+    expect(useAppStore.getState().mix.citricSource).toBe('citric');
+    expect(useAppStore.getState().mix.gelCitricSource).toBe('lemon');
   });
 
   test('setGelCitricSource only changes the gel source', () => {
     useAppStore.getState().setGelCitricSource('lime');
     expect(useAppStore.getState().mix.gelCitricSource).toBe('lime');
-    expect(useAppStore.getState().mix.citricSource).toBe('citric');
+    expect(useAppStore.getState().mix.citricSource).toBe('lemon');
   });
 
-  test('resetMix restores both sources to citric acid', () => {
-    useAppStore.getState().setCitricSource('lemon');
+  test('resetMix restores both sources to lemon', () => {
+    useAppStore.getState().setCitricSource('citric');
     useAppStore.getState().setGelCitricSource('lime');
     useAppStore.getState().resetMix();
-    expect(useAppStore.getState().mix.citricSource).toBe('citric');
-    expect(useAppStore.getState().mix.gelCitricSource).toBe('citric');
+    expect(useAppStore.getState().mix.citricSource).toBe('lemon');
+    expect(useAppStore.getState().mix.gelCitricSource).toBe('lemon');
   });
 });
 
@@ -810,21 +810,23 @@ describe('ratio setters', () => {
     useAppStore.setState(initialState, true);
   });
 
-  test('defaults to 2:1 for both izo and gel', () => {
-    expect(useAppStore.getState().mix.ratio).toBe(2);
-    expect(useAppStore.getState().mix.gelRatio).toBe(2);
+  test('defaults to honey (0.8:1) for both izo and gel', () => {
+    expect(useAppStore.getState().mix.ratio).toBe(0.8);
+    expect(useAppStore.getState().mix.gelRatio).toBe(0.8);
+    expect(useAppStore.getState().mix.ratioPreset).toBe('honey');
+    expect(useAppStore.getState().mix.gelRatioPreset).toBe('honey');
   });
 
   test('setRatio only changes the izo ratio', () => {
     useAppStore.getState().setRatio(1, 'sugar');
     expect(useAppStore.getState().mix.ratio).toBe(1);
-    expect(useAppStore.getState().mix.gelRatio).toBe(2);
+    expect(useAppStore.getState().mix.gelRatio).toBe(0.8);
   });
 
   test('setGelRatio only changes the gel ratio', () => {
-    useAppStore.getState().setGelRatio(0.8, 'honey');
-    expect(useAppStore.getState().mix.gelRatio).toBe(0.8);
-    expect(useAppStore.getState().mix.ratio).toBe(2);
+    useAppStore.getState().setGelRatio(2, 'iso');
+    expect(useAppStore.getState().mix.gelRatio).toBe(2);
+    expect(useAppStore.getState().mix.ratio).toBe(0.8);
   });
 
   test('setGelRatio clamps to the 0.2-10 range', () => {
@@ -834,17 +836,17 @@ describe('ratio setters', () => {
     expect(useAppStore.getState().mix.gelRatio).toBe(0.2);
   });
 
-  test('resetMix restores both ratios to 2:1', () => {
+  test('resetMix restores both ratios to honey', () => {
     useAppStore.getState().setRatio(1, 'sugar');
-    useAppStore.getState().setGelRatio(0.8, 'honey');
+    useAppStore.getState().setGelRatio(2, 'iso');
     useAppStore.getState().resetMix();
-    expect(useAppStore.getState().mix.ratio).toBe(2);
-    expect(useAppStore.getState().mix.gelRatio).toBe(2);
+    expect(useAppStore.getState().mix.ratio).toBe(0.8);
+    expect(useAppStore.getState().mix.gelRatio).toBe(0.8);
   });
 
   test('setRatio stores the preset tag alongside the ratio', () => {
-    useAppStore.getState().setRatio(0.8, 'honey');
-    expect(useAppStore.getState().mix.ratioPreset).toBe('honey');
+    useAppStore.getState().setRatio(2, 'iso');
+    expect(useAppStore.getState().mix.ratioPreset).toBe('iso');
     useAppStore.getState().setRatio(1.3, 'custom');
     expect(useAppStore.getState().mix.ratioPreset).toBe('custom');
   });
@@ -854,12 +856,12 @@ describe('ratio setters', () => {
     expect(useAppStore.getState().mix.gelRatioPreset).toBe('sugar');
   });
 
-  test('resetMix restores ratioPreset/gelRatioPreset to iso', () => {
-    useAppStore.getState().setRatio(0.8, 'honey');
+  test('resetMix restores ratioPreset/gelRatioPreset to honey', () => {
+    useAppStore.getState().setRatio(2, 'iso');
     useAppStore.getState().setGelRatio(1, 'sugar');
     useAppStore.getState().resetMix();
-    expect(useAppStore.getState().mix.ratioPreset).toBe('iso');
-    expect(useAppStore.getState().mix.gelRatioPreset).toBe('iso');
+    expect(useAppStore.getState().mix.ratioPreset).toBe('honey');
+    expect(useAppStore.getState().mix.gelRatioPreset).toBe('honey');
   });
 });
 

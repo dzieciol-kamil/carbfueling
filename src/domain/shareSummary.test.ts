@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { STR } from '../i18n/strings';
 import { fmtHydration, shareBlurb, shareStats } from './shareSummary';
 import type { PlanState, ShopStop } from './types';
-import { DEFAULT_MIX } from './types';
+import { LEGACY_TEST_MIX } from './__fixtures__/legacyMix';
 
 function planState(): PlanState {
   return {
@@ -23,7 +23,7 @@ function planState(): PlanState {
       gpxName: null,
       gpxError: null,
     },
-    mix: DEFAULT_MIX,
+    mix: LEGACY_TEST_MIX,
     gear: [
       { gid: 'g1', name: 'Bidon', vol: 650, allowed: ['water', 'izo'], gelParts: 4 },
       { gid: 'g2', name: 'Flask', vol: 250, allowed: ['izo', 'gel'], gelParts: 4 },
