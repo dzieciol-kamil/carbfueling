@@ -907,8 +907,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanStopsKeepAndAddHint:
       'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
     autoplanStopsKeepOnly: 'Tylko moje',
-    autoplanStopsKeepOnlyHint:
-      'Sprawdzimy, czy dasz radę na stopach, które już znasz — jeśli nie, zobaczysz brakującą ilość zamiast nowego stopu.',
+    autoplanStopsKeepOnlyHint: 'Żadnych nowych stopów: robimy, co się da, z tymi, które masz.',
     autoplanStopsClear: 'Od nowa',
     autoplanStopsClearHint:
       'Usuniemy Twoje stopy i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
@@ -1435,8 +1434,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanStopsKeepAndAddHint:
       'Your stops stay, and new ones only appear where the ride genuinely needs them.',
     autoplanStopsKeepOnly: 'Only mine',
-    autoplanStopsKeepOnlyHint:
-      "We'll check whether you can fuel the ride on the stops you already know — if not, you'll see the shortfall instead of a new stop.",
+    autoplanStopsKeepOnlyHint: 'No new stops: we make the most of the ones you have.',
     autoplanStopsClear: 'From scratch',
     autoplanStopsClearHint:
       "We'll clear your stops and plan the route from zero, as if none existed.",
@@ -1839,8 +1837,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanStopsKeepAndAddHint:
       'Deine Stopps bleiben, neue kommen nur dort dazu, wo die Strecke sie wirklich braucht.',
     autoplanStopsKeepOnly: 'Nur meine',
-    autoplanStopsKeepOnlyHint:
-      'Wir prüfen, ob du die Strecke mit deinen bekannten Stopps versorgen kannst — wenn nicht, siehst du die Lücke statt eines neuen Stopps.',
+    autoplanStopsKeepOnlyHint: 'Keine neuen Stopps: Wir machen das Beste aus denen, die du hast.',
     autoplanStopsClear: 'Von vorn',
     autoplanStopsClearHint:
       'Wir entfernen deine Stopps und planen die Strecke von null, als gäbe es keine.',
@@ -2376,8 +2373,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanStopsKeepAndAddHint:
       'Le tue soste restano, e se ne aggiungono di nuove solo dove il percorso ne ha davvero bisogno.',
     autoplanStopsKeepOnly: 'Solo le mie',
-    autoplanStopsKeepOnlyHint:
-      'Verifichiamo se riesci a rifornirti con le soste che già conosci — altrimenti vedrai la mancanza invece di una nuova sosta.',
+    autoplanStopsKeepOnlyHint: 'Nessuna nuova sosta: facciamo il meglio con quelle che hai.',
     autoplanStopsClear: 'Da zero',
     autoplanStopsClearHint:
       'Eliminiamo le tue soste e pianifichiamo il percorso da zero, come se non ce ne fossero.',
