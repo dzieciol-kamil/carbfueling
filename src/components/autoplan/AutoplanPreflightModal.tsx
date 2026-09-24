@@ -340,11 +340,12 @@ export function AutoplanPreflightModal({
                     transform: 'translateX(-50%)',
                   }}
                 >
-                  <svg width="12" height="14" viewBox="0 0 16 18" style={{ display: 'block' }}>
+                  <svg width="12" height="19" viewBox="0 0 16 25" style={{ display: 'block' }}>
                     <path
                       d="M8 18C8 18 1 10.5 1 7A7 7 0 1 1 15 7C15 10.5 8 18 8 18Z"
                       fill="var(--ink)"
                     />
+                    <line x1="8" y1="17" x2="8" y2="25" stroke="var(--ink)" strokeWidth="2" />
                   </svg>
                 </InfoPopover>
               )}
