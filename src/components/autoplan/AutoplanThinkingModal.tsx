@@ -35,14 +35,33 @@ const cardStyle: CSSProperties = {
   gap: 14,
   textAlign: 'center',
 };
-const spinnerStyle: CSSProperties = {
-  width: 34,
-  height: 34,
-  borderRadius: '50%',
-  border: '3px solid var(--chip-border)',
-  borderTopColor: 'var(--selected-bg)',
-  boxSizing: 'border-box',
-};
+/** The site's logo wave (public/favicon.svg), drawn on and wiped off like a chart line being plotted. */
+const WAVE = 'M5 21 C 10 22, 12 12, 16.5 12 S 23 20, 27 8';
+
+function ThinkingWave() {
+  return (
+    <svg width={56} height={56} viewBox="0 0 32 32" aria-hidden="true">
+      <rect className="autoplan-thinking-tile" width={32} height={32} rx={7} />
+      <path
+        d={WAVE}
+        fill="none"
+        stroke="#5aa33f"
+        strokeOpacity={0.22}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+      />
+      <path
+        className="autoplan-thinking-wave"
+        d={WAVE}
+        pathLength={32}
+        fill="none"
+        stroke="#5aa33f"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 /**
  * The window shown while the worker keeps improving the plan. It only shows and rotates texts; the
@@ -85,7 +104,7 @@ export function AutoplanThinkingModal({
         aria-labelledby="autoplan-thinking-title"
         style={cardStyle}
       >
-        <div className="autoplan-thinking-spinner" style={spinnerStyle} aria-hidden="true" />
+        <ThinkingWave />
         <span id="autoplan-thinking-title" style={{ fontSize: 14, fontWeight: 700 }}>
           {strings.autoplanThinkingTitle}
         </span>

@@ -236,14 +236,33 @@ input[type='number'] {
   }
 }
 
-/* Autoplan thinking modal's spinner (AutoplanThinkingModal.tsx). */
-.autoplan-thinking-spinner {
-  animation: autoplan-thinking-spin 0.9s linear infinite;
+/* Autoplan thinking modal's waiting mark (AutoplanThinkingModal.tsx): the logo tile, its wave drawn
+   on from the left and wiped off to the right. The tile keeps the favicon's colour; on the dark card
+   it goes a shade deeper so it still reads as a tile. */
+.autoplan-thinking-tile {
+  fill: #16191c;
 }
 
-@keyframes autoplan-thinking-spin {
-  to {
-    transform: rotate(360deg);
+[data-theme='dark'] .autoplan-thinking-tile {
+  fill: #0f1113;
+}
+
+.autoplan-thinking-wave {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  animation: autoplan-thinking-draw 1.8s ease-in-out infinite;
+}
+
+@keyframes autoplan-thinking-draw {
+  0% {
+    stroke-dashoffset: 32;
+  }
+  45%,
+  55% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -32;
   }
 }
 
@@ -265,9 +284,9 @@ input[type='number'] {
     opacity: 0.85;
   }
 
-  /* Still turning, just slowly — a frozen ring would read as "stuck". */
-  .autoplan-thinking-spinner {
-    animation-duration: 3s;
+  /* Still drawing, just slowly — a frozen line would read as "stuck". */
+  .autoplan-thinking-wave {
+    animation-duration: 4s;
   }
 }
 
