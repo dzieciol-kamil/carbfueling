@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import { carbSpanEndKm, waterSpanEndKm } from './spans';
 import { cph, dist, eff, samples, sweat, totalHours, valueAt } from '../fuel';
 import { KIELCE_MARKI_ELE } from '../__fixtures__/kielceMarkiEle';
-import { DEFAULT_MIX } from '../types';
+import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { PlanState, RouteInput } from '../types';
 
 function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
@@ -48,7 +48,7 @@ function gpxRoute(): RouteInput {
 /** An empty plan on `route` — enough for `samples()`, whose two need lines do not depend on what
  *  the rider is carrying. */
 function emptyPlan(route: RouteInput): PlanState {
-  return { route, mix: DEFAULT_MIX, gear: [], fills: [], foods: [], foodLib: [] };
+  return { route, mix: LEGACY_TEST_MIX, gear: [], fills: [], foods: [], foodLib: [] };
 }
 
 /** What the route demands between two km marks, computed straight from `eff` the way `samples()`

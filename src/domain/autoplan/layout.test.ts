@@ -27,7 +27,7 @@ import {
   sweat,
   totalHours,
 } from '../fuel';
-import { DEFAULT_MIX } from '../types';
+import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type {
   Content,
   Fill,
@@ -64,7 +64,7 @@ function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
 
 /** 20 g/100 ml izo: a 750 ml bottle then holds 150 g, which is exactly 50 km of a 75 g/h ride. */
 function makeMix(o: Partial<MixSettings> = {}): MixSettings {
-  return { ...DEFAULT_MIX, conc: 20, ...o };
+  return { ...LEGACY_TEST_MIX, conc: 20, ...o };
 }
 
 function vessel(gid: string, vol: number, allowed: Content[], gelParts = 1): Vessel {
@@ -682,7 +682,7 @@ describe('where a stream ends', () => {
     const r = makeRoute({ distance: 188, speed: 15, temp: 5, weight: 55, intensity: 'low' });
     const Dr = dist(r);
     const gear = [vessel('g1', 250, ['water', 'gel'], 4), vessel('g2', 150, ['water', 'gel'], 4)];
-    const state = makeState(r, gear, [], { ...DEFAULT_MIX, conc: 6 });
+    const state = makeState(r, gear, [], { ...LEGACY_TEST_MIX, conc: 6 });
     const { fills, stops } = place(
       state,
       [
