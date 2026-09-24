@@ -68,8 +68,10 @@ const itemStyle = (item: MenuItem): CSSProperties => ({
 
 /**
  * A button that opens a short list of actions under it. Closes when an item is picked, on a click
- * or tap anywhere else, and on Escape. `triggerStyle` is the caller's own button look, so the
- * trigger sits in its row like the buttons around it; a chevron says it opens.
+ * or tap anywhere else, when focus leaves it, and on Escape (focus going back to the button). The
+ * keyboard lands on the first item and moves with the arrow keys. `triggerStyle` is the caller's
+ * own button look, so the trigger sits in its row like the buttons around it; a chevron says it
+ * opens.
  */
 export function MenuButton({
   label,
@@ -86,14 +88,25 @@ export function MenuButton({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const enabledItems = () =>
+    Array.from(
+      panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ??
+        [],
+    );
 
   useEffect(() => {
     if (!open) return;
+    enabledItems()[0]?.focus();
     const onPointer = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      triggerRef.current?.focus();
     };
     document.addEventListener('pointerdown', onPointer);
     document.addEventListener('keydown', onKey);
@@ -104,8 +117,19 @@ export function MenuButton({
   }, [open]);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div
+      ref={ref}
+      style={{ position: 'relative' }}
+      // Tabbing out closes it. A blur with nowhere to go (iOS, which does not focus a tapped
+      // button) is left to the outside-tap handler above, or a tap on an item would close the
+      // menu before the item's click arrived.
+      onBlur={(e) => {
+        const next = e.relatedTarget as Node | null;
+        if (next && !ref.current?.contains(next)) setOpen(false);
+      }}
+    >
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -117,7 +141,28 @@ export function MenuButton({
         <Chevron open={open} />
       </button>
       {open && (
-        <div role="menu" style={panelStyle(align)}>
+        <div
+          ref={panelRef}
+          role="menu"
+          style={panelStyle(align)}
+          onKeyDown={(e) => {
+            const items = enabledItems();
+            const i = items.indexOf(document.activeElement as HTMLButtonElement);
+            const to =
+              e.key === 'ArrowDown'
+                ? (i + 1) % items.length
+                : e.key === 'ArrowUp'
+                  ? (i - 1 + items.length) % items.length
+                  : e.key === 'Home'
+                    ? 0
+                    : e.key === 'End'
+                      ? items.length - 1
+                      : null;
+            if (to === null) return;
+            e.preventDefault();
+            items[to]?.focus();
+          }}
+        >
           {items.map((item) => (
             <button
               key={item.key}

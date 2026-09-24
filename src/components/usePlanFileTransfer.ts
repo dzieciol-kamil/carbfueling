@@ -10,8 +10,8 @@ import { useAppStore } from '../store/appStore';
 import { saveTextFile } from '../utils/fileSave';
 
 // Shared save/load-a-plan-file logic behind the "Download plan"/"Load plan" buttons —
-// used by Header.tsx (desktop, moving to ChartCard.tsx) and MobileProfile.tsx (mobile "Me"
-// tab). Both call sites ran identical handlers before this was pulled out; this is that
+// used by ChartCard.tsx (desktop "More" menu), MobilePlanMenu.tsx (the phone's "Plan" menu)
+// and MobileProfile.tsx (mobile "Me" tab). Both call sites ran identical handlers before this was pulled out; this is that
 // same code, not a rewrite. Each caller still renders its own buttons/feedback banner/file
 // input and wires them to what's returned here, since their markup and styling differ.
 export function usePlanFileTransfer() {

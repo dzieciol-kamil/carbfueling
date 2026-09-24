@@ -5,7 +5,7 @@ import { createPlanHistory } from './planHistory';
 /** Just the document fields and the three pointer keys the history reads — every field a plain
  *  value the tests can compare, standing in for the app's real ones. */
 type S = {
-  route: number;
+  route: { distance: number; gpxError: string | null };
   mix: number;
   gear: number;
   fills: number[];
@@ -20,7 +20,7 @@ const IDLE = 700;
 
 function setup() {
   const store = createStore<S>()(() => ({
-    route: 0,
+    route: { distance: 0, gpxError: null },
     mix: 0,
     gear: 0,
     fills: [],
@@ -151,15 +151,15 @@ describe('plan history', () => {
 
   test('every document field is restored together', () => {
     const { store, history } = setup();
-    store.setState({ gear: 1, fills: [1], route: 5 });
+    store.setState({ gear: 1, fills: [1], route: { distance: 5, gpxError: null } });
     vi.advanceTimersByTime(IDLE);
     history.undo();
-    expect(store.getState()).toMatchObject({ gear: 0, fills: [], route: 0 });
+    expect(store.getState()).toMatchObject({ gear: 0, fills: [], route: { distance: 0 } });
   });
 
   test('the stack is capped, oldest steps dropping off first', () => {
     const store = createStore<S>()(() => ({
-      route: 0,
+      route: { distance: 0, gpxError: null },
       mix: 0,
       gear: 0,
       fills: [],
@@ -171,10 +171,49 @@ describe('plan history', () => {
     }));
     const history = createPlanHistory(store, { idleMs: IDLE, limit: 3 });
     for (let i = 1; i <= 5; i++) {
-      store.setState({ route: i });
+      store.setState({ route: { distance: i, gpxError: null } });
       vi.advanceTimersByTime(IDLE);
     }
     for (let i = 0; i < 10; i++) history.undo();
-    expect(store.getState().route).toBe(2);
+    expect(store.getState().route.distance).toBe(2);
+  });
+
+  test('no undo mid-drag: the drag would write itself straight back', () => {
+    const { store, history, addFill } = setup();
+    addFill(1);
+    vi.advanceTimersByTime(IDLE);
+    store.setState((s) => ({ ui: { ...s.ui, dragKey: 'f1' } }));
+    store.setState({ fills: [2] });
+    history.undo();
+    expect(store.getState().fills).toEqual([2]);
+  });
+
+  test('hold() closes the step being typed, so a run is a step of its own', () => {
+    const { store, history, addFill } = setup();
+    addFill(1);
+    history.hold();
+    addFill(2);
+    history.release();
+    vi.advanceTimersByTime(IDLE);
+    history.undo();
+    expect(store.getState().fills).toEqual([1]);
+  });
+
+  test('while held, the buttons say there is nothing to step', () => {
+    const { history, addFill, status } = setup();
+    addFill(1);
+    vi.advanceTimersByTime(IDLE);
+    history.hold();
+    expect(status()).toEqual({ canUndo: false, canRedo: false });
+    history.release();
+    expect(status().canUndo).toBe(true);
+  });
+
+  test('a GPX error message alone is not a step', () => {
+    const { store, status } = setup();
+    store.setState((s) => ({ route: { ...s.route, gpxError: 'gpxBad' } }));
+    expect(status().canUndo).toBe(false);
+    store.setState((s) => ({ route: { ...s.route, distance: 90 } }));
+    expect(status().canUndo).toBe(true);
   });
 });

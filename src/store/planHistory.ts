@@ -44,13 +44,24 @@ const docOf = (s: HistoryState): Doc => {
   return d;
 };
 
-/** Every write in the store replaces what it changes, so reference equality is enough. */
-const docChanged = (a: HistoryState, b: HistoryState) => DOC_KEYS.some((k) => a[k] !== b[k]);
+/**
+ * Every write in the store replaces what it changes, so reference equality is enough — except that
+ * a GPX file that fails to load only sets `route.gpxError`, which is a message, not an edit.
+ */
+const docChanged = (a: HistoryState, b: HistoryState) =>
+  DOC_KEYS.some((k) => {
+    if (a[k] === b[k]) return false;
+    if (k !== 'route') return true;
+    const ra = a.route as Record<string, unknown>;
+    const rb = b.route as Record<string, unknown>;
+    return Object.keys(ra).some((f) => f !== 'gpxError' && ra[f] !== rb[f]);
+  });
 
 export type PlanHistory = {
   undo: () => void;
   redo: () => void;
-  /** Keep the current burst open until the matching `release()` — one step for the whole span. */
+  /** Start a step that lasts until the matching `release()` — one step for the whole span, and
+   *  no undo or redo inside it. */
   hold: () => void;
   release: () => void;
   /** Whether there is anything to undo / redo, as a store the buttons can subscribe to. */
@@ -69,7 +80,12 @@ export function createPlanHistory<S extends HistoryState>(
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const status = create<HistoryStatus>(() => ({ canUndo: false, canRedo: false }));
-  const publish = () => status.setState({ canUndo: past.length > 0, canRedo: future.length > 0 });
+  // Nothing can be stepped while held (see `step`), so the buttons say so rather than doing nothing.
+  const publish = () =>
+    status.setState({
+      canUndo: held === 0 && past.length > 0,
+      canRedo: held === 0 && future.length > 0,
+    });
 
   const close = () => {
     clearTimeout(timer);
@@ -116,8 +132,9 @@ export function createPlanHistory<S extends HistoryState>(
   };
 
   const step = (from: Doc[], to: Doc[]) => {
-    // Nothing moves while an autoplan run is still writing its plans.
-    if (held > 0) return;
+    // Nothing moves while an autoplan run is still writing its plans, nor mid-drag: the drag's
+    // next pointermove would write its own geometry straight back over the restored plan.
+    if (held > 0 || store.getState().ui.dragKey !== null) return;
     close();
     const doc = from.pop();
     if (!doc) return;
@@ -130,12 +147,15 @@ export function createPlanHistory<S extends HistoryState>(
     undo: () => step(past, future),
     redo: () => step(future, past),
     hold: () => {
+      // Whatever was being typed a moment ago is its own step, not part of this one.
+      if (held === 0) close();
       held += 1;
-      clearTimeout(timer);
+      publish();
     },
     release: () => {
       held = Math.max(0, held - 1);
       if (open) closeWhenIdle();
+      publish();
     },
     status,
   };

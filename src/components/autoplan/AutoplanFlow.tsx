@@ -281,16 +281,7 @@ export function AutoplanFlow({
           onClick={handleTrigger}
           disabled={gate === 'noDuration'}
           title={disabledTitle}
-          style={
-            gate === 'noDuration'
-              ? {
-                  ...(variant === 'desktop' ? desktopButtonStyle : mobileButtonStyle),
-                  ...disabledStyle,
-                }
-              : variant === 'desktop'
-                ? desktopButtonStyle
-                : mobileButtonStyle
-          }
+          style={gate === 'noDuration' ? { ...baseStyle, ...disabledStyle } : baseStyle}
         >
           {variant === 'desktop' && <WandIcon />}
           <span>{strings.autoplanButton}</span>

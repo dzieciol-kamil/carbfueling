@@ -1,6 +1,7 @@
 /**
  * The Planning row's icons, shared by the desktop row (ChartCard.tsx), the autoplan button
- * (AutoplanFlow.tsx) and the menus that gather the plan's actions (PlanMenu.tsx).
+ * (AutoplanFlow.tsx) and the menus that gather the plan's actions (MobilePlanMenu.tsx, and
+ * ChartCard.tsx's "More").
  */
 // Matches Header.tsx's GearIcon/MixIcon/FoodIcon/SettingsIcon idiom (viewBox, stroke width,
 // sizing).

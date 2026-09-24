@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/appStore';
 import { planHistory } from '../../store/planHistory';
 
 /** Two arrows bending back on themselves — the same viewBox/stroke idiom as the Planning row's
- *  other icons (DownloadIcon/UploadIcon/StartOverIcon in ChartCard.tsx, ShareIcon). */
+ *  other icons (planIcons.tsx, ShareIcon). */
 function ArrowIcon({ redo }: { redo?: boolean }) {
   return (
     <svg
@@ -86,13 +86,17 @@ export function UndoRedo({ variant }: { variant: 'desktop' | 'mobile' }) {
 }
 
 /** Ctrl/⌘+Z undoes, Ctrl/⌘+Shift+Z and Ctrl+Y redo — except in a text field, whose own undo is
- *  the one the rider means there. */
+ *  the one the rider means there, and while the stop sheet or the tour is open: both hold the id
+ *  of something in the plan (the stop being edited, the tour's demo fill) that an undo could
+ *  take away. The panels read the plan live, so undoing under them is fine. */
 export function usePlanHistoryKeys() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      const ui = useAppStore.getState().ui;
+      if (ui.shopSheet !== null || ui.tourStep !== null) return;
       const key = e.key.toLowerCase();
       if (key === 'z') {
         e.preventDefault();
