@@ -94,11 +94,14 @@ export function MobileApp() {
           >
             CARB FUELING
           </a>
+          {/* Grows to the full row once it wraps under the wordmark, so the route chip keeps the
+              left edge and the Plan menu the right one. */}
           <div
             style={{
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: 8,
             }}
