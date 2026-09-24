@@ -724,7 +724,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Pokaż tour ponownie',
     tourConfirmTitle: 'Uruchomić tour ponownie?',
     tourConfirmBody:
-      'Tour wczyta przykładowe dane (trasa i jeden bidon) w miejsce Twojego aktualnego planu. Tej zmiany nie da się cofnąć.',
+      'Tour wczyta przykładowe dane (trasa i jeden bidon) w miejsce Twojego aktualnego planu. Możesz to cofnąć strzałką ↶, dopóki nie odświeżysz strony.',
     tourConfirmCancel: 'Anuluj',
     tourConfirmStart: 'Uruchom tour',
     tabMix: 'Mieszanka',
@@ -826,7 +826,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanButton: 'Załaduj plan',
     importPlanConfirmTitle: 'Zastąpić bieżący plan?',
     importPlanConfirmBody:
-      'Import nadpisze Twoją aktualną trasę, sprzęt, mieszankę, produkty i sklepy danymi z pliku. Tej zmiany nie da się cofnąć.',
+      'Import nadpisze Twoją aktualną trasę, sprzęt, mieszankę, produkty i postoje danymi z pliku. Możesz to cofnąć strzałką ↶, dopóki nie odświeżysz strony.',
     importPlanConfirmCancel: 'Anuluj',
     importPlanConfirmConfirm: 'Importuj',
     importPlanError:
@@ -834,7 +834,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanSuccess: 'Plan zaimportowany.',
     sharedPlanConfirmTitle: 'Otworzono udostępniony plan',
     sharedPlanConfirmBody:
-      'Wczytać go? Twój obecny plan — trasa, sprzęt, mieszanka, produkty i postoje — zostanie zastąpiony. Tej zmiany nie da się cofnąć.',
+      'Wczytać go? Twój obecny plan — trasa, sprzęt, mieszanka, produkty i postoje — zostanie zastąpiony. Możesz to cofnąć strzałką ↶, dopóki nie odświeżysz strony.',
     sharedPlanConfirmCancel: 'Anuluj',
     sharedPlanConfirmConfirm: 'Wczytaj',
     sharePlanButton: 'Udostępnij',
@@ -888,7 +888,7 @@ export const STR: Record<Lang, StringTable> = {
     printCutHint: 'Wytnij i przyklej na górnej rurze',
     clearPlanConfirmTitle: 'Zacząć od nowa?',
     clearPlanConfirmBody:
-      'Usunie napełnienia, produkty i postoje z trasy. Trasa, sprzęt i mieszanka zostają bez zmian. Tej zmiany nie da się cofnąć.',
+      'Usunie napełnienia, produkty i postoje z trasy. Trasa, sprzęt i mieszanka zostają bez zmian. Możesz to cofnąć strzałką ↶, dopóki nie odświeżysz strony.',
     clearPlanConfirmCancel: 'Anuluj',
     clearPlanConfirmConfirm: 'Zacznij od nowa',
     recoveryLabel: 'Regeneracja',
@@ -1260,7 +1260,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Replay tour',
     tourConfirmTitle: 'Replay the tour?',
     tourConfirmBody:
-      "The tour will load sample data (a route and one bottle) over your current plan. This can't be undone.",
+      'The tour will load sample data (a route and one bottle) over your current plan. You can undo this with ↶ until you reload the page.',
     tourConfirmCancel: 'Cancel',
     tourConfirmStart: 'Start tour',
     tabMix: 'Mix',
@@ -1360,14 +1360,14 @@ export const STR: Record<Lang, StringTable> = {
     importPlanButton: 'Load plan',
     importPlanConfirmTitle: 'Replace your current plan?',
     importPlanConfirmBody:
-      "Importing will overwrite your current route, gear, mix, products and shops with the file's data. This can't be undone.",
+      "Importing will overwrite your current route, gear, mix, products and stops with the file's data. You can undo this with ↶ until you reload the page.",
     importPlanConfirmCancel: 'Cancel',
     importPlanConfirmConfirm: 'Import',
     importPlanError: "Could not read that file — check it's a valid Carb Fueling plan export.",
     importPlanSuccess: 'Plan imported.',
     sharedPlanConfirmTitle: 'A shared plan was opened',
     sharedPlanConfirmBody:
-      'Load it? Your current plan — route, gear, mix, products and stops — will be replaced. This cannot be undone.',
+      'Load it? Your current plan — route, gear, mix, products and stops — will be replaced. You can undo this with ↶ until you reload the page.',
     sharedPlanConfirmCancel: 'Cancel',
     sharedPlanConfirmConfirm: 'Load',
     sharePlanButton: 'Share',
@@ -1421,7 +1421,7 @@ export const STR: Record<Lang, StringTable> = {
     printCutHint: 'Cut out and tape to your top tube',
     clearPlanConfirmTitle: 'Start over?',
     clearPlanConfirmBody:
-      "This removes fills, food and stops from your route. Your route, gear and mix stay as they are. This can't be undone.",
+      'This removes fills, food and stops from your route. Your route, gear and mix stay as they are. You can undo this with ↶ until you reload the page.',
     clearPlanConfirmCancel: 'Cancel',
     clearPlanConfirmConfirm: 'Start over',
     recoveryLabel: 'Recovery',
@@ -1794,7 +1794,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Tour erneut zeigen',
     tourConfirmTitle: 'Tour erneut starten?',
     tourConfirmBody:
-      'Die Tour lädt Beispieldaten (eine Strecke und eine Flasche) anstelle deines aktuellen Plans. Das kann nicht rückgängig gemacht werden.',
+      'Die Tour lädt Beispieldaten (eine Strecke und eine Flasche) anstelle deines aktuellen Plans. Du kannst das mit ↶ rückgängig machen, bis du die Seite neu lädst.',
     tourConfirmCancel: 'Abbrechen',
     tourConfirmStart: 'Tour starten',
     tabMix: 'Mix',
@@ -1978,7 +1978,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanButton: 'Plan laden',
     importPlanConfirmTitle: 'Aktuellen Plan ersetzen?',
     importPlanConfirmBody:
-      'Der Import überschreibt deine aktuelle Strecke, Ausrüstung, Mix, Produkte und Läden mit den Daten aus der Datei. Das kann nicht rückgängig gemacht werden.',
+      'Der Import überschreibt deine aktuelle Strecke, Ausrüstung, Mix, Produkte und Stopps mit den Daten aus der Datei. Du kannst das mit ↶ rückgängig machen, bis du die Seite neu lädst.',
     importPlanConfirmCancel: 'Abbrechen',
     importPlanConfirmConfirm: 'Importieren',
     importPlanError:
@@ -1986,7 +1986,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanSuccess: 'Plan importiert.',
     sharedPlanConfirmTitle: 'Ein geteilter Plan wurde geöffnet',
     sharedPlanConfirmBody:
-      'Laden? Dein aktueller Plan — Strecke, Ausrüstung, Mischung, Produkte und Stopps — wird ersetzt. Das lässt sich nicht rückgängig machen.',
+      'Laden? Dein aktueller Plan — Strecke, Ausrüstung, Mischung, Produkte und Stopps — wird ersetzt. Du kannst das mit ↶ rückgängig machen, bis du die Seite neu lädst.',
     sharedPlanConfirmCancel: 'Abbrechen',
     sharedPlanConfirmConfirm: 'Laden',
     sharePlanButton: 'Teilen',
@@ -2040,7 +2040,7 @@ export const STR: Record<Lang, StringTable> = {
     printCutHint: 'Ausschneiden und ans Oberrohr kleben',
     clearPlanConfirmTitle: 'Neu starten?',
     clearPlanConfirmBody:
-      'Das entfernt Füllungen, Essen und Stopps von deiner Strecke. Strecke, Ausrüstung und Mix bleiben unverändert. Das kann nicht rückgängig gemacht werden.',
+      'Das entfernt Füllungen, Essen und Stopps von deiner Strecke. Strecke, Ausrüstung und Mix bleiben unverändert. Du kannst das mit ↶ rückgängig machen, bis du die Seite neu lädst.',
     clearPlanConfirmCancel: 'Abbrechen',
     clearPlanConfirmConfirm: 'Neu starten',
     recoveryLabel: 'Regeneration',
@@ -2333,7 +2333,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Rivedi il tour',
     tourConfirmTitle: 'Rivedere il tour?',
     tourConfirmBody:
-      'Il tour caricherà dati di esempio (un percorso e una borraccia) al posto del tuo piano attuale. Non si può annullare.',
+      'Il tour caricherà dati di esempio (un percorso e una borraccia) al posto del tuo piano attuale. Puoi annullarlo con ↶ finché non ricarichi la pagina.',
     tourConfirmCancel: 'Annulla',
     tourConfirmStart: 'Avvia il tour',
     tabMix: 'Mix',
@@ -2518,7 +2518,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanButton: 'Carica il piano',
     importPlanConfirmTitle: 'Sostituire il piano attuale?',
     importPlanConfirmBody:
-      "L'importazione sovrascriverà il percorso, l'attrezzatura, la miscela, i prodotti e i negozi attuali con i dati del file. Non si può annullare.",
+      "L'importazione sovrascriverà il percorso, l'attrezzatura, la miscela, i prodotti e le soste attuali con i dati del file. Puoi annullarlo con ↶ finché non ricarichi la pagina.",
     importPlanConfirmCancel: 'Annulla',
     importPlanConfirmConfirm: 'Importa',
     importPlanError:
@@ -2526,7 +2526,7 @@ export const STR: Record<Lang, StringTable> = {
     importPlanSuccess: 'Piano importato.',
     sharedPlanConfirmTitle: 'È stato aperto un piano condiviso',
     sharedPlanConfirmBody:
-      'Caricarlo? Il tuo piano attuale — percorso, attrezzatura, miscela, prodotti e soste — verrà sostituito. L’operazione non è reversibile.',
+      'Caricarlo? Il tuo piano attuale — percorso, attrezzatura, miscela, prodotti e soste — verrà sostituito. Puoi annullarlo con ↶ finché non ricarichi la pagina.',
     sharedPlanConfirmCancel: 'Annulla',
     sharedPlanConfirmConfirm: 'Carica',
     sharePlanButton: 'Condividi',
@@ -2580,7 +2580,7 @@ export const STR: Record<Lang, StringTable> = {
     printCutHint: 'Ritaglia e attacca al tubo orizzontale',
     clearPlanConfirmTitle: 'Ricominciare?',
     clearPlanConfirmBody:
-      'Questo rimuove ricariche, cibo e tappe dal percorso. Percorso, attrezzatura e miscela restano invariati. Non si può annullare.',
+      'Questo rimuove ricariche, cibo e tappe dal percorso. Percorso, attrezzatura e miscela restano invariati. Puoi annullarlo con ↶ finché non ricarichi la pagina.',
     clearPlanConfirmCancel: 'Annulla',
     clearPlanConfirmConfirm: 'Ricomincia',
     recoveryLabel: 'Recupero',

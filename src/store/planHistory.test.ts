@@ -217,3 +217,24 @@ describe('plan history', () => {
     expect(status().canUndo).toBe(true);
   });
 });
+
+describe('the app store', () => {
+  test('replaying the tour can be undone: its confirmation says so', async () => {
+    // The store saves itself on a debounce, and the fake timers here run that save.
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {} });
+    const { useAppStore } = await import('./appStore');
+    const { planHistory } = await import('./planHistory');
+    useAppStore.getState().setDistance(42);
+    vi.advanceTimersByTime(IDLE);
+    const { route, fills } = useAppStore.getState();
+
+    useAppStore.getState().loadTourDemoData();
+    expect(useAppStore.getState().route.distance).toBe(90);
+    vi.advanceTimersByTime(IDLE);
+
+    planHistory.undo();
+    expect(useAppStore.getState().route).toBe(route);
+    expect(useAppStore.getState().fills).toBe(fills);
+    vi.unstubAllGlobals();
+  });
+});
