@@ -902,15 +902,15 @@ export const STR: Record<Lang, StringTable> = {
     autoplanPreflightConfirm: 'Ułóż plan',
     autoplanRouteTitle: 'Trasa i warunki',
     autoplanElevationLabel: 'Przewyższenie',
-    autoplanStopsTitle: 'Twoje stopy',
+    autoplanStopsTitle: 'Twoje postoje',
     autoplanStopsKeepAndAdd: 'Dołóż',
     autoplanStopsKeepAndAddHint:
-      'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
+      'Twoje postoje zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
     autoplanStopsKeepOnly: 'Tylko moje',
-    autoplanStopsKeepOnlyHint: 'Żadnych nowych stopów: robimy, co się da, z tymi, które masz.',
+    autoplanStopsKeepOnlyHint: 'Żadnych nowych postojów: robimy, co się da, z tymi, które masz.',
     autoplanStopsClear: 'Od nowa',
     autoplanStopsClearHint:
-      'Usuniemy Twoje stopy i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
+      'Usuniemy Twoje postoje i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
     autoplanGearTitle: 'Sprzęt, który zabierasz',
     autoplanGearHint:
       'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
