@@ -21,3 +21,17 @@ export interface AutoplanResult {
   foods: DraftFood[];
   newStops: DraftStop[];
 }
+
+/**
+ * What the plan may do about stops, set by the pre-flight modal's "Twoje postoje" switch.
+ *
+ * `riderStops` are the km of the stops the rider placed himself. They are free — he pulls over
+ * there anyway — so a refill charged to one costs nothing and every one of them is a tap and a shop
+ * (owner, 2026-09-24: *"tak"* to both). `newStops: false` is "Tylko moje" (R46): the plan refills
+ * and buys only at his stops and hands back the best it can do there, never an extra one. `true`
+ * with stops is "Dołóż" (R47): a new stop only where the score says it moves the plan toward green.
+ */
+export type StopRules = { riderStops: number[]; newStops: boolean };
+
+/** "Od nowa", and every caller that says nothing: no stops of the rider's, new ones wherever. */
+export const FREE_STOPS: StopRules = { riderStops: [], newStops: true };

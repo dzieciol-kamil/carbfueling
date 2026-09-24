@@ -14,7 +14,7 @@ import { dist, totalHours, CARB_GRADING_MIN_HOURS } from '../fuel';
 import type { Content, FoodLibEntry, MixSettings, PlanState, RouteInput, Vessel } from '../types';
 import { autoplan } from './index';
 import { mergeWindowKm } from './layout';
-import type { AutoplanResult, FoodSelectionEntry } from './types';
+import type { AutoplanResult, FoodSelectionEntry, StopRules } from './types';
 
 // The app's tsconfig carries no Node types, so the environment is read without them.
 const env =
@@ -232,4 +232,124 @@ describe('autoplan properties', () => {
       expect(r.foods.filter((f) => f.key === s.key).length).toBeLessThanOrEqual(s.count);
     }
   });
+});
+
+/**
+ * The same random rides with stops of the rider's own, under both modes that keep them. Fewer runs
+ * than above: a plan per mode per case, and the point is the stop rules, not the kit's corners.
+ */
+const RIDER_RUNS = 30;
+
+type RiderCase = Case & { rules: StopRules };
+
+const riderCaseArb = (newStops: boolean): fc.Arbitrary<RiderCase> =>
+  fc
+    .record({
+      c: caseArb,
+      at: fc.array(fc.integer({ min: 1, max: 99 }), { maxLength: 3 }),
+    })
+    .map(({ c, at }) => {
+      const D = dist(c.state.route);
+      return { ...c, rules: { riderStops: at.map((p) => (p * D) / 100), newStops } };
+    });
+
+const riderMemo = new Map<string, AutoplanResult>();
+function riderPlan(c: RiderCase): AutoplanResult {
+  const k = JSON.stringify(c);
+  let r = riderMemo.get(k);
+  if (!r) {
+    r = autoplan(c.state, c.selection, c.rules);
+    riderMemo.set(k, r);
+  }
+  return r;
+}
+
+function checkRider(
+  newStops: boolean,
+  name: string,
+  rule: string,
+  body: (c: RiderCase, r: AutoplanResult, D: number) => void,
+) {
+  test(`${rule}: ${name}`, () => {
+    fc.assert(
+      fc.property(riderCaseArb(newStops), (c) => {
+        body(c, riderPlan(c), dist(c.state.route));
+      }),
+      { seed: SEED, numRuns: RIDER_RUNS },
+    );
+  }, 120_000);
+}
+
+/** Every refill has a stop — his or a new one — between where its vessel ran dry and where it is
+ *  opened again. */
+function expectRefillsServed(r: AutoplanResult, stops: number[]) {
+  const emptyFrom = new Map<string, number>();
+  for (const f of [...r.fills].sort((a, b) => a.from - b.from)) {
+    const prev = emptyFrom.get(f.gid);
+    emptyFrom.set(f.gid, prev === undefined ? f.to : Math.max(prev, f.to));
+    if (prev === undefined) continue;
+    const window = stops.filter((x) => x >= prev - EPS && x <= f.from + EPS);
+    expect(
+      window,
+      `refill @${f.from} of ${f.gid} has no stop in [${prev}, ${f.from}]`,
+    ).not.toHaveLength(0);
+  }
+}
+
+describe("autoplan properties — the rider's own stops", () => {
+  checkRider(false, "'Tylko moje' never adds a stop", 'R46', (_c, r) => {
+    expect(r.newStops).toEqual([]);
+  });
+
+  checkRider(false, "'Tylko moje' refills only at his stops", 'R46', (c, r) => {
+    expectRefillsServed(r, c.rules.riderStops);
+  });
+
+  checkRider(false, "'Tylko moje' buys only at his stops", 'R46', (c, r) => {
+    for (const f of r.foods) {
+      if (FOOD_LIB.find((e) => e.key === f.key)?.needsStop) {
+        expect(c.rules.riderStops).toContain(f.from);
+      }
+    }
+  });
+
+  checkRider(true, "'Dołóż': every refill has his stop or a new one", 'R47', (c, r) => {
+    expectRefillsServed(r, [...c.rules.riderStops, ...r.newStops.map((s) => s.at)]);
+  });
+
+  checkRider(true, "'Dołóż' never hands back one of his stops as new", 'R47', (c, r) => {
+    for (const s of r.newStops) expect(c.rules.riderStops).not.toContain(s.at);
+  });
+
+  for (const newStops of [false, true]) {
+    const mode = newStops ? "'Dołóż'" : "'Tylko moje'";
+    checkRider(
+      newStops,
+      `${mode}: one vessel never holds two fills at once`,
+      'P4 / R22',
+      (_c, r) => {
+        const byGid = new Map<string, { from: number; to: number }[]>();
+        for (const f of r.fills) byGid.set(f.gid, [...(byGid.get(f.gid) ?? []), f]);
+        for (const own of byGid.values()) {
+          own.sort((a, b) => a.from - b.from);
+          for (let i = 1; i < own.length; i++) {
+            expect(own[i].from).toBeGreaterThanOrEqual(own[i - 1].to - EPS);
+          }
+        }
+      },
+    );
+
+    checkRider(
+      newStops,
+      `${mode}: every fill lies inside the route and has length`,
+      'P2 / R42',
+      (_c, r, D) => {
+        for (const f of r.fills) {
+          expect(f.from).toBeGreaterThanOrEqual(0);
+          expect(f.to).toBeGreaterThan(f.from);
+          expect(f.to).toBeLessThanOrEqual(D + EPS);
+        }
+      },
+    );
+  }
 });

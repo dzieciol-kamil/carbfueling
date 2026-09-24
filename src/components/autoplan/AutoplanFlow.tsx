@@ -4,7 +4,7 @@ import type { FoodSelectionEntry } from '../../domain/autoplan/types';
 import { totalHours } from '../../domain/fuel';
 import type { RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
-import { autoplanInput, useAppStore } from '../../store/appStore';
+import { autoplanInput, autoplanStopRules, useAppStore } from '../../store/appStore';
 import { DEFAULT_AUTOPLAN_OPTIONS, type AutoplanOptions } from './autoplanOptions';
 import { AutoplanPreflightModal } from './AutoplanPreflightModal';
 import { AutoplanThinkingModal } from './AutoplanThinkingModal';
@@ -210,7 +210,12 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
     limitTimer.current = setTimeout(finish, THINKING_LIMIT_MS);
 
     setPhase('thinking');
-    w.postMessage({ state: autoplanInput(useAppStore.getState(), options), selection });
+    const now = useAppStore.getState();
+    w.postMessage({
+      state: autoplanInput(now, options),
+      selection,
+      rules: autoplanStopRules(now, options),
+    });
   }
 
   function cancelThinking() {

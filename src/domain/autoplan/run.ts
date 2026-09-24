@@ -7,7 +7,8 @@ import type { PlanState } from '../types';
 import { improve } from './exhaustive';
 import { climb } from './search';
 import type { Evaluated } from './search';
-import type { AutoplanResult, FoodSelectionEntry } from './types';
+import { FREE_STOPS } from './types';
+import type { AutoplanResult, FoodSelectionEntry, StopRules } from './types';
 
 export type AutoplanMessage = { type: 'plan'; result: AutoplanResult } | { type: 'done' };
 
@@ -32,11 +33,12 @@ export function runAutoplan(
   selection: FoodSelectionEntry[],
   post: (m: AutoplanMessage) => void,
   deps: { improve: typeof improve } = { improve },
+  rules: StopRules = FREE_STOPS,
 ): void {
   try {
-    const start = climb(state, selection);
+    const start = climb(state, selection, rules);
     post({ type: 'plan', result: toResult(start) });
-    for (const e of deps.improve(state, selection, start)) {
+    for (const e of deps.improve(state, selection, start, { n: 0 }, rules)) {
       post({ type: 'plan', result: toResult(e) });
     }
   } catch (err) {

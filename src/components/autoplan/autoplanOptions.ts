@@ -2,7 +2,8 @@
  * Options the pre-flight modal (`AutoplanPreflightModal`) collects and threads through around the
  * autoplan run, not into it: `carriedVesselGids` filters the gear passed into `autoplanInput()`
  * before the worker starts, and `stopsMode` governs which of the rider's stops survive each
- * `insertAutoplan()` call as plans arrive from the worker.
+ * `insertAutoplan()` call as plans arrive from the worker — and, through `autoplanStopRules()`,
+ * whether the engine may add stops of its own to them.
  */
 
 /**

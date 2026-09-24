@@ -8,9 +8,14 @@
  */
 import type { PlanState } from '../types';
 import { search } from './search';
-import type { AutoplanResult, FoodSelectionEntry } from './types';
+import { FREE_STOPS } from './types';
+import type { AutoplanResult, FoodSelectionEntry, StopRules } from './types';
 
-export function autoplan(state: PlanState, selection: FoodSelectionEntry[] = []): AutoplanResult {
-  const { fills, foods, stops } = search(state, selection);
+export function autoplan(
+  state: PlanState,
+  selection: FoodSelectionEntry[] = [],
+  rules: StopRules = FREE_STOPS,
+): AutoplanResult {
+  const { fills, foods, stops } = search(state, selection, rules);
   return { fills, foods, newStops: stops };
 }
