@@ -3,6 +3,7 @@ import { dist, fmtHM, prof, totalHours } from '../../domain/fuel';
 import type { Content, FoodLibEntry, RouteInput, ShopStop, Vessel } from '../../domain/types';
 import { t, type Lang } from '../../i18n/strings';
 import { sourceColor } from '../chart/theme';
+import { InfoPopover } from '../ui/InfoPopover';
 import { NumberInput } from '../ui/NumberInput';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { createFoodReorderHandler } from './listReorderHandler';
@@ -328,17 +329,24 @@ export function AutoplanPreflightModal({
                 {entry[lang] || entry.en}
               </span>
               {entry.needsStop && (
-                <span
-                  title={strings.autoplanDialogNeedsStop}
-                  aria-label={strings.autoplanDialogNeedsStop}
-                  role="img"
-                  style={{ display: 'flex', cursor: 'help' }}
+                <InfoPopover
+                  openOnHover
+                  hint={strings.autoplanDialogNeedsStop}
+                  ariaLabel={strings.autoplanDialogNeedsStop}
+                  triggerStyle={{ display: 'flex', cursor: 'default' }}
+                  popoverStyle={{
+                    bottom: 'calc(100% + 6px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                  }}
                 >
-                  <svg width="8" height="16" viewBox="0 0 8 16" style={{ display: 'block' }}>
-                    <line x1="4" y1="6" x2="4" y2="16" stroke="var(--ink)" strokeWidth="1.5" />
-                    <circle cx="4" cy="4" r="3.5" fill="var(--ink)" />
+                  <svg width="12" height="14" viewBox="0 0 16 18" style={{ display: 'block' }}>
+                    <path
+                      d="M8 18C8 18 1 10.5 1 7A7 7 0 1 1 15 7C15 10.5 8 18 8 18Z"
+                      fill="var(--ink)"
+                    />
                   </svg>
-                </span>
+                </InfoPopover>
               )}
               <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
                 {strings.autoplanDialogCountLabel}
