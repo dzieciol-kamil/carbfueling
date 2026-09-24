@@ -195,6 +195,7 @@ export interface StringTable {
   fCarbs: string;
   fMl: string;
   fCont: string;
+  fNeedsStop: string;
   fContHeader: string;
   foodSectionHint: string;
   foodContHint: string;
@@ -278,6 +279,7 @@ export interface StringTable {
   absCapNoteMobile: string;
   gelPartsStepper: string;
   foodStepwise: string;
+  foodNeedsStop: string;
   foodAddProduct: string;
   meWeight: string;
   meApp: string;
@@ -404,6 +406,35 @@ export interface StringTable {
   waterBalanceHintLink: string;
   waterBalanceAria: string;
   waterBalanceLabel: string;
+  autoplanButton: string;
+  autoplanPreflightTitle: string;
+  autoplanPreflightReplaceNote: string;
+  autoplanPreflightConfirm: string;
+  autoplanRouteTitle: string;
+  autoplanElevationLabel: string;
+  autoplanStopsTitle: string;
+  autoplanStopsKeepAndAdd: string;
+  autoplanStopsKeepAndAddHint: string;
+  autoplanStopsKeepOnly: string;
+  autoplanStopsKeepOnlyHint: string;
+  autoplanStopsClear: string;
+  autoplanStopsClearHint: string;
+  autoplanGearTitle: string;
+  autoplanGearHint: string;
+  autoplanGearEditLink: string;
+  autoplanFoodTitle: string;
+  autoplanDialogHint: string;
+  autoplanDialogCountLabel: string;
+  autoplanDialogCancel: string;
+  autoplanShortRideNote: string;
+  autoplanNeedsDuration: string;
+  autoplanAppliedNote: string;
+  autoplanAppliedDismiss: string;
+  autoplanThinkingTitle: string;
+  autoplanThinkingCancel: string;
+  autoplanThinkingShared: string[];
+  autoplanThinkingCycling: string[];
+  autoplanThinkingRunning: string[];
 }
 
 export const STR: Record<Lang, StringTable> = {
@@ -595,6 +626,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'cukry (g)',
     fMl: 'płyn (ml)',
     fCont: 'stopniowo',
+    fNeedsStop: 'na postoju',
     fContHeader: 'uwalnianie',
     foodSectionHint:
       'Twoja lista produktów — te przyciski pojawiają się pod wykresem. Podaj same węglowodany w porcji (nie wagę batona) i ewentualny płyn.',
@@ -725,6 +757,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'Przy tej proporcji limit to {cap} g/h — kropkowana linia na wykresie.',
     gelPartsStepper: 'Liczba porcji żelu',
     foodStepwise: 'stopniowo',
+    foodNeedsStop: 'na postoju',
     foodAddProduct: '+ Dodaj produkt',
     meWeight: 'Waga',
     meApp: 'Aplikacja',
@@ -851,7 +884,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'Ilość węglowodanów, którą należy spożyć po jeździe, aby uzupełnić glikogen mięśniowy.',
     carbRateHint:
-      'Kolor paska pokazuje realne tempo dowozu węgli (g/h) względem tego, ile faktycznie potrzebuje ta trasa — nie procentu wyżej. Zielono jest, gdy dowozisz tyle, ile trzeba; jeśli potrzeba przekracza ok. 40 g/h, wystarczy dobić do 40 g/h, bo powyżej tego dokładanie węgli daje już bardzo mało. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
+      'Kolor paska pokazuje realne tempo dowozu węgli (g/h) względem tego, ile faktycznie potrzebuje ta trasa — nie procentu wyżej. Zielono jest, gdy dowozisz tyle, ile trzeba; jeśli potrzeba przekracza ok. 40 g/h, wystarczy dobić do 40 g/h (przy niskiej intensywności do 30 g/h), bo powyżej tego dokładanie węgli daje już bardzo mało. Poniżej 1h jazdy/biegu pasek jest szary, bo w tak krótkim czasie węgle i tak nie mają większego znaczenia. Bordowy oznacza, że zaplanowane tempo przekracza to, co Twoje jelito realnie wchłonie — nadmiar zostaje w żołądku i ciągnie wodę, stąd nudności czy wzdęcia przy przejedzeniu.',
     waterBalanceHint:
       'Minus to niedobór wobec strat potu, plus to picie ponad nie. Dopuszczalny niedobór maleje wraz z temperaturą; nadmiar to ryzyko hiponatremii.',
     waterBalanceHintLink: 'Jak to czytać →',
@@ -859,6 +892,84 @@ export const STR: Record<Lang, StringTable> = {
     // Not "ubytek masy ciała": the number is signed, and a plus means the plan has the rider
     // gaining water, not losing it.
     waterBalanceLabel: 'Bilans płynów w % masy ciała',
+    autoplanButton: 'Zaproponuj plan',
+    autoplanPreflightTitle: 'Zanim ułożę plan',
+    autoplanPreflightReplaceNote:
+      'To nadpisze obecne napełnienia i produkty na trasie nową propozycją.',
+    autoplanPreflightConfirm: 'Ułóż plan',
+    autoplanRouteTitle: 'Trasa i warunki',
+    autoplanElevationLabel: 'Przewyższenie',
+    autoplanStopsTitle: 'Twoje stopy',
+    autoplanStopsKeepAndAdd: 'Dołóż',
+    autoplanStopsKeepAndAddHint:
+      'Twoje stopy zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
+    autoplanStopsKeepOnly: 'Tylko moje',
+    autoplanStopsKeepOnlyHint:
+      'Sprawdzimy, czy dasz radę na stopach, które już znasz — jeśli nie, zobaczysz brakującą ilość zamiast nowego stopu.',
+    autoplanStopsClear: 'Od nowa',
+    autoplanStopsClearHint:
+      'Usuniemy Twoje stopy i zaplanujemy trasę od zera, tak jakby żadnych nie było.',
+    autoplanGearTitle: 'Sprzęt, który zabierasz',
+    autoplanGearHint:
+      'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
+    autoplanGearEditLink: 'Edytuj sprzęt',
+    autoplanFoodTitle: 'Produkty',
+    autoplanDialogHint:
+      'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
+    autoplanDialogCountLabel: 'Ile sztuk',
+    autoplanDialogCancel: 'Anuluj',
+    autoplanNeedsDuration: 'Najpierw podaj dystans i prędkość (albo czas jazdy).',
+    autoplanShortRideNote:
+      'Ta trasa jest krótsza niż godzina — przy tak krótkim wysiłku węglowodany zwykle nie są potrzebne, więc zaplanowaliśmy tylko wodę.',
+    autoplanAppliedNote: 'To propozycja bazowa — dostosuj do własnych doświadczeń i preferencji.',
+    autoplanAppliedDismiss: 'OK',
+    autoplanThinkingTitle: 'Szukam lepszego planu…',
+    autoplanThinkingCancel: 'Anuluj',
+    autoplanThinkingShared: [
+      'Sprawdzam, czy da się bez postoju. Nie da się. Sprawdzam jeszcze raz.',
+      'Właśnie odrzuciłem plan z czterema colami. Dla Twojego dobra.',
+      'Trudne się wylosowało.',
+      'Mieszam izo w wyobraźni. Na razie wszystko się rozpuściło.',
+      'Naprawdę warto poczekać. Chyba.',
+      'Negocjuję z Twoim żołądkiem.',
+      'Szukam sklepu, który jest otwarty w niedzielę.',
+      'Rozważam banana. Banan rozważa mnie.',
+      'Żel czy nie żel, oto jest pytanie.',
+      'Obiad w połowie czy na końcu? Kelner, poproszę jeszcze chwilę.',
+      'Zjadłem wirtualnego żela. Nic nie poczułem.',
+      'Właśnie wymyśliłem idealny plan. Niestety na inną trasę.',
+      'Kolega procesor prosi o wodę.',
+      'Omijam plan z trzema obiadami. Wiem, że kusiło.',
+      'Już prawie. To „prawie” jak na tabliczce „do szczytu 2 km”.',
+      'Plan jest dobry. Szukam takiego, który jest dobry i ładny.',
+      'Tempo liczenia: strefa 2. Rozsądnie, na długi dystans.',
+    ],
+    autoplanThinkingCycling: [
+      'Liczę. Ty w tym czasie napompuj opony.',
+      'Liczę bidony. Wyszło mi siedem. Liczę jeszcze raz.',
+      'Wolniej niż Ty pod górę, ale dokładniej.',
+      'Jeszcze chwila. Tak mówi każdy przed ostatnim podjazdem.',
+      'Gdybym miał nogi, już bym dojechał.',
+      'Jadę na kole za lepszym planem. Zaraz go wyprzedzę.',
+      'Sprawdzam, czy kolarze naprawdę potrzebują wody. Potrzebują.',
+      'Moje wentylatory kręcą szybciej niż Twoja kadencja.',
+      'Przeliczam to tak dokładnie, jak Ty liczysz waty w Stravie.',
+      'Szukam planu bez pękniętej dętki. Tego akurat nie obiecam.',
+      'Liczę postoje. Każdy chciałby się zatrzymać przy piekarni.',
+    ],
+    autoplanThinkingRunning: [
+      'Liczę. Ty w tym czasie zawiąż porządnie buty.',
+      'Wolniej niż Ty pod górę, ale nie przechodzę do marszu.',
+      'Jeszcze chwila. Tak mówi każdy przed ostatnim podbiegiem.',
+      'Gdybym miał nogi, już bym dobiegł. I miał odciski.',
+      'Sprawdzam, czy biegacze naprawdę potrzebują wody. Potrzebują.',
+      'Liczę kieszonki w pasie. Zawsze o jedną za mało.',
+      'Szukam planu bez obtartych pięt. Tego akurat nie obiecam.',
+      'Przeliczam to tak dokładnie, jak Ty liczysz tempo na kilometr.',
+      'Wyprzedzam plan na punkcie odżywczym. Kubek poleciał w krzaki.',
+      'Upycham żele do kamizelki. Jeden zawsze wypadnie.',
+      'Żel na 30 km? Na 32? Ściana się nie przesunie.',
+    ],
   },
   en: {
     tagline: 'carbohydrate & hydration planner',
@@ -1047,6 +1158,7 @@ export const STR: Record<Lang, StringTable> = {
     fCarbs: 'carbs (g)',
     fMl: 'fluid (ml)',
     fCont: 'over time',
+    fNeedsStop: 'at a stop',
     fContHeader: 'release',
     foodSectionHint:
       'Your product list — these buttons show up under the chart. Enter carbs per serving (not the bar weight) and any fluid.',
@@ -1174,6 +1286,7 @@ export const STR: Record<Lang, StringTable> = {
     absCapNoteMobile: 'At this ratio the limit is {cap} g/h — the dotted line on the chart.',
     gelPartsStepper: 'Gel portions per fill',
     foodStepwise: 'over time',
+    foodNeedsStop: 'at a stop',
     foodAddProduct: '+ Add product',
     meWeight: 'Weight',
     meApp: 'App',
@@ -1299,12 +1412,91 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'The amount of carbohydrates to eat after your ride to replenish muscle glycogen.',
     carbRateHint:
-      "The bar's colour tracks your realised delivery rate (g/h) against what this specific ride actually needs — not the percentage above it. It turns green once you're delivering what the ride needs; if that need is above roughly 40 g/h, reaching 40 g/h is enough, since more carbs past that point barely help. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
+      "The bar's colour tracks your realised delivery rate (g/h) against what this specific ride actually needs — not the percentage above it. It turns green once you're delivering what the ride needs; if that need is above roughly 40 g/h, reaching 40 g/h is enough (30 g/h at low intensity), since more carbs past that point barely help. Under 1h of riding/running the bar turns grey, because carbs barely matter over that short a time anyway. Maroon means the planned rate is past what your gut can actually absorb — the excess sits in your stomach and pulls in water, which is what causes nausea or bloating from overeating.",
     waterBalanceHint:
       'A minus is a shortfall against your sweat loss, a plus is drinking past it. The tolerable shortfall shrinks as it gets hotter; a surplus risks hyponatraemia.',
     waterBalanceHintLink: 'How to read this →',
     waterBalanceAria: 'What the fluid balance means',
     waterBalanceLabel: 'Fluid balance as % of body mass',
+    autoplanButton: 'Suggest a plan',
+    autoplanPreflightTitle: 'Before I build the plan',
+    autoplanPreflightReplaceNote:
+      'This will overwrite your current fills and food with a new suggestion.',
+    autoplanPreflightConfirm: 'Build the plan',
+    autoplanRouteTitle: 'Route & conditions',
+    autoplanElevationLabel: 'Elevation',
+    autoplanStopsTitle: 'Your stops',
+    autoplanStopsKeepAndAdd: 'Add more',
+    autoplanStopsKeepAndAddHint:
+      'Your stops stay, and new ones only appear where the ride genuinely needs them.',
+    autoplanStopsKeepOnly: 'Only mine',
+    autoplanStopsKeepOnlyHint:
+      "We'll check whether you can fuel the ride on the stops you already know — if not, you'll see the shortfall instead of a new stop.",
+    autoplanStopsClear: 'From scratch',
+    autoplanStopsClearHint:
+      "We'll clear your stops and plan the route from zero, as if none existed.",
+    autoplanGearTitle: "Gear you're taking",
+    autoplanGearHint:
+      "Uncheck anything you're not carrying today — for this plan only, it won't change your saved gear.",
+    autoplanGearEditLink: 'Edit gear',
+    autoplanFoodTitle: 'Food',
+    autoplanDialogHint:
+      "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
+    autoplanDialogCountLabel: 'Count',
+    autoplanDialogCancel: 'Cancel',
+    autoplanNeedsDuration: 'Set a distance and speed first (or a ride time).',
+    autoplanShortRideNote:
+      "This ride is under an hour — efforts this short usually don't need carb fueling, so we only planned water.",
+    autoplanAppliedNote:
+      'This is a starting suggestion — adjust it to your own experience and preferences.',
+    autoplanAppliedDismiss: 'OK',
+    autoplanThinkingTitle: 'Looking for a better plan…',
+    autoplanThinkingCancel: 'Cancel',
+    autoplanThinkingShared: [
+      "Checking if we can skip a stop. We can't. Checking again, just to be sure.",
+      'Just binned a plan with four colas. For your own good.',
+      'Drew the short straw this time.',
+      "Mixing electrolytes in my head. So far it's all dissolved.",
+      'Honestly, worth the wait. Probably.',
+      'Having a word with your stomach.',
+      "Hunting for a shop that's open on a Sunday.",
+      'Weighing up a banana. The banana is weighing up me.',
+      'Gel or no gel, that is the question.',
+      'Lunch at halfway or at the finish? Waiter, one more minute, please.',
+      'Ate a virtual gel. Tasted like nothing.',
+      'Just cracked the perfect plan. Wrong route, sadly.',
+      "My processor's asking for a top-up.",
+      "Skipping a plan with three lunches. Tempting, I'll admit.",
+      'Nearly there. The same "nearly" as the sign that says "summit, 2km".',
+      "The plan's good. Hunting for one that's good and tidy.",
+      'Crunching at zone 2 pace. Sensible, for the long haul.',
+    ],
+    autoplanThinkingCycling: [
+      'Crunching numbers. You pump the tyres.',
+      'Counting bottles. Came out at seven. Counting again.',
+      'Slower than you up the climb, but more precise.',
+      'Nearly done. What every rider says before the last climb.',
+      "If I had legs, I'd be there by now.",
+      'Drafting a better plan. About to come round it.',
+      'Checking whether cyclists really need water. They do.',
+      'My fans spin faster than your cadence.',
+      'Crunching this as carefully as you count watts on Strava.',
+      "Hunting for a plan with no punctures. Can't promise that bit.",
+      'Counting stops. Every rider fancies one at the bakery.',
+    ],
+    autoplanThinkingRunning: [
+      'Crunching numbers. You double-knot your laces.',
+      "Slower than you up the hill, but I don't walk it.",
+      'Nearly done. What every runner says before the last hill.',
+      "If I had legs, I'd have finished by now. And blisters.",
+      'Checking whether runners really need water. They do.',
+      'Counting vest pockets. Always one short.',
+      "Hunting for a plan with no chafed heels. Can't promise that bit.",
+      'Crunching this as carefully as you track your pace per km.',
+      'Overtaking the plan at the aid station. Cup went flying into the hedge.',
+      'Stuffing gels into the vest. One always escapes.',
+      "Gel at 30 km? At 32? The wall isn't budging.",
+    ],
   },
   de: {
     tagline: 'Kohlenhydrat- und Flüssigkeitsplaner',
@@ -1626,6 +1818,87 @@ export const STR: Record<Lang, StringTable> = {
       'Bei diesem Verhältnis liegt die Grenze bei {cap} g/h — die gepunktete Linie im Diagramm.',
     gelPartsStepper: 'Gel-Portionen pro Füllung',
     foodStepwise: 'über Zeit',
+    fNeedsStop: 'am Stopp',
+    foodNeedsStop: 'am Stopp',
+    autoplanButton: 'Plan vorschlagen',
+    autoplanPreflightTitle: 'Bevor ich den Plan erstelle',
+    autoplanPreflightReplaceNote:
+      'Dadurch werden deine aktuellen Füllungen und dein Essen durch einen neuen Vorschlag ersetzt.',
+    autoplanPreflightConfirm: 'Plan erstellen',
+    autoplanRouteTitle: 'Strecke & Bedingungen',
+    autoplanElevationLabel: 'Höhenprofil',
+    autoplanStopsTitle: 'Deine Stopps',
+    autoplanStopsKeepAndAdd: 'Ergänzen',
+    autoplanStopsKeepAndAddHint:
+      'Deine Stopps bleiben, neue kommen nur dort dazu, wo die Strecke sie wirklich braucht.',
+    autoplanStopsKeepOnly: 'Nur meine',
+    autoplanStopsKeepOnlyHint:
+      'Wir prüfen, ob du die Strecke mit deinen bekannten Stopps versorgen kannst — wenn nicht, siehst du die Lücke statt eines neuen Stopps.',
+    autoplanStopsClear: 'Von vorn',
+    autoplanStopsClearHint:
+      'Wir entfernen deine Stopps und planen die Strecke von null, als gäbe es keine.',
+    autoplanGearTitle: 'Ausrüstung, die du mitnimmst',
+    autoplanGearHint:
+      'Entferne das Häkchen bei allem, was du heute nicht mitnimmst — nur für diesen Plan, deine gespeicherte Ausrüstung bleibt unverändert.',
+    autoplanGearEditLink: 'Ausrüstung bearbeiten',
+    autoplanFoodTitle: 'Essen',
+    autoplanDialogHint:
+      'Lege fest, wie viel du von jedem mitnimmst, und ziehe die Einträge in die Reihenfolge, in der du danach greifst — oben ist die erste Wahl.',
+    autoplanDialogCountLabel: 'Anzahl',
+    autoplanDialogCancel: 'Abbrechen',
+    autoplanShortRideNote:
+      'Diese Fahrt dauert unter einer Stunde — so kurze Belastungen brauchen meist keine Kohlenhydrate, daher haben wir nur Wasser eingeplant.',
+    autoplanNeedsDuration: 'Gib zuerst Distanz und Tempo ein (oder eine Fahrzeit).',
+    autoplanAppliedNote:
+      'Das ist ein Vorschlag zum Start — passe ihn an deine eigene Erfahrung und Vorlieben an.',
+    autoplanAppliedDismiss: 'OK',
+    autoplanThinkingTitle: 'Ich suche einen besseren Plan…',
+    autoplanThinkingCancel: 'Abbrechen',
+    autoplanThinkingShared: [
+      'Ich prüfe, ob es ohne Stopp geht. Geht nicht. Ich prüfe noch mal.',
+      'Habe gerade einen Plan mit vier Colas verworfen. Zu deinem Besten.',
+      "Diesmal hat's einen Schwierigen erwischt.",
+      'Ich mische Elektrolyte in Gedanken. Bisher hat sich alles aufgelöst.',
+      'Es lohnt sich wirklich zu warten. Wahrscheinlich.',
+      'Ich verhandle mit deinem Magen.',
+      'Ich suche einen Laden, der sonntags offen hat.',
+      'Ich überlege mir eine Banane. Die Banane überlegt sich mich.',
+      'Gel oder kein Gel, das ist hier die Frage.',
+      'Mittagessen in der Mitte oder am Ende? Kellner, noch einen Moment, bitte.',
+      'Habe ein virtuelles Gel gegessen. Nichts gespürt.',
+      'Habe gerade den perfekten Plan erfunden. Leider für eine andere Strecke.',
+      'Mein Prozessor bittet um Nachschub.',
+      'Ich verwerfe einen Plan mit drei Mittagessen. War verlockend, ich weiß.',
+      'Gleich geschafft. So ein „gleich“ wie auf dem Schild „Gipfel noch 2 km“.',
+      'Der Plan ist gut. Ich suche einen, der gut und hübsch ist.',
+      'Rechentempo: Zone 2. Vernünftig, für die lange Strecke.',
+    ],
+    autoplanThinkingCycling: [
+      'Ich rechne. Du pumpst in der Zeit die Reifen auf.',
+      'Ich zähle Trinkflaschen. Komme auf sieben. Zähle noch mal.',
+      'Langsamer als du am Berg, aber genauer.',
+      'Gleich geschafft. Sagt jeder vor der letzten Steigung.',
+      'Hätte ich Beine, wäre ich längst da.',
+      'Ich fahre im Windschatten eines besseren Plans. Gleich überhole ich ihn.',
+      'Ich prüfe, ob Radfahrer wirklich Wasser brauchen. Brauchen sie.',
+      'Meine Lüfter drehen schneller als deine Trittfrequenz.',
+      'Ich rechne das so genau, wie du deine Watt auf Strava zählst.',
+      'Ich suche einen Plan ohne platten Reifen. Das kann ich nicht versprechen.',
+      'Ich zähle Stopps. Jeder würde gern beim Bäcker halten.',
+    ],
+    autoplanThinkingRunning: [
+      'Ich rechne. Du schnürst in der Zeit ordentlich deine Schuhe.',
+      'Langsamer als du am Berg, aber ich gehe nicht zum Gehen über.',
+      'Gleich geschafft. Sagt jeder vor dem letzten Anstieg.',
+      'Hätte ich Beine, wäre ich längst im Ziel. Und hätte Blasen.',
+      'Ich prüfe, ob Läufer wirklich Wasser brauchen. Brauchen sie.',
+      'Ich zähle die Taschen an der Laufweste. Immer eine zu wenig.',
+      'Ich suche einen Plan ohne wunde Fersen. Das kann ich nicht versprechen.',
+      'Ich rechne das so genau, wie du dein Tempo pro Kilometer misst.',
+      'Ich überhole den Plan an der Verpflegungsstation. Der Becher flog ins Gebüsch.',
+      'Ich stopfe Gels in die Laufweste. Eins fällt immer raus.',
+      'Gel bei 30 km? Bei 32? Der Mann mit dem Hammer klopft so oder so.',
+    ],
     foodAddProduct: '+ Produkt hinzufügen',
     meWeight: 'Gewicht',
     meApp: 'App',
@@ -1752,7 +2025,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'Die Menge an Kohlenhydraten, die du nach der Fahrt essen solltest, um die Glykogenspeicher der Muskeln aufzufüllen.',
     carbRateHint:
-      'Die Farbe des Balkens zeigt deine tatsächliche Zufuhrrate (g/h) im Vergleich zu dem, was diese Strecke wirklich braucht — nicht den Prozentsatz darüber. Er wird grün, sobald du lieferst, was die Strecke braucht; liegt der Bedarf über etwa 40 g/h, reicht es, 40 g/h zu erreichen, da mehr Kohlenhydrate darüber hinaus kaum noch helfen. Unter 1h Fahr- oder Laufzeit wird der Balken grau, weil Kohlenhydrate über so kurze Zeit ohnehin kaum eine Rolle spielen. Dunkelrot bedeutet, dass die geplante Rate über dem liegt, was dein Darm tatsächlich aufnehmen kann — der Überschuss bleibt im Magen und zieht Wasser, was bei Überessen zu Übelkeit oder Blähungen führt.',
+      'Die Farbe des Balkens zeigt deine tatsächliche Zufuhrrate (g/h) im Vergleich zu dem, was diese Strecke wirklich braucht — nicht den Prozentsatz darüber. Er wird grün, sobald du lieferst, was die Strecke braucht; liegt der Bedarf über etwa 40 g/h, reicht es, 40 g/h zu erreichen (bei niedriger Intensität 30 g/h), da mehr Kohlenhydrate darüber hinaus kaum noch helfen. Unter 1h Fahr- oder Laufzeit wird der Balken grau, weil Kohlenhydrate über so kurze Zeit ohnehin kaum eine Rolle spielen. Dunkelrot bedeutet, dass die geplante Rate über dem liegt, was dein Darm tatsächlich aufnehmen kann — der Überschuss bleibt im Magen und zieht Wasser, was bei Überessen zu Übelkeit oder Blähungen führt.',
     waterBalanceHint:
       'Ein Minus ist ein Defizit gegenüber deinem Schweißverlust, ein Plus bedeutet, dass du mehr trinkst, als du verlierst. Das tolerierbare Defizit sinkt mit steigender Temperatur; ein Überschuss birgt das Risiko einer Hyponatriämie.',
     waterBalanceHintLink: 'So liest du das →',
@@ -2080,6 +2353,87 @@ export const STR: Record<Lang, StringTable> = {
       'Con questo rapporto la soglia è {cap} g/h — la linea punteggiata sul grafico.',
     gelPartsStepper: 'Porzioni di gel per ricarica',
     foodStepwise: 'nel tempo',
+    fNeedsStop: 'alla sosta',
+    foodNeedsStop: 'alla sosta',
+    autoplanButton: 'Suggerisci un piano',
+    autoplanPreflightTitle: 'Prima di creare il piano',
+    autoplanPreflightReplaceNote:
+      'I riempimenti e il cibo attuali verranno sostituiti da un nuovo suggerimento.',
+    autoplanPreflightConfirm: 'Crea il piano',
+    autoplanRouteTitle: 'Percorso e condizioni',
+    autoplanElevationLabel: 'Altimetria',
+    autoplanStopsTitle: 'Le tue soste',
+    autoplanStopsKeepAndAdd: 'Aggiungi',
+    autoplanStopsKeepAndAddHint:
+      'Le tue soste restano, e se ne aggiungono di nuove solo dove il percorso ne ha davvero bisogno.',
+    autoplanStopsKeepOnly: 'Solo le mie',
+    autoplanStopsKeepOnlyHint:
+      'Verifichiamo se riesci a rifornirti con le soste che già conosci — altrimenti vedrai la mancanza invece di una nuova sosta.',
+    autoplanStopsClear: 'Da zero',
+    autoplanStopsClearHint:
+      'Eliminiamo le tue soste e pianifichiamo il percorso da zero, come se non ce ne fossero.',
+    autoplanGearTitle: 'Attrezzatura che porti',
+    autoplanGearHint:
+      "Togli la spunta a ciò che oggi non porti — solo per questo piano, l'attrezzatura salvata non cambia.",
+    autoplanGearEditLink: 'Modifica attrezzatura',
+    autoplanFoodTitle: 'Cibo',
+    autoplanDialogHint:
+      "Indica quanti ne porti di ciascuno e trascinali nell'ordine in cui li useresti — in alto la prima scelta.",
+    autoplanDialogCountLabel: 'Quantità',
+    autoplanDialogCancel: 'Annulla',
+    autoplanShortRideNote:
+      "Questa uscita dura meno di un'ora — sforzi così brevi di solito non richiedono carboidrati, quindi abbiamo pianificato solo acqua.",
+    autoplanNeedsDuration: 'Imposta prima distanza e velocità (oppure un tempo).',
+    autoplanAppliedNote:
+      'Questo è un suggerimento di partenza — adattalo alla tua esperienza e alle tue preferenze.',
+    autoplanAppliedDismiss: 'OK',
+    autoplanThinkingTitle: 'Sto cercando un piano migliore…',
+    autoplanThinkingCancel: 'Annulla',
+    autoplanThinkingShared: [
+      'Controllo se si può evitare una sosta. Non si può. Controllo di nuovo.',
+      'Ho appena scartato un piano con quattro cole. Per il tuo bene.',
+      'Mi è capitato un percorso tosto.',
+      'Sto sciogliendo i sali mentalmente. Per ora va tutto in soluzione.',
+      'Vale davvero la pena aspettare. Forse.',
+      'Sto trattando con il tuo stomaco.',
+      'Cerco un negozio aperto di domenica.',
+      'Sto valutando una banana. La banana valuta me.',
+      'Gel o non gel, questo è il dilemma.',
+      'Pranzo a metà o alla fine? Cameriere, ancora un attimo, per favore.',
+      'Ho mangiato un gel virtuale. Non ho sentito niente.',
+      'Ho appena trovato il piano perfetto. Peccato, per un altro percorso.',
+      'Il mio processore chiede rifornimento.',
+      'Scarto un piano con tre pranzi. Lo so, era allettante.',
+      'Ci siamo quasi. Come il cartello «vetta a 2 km».',
+      'Il piano è buono. Cerco uno che sia buono e anche elegante.',
+      'Ritmo di calcolo: zona 2. Saggio, per la lunga distanza.',
+    ],
+    autoplanThinkingCycling: [
+      'Sto calcolando. Tu intanto gonfia le gomme.',
+      'Conto le borracce. Mi vengono sette. Riconto.',
+      'Più lento di te in salita, ma più preciso.',
+      "Quasi fatto. Come dice ogni ciclista prima dell'ultima salita.",
+      'Se avessi le gambe, sarei già arrivato.',
+      'Sto in scia a un piano migliore. Sto per staccarlo.',
+      'Controllo se i ciclisti hanno davvero bisogno di acqua. Ne hanno bisogno.',
+      'Le mie ventole girano più veloci della tua cadenza.',
+      'Calcolo tutto con la stessa precisione con cui tu conti i watt su Strava.',
+      'Cerco un piano senza forature. Quello non te lo posso promettere.',
+      'Conto le soste. Ognuno vorrebbe fermarsi al bar.',
+    ],
+    autoplanThinkingRunning: [
+      'Sto calcolando. Tu intanto allaccia bene le scarpe.',
+      'Più lento di te in salita, ma non passo mai al passo.',
+      "Quasi fatto. Come dice ogni runner prima dell'ultima salita.",
+      'Se avessi le gambe, avrei già finito. E avrei le vesciche.',
+      'Controllo se i runner hanno davvero bisogno di acqua. Ne hanno bisogno.',
+      'Conto le tasche del gilet. Sempre una in meno del necessario.',
+      'Cerco un piano senza talloni scorticati. Quello non te lo posso promettere.',
+      'Calcolo tutto con la stessa precisione con cui tu controlli il passo al chilometro.',
+      'Sorpasso il piano al ristoro. Il bicchiere è volato tra i cespugli.',
+      'Infilo i gel nel gilet. Uno cade sempre fuori.',
+      'Gel al 30° km? Al 32°? Il muro non si sposta.',
+    ],
     foodAddProduct: '+ Aggiungi prodotto',
     meWeight: 'Peso',
     meApp: 'App',
@@ -2206,7 +2560,7 @@ export const STR: Record<Lang, StringTable> = {
     recoveryHint:
       'La quantità di carboidrati da mangiare dopo il giro per ricostituire il glicogeno muscolare.',
     carbRateHint:
-      "Il colore della barra segue il tuo ritmo di apporto reale (g/h) rispetto a quanto serve davvero per questo percorso — non la percentuale sopra. Diventa verde quando fornisci quanto richiesto dal percorso; se il fabbisogno supera circa 40 g/h, basta arrivare a 40 g/h, perché oltre quella soglia altri carboidrati aiutano molto poco. Sotto 1h di bici o corsa la barra è grigia, perché su un tempo così breve i carboidrati contano comunque poco. Bordeaux significa che il ritmo pianificato supera quanto il tuo intestino può davvero assorbire — l'eccesso resta nello stomaco e richiama acqua, da cui nausea o gonfiore per aver esagerato.",
+      "Il colore della barra segue il tuo ritmo di apporto reale (g/h) rispetto a quanto serve davvero per questo percorso — non la percentuale sopra. Diventa verde quando fornisci quanto richiesto dal percorso; se il fabbisogno supera circa 40 g/h, basta arrivare a 40 g/h (30 g/h a bassa intensità), perché oltre quella soglia altri carboidrati aiutano molto poco. Sotto 1h di bici o corsa la barra è grigia, perché su un tempo così breve i carboidrati contano comunque poco. Bordeaux significa che il ritmo pianificato supera quanto il tuo intestino può davvero assorbire — l'eccesso resta nello stomaco e richiama acqua, da cui nausea o gonfiore per aver esagerato.",
     waterBalanceHint:
       "Un meno è un deficit rispetto alla perdita di sudore, un più significa bere oltre quella perdita. Il deficit tollerabile si riduce con l'aumentare della temperatura; un surplus comporta il rischio di iponatriemia.",
     waterBalanceHintLink: 'Come si legge →',

@@ -22,6 +22,18 @@ moved, trust the filesystem over this file and update it.
 - `urls.ts` — URL/route helpers (language-prefixed routing).
 - `domain/` — **pure calculation logic, no React**, unit-tested (`*.test.ts` next to each file):
   - `fuel.ts` — supply/demand fueling math (the core model).
+  - `autoplan/` — **autoplan v3** (greedy loop): `index.ts` (entry), `search.ts` (the only module
+    that chooses), `layout.ts` (a decision → fills/stops), `spans.ts` (fill reach from the need
+    curve), `score.ts` (distance to both green badges), `exhaustive.ts` (`improve()` — pruned
+    exhaustive search yielding each strictly-better plan, for the thinking modal), `run.ts`
+    (`runAutoplan()` — posts the climb then every `improve()` plan then `done`, engine exception
+    or not; the framework-free body of the Worker below), `autoplan.worker.ts` (the Web Worker
+    entry point the thinking modal's UI spawns — a thin `postMessage`/`onmessage` wrapper around
+    `run.ts`, typed against only the slice of the worker global scope it uses since the app
+    tsconfig has no WebWorker lib), `types.ts`;
+    test-only `oracle.ts` + `oracleExpect.ts` (brute-force check of the search, run with
+    `ORACLE=1`); `exhaustive.measure.test.ts` (timing probe for `improve()` on the 194km pacing
+    ride, run with `MEASURE=1`).
   - `combinedRefill.ts` — combined stop/refill logic.
   - `printSheet.ts` — printable one-page plan (schedule strip + bottle recipes).
   - `gpx.ts` — GPX file parsing.
@@ -32,10 +44,9 @@ moved, trust the filesystem over this file and update it.
   - `shareSummary.ts` — the figures the share blurb/badge/chart PNG all quote.
   - `shareQr.ts` — QR module matrix for the share panel's image formats.
   - `types.ts` — shared domain types.
-  - Autoplan (auto-generate a fueling plan) does **not** exist on `master` — it's mid-rewrite on
-    unmerged branches (`feat/autoplan`, `feat/autoplan-loop`; see memory for status). Don't expect
-    `domain/autoplan.ts` or `domain/planner/` here.
-  - `__fixtures__/` — sample route data (e.g. `kielceMarkiEle.ts`) used by domain tests.
+  - `__fixtures__/` — sample route data (e.g. `kielceMarkiEle.ts`) used by domain tests;
+    `pacing194.ts` (route/mix/gear/foodLib/selection for the rider's 194km ride, shared by
+    `autoplanPacing.test.ts` and `exhaustive.measure.test.ts`).
 - `store/` — `appStore.ts` (zustand, single source of app state) + `persistStorage.ts`
   (localStorage persistence). No backend.
 - `i18n/strings.ts` — **all** user-facing copy; don't inline strings in components.
@@ -44,6 +55,11 @@ moved, trust the filesystem over this file and update it.
     `MobileRouteSheet.tsx`, `MobileMix.tsx`, etc.) — this is the primary UI surface.
   - `panels/` — desktop side panels (`RoutePanel.tsx`, `FoodPanel.tsx`, `GearPanel.tsx`,
     `MixPanel.tsx`, `SettingsPanel.tsx`, `PanelShell.tsx`).
+  - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx` — runs the engine in the Web Worker
+    and applies each plan it posts, `AutoplanPreflightModal.tsx`, `autoplanOptions.ts`,
+    `listReorderHandler.ts`), `AutoplanThinkingModal.tsx` (the spinner + rotating-text window
+    shown while the worker searches; Cancel keeps the best plan so far) and `thinkingTexts.ts` —
+    the rotating-joke text pool/queue (Fisher–Yates, no immediate repeat) that window shows.
   - `chart/` — the main fuel/elevation chart (`Chart.tsx`, `ElevationLayer.tsx`, `StopMarkers.tsx`, `theme.ts`).
   - `lanes/` — fill/food lane bars and drag handlers (`FillBar.tsx`, `FoodBar.tsx`, `dragHandlers.ts`).
   - `timeline/` — `TimelineSection.tsx`.
@@ -64,8 +80,8 @@ moved, trust the filesystem over this file and update it.
 ## Where to look for...
 
 - Fueling math / carb-hydration calculations → `src/domain/fuel.ts`.
-- Autoplan (auto-generate a fueling plan) → not on `master`; unmerged on `feat/autoplan-loop`
-  (current) and `feat/autoplan` (superseded) — see `docs/backlog.md` for status.
+- Autoplan (auto-generate a fueling plan) → `src/domain/autoplan/` (v3); rules in
+  `docs/autoplan-rules.md` (local, gitignored).
 - App state / persistence → `src/store/appStore.ts`.
 - Any user-visible text → `src/i18n/strings.ts`.
 - Mobile UI → `src/components/mobile/`.

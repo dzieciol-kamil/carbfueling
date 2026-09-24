@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
+  DEFAULT_AUTOPLAN_OPTIONS,
+  type AutoplanOptions,
+} from '../components/autoplan/autoplanOptions';
+import { autoplan } from '../domain/autoplan';
+import type { AutoplanResult, FoodSelectionEntry } from '../domain/autoplan/types';
+import {
   bestGapSpan,
   clampFillToDistance,
   clampFoodToDistance,
@@ -28,6 +34,7 @@ import {
   type RouteInput,
   type Vessel,
   type Fill,
+  type PlanState,
   type ShopStop,
   type Sport,
   type XUnit,
@@ -247,6 +254,22 @@ interface AppState {
   removeFoodLibEntry: (key: string) => void;
   addFoodLibEntry: () => void;
 
+  applyAutoplan: (
+    selection: FoodSelectionEntry[],
+    removePreviousAutoStops: boolean,
+    options?: AutoplanOptions,
+  ) => void;
+  /** Applies a plan the caller already has — e.g. one `runAutoplan()` posted from the thinking
+   *  modal's worker — without running `autoplan()` itself. `removePreviousAutoStops` defaults to
+   *  true (a prior run's own stops are replaced), same as every `applyAutoplan` caller but its own
+   *  false case; `applyAutoplan` is the version of this that also runs the engine and lets the
+   *  rider additionally clear his own stops via `options.stopsMode`. */
+  insertAutoplan: (
+    result: AutoplanResult,
+    options?: AutoplanOptions,
+    removePreviousAutoStops?: boolean,
+  ) => void;
+
   clearPlan: () => void;
 }
 
@@ -302,7 +325,16 @@ const defaultFoodLib: FoodLibEntry[] = [
     cont: true,
     span: 18,
   },
-  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', it: 'Cola', carbs: 35, ml: 330 },
+  {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    de: 'Cola',
+    it: 'Cola',
+    carbs: 35,
+    ml: 330,
+    needsStop: true,
+  },
   { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
   {
     key: 'ricecake',
@@ -313,6 +345,23 @@ const defaultFoodLib: FoodLibEntry[] = [
     carbs: 30,
   },
 ];
+
+/**
+ * The plain data `autoplan()` — and the thinking modal's worker, which is why this is a plain
+ * function and not a store action — actually needs: `route`, `mix`, `gear` (narrowed by
+ * `options.carriedVesselGids`, see `applyAutoplan` below), `fills`, `foods`, `foodLib`. Nothing
+ * else in the store crosses the worker boundary, and nothing here does either, which is what lets
+ * the result pass through `structuredClone()` (a store object's actions/`ui`/id counters would
+ * throw `DataCloneError`).
+ */
+export function autoplanInput(
+  s: PlanState & { shops: ShopStop[] },
+  options: AutoplanOptions,
+): PlanState {
+  const carried = options.carriedVesselGids;
+  const gear = carried ? s.gear.filter((g) => carried.includes(g.gid)) : s.gear;
+  return { route: s.route, mix: s.mix, gear, fills: s.fills, foods: s.foods, foodLib: s.foodLib };
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -598,8 +647,14 @@ export const useAppStore = create<AppState>()(
             nextShopId: s.nextShopId + 1,
           };
         }),
+      // Editing a suggested stop adopts it. Autoplan guesses a kilometre; the moment the rider
+      // drags it onto the place he knows is there, or gives it a name, the guess has become his
+      // own note about the route — and the cleanup that clears a previous run's suggested stops
+      // must not take it.
       updateShop: (id, patch) =>
-        set((s) => ({ shops: s.shops.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+        set((s) => ({
+          shops: s.shops.map((x) => (x.id === id ? { ...x, ...patch, autoCreated: false } : x)),
+        })),
       removeShop: (id) =>
         set((s) => ({
           shops: s.shops.filter((x) => x.id !== id),
@@ -717,6 +772,80 @@ export const useAppStore = create<AppState>()(
               { key: 'u' + s.nextFoodKey, pl: name, en: name, de: name, it: name, carbs: 25 },
             ],
             nextFoodKey: s.nextFoodKey + 1,
+          };
+        }),
+
+      // Runs the engine, then hands its result to insertAutoplan — the composition R2 settled on
+      // so every existing test of this action keeps passing unchanged. `options` (see
+      // autoplanOptions.ts) is what the pre-flight modal collects; `autoplanInput` is what applies
+      // its carriedVesselGids side (narrowing the gear the engine gets to see), `insertAutoplan`
+      // is what applies its stopsMode side (below).
+      applyAutoplan: (selection, removePreviousAutoStops, options = DEFAULT_AUTOPLAN_OPTIONS) =>
+        get().insertAutoplan(
+          autoplan(autoplanInput(get(), options), selection),
+          options,
+          removePreviousAutoStops,
+        ),
+
+      // Wholesale-replaces fills/foods with a plan already computed — by applyAutoplan just now,
+      // or by the thinking modal's worker after several better ones arrived — rather than
+      // merging, mirroring loadTourDemoData's replace-not-append precedent: a plan is meant to
+      // stand in for the current one, not pile onto it. Shops are the exception: surviving stops
+      // are preserved and only the run's own new stops are appended. When removePreviousAutoStops
+      // is true (the default — every caller but applyAutoplan's own false case wants this), stops
+      // this function itself created on a prior run (tagged autoCreated) are dropped first — a
+      // rider-placed stop never has that tag, and an edited one loses it (see updateShop), so
+      // neither is ever touched by this cleanup.
+      insertAutoplan: (
+        result,
+        options = DEFAULT_AUTOPLAN_OPTIONS,
+        removePreviousAutoStops = true,
+      ) =>
+        set((s) => {
+          const survivingShops = removePreviousAutoStops
+            ? s.shops.filter((sh) => !sh.autoCreated)
+            : s.shops;
+          // "Od nowa" clears the rider's own stops too, not just autoplan's prior guesses —
+          // that's the whole point of the option. 'keepOnly' promises more than this line can
+          // deliver — planning within the stops he already has, and reporting the shortfall
+          // instead of inventing one — and `autoplan()` has no way to be told that, so for now
+          // it lands on the same behaviour as 'keepAndAdd'. It was the same on `feat/autoplan`.
+          const shopsForRun = options.stopsMode === 'clear' ? [] : survivingShops;
+
+          let fid = s.nextFid;
+          const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
+
+          let foodId = s.nextFoodId;
+          const foods: FoodItem[] = result.foods.map((f) => {
+            const entry = s.foodLib.find((e) => e.key === f.key);
+            const name = entry ? entry[s.ui.lang] || entry.en : f.key;
+            return { ...f, id: foodId++, name };
+          });
+
+          let shopId = s.nextShopId;
+          const defaultShopName = t(s.ui.lang).shopDefaultName;
+          const newShops: ShopStop[] = result.newStops.map((sh) => ({
+            ...sh,
+            id: shopId++,
+            name: defaultShopName,
+            autoCreated: true,
+          }));
+
+          return {
+            fills,
+            foods,
+            shops: [...shopsForRun, ...newShops],
+            // Everything that named a fill by id named one of the fills just replaced: the
+            // rider's "prepare these together" batch, and whatever was hovered, dragged or
+            // selected. Left behind they resolve to nothing — the Recipes block for the batch
+            // would simply stop rendering — so they go with the plan they belonged to.
+            combinedFillIds: [],
+            // `tab` is the phone's: the button sits in the shared header, so a run started from
+            // Gear or Mix would otherwise announce a finished plan on a screen showing none of it.
+            ui: { ...s.ui, tab: 'plan', selKey: null, hoverKey: null, dragKey: null },
+            nextFid: fid,
+            nextFoodId: foodId,
+            nextShopId: shopId,
           };
         }),
 
