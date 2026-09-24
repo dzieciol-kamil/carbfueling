@@ -236,6 +236,17 @@ input[type='number'] {
   }
 }
 
+/* Autoplan thinking modal's spinner (AutoplanThinkingModal.tsx). */
+.autoplan-thinking-spinner {
+  animation: autoplan-thinking-spin 0.9s linear infinite;
+}
+
+@keyframes autoplan-thinking-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes share-cue-left {
   0%,
   100% {
@@ -252,6 +263,11 @@ input[type='number'] {
   .share-cue {
     animation: none;
     opacity: 0.85;
+  }
+
+  /* Still turning, just slowly — a frozen ring would read as "stuck". */
+  .autoplan-thinking-spinner {
+    animation-duration: 3s;
   }
 }
 

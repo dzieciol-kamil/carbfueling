@@ -55,9 +55,11 @@ moved, trust the filesystem over this file and update it.
     `MobileRouteSheet.tsx`, `MobileMix.tsx`, etc.) — this is the primary UI surface.
   - `panels/` — desktop side panels (`RoutePanel.tsx`, `FoodPanel.tsx`, `GearPanel.tsx`,
     `MixPanel.tsx`, `SettingsPanel.tsx`, `PanelShell.tsx`).
-  - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx`, `AutoplanPreflightModal.tsx`,
-    `autoplanOptions.ts`, `listReorderHandler.ts`) and `thinkingTexts.ts` — the rotating-joke
-    text pool/queue (Fisher–Yates, no immediate repeat) shown while the search runs.
+  - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx` — runs the engine in the Web Worker
+    and applies each plan it posts, `AutoplanPreflightModal.tsx`, `autoplanOptions.ts`,
+    `listReorderHandler.ts`), `AutoplanThinkingModal.tsx` (the spinner + rotating-text window
+    shown while the worker searches; Cancel keeps the best plan so far) and `thinkingTexts.ts` —
+    the rotating-joke text pool/queue (Fisher–Yates, no immediate repeat) that window shows.
   - `chart/` — the main fuel/elevation chart (`Chart.tsx`, `ElevationLayer.tsx`, `StopMarkers.tsx`, `theme.ts`).
   - `lanes/` — fill/food lane bars and drag handlers (`FillBar.tsx`, `FoodBar.tsx`, `dragHandlers.ts`).
   - `timeline/` — `TimelineSection.tsx`.

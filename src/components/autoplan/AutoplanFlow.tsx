@@ -1,11 +1,32 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import type { AutoplanMessage } from '../../domain/autoplan/run';
+import type { FoodSelectionEntry } from '../../domain/autoplan/types';
 import { totalHours } from '../../domain/fuel';
 import type { RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
-import { useAppStore } from '../../store/appStore';
+import { autoplanInput, useAppStore } from '../../store/appStore';
+import { DEFAULT_AUTOPLAN_OPTIONS, type AutoplanOptions } from './autoplanOptions';
 import { AutoplanPreflightModal } from './AutoplanPreflightModal';
+import { AutoplanThinkingModal } from './AutoplanThinkingModal';
 
-type Phase = 'idle' | 'preflight' | 'appliedNote';
+type Phase = 'idle' | 'preflight' | 'thinking' | 'appliedNote';
+
+/** Owner's hard stop (2026-09-24): after this the search ends as if it had finished on its own —
+ *  the best plan so far stays on the chart. 194 km runs ~89M points at ~70/s, so it would not. */
+export const THINKING_LIMIT_MS = 5 * 60_000;
+
+/** Where the thinking modal lands once the run ends — by `done`, the time limit, a worker error or
+ *  Cancel. With no plan posted yet (Cancel during the climb) the chart is untouched, so there is
+ *  nothing to announce. `gate` is part of the contract but doesn't change the answer today: the
+ *  applied note itself picks its short-ride wording from the gate at render time. */
+export function finishPhase(received: boolean, _gate: 'shortRide' | 'ready'): Phase {
+  return received ? 'appliedNote' : 'idle';
+}
+
+/** How much longer the modal stays up so it never flashes: at least one second in total. */
+export function holdMs(startedAt: number, now: number): number {
+  return Math.max(0, 1000 - (now - startedAt));
+}
 
 const desktopButtonStyle: CSSProperties = {
   display: 'flex',
@@ -125,20 +146,89 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const foodLib = useAppStore((s) => s.foodLib);
   const gear = useAppStore((s) => s.gear);
   const shops = useAppStore((s) => s.shops);
-  const applyAutoplan = useAppStore((s) => s.applyAutoplan);
+  const insertAutoplan = useAppStore((s) => s.insertAutoplan);
   const openPanel = useAppStore((s) => s.openPanel);
   const setTab = useAppStore((s) => s.setTab);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
   const gate = autoplanGate(route);
 
+  // One run at a time. `runId` is bumped whenever a run ends (done, limit, error, Cancel,
+  // unmount), so anything its worker or timers still deliver afterwards is recognised and ignored.
+  const runId = useRef(0);
+  const worker = useRef<Worker | null>(null);
+  const limitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const received = useRef(false);
+
+  function stopWorker() {
+    runId.current++;
+    worker.current?.terminate();
+    worker.current = null;
+    clearTimeout(limitTimer.current);
+  }
+
+  useEffect(
+    () => () => {
+      stopWorker();
+      clearTimeout(holdTimer.current);
+    },
+    [],
+  );
+
+  function run(selection: FoodSelectionEntry[], options: AutoplanOptions) {
+    const runGate = gate === 'shortRide' ? 'shortRide' : 'ready';
+    stopWorker();
+    clearTimeout(holdTimer.current);
+    const id = runId.current;
+    const startedAt = performance.now();
+    received.current = false;
+
+    // Done, the time limit and a worker failure all end the same way: the best plan so far
+    // stays, and the modal holds for its minimum second. onerror/onmessageerror cover what
+    // runAutoplan's own `finally` can't — e.g. the worker module failing to load at all.
+    const finish = () => {
+      if (runId.current !== id) return;
+      stopWorker();
+      holdTimer.current = setTimeout(
+        () => setPhase(finishPhase(received.current, runGate)),
+        holdMs(startedAt, performance.now()),
+      );
+    };
+
+    const w = new Worker(new URL('../../domain/autoplan/autoplan.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    worker.current = w;
+    w.onmessage = (e: MessageEvent<AutoplanMessage>) => {
+      if (runId.current !== id) return;
+      if (e.data.type === 'plan') {
+        insertAutoplan(e.data.result, options);
+        received.current = true;
+      } else {
+        finish();
+      }
+    };
+    w.onerror = finish;
+    w.onmessageerror = finish;
+    limitTimer.current = setTimeout(finish, THINKING_LIMIT_MS);
+
+    setPhase('thinking');
+    w.postMessage({ state: autoplanInput(useAppStore.getState(), options), selection });
+  }
+
+  function cancelThinking() {
+    // No minimum hold here: the rider asked to stop, so the modal goes at once.
+    stopWorker();
+    setPhase(finishPhase(received.current, gate === 'shortRide' ? 'shortRide' : 'ready'));
+  }
+
   function handleTrigger() {
     if (gate === 'shortRide') {
       // Nothing here to ask about: carbs never enter a plan this short (autoplanGate), so the
       // pre-flight screen would only cover blocks that don't apply. A previous run's own stops
       // are always replaced — see autoplanOptions.ts — the rider's own stops are never touched.
-      applyAutoplan([], true);
-      setPhase('appliedNote');
+      run([], DEFAULT_AUTOPLAN_OPTIONS);
       return;
     }
     setPhase('preflight');
@@ -186,10 +276,13 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
           onConfirm={(selection, options) => {
             // Previous-run stops are always replaced now — re-running is what that means (see
             // autoplanOptions.ts). Only the rider's own stops are governed by options.stopsMode.
-            applyAutoplan(selection, true, options);
-            setPhase('appliedNote');
+            run(selection, options);
           }}
         />
+      )}
+
+      {phase === 'thinking' && (
+        <AutoplanThinkingModal lang={lang} sport={route.sport} onCancel={cancelThinking} />
       )}
 
       {phase === 'appliedNote' && (

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { autoplanGate, needsReplaceConfirm } from './AutoplanFlow';
+import { autoplanGate, finishPhase, holdMs, needsReplaceConfirm } from './AutoplanFlow';
 import type { Fill, FoodItem, RouteInput, ShopStop } from '../../domain/types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -88,5 +88,28 @@ describe('needsReplaceConfirm', () => {
 
   test('food alone is enough to ask', () => {
     expect(needsReplaceConfirm({ fills: [], foods: [food], shops: [] })).toBe(true);
+  });
+});
+
+/**
+ * How the thinking modal closes. Cancel can arrive before the climb posts anything on a long route,
+ * and then there is no plan on the chart to talk about — the applied note would be a lie.
+ */
+describe('finishPhase', () => {
+  test('cancel before the first plan leaves the chart alone and says nothing', () => {
+    expect(finishPhase(false, 'ready')).toBe('idle');
+  });
+  test('any plan received ends on the applied note', () => {
+    expect(finishPhase(true, 'ready')).toBe('appliedNote');
+  });
+});
+
+/** The modal stays up at least a second, so a fast result doesn't flash it on and off. */
+describe('holdMs', () => {
+  test('a 100 ms result still keeps the window up for a second', () => {
+    expect(holdMs(0, 100)).toBe(900);
+  });
+  test('a long run closes at once', () => {
+    expect(holdMs(0, 5000)).toBe(0);
   });
 });
