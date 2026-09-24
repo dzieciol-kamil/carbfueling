@@ -28,11 +28,11 @@ import {
   totalHours,
   waterBalancePct,
 } from '../fuel';
-import type { Content, PlanState } from '../types';
+import type { PlanState } from '../types';
 import type { VesselAssignment } from './layout';
 import { compareScore, penalty, SHAPE_TOLERANCE } from './score';
 import { evaluate, space, usableGear } from './search';
-import type { Decision, Evaluated } from './search';
+import type { Decision, Evaluated, Space } from './search';
 import type { FoodSelectionEntry } from './types';
 
 const EPS = 1e-9;
@@ -42,6 +42,67 @@ function settled(e: Evaluated): boolean {
   return e.score.toGreen <= EPS && e.score.shapeShort <= SHAPE_TOLERANCE;
 }
 
+/**
+ * The most fluid and carbs `decision` could possibly deliver — `fluidCap`/`carbCap` — including
+ * `layout.ts`'s "top up a vessel that has finished its carb duty with water, or failing that izo,
+ * at a stop the plan already has" (`place()`, "Topping up vessels that are empty"), which this
+ * decision's raw `loads` says nothing about on its own.
+ *
+ * **The top-up bound.** Every top-up lands at a *distinct* stop — `place()`'s top-up loop visits
+ * `stops` once and pushes at most one fill per vessel per visit — and every stop in that list is
+ * either a refill's `from` (a fill whose vessel already has an earlier one) or a `needsStop`
+ * product's position; nothing else opens one before the top-up pass runs. So the number of stops
+ * available for *any* vessel's top-ups is at most the number of refills the whole decision's own
+ * assignment could produce, `Σ max(0, loads − 1)` over every vessel (a vessel's first load is its
+ * home one, never a refill; real refills can only be fewer, per `relay()`'s own early exit — see
+ * the note on the too-many-stops cut above), plus one per purchased `needsStop` unit. A vessel's
+ * top-ups can never exceed that bound, however large its own `vol` or however long the route runs
+ * — unlike a bound built from the vessel's *own* `loadCap`, which is capped at `MAX_LOADS` and so
+ * can undercount when the rest of the plan buys more stops than one vessel alone would ever need
+ * (measured: three 400 ml water bottles refilled ~10 times each plus a 150 ml water/gel flask on a
+ * 250 km, 32 °C ride — the flask's own capped `loadCap` is 14, but the other bottles' refills buy
+ * 16 stops, and the flask gets topped up at all but one of them: 15, not 14).
+ */
+export function packedCaps(
+  state: PlanState,
+  s: Space,
+  decision: Decision,
+): { fluidCap: number; carbCap: number } {
+  const gear = usableGear(state.gear);
+  const volOf = (gid: string) => gear.find((v) => v.gid === gid)!.vol;
+  const perLoad = (content: 'water' | 'izo' | 'gel', gid: string) =>
+    content === 'water'
+      ? 0
+      : carbsFill({ fid: 0, gid, content, from: 0, to: 1 }, state.gear, state.mix);
+
+  const stopBound =
+    decision.assignment.reduce((n, a) => n + Math.max(0, a.loads - 1), 0) +
+    s.offers.reduce((n, o, i) => n + (o.needsStop ? decision.counts[i] : 0), 0);
+
+  let fluidCap = 0;
+  let carbCap = preRideGut(state.route);
+  decision.assignment.forEach((a) => {
+    if (a.content !== 'gel') fluidCap += volOf(a.gid) * a.loads;
+    carbCap += perLoad(a.content, a.gid) * a.loads;
+    // Water first, izo "at a pinch" — the same preference `place()`'s top-up uses, off the same
+    // `allowed` list. A vessel already assigned water is never topped up (`place()` skips it).
+    if (a.loads > 0 && a.content !== 'water') {
+      const vessel = gear.find((v) => v.gid === a.gid)!;
+      if (vessel.allowed.includes('water')) {
+        fluidCap += vessel.vol * stopBound;
+      } else if (vessel.allowed.includes('izo')) {
+        fluidCap += vessel.vol * stopBound;
+        carbCap += perLoad('izo', a.gid) * stopBound;
+      }
+    }
+  });
+  s.offers.forEach((o, i) => {
+    fluidCap += (o.ml ?? 0) * decision.counts[i];
+    carbCap += o.carbs * decision.counts[i];
+  });
+  return { fluidCap, carbCap };
+}
+
 export function* improve(
   state: PlanState,
   selection: FoodSelectionEntry[],
@@ -49,7 +110,6 @@ export function* improve(
   seen: { n: number } = { n: 0 },
 ): Generator<Evaluated, void, void> {
   const s = space(state, selection);
-  const gear = usableGear(state.gear);
   const hrs = totalHours(state.route);
   const empty = planSummary({ ...state, fills: [], foods: [] });
   const sweatLoss = empty.sweatLoss;
@@ -64,61 +124,23 @@ export function* improve(
   });
   const floor =
     hrs >= CARB_GRADING_MIN_HOURS ? carbFloorGph(empty.carbTargetGph, state.route.intensity) : 0;
-  const perLoad = (a: VesselAssignment) =>
-    a.content === 'water'
-      ? 0
-      : carbsFill(
-          { fid: 0, gid: a.gid, content: a.content, from: 0, to: 1 },
-          state.gear,
-          state.mix,
-        );
-  const volOf = (gid: string) => gear.find((v) => v.gid === gid)!.vol;
 
   let best = start;
   const maxM = Math.max(1, ...s.vessels.map((opts) => Math.max(...opts.map((a) => a.loads))));
   const chosen: number[] = [];
 
-  /** The most loads `s.vessels[i]` (vessel index `i`'s own options) offers for `content` — 0 when
-   *  the vessel's `allowed` list rules it out entirely. */
-  const capFor = (i: number, content: Content) =>
-    Math.max(0, ...s.vessels[i].filter((o) => o.content === content).map((o) => o.loads));
-
   /**
-   * "Certainly cannot win" on `score()`'s own scale, not on the raw g/h and % the caps are
-   * expressed in. `fluid`/`carbs` are the most this Decision's vessels and offers could possibly
-   * deliver (`fluidCap`/`carbCap` — including the water-or-izo top-up `layout.ts` gives a spent
-   * carb vessel at a stop the plan already has, bounded generously by `capFor` rather than
-   * re-simulated), so `dryLB`/`carbLB` are lower bounds on the two shortfall terms `score()` would
-   * compute (never an overestimate — the real plan can only do worse, not better) — via the exact
-   * same `penalty()` those terms are built from. A Decision is unreachable only when even that best
-   * case cannot come within `compareScore`'s own tie tolerance of the current best's `toGreen`;
-   * comparing the raw caps against a raw `EPS` instead (as this used to) mixes units with
-   * `compareScore`'s normalised one and can cut a Decision that would in fact have tied on
-   * `toGreen` and won on `stops`.
+   * "Certainly cannot win" on `score()`'s own scale, not on the raw g/h and % `packedCaps` is
+   * expressed in. `fluidCap`/`carbCap` are the most this Decision could possibly deliver, so
+   * `dryLB`/`carbLB` are lower bounds on the two shortfall terms `score()` would compute (never an
+   * overestimate — the real plan can only do worse, not better) — via the exact same `penalty()`
+   * those terms are built from. A Decision is unreachable only when even that best case cannot come
+   * within `compareScore`'s own tie tolerance of the current best's `toGreen`; comparing the raw
+   * caps against a raw `EPS` instead (as this used to) mixes units with `compareScore`'s normalised
+   * one and can cut a Decision that would in fact have tied on `toGreen` and won on `stops`.
    */
   function unreachable(assignment: VesselAssignment[], counts: number[]): boolean {
-    let fluid = 0;
-    let carbs = preRideGut(state.route);
-    assignment.forEach((a, i) => {
-      if (a.content !== 'gel') fluid += volOf(a.gid) * a.loads;
-      carbs += perLoad(a) * a.loads;
-      // `layout.ts` tops up a vessel that has finished its carb duty with water — or, failing
-      // that, izo — at a stop the plan already has (never a new one), which this decision's raw
-      // `loads` says nothing about. Bounded here generously but safely: as much again as the
-      // vessel's *own* full-route loadCap for that alternate content would ever allow, which can
-      // only overstate the real top-up (covering a shorter, already-partly-fed remainder never
-      // needs more loads than covering the whole route solo would).
-      if (a.content !== 'water') {
-        // Whichever of water/izo the vessel's own `allowed` list offers as the top-up content —
-        // both, generously, since either one delivers fluid and only izo also delivers carbs.
-        fluid += volOf(a.gid) * (capFor(i, 'water') + capFor(i, 'izo'));
-        carbs += perLoad({ gid: a.gid, content: 'izo', loads: 0 }) * capFor(i, 'izo');
-      }
-    });
-    s.offers.forEach((o, i) => {
-      fluid += (o.ml ?? 0) * counts[i];
-      carbs += o.carbs * counts[i];
-    });
+    const { fluidCap: fluid, carbCap: carbs } = packedCaps(state, s, { assignment, counts });
     const deficitAtCap = Math.max(
       0,
       -waterBalancePct({ sweatLoss, fluidPlanned: fluid, weight: state.route.weight }),

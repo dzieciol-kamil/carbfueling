@@ -9,14 +9,14 @@
  * `exhaustive.ts` (ruling R3, 2026-09-24) for why neither cut is implemented.
  */
 import { describe, expect, test } from 'vitest';
-import { carbsFill, planSummary, preRideGut } from '../fuel';
+import { planSummary } from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
-import { improve } from './exhaustive';
+import { improve, packedCaps } from './exhaustive';
 import { oracle } from './oracle';
 import { compareScore } from './score';
 import { climb, decisionAt, evaluate, space } from './search';
-import type { Decision, Evaluated, Space } from './search';
+import type { Decision, Evaluated } from './search';
 import type { FoodSelectionEntry } from './types';
 
 function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
@@ -95,38 +95,6 @@ const FIXTURES = [
   ['bladder+flask kit', bladderFlask, SELECTION] as const,
 ];
 
-/**
- * The most fluid/carbs a Decision's vessels and offers could possibly deliver — `exhaustive.ts`'s
- * `unreachable()` computes exactly this (`fluid`/`carbs`) as the best case its cut can rule out,
- * including the generous, safe bound on `layout.ts`'s spent-vessel water/izo top-up (`capFor`,
- * mirrored here). Reimplemented independently, as the ceiling the "credited/planned never exceed
- * what was packed" test checks the engine's own numbers against.
- */
-function caps(st: PlanState, s: Space, d: Decision): { fluidCap: number; carbCap: number } {
-  const capFor = (i: number, content: string) =>
-    Math.max(0, ...s.vessels[i].filter((o) => o.content === content).map((o) => o.loads));
-  let fluidCap = 0;
-  let carbCap = preRideGut(st.route);
-  d.assignment.forEach((a, i) => {
-    const v = st.gear.find((g) => g.gid === a.gid)!;
-    if (a.content !== 'gel') fluidCap += v.vol * a.loads;
-    carbCap +=
-      carbsFill({ fid: 0, gid: a.gid, content: a.content, from: 0, to: 1 }, st.gear, st.mix) *
-      a.loads;
-    if (a.content !== 'water') {
-      fluidCap += v.vol * (capFor(i, 'water') + capFor(i, 'izo'));
-      carbCap +=
-        carbsFill({ fid: 0, gid: a.gid, content: 'izo', from: 0, to: 1 }, st.gear, st.mix) *
-        capFor(i, 'izo');
-    }
-  });
-  s.offers.forEach((o, i) => {
-    fluidCap += (o.ml ?? 0) * d.counts[i];
-    carbCap += o.carbs * d.counts[i];
-  });
-  return { fluidCap, carbCap };
-}
-
 describe('the bounds the cuts rely on', () => {
   test.each(FIXTURES)(
     '%s: credited carbs and planned fluid never exceed what was packed',
@@ -141,13 +109,57 @@ describe('the bounds the cuts rely on', () => {
           foods: e.draft.foods.map((f, i) => ({ ...f, id: i + 1, name: f.key })),
         });
         expect(sum.coveredCarbs).toBeLessThanOrEqual(sum.totalCarbs + 1e-6);
-        const { fluidCap, carbCap } = caps(st, s, d);
+        const { fluidCap, carbCap } = packedCaps(st, s, d);
         expect(sum.fluidPlanned).toBeLessThanOrEqual(fluidCap + 1e-6);
         expect(sum.totalCarbs).toBeLessThanOrEqual(carbCap + 1e-6);
       }
     },
     20000,
   );
+
+  /**
+   * Pins the counterexample that ruled out building the top-up bound from a vessel's *own*
+   * `loadCap` (R3 review, round 3): three 400 ml water-only bottles, refilled 10, 10 and 14 times
+   * respectively, buy 16 stops between them, and the 150 ml water/gel flask — one gel load, no
+   * loads of its own after that — gets topped up with water at all but one: 15 real top-ups (read
+   * off `evaluate()`'s own draft, not asserted by hand), one *more* than the flask's own water
+   * `loadCap`, which `space()` caps at `MAX_LOADS` (14) regardless of how many stops the rest of
+   * the plan actually buys. `packedCaps()` — the real formula `unreachable()` calls, not a copy of
+   * it — has to cover the flask's real `fluidPlanned` here without leaning on that cap.
+   */
+  test("a vessel can be topped up more times than its own loadCap allows, so packedCaps() can't be built from it", () => {
+    const state = makeState(makeRoute({ distance: 250, temp: 32, speed: 22 }), [
+      vessel('g1', 400, ['water']),
+      vessel('g2', 400, ['water']),
+      vessel('g3', 400, ['water']),
+      vessel('g4', 150, ['gel', 'water'], 6),
+    ]);
+    const s = space(state, []);
+    const decision: Decision = {
+      assignment: [
+        { gid: 'g1', content: 'water', loads: 10 },
+        { gid: 'g2', content: 'water', loads: 10 },
+        { gid: 'g3', content: 'water', loads: 14 },
+        { gid: 'g4', content: 'gel', loads: 1 },
+      ],
+      counts: [],
+    };
+    const e = evaluate(state, s.offers, decision);
+    const topUps = e.draft.fills.filter((f) => f.gid === 'g4' && f.content === 'water').length;
+    const ownWaterLoadCap = Math.max(
+      0,
+      ...s.vessels[3].filter((o) => o.content === 'water').map((o) => o.loads),
+    );
+    expect(topUps).toBeGreaterThan(ownWaterLoadCap);
+
+    const sum = planSummary({
+      ...state,
+      fills: e.draft.fills.map((f, i) => ({ ...f, fid: i + 1 })),
+      foods: [],
+    });
+    const { fluidCap } = packedCaps(state, s, decision);
+    expect(sum.fluidPlanned).toBeLessThanOrEqual(fluidCap + 1e-6);
+  }, 20000);
 
   /**
    * Pins the counterexample that ruled out a stop-count cut (R3): `space()`'s `loadCap` deliberately
