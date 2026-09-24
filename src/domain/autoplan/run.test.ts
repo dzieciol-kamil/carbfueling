@@ -4,7 +4,7 @@
  * boundary itself (`autoplan.worker.ts`) is just a `postMessage` wrapper around this and is not
  * tested here for the same reason nothing else in `src/domain/` imports `jsdom`'s worker shims.
  */
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { DEFAULT_MIX } from '../types';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 import { compareScore, score } from './score';
@@ -95,6 +95,9 @@ describe('runAutoplan', () => {
   }, 20000); // 20s: under the full suite's parallel load, this real climb()+improve() run can
   // outrun the default 5s timeout on CPU contention alone — see exhaustive.test.ts's fixtures.
 
+  // vol: NaN doesn't actually make the engine throw — the NaN just propagates through the
+  // arithmetic — so this only pins the ordinary no-throw path; the catch/log path below is what
+  // exercises the actual error handling, via the injected `deps.improve` seam.
   test('an engine error still ends with done, keeping what was posted', () => {
     const msgs: AutoplanMessage[] = [];
     runAutoplan(
@@ -106,7 +109,8 @@ describe('runAutoplan', () => {
     expect(msgs.at(-1)).toEqual({ type: 'done' });
   });
 
-  test('an injected engine error still ends with done (test-only seam)', () => {
+  test('an injected engine error still ends with done and is logged (test-only seam)', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const msgs: AutoplanMessage[] = [];
     runAutoplan(state, sel, (m) => msgs.push(m), {
       improve: () => {
@@ -116,5 +120,7 @@ describe('runAutoplan', () => {
 
     expect(msgs.at(-1)).toEqual({ type: 'done' });
     expect(msgs[0].type).toBe('plan'); // the climb was posted before the engine blew up
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

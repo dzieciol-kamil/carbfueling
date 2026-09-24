@@ -21,8 +21,11 @@ const toResult = (e: Evaluated): AutoplanResult => ({
  * `deps` is a test-only seam: it lets a test force `improve()` to throw without having to find a
  * real state that makes the engine itself blow up. If the engine throws, the modal's job is to
  * close and keep the best plan already posted, not to spin forever or crash the worker — so the
- * error is swallowed here, and `finally` is what guarantees `done` always follows, exception or
- * not, whether it came from the climb or partway through `improve()`.
+ * error is caught here rather than left to propagate, and `finally` is what guarantees `done`
+ * always follows, exception or not, whether it came from the climb or partway through
+ * `improve()`. It's logged rather than silently dropped: this also catches a `post()` itself
+ * throwing (e.g. `DataCloneError` from `postMessage`), which is a bug worth seeing, not just an
+ * engine result worth discarding.
  */
 export function runAutoplan(
   state: PlanState,
@@ -36,8 +39,9 @@ export function runAutoplan(
     for (const e of deps.improve(state, selection, start)) {
       post({ type: 'plan', result: toResult(e) });
     }
-  } catch {
+  } catch (err) {
     // The plan(s) already posted stay on the chart; `done` below is what tells the modal to stop.
+    console.error('autoplan worker: engine failed', err);
   } finally {
     post({ type: 'done' });
   }
