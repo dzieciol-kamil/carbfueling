@@ -1533,7 +1533,7 @@ export const STR: Record<Lang, StringTable> = {
     duration: 'Dauer',
     weight: 'Gewicht',
     preMealCarbs: 'Kohlenhydrate vor dem Start',
-    preMealMinutes: 'Zeit vor dem Start',
+    preMealMinutes: 'Zeit vom Essen bis zum Start',
     intensity: 'Intensität',
     intensityHint:
       'Niedrig = du kannst dich entspannt in ganzen Sätzen unterhalten. Mittel = du redest noch, aber in kurzen Sätzen. Hoch = du kannst kaum sprechen, konzentriert auf die Atmung. Davon hängt ab, wie viele Kohlenhydrate pro Stunde die App einplant — und bei Hoch sinkt zusätzlich, wie viel dein Darm tatsächlich aufnehmen kann.',
@@ -2072,7 +2072,7 @@ export const STR: Record<Lang, StringTable> = {
     duration: 'Durata',
     weight: 'Peso',
     preMealCarbs: 'Carboidrati prima della partenza',
-    preMealMinutes: 'Tempo prima della partenza',
+    preMealMinutes: 'Tempo dal pasto alla partenza',
     intensity: 'Intensità',
     intensityHint:
       "Bassa = riesci a parlare comodamente con frasi complete. Media = parli ancora, ma con frasi brevi. Alta = riesci a malapena a parlare, concentrato sul respiro. Da questo dipende quanti carboidrati all'ora pianifica l'app — e ad Alta, riduce anche quanto il tuo intestino riesce davvero ad assorbire.",
