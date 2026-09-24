@@ -463,7 +463,7 @@ export const STR: Record<Lang, StringTable> = {
     duration: 'Czas trwania',
     weight: 'Waga',
     preMealCarbs: 'Węgle przed startem',
-    preMealMinutes: 'Czas przed startem',
+    preMealMinutes: 'Czas od zjedzenia do startu',
     intensity: 'Intensywność',
     intensityHint:
       'Niska = swobodnie rozmawiasz pełnymi zdaniami. Średnia = rozmawiasz, ale pojedynczymi zdaniami. Wysoka = ledwo mówisz, skupiony na oddechu. Od tego zależy, ile węglowodanów na godzinę zaplanuje Carb Fueling — a przy Wysokiej dodatkowo obniża to, ile Twoje jelito faktycznie jest w stanie wchłonąć.',
@@ -1001,7 +1001,7 @@ export const STR: Record<Lang, StringTable> = {
     duration: 'Duration',
     weight: 'Weight',
     preMealCarbs: 'Carbs before start',
-    preMealMinutes: 'Time before start',
+    preMealMinutes: 'Time from eating to start',
     intensity: 'Intensity',
     intensityHint:
       'Low = you can chat comfortably in full sentences. Medium = you talk, but in short sentences. High = you can barely speak, focused on breathing. This drives how many carbs per hour the app plans for — and at High, it also lowers how much your gut can actually absorb.',
