@@ -211,7 +211,7 @@ function carryStop(stops: Iterable<number>, emptyFrom: number, openAt: number): 
  * is nowhere left on this route to start another load — and `relay`'s own `x >= D` guard then drops
  * it rather than planning a fill of no length.
  */
-function gutClearKm(curve: Sample[], from: number): number {
+export function gutClearKm(curve: Sample[], from: number): number {
   let i = 0;
   while (i < curve.length && (curve[i].x < from || curve[i].gut > 0)) i++;
   if (i >= curve.length) return curve[curve.length - 1].x;

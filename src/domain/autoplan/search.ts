@@ -43,9 +43,9 @@
  * Tier 1 still goes both ways — a product that stopped earning its place is dropped again — so
  * nothing here needs a separate pruning pass.
  */
-import { CARB_GRADING_MIN_HOURS, carbsFill, cph, dist, sweat, totalHours } from '../fuel';
-import type { Content, PlanState, Vessel } from '../types';
-import { layout } from './layout';
+import { CARB_GRADING_MIN_HOURS, carbsFill, cph, dist, samples, sweat, totalHours } from '../fuel';
+import type { Content, PlanState, RouteInput, Vessel } from '../types';
+import { gutClearKm, layout } from './layout';
 import type { VesselAssignment } from './layout';
 import { compareScore, score } from './score';
 import type { Draft, Score } from './score';
@@ -216,6 +216,23 @@ function allocate(m: number, widths: number[]): number[] {
  * - **Nothing is open twice and nothing lands on the line.** A continuous product ends where the
  *   next one starts at the latest, and the last `FINISH_GAP_FRACTION` of the route is left clear.
  */
+/**
+ * Where the pre-ride meal has left the gut — owner, 2026-09-24: *"jak mamy węgle sprzed startu to
+ * nie dokładajmy węgli na samym starcie"*. The products follow the same rule the bottles do (R33):
+ * nothing is eaten while the stomach still holds something. Read off the app's own gut curve for a
+ * plan with nothing in it, so the only load on it is the meal. That depends on the route alone and
+ * `samples()` is not cheap, so it is remembered per route object.
+ */
+const preRideClearKm = new WeakMap<RouteInput, number>();
+function firstFeedKm(state: PlanState): number {
+  let km = preRideClearKm.get(state.route);
+  if (km === undefined) {
+    km = gutClearKm(samples({ ...state, fills: [], foods: [] }), 0);
+    preRideClearKm.set(state.route, km);
+  }
+  return km;
+}
+
 function placeFoods(
   state: PlanState,
   chosen: Offer[],
@@ -241,7 +258,9 @@ function placeFoods(
     at = snapped.map((p) => p.pos);
   }
 
-  const bounds = [0, ...at, end];
+  // The first stretch opens once the pre-ride meal has cleared, but never after the first purchase
+  // or the finish gap — those still bound it.
+  const bounds = [Math.min(firstFeedKm(state), at[0] ?? end, end), ...at, end];
   const widths = bounds.slice(1).map((b, i) => b - bounds[i]);
   const share = allocate(loose.length, widths);
 

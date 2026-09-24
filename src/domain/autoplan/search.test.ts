@@ -16,7 +16,14 @@ import { MAX_STEPS, climb, search } from './search';
 import { layout } from './layout';
 import { compareScore, score } from './score';
 import type { Draft } from './score';
-import { CARB_GRADING_MIN_HOURS, dist, hydrationStatus, planSummary, totalHours } from '../fuel';
+import {
+  CARB_GRADING_MIN_HOURS,
+  dist,
+  hydrationStatus,
+  planSummary,
+  samples,
+  totalHours,
+} from '../fuel';
 import type { CoverageStatus } from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
@@ -571,5 +578,23 @@ describe('degenerate inputs give a plan rather than throwing', () => {
       vessel('g1', 750, ['water']),
     ]);
     expect(() => search(state)).not.toThrow();
+  });
+});
+
+describe('the pre-ride meal is the first feed', () => {
+  // Owner, 2026-09-24: *"jak mamy węgle sprzed startu to nie dokładajmy węgli na samym starcie"*.
+  // The same gut rule the bottles already follow (R33), applied to the products: nothing is eaten
+  // while the pre-ride meal is still in the stomach.
+  test('no product is eaten before the pre-ride meal has left the gut', () => {
+    const state = makeState(makeRoute({ preMealCarbs: 100, preMealMinutes: 30 }), [
+      vessel('w', 750, ['water']),
+    ]);
+    const empty = samples({ ...state, fills: [], foods: [] });
+    const clear = empty.find((s) => s.gut === 0)!.x;
+    expect(clear).toBeGreaterThan(0);
+
+    const draft = search(state, [{ key: 'gel', count: 4 }]);
+    expect(draft.foods.length).toBeGreaterThan(0);
+    for (const f of draft.foods) expect(f.from).toBeGreaterThanOrEqual(clear);
   });
 });
