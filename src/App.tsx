@@ -15,6 +15,7 @@ import { SharedPlanPrompt } from './components/SharedPlanPrompt';
 import { SharePanel } from './components/share/SharePanel';
 import { SummaryCards } from './components/SummaryCards';
 import { TourOverlay } from './components/tour/TourOverlay';
+import { usePlanHistoryKeys } from './components/ui/UndoRedo';
 import {
   DESKTOP_BREAKPOINT,
   hasPlanData,
@@ -37,6 +38,8 @@ function App() {
   const themeMode = useAppStore((s) => s.ui.themeMode);
   const autoTheme = useAppStore((s) => s.ui.autoTheme);
   const setAutoTheme = useAppStore((s) => s.setAutoTheme);
+
+  usePlanHistoryKeys();
 
   useEffect(() => {
     if (tourSeen || hasPlanData(useAppStore.getState())) return;

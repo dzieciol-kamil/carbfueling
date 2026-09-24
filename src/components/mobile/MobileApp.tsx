@@ -3,7 +3,7 @@ import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
 import { LANDING_HREF_FROM_CALCULATOR } from '../../urls';
-import { AutoplanFlow } from '../autoplan/AutoplanFlow';
+import { MobilePlanMenu } from './MobilePlanMenu';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
 import { MobileGear } from './MobileGear';
@@ -94,11 +94,14 @@ export function MobileApp() {
           >
             CARB FUELING
           </a>
+          {/* Grows to the full row once it wraps under the wordmark, so the route chip keeps the
+              left edge and the Plan menu the right one. */}
           <div
             style={{
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: 8,
             }}
@@ -121,7 +124,7 @@ export function MobileApp() {
             >
               {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
             </button>
-            <AutoplanFlow variant="mobile" />
+            <MobilePlanMenu />
           </div>
         </div>
 

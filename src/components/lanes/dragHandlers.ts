@@ -86,10 +86,15 @@ export function createFillDragHandler(fid: number, mode: FillDragMode) {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       useAppStore.getState().setDragKey(null);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    // A cancelled pointer (the browser taking a touch over for a scroll) ends the drag too, or
+    // `dragKey` stays set: the bar keeps its dragged look and the plan's history never closes
+    // the step (planHistory.ts).
+    window.addEventListener('pointercancel', up);
     useAppStore.getState().setDragKey('f' + fid);
   };
 }
@@ -118,10 +123,12 @@ export function createGelPartDragHandler(fid: number, k: number) {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       useAppStore.getState().setDragKey(null);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     useAppStore.getState().setDragKey('f' + fid);
   };
 }
@@ -160,10 +167,12 @@ export function createFoodDragHandler(id: number, mode: FoodDragMode) {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       useAppStore.getState().setDragKey(null);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     useAppStore.getState().setDragKey('x' + id);
   };
 }
@@ -191,10 +200,12 @@ export function createShopDragHandler(id: number) {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       useAppStore.getState().setDragKey(null);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     useAppStore.getState().setDragKey('s' + id);
   };
 }

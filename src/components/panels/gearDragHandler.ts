@@ -27,10 +27,12 @@ export function createVesselReorderHandler(gid: string) {
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       useAppStore.getState().setDragKey(null);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     useAppStore.getState().setDragKey('g' + gid);
   };
 }

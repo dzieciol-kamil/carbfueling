@@ -48,11 +48,13 @@ moved, trust the filesystem over this file and update it.
     `pacing194.ts` (route/mix/gear/foodLib/selection for the rider's 194km ride, shared by
     `autoplanPacing.test.ts` and `exhaustive.measure.test.ts`).
 - `store/` — `appStore.ts` (zustand, single source of app state) + `persistStorage.ts`
-  (localStorage persistence). No backend.
+  (localStorage persistence) + `planHistory.ts` (in-memory undo/redo of the plan document,
+  one step per burst of changes). No backend.
 - `i18n/strings.ts` — **all** user-facing copy; don't inline strings in components.
 - `components/` — organized by area:
   - `mobile/` — mobile app shell and screens (`MobileApp.tsx`, `MobilePlanCard.tsx`,
-    `MobileRouteSheet.tsx`, `MobileMix.tsx`, etc.) — this is the primary UI surface.
+    `MobileRouteSheet.tsx`, `MobileMix.tsx`, `MobilePlanMenu.tsx` — the green "Plan" menu beside
+    "Edit route": autoplan, start over, save/load, share, print; etc.) — this is the primary UI surface.
   - `panels/` — desktop side panels (`RoutePanel.tsx`, `FoodPanel.tsx`, `GearPanel.tsx`,
     `MixPanel.tsx`, `SettingsPanel.tsx`, `PanelShell.tsx`).
   - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx` — runs the engine in the Web Worker
@@ -68,7 +70,9 @@ moved, trust the filesystem over this file and update it.
   - `print/` — printable plan sheet (`PrintSheet.tsx`, `PrintIcon.tsx`).
   - `share/` — share panel and the canvas renderer behind its PNG formats
     (`SharePanel.tsx`, `shareCanvas.ts`, `ShareIcon.tsx`).
-  - `ui/` — generic reusable widgets (`ConfirmDialog.tsx`, `NumberInput.tsx`, `SegmentedControl.tsx`, etc.).
+  - `ui/` — generic reusable widgets (`ConfirmDialog.tsx`, `NumberInput.tsx`, `SegmentedControl.tsx`,
+    `UndoRedo.tsx` — the undo/redo pair and its Ctrl/⌘+Z keys, `MenuButton.tsx` — a button that
+    opens a short action menu, `planIcons.tsx` — the Planning row's shared icons, etc.).
   - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx`, `RoutePanel.tsx`,
     `SharedPlanPrompt.tsx`, `usePlanFileTransfer.ts` — top-level shared components.
 - `faq/` — FAQ pages (`FaqIndex.en/pl/de/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
