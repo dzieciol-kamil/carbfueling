@@ -53,9 +53,8 @@ export interface MixSettings {
 }
 
 /** The mix a fresh plan (or footer/"Me" tab with no plan in scope) starts from: honey with lemon,
- *  what a rider has in the kitchen (owner, 2026-09-24). Lives here,
- *  not in appStore.ts, so framework-free callers (e.g. the landing's SiteFooter) can read it
- *  without importing the store. */
+ *  what a rider has in the kitchen (owner, 2026-09-24). Lives here, not in appStore.ts, so
+ *  framework-free callers (e.g. the landing's SiteFooter) can read it without importing the store. */
 export const DEFAULT_MIX: MixSettings = {
   conc: 8.4,
   gelConc: 60,
