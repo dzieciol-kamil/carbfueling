@@ -5,6 +5,7 @@ import {
   hasPlanData,
   resolveTheme,
   shouldConfirmViewModeChange,
+  withColaAtStop,
   useAppStore,
 } from './appStore';
 import { DEFAULT_AUTOPLAN_OPTIONS } from '../components/autoplan/autoplanOptions';
@@ -1181,5 +1182,31 @@ describe('autoplanStopRules', () => {
 
   test("a previous run's stops count too when they are being kept", () => {
     expect(autoplanStopRules({ shops }, opts('keepOnly'), false).riderStops).toEqual([40, 90]);
+  });
+});
+
+describe('cola is a stop by default (v5 -> v6, and on import)', () => {
+  const cola = { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', it: 'Cola', carbs: 35, ml: 330 };
+  const gel = { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 };
+
+  test('a library saved before needsStop gets cola as a stop, and nothing else changes', () => {
+    const migrate = useAppStore.persist.getOptions().migrate!;
+    const migrated = migrate({ foodLib: [cola, gel] }, 5) as ReturnType<
+      typeof useAppStore.getState
+    >;
+    expect(migrated.foodLib.find((e) => e.key === 'cola')?.needsStop).toBe(true);
+    expect(migrated.foodLib.find((e) => e.key === 'gel')?.needsStop).toBeUndefined();
+  });
+
+  test('a cola the rider switched off stays off', () => {
+    expect(withColaAtStop([{ ...cola, needsStop: false }])[0].needsStop).toBe(false);
+  });
+
+  test('a plan file exported before needsStop imports with cola as a stop', () => {
+    const data = useAppStore.getState().getSettingsExportData();
+    useAppStore.getState().importSettings({ ...data, foodLib: [cola, gel] });
+    const lib = useAppStore.getState().foodLib;
+    expect(lib.find((e) => e.key === 'cola')?.needsStop).toBe(true);
+    expect(lib.find((e) => e.key === 'gel')?.needsStop).toBeUndefined();
   });
 });

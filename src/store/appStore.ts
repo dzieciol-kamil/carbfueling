@@ -306,6 +306,18 @@ const defaultShops: ShopStop[] = [];
 
 const defaultCombinedFillIds: number[] = [];
 
+/**
+ * Cola is bought on the way, so it is a stop by default. `needsStop` only arrived with autoplan v3,
+ * so a food library saved or exported before that has cola without the flag. The toggle always
+ * writes `true` or `false`, so a missing flag means nobody has set it: give cola its default then,
+ * and leave a cola the rider switched off alone.
+ */
+export function withColaAtStop(foodLib: FoodLibEntry[]): FoodLibEntry[] {
+  return foodLib.map((e) =>
+    e.key === 'cola' && e.needsStop === undefined ? { ...e, needsStop: true } : e,
+  );
+}
+
 const defaultFoodLib: FoodLibEntry[] = [
   {
     key: 'gel',
@@ -506,7 +518,7 @@ export const useAppStore = create<AppState>()(
             mix: data.mix,
             gear: data.gear,
             ...reconciled,
-            foodLib: data.foodLib,
+            foodLib: withColaAtStop(data.foodLib),
             nextGid: data.nextGid,
             nextFid: data.nextFid,
             nextFoodId: data.nextFoodId,
@@ -885,7 +897,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'carbfueling',
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -901,6 +913,8 @@ export const useAppStore = create<AppState>()(
       // anyone sitting at exactly 1.5 so the segmented control still highlights their choice.
       // v4 -> v5: the chart's "sum" (cumulative) y-mode was removed — fall a rider who had it
       // selected back to "rate" instead of leaving a value the type no longer allows.
+      // v5 -> v6: cola in a library saved before `needsStop` existed gets its default, a stop
+      // (see withColaAtStop).
       migrate: (persistedState, version) => {
         const s = persistedState as
           (Partial<AppState> & { combineStartGids?: string[] }) | undefined;
@@ -933,6 +947,9 @@ export const useAppStore = create<AppState>()(
         }
         if (version < 5 && s.ui && (s.ui as { yMode?: string }).yMode === 'sum') {
           (s.ui as { yMode?: string }).yMode = 'rate';
+        }
+        if (version < 6 && Array.isArray(s.foodLib)) {
+          s.foodLib = withColaAtStop(s.foodLib);
         }
         return s;
       },
