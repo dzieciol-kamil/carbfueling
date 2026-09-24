@@ -7,7 +7,7 @@
  */
 
 /**
- * Three positions for "Twoje stopy" — governs only rider-placed stops (`!autoCreated`). Stops
+ * Three positions for "Twoje postoje" — governs only rider-placed stops (`!autoCreated`). Stops
  * from a previous autoplan run are always replaced, regardless of this setting: re-running is
  * what that means.
  */

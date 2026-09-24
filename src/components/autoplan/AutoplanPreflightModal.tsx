@@ -190,7 +190,7 @@ export function AutoplanPreflightModal({
   onConfirm,
 }: AutoplanPreflightModalProps) {
   const strings = t(lang);
-  // "Twoje stopy" only asks about stops the rider placed himself — a previous autoplan run's own
+  // "Twoje postoje" only asks about stops the rider placed himself — a previous autoplan run's own
   // guesses are always replaced (see autoplanOptions.ts) and aren't what this control is about.
   const hasOwnStops = shops.some((sh) => !sh.autoCreated);
   const [stopsMode, setStopsMode] = useState<StopsMode>(DEFAULT_AUTOPLAN_OPTIONS.stopsMode);
