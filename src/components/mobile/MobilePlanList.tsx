@@ -14,7 +14,6 @@ import { useAppStore } from '../../store/appStore';
 import { FAQ_HREF_FROM_CALCULATOR } from '../../urls';
 import { sourceColor } from '../chart/theme';
 import { InfoPopover } from '../ui/InfoPopover';
-import { UndoRedo } from '../ui/UndoRedo';
 import { balanceBarGeometry, fmtWaterBalance } from '../ui/waterBalance';
 import { MobilePlanCard, type PlanCardItem } from './MobilePlanCard';
 
@@ -327,20 +326,11 @@ export function MobilePlanList() {
         >
           PLAN
         </span>
-        {/* Undo/redo sit here rather than in the chart's toolbar: this is where things are added
-            and removed, and that toolbar has no room left on a narrow phone with a GPX loaded. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: 'var(--muted)',
-            }}
-          >
-            {items.length} {strings.itemsSuffix}
-          </span>
-          <UndoRedo variant="mobile" />
-        </div>
+        <span
+          style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--muted)' }}
+        >
+          {items.length} {strings.itemsSuffix}
+        </span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

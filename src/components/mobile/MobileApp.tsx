@@ -3,7 +3,7 @@ import { dist, fmtHM, totalHours } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type MobileTab } from '../../store/appStore';
 import { LANDING_HREF_FROM_CALCULATOR } from '../../urls';
-import { AutoplanFlow } from '../autoplan/AutoplanFlow';
+import { MobilePlanMenu } from './MobilePlanMenu';
 import { MobileChartPanel } from './MobileChartPanel';
 import { MobileFoodLibrary } from './MobileFoodLibrary';
 import { MobileGear } from './MobileGear';
@@ -121,7 +121,7 @@ export function MobileApp() {
             >
               {strings.editRoutePrefix} {Math.round(dist(route))} km · {fmtHM(totalHours(route))}
             </button>
-            <AutoplanFlow variant="mobile" />
+            <MobilePlanMenu />
           </div>
         </div>
 

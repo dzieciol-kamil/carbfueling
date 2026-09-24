@@ -140,6 +140,15 @@ a:hover {
   color: var(--link-hover);
 }
 
+/* MenuButton.tsx's plain items: inline styles cannot say :hover. */
+.menu-item {
+  background: transparent;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+
 input,
 textarea,
 select {

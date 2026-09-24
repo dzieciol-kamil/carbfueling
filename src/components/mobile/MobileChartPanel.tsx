@@ -2,9 +2,8 @@ import type { CSSProperties } from 'react';
 import { dist, fmtX } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import { useAppStore, type YMode } from '../../store/appStore';
-import { PrintIcon } from '../print/PrintIcon';
-import { ShareIcon } from '../share/ShareIcon';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { UndoRedo } from '../ui/UndoRedo';
 import { MobileChart } from './MobileChart';
 import { MobileLaneStrip } from './MobileLaneStrip';
 
@@ -13,9 +12,8 @@ const Y_MODES: { mode: YMode; label: string }[] = [
   { mode: 'fluid', label: 'ml/h' },
 ];
 
-/** The icon chips sitting to the left of the km/hours switch: print, and the GPX peek toggle.
- *  `active` is the toggle's on-state — an inverted fill, which is what tells the rider the peek
- *  is on. Print is never active; it just borrows the box so the two read as one pair. */
+/** The GPX peek toggle's chip, left of the km/hours switch. `active` is its on-state — an
+ *  inverted fill, which is what tells the rider the peek is on. */
 function chipButtonStyle(active: boolean): CSSProperties {
   return {
     width: 34,
@@ -42,7 +40,6 @@ export function MobileChartPanel() {
   const toggleGpxPeek = useAppStore((s) => s.toggleGpxPeek);
   const lang = useAppStore((s) => s.ui.lang);
   const openChartHelp = useAppStore((s) => s.openChartHelp);
-  const openPanel = useAppStore((s) => s.openPanel);
   const strings = t(lang);
 
   const distanceKm = dist(route);
@@ -77,27 +74,8 @@ export function MobileChartPanel() {
             onChange={setYMode}
             fullWidth={false}
           />
+          <UndoRedo variant="mobile" />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button
-              type="button"
-              onClick={() => openPanel('share')}
-              title={strings.sharePlanButton}
-              aria-label={strings.sharePlanButton}
-              style={chipButtonStyle(false)}
-            >
-              <ShareIcon size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={() => window.print()}
-              title={strings.printPlanButton}
-              aria-label={strings.printPlanButton}
-              style={chipButtonStyle(false)}
-            >
-              {/* A denser glyph than the eye's open outline, so it needs to run smaller to read
-                  at the same weight beside it. */}
-              <PrintIcon size={14} />
-            </button>
             {showEye && (
               <button
                 type="button"

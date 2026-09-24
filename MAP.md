@@ -53,7 +53,8 @@ moved, trust the filesystem over this file and update it.
 - `i18n/strings.ts` — **all** user-facing copy; don't inline strings in components.
 - `components/` — organized by area:
   - `mobile/` — mobile app shell and screens (`MobileApp.tsx`, `MobilePlanCard.tsx`,
-    `MobileRouteSheet.tsx`, `MobileMix.tsx`, etc.) — this is the primary UI surface.
+    `MobileRouteSheet.tsx`, `MobileMix.tsx`, `MobilePlanMenu.tsx` — the green "Plan" menu beside
+    "Edit route": autoplan, start over, save/load, share, print; etc.) — this is the primary UI surface.
   - `panels/` — desktop side panels (`RoutePanel.tsx`, `FoodPanel.tsx`, `GearPanel.tsx`,
     `MixPanel.tsx`, `SettingsPanel.tsx`, `PanelShell.tsx`).
   - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx` — runs the engine in the Web Worker
@@ -70,7 +71,8 @@ moved, trust the filesystem over this file and update it.
   - `share/` — share panel and the canvas renderer behind its PNG formats
     (`SharePanel.tsx`, `shareCanvas.ts`, `ShareIcon.tsx`).
   - `ui/` — generic reusable widgets (`ConfirmDialog.tsx`, `NumberInput.tsx`, `SegmentedControl.tsx`,
-    `UndoRedo.tsx` — the undo/redo pair and its Ctrl/⌘+Z keys, etc.).
+    `UndoRedo.tsx` — the undo/redo pair and its Ctrl/⌘+Z keys, `MenuButton.tsx` — a button that
+    opens a short action menu, `planIcons.tsx` — the Planning row's shared icons, etc.).
   - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx`, `RoutePanel.tsx`,
     `SharedPlanPrompt.tsx`, `usePlanFileTransfer.ts` — top-level shared components.
 - `faq/` — FAQ pages (`FaqIndex.en/pl/de/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).

@@ -392,6 +392,8 @@ export interface StringTable {
   clearPlanButton: string;
   undoButton: string;
   redoButton: string;
+  moreMenuButton: string;
+  planMenuButton: string;
   printPlanButton: string;
   printStripBottles: string;
   printStripFood: string;
@@ -877,6 +879,8 @@ export const STR: Record<Lang, StringTable> = {
     clearPlanButton: 'Od nowa',
     undoButton: 'Cofnij',
     redoButton: 'Ponów',
+    moreMenuButton: 'Więcej',
+    planMenuButton: 'Plan',
     printPlanButton: 'Drukuj',
     printStripBottles: 'Bidony',
     printStripFood: 'Jedzenie',
@@ -1408,6 +1412,8 @@ export const STR: Record<Lang, StringTable> = {
     clearPlanButton: 'Start over',
     undoButton: 'Undo',
     redoButton: 'Redo',
+    moreMenuButton: 'More',
+    planMenuButton: 'Plan',
     printPlanButton: 'Print',
     printStripBottles: 'Bottles',
     printStripFood: 'Food',
@@ -2025,6 +2031,8 @@ export const STR: Record<Lang, StringTable> = {
     clearPlanButton: 'Neu starten',
     undoButton: 'Rückgängig',
     redoButton: 'Wiederholen',
+    moreMenuButton: 'Mehr',
+    planMenuButton: 'Plan',
     printPlanButton: 'Drucken',
     printStripBottles: 'Flaschen',
     printStripFood: 'Essen',
@@ -2563,6 +2571,8 @@ export const STR: Record<Lang, StringTable> = {
     clearPlanButton: 'Ricomincia',
     undoButton: 'Annulla',
     redoButton: 'Ripeti',
+    moreMenuButton: 'Altro',
+    planMenuButton: 'Piano',
     printPlanButton: 'Stampa',
     printStripBottles: 'Borracce',
     printStripFood: 'Cibo',

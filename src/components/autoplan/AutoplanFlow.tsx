@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { AutoplanMessage } from '../../domain/autoplan/run';
 import type { FoodSelectionEntry } from '../../domain/autoplan/types';
 import { totalHours } from '../../domain/fuel';
@@ -6,6 +6,7 @@ import type { RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { autoplanInput, autoplanStopRules, useAppStore } from '../../store/appStore';
 import { planHistory } from '../../store/planHistory';
+import { WandIcon } from '../ui/planIcons';
 import { DEFAULT_AUTOPLAN_OPTIONS, type AutoplanOptions } from './autoplanOptions';
 import { AutoplanPreflightModal } from './AutoplanPreflightModal';
 import { AutoplanThinkingModal } from './AutoplanThinkingModal';
@@ -65,26 +66,6 @@ const mobileButtonStyle: CSSProperties = {
 /** Nothing to plan yet: the button stays put and says why instead of disappearing on the rider. */
 const disabledStyle: CSSProperties = { opacity: 0.45, cursor: 'default' };
 
-// Matches Header.tsx's GearIcon/MixIcon/FoodIcon/SettingsIcon idiom (viewBox, stroke width,
-// sizing) — desktop-only, so the mobile trigger stays text-only as before.
-function WandIcon() {
-  return (
-    <svg
-      width={15}
-      height={15}
-      viewBox="0 0 22 22"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.9}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4.5 17.5 L13 9" />
-      <path d="M16.5 3 v4 M14.5 5 h4" />
-    </svg>
-  );
-}
-
 function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
   return {
     position: 'fixed',
@@ -143,7 +124,26 @@ export function needsReplaceConfirm(plan: {
   );
 }
 
-export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
+/** What a caller-drawn trigger gets (see `renderTrigger`): the action, whether it can run yet and
+ *  why not, and the autoplan button's own green look for the variant. */
+export type AutoplanTrigger = {
+  start: () => void;
+  disabled: boolean;
+  title?: string;
+  style: CSSProperties;
+};
+
+/**
+ * `renderTrigger` replaces the button with one the caller draws — the phone's "Plan" menu, whose
+ * first item starts a run — while the modals and the run itself stay here.
+ */
+export function AutoplanFlow({
+  variant,
+  renderTrigger,
+}: {
+  variant: 'desktop' | 'mobile';
+  renderTrigger?: (trigger: AutoplanTrigger) => ReactNode;
+}) {
   const lang = useAppStore((s) => s.ui.lang);
   const route = useAppStore((s) => s.route);
   const fills = useAppStore((s) => s.fills);
@@ -263,27 +263,39 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
     else setTab('food');
   }
 
+  const baseStyle = variant === 'desktop' ? desktopButtonStyle : mobileButtonStyle;
+  const disabledTitle = gate === 'noDuration' ? strings.autoplanNeedsDuration : undefined;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={handleTrigger}
-        disabled={gate === 'noDuration'}
-        title={gate === 'noDuration' ? strings.autoplanNeedsDuration : undefined}
-        style={
-          gate === 'noDuration'
-            ? {
-                ...(variant === 'desktop' ? desktopButtonStyle : mobileButtonStyle),
-                ...disabledStyle,
-              }
-            : variant === 'desktop'
-              ? desktopButtonStyle
-              : mobileButtonStyle
-        }
-      >
-        {variant === 'desktop' && <WandIcon />}
-        <span>{strings.autoplanButton}</span>
-      </button>
+      {renderTrigger ? (
+        renderTrigger({
+          start: handleTrigger,
+          disabled: gate === 'noDuration',
+          title: disabledTitle,
+          style: baseStyle,
+        })
+      ) : (
+        <button
+          type="button"
+          onClick={handleTrigger}
+          disabled={gate === 'noDuration'}
+          title={disabledTitle}
+          style={
+            gate === 'noDuration'
+              ? {
+                  ...(variant === 'desktop' ? desktopButtonStyle : mobileButtonStyle),
+                  ...disabledStyle,
+                }
+              : variant === 'desktop'
+                ? desktopButtonStyle
+                : mobileButtonStyle
+          }
+        >
+          {variant === 'desktop' && <WandIcon />}
+          <span>{strings.autoplanButton}</span>
+        </button>
+      )}
 
       {phase === 'preflight' && (
         <AutoplanPreflightModal
