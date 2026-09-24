@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { hasPlanData, resolveTheme, shouldConfirmViewModeChange, useAppStore } from './appStore';
+import {
+  autoplanInput,
+  hasPlanData,
+  resolveTheme,
+  shouldConfirmViewModeChange,
+  useAppStore,
+} from './appStore';
+import { DEFAULT_AUTOPLAN_OPTIONS } from '../components/autoplan/autoplanOptions';
+import type { AutoplanResult } from '../domain/autoplan/types';
 import type { Fill, RouteInput } from '../domain/types';
 
 function route(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -492,6 +500,48 @@ describe('applyAutoplan', () => {
       // Left home for this run only — the saved gear list itself is untouched.
       expect(after.gear.map((g) => g.gid)).toEqual(['g1', 'g2']);
     });
+  });
+});
+
+describe('insertAutoplan', () => {
+  const resultAt = (ats: number[]): AutoplanResult => ({
+    fills: [],
+    foods: [],
+    newStops: ats.map((at) => ({ at })),
+  });
+
+  test('a second insert replaces the first one’s stops and keeps the rider’s own', () => {
+    useAppStore.setState({
+      shops: [{ id: 1, at: 40, name: 'Manual stop' }],
+      nextShopId: 501,
+    });
+
+    useAppStore.getState().insertAutoplan(resultAt([30, 60, 90]));
+    useAppStore.getState().insertAutoplan(resultAt([50]));
+
+    const shops = useAppStore.getState().shops;
+    expect(shops.filter((sh) => sh.autoCreated).map((sh) => sh.at)).toEqual([50]);
+    expect(shops.some((sh) => sh.id === 1)).toBe(true);
+  });
+
+  /**
+   * The thinking modal's worker gets this exact object via `postMessage`, which uses the
+   * structured-clone algorithm under the hood — a function or a `Map`/class instance anywhere in
+   * it throws `DataCloneError` rather than silently dropping. `structuredClone()` here is the same
+   * check the browser would run, without needing an actual Worker in the test environment.
+   */
+  test('autoplanInput is plain data the worker can receive', () => {
+    const input = autoplanInput(useAppStore.getState(), DEFAULT_AUTOPLAN_OPTIONS);
+
+    expect(() => structuredClone(input)).not.toThrow();
+    expect(Object.keys(input).sort()).toEqual([
+      'fills',
+      'foodLib',
+      'foods',
+      'gear',
+      'mix',
+      'route',
+    ]);
   });
 });
 

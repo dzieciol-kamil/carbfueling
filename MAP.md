@@ -25,7 +25,12 @@ moved, trust the filesystem over this file and update it.
   - `autoplan/` — **autoplan v3** (greedy loop): `index.ts` (entry), `search.ts` (the only module
     that chooses), `layout.ts` (a decision → fills/stops), `spans.ts` (fill reach from the need
     curve), `score.ts` (distance to both green badges), `exhaustive.ts` (`improve()` — pruned
-    exhaustive search yielding each strictly-better plan, for the thinking modal), `types.ts`;
+    exhaustive search yielding each strictly-better plan, for the thinking modal), `run.ts`
+    (`runAutoplan()` — posts the climb then every `improve()` plan then `done`, engine exception
+    or not; the framework-free body of the Worker below), `autoplan.worker.ts` (the Web Worker
+    entry point the thinking modal's UI spawns — a thin `postMessage`/`onmessage` wrapper around
+    `run.ts`, typed against only the slice of the worker global scope it uses since the app
+    tsconfig has no WebWorker lib), `types.ts`;
     test-only `oracle.ts` + `oracleExpect.ts` (brute-force check of the search, run with
     `ORACLE=1`); `exhaustive.measure.test.ts` (timing probe for `improve()` on the 194km pacing
     ride, run with `MEASURE=1`).

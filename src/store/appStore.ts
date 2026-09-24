@@ -5,7 +5,7 @@ import {
   type AutoplanOptions,
 } from '../components/autoplan/autoplanOptions';
 import { autoplan } from '../domain/autoplan';
-import type { FoodSelectionEntry } from '../domain/autoplan/types';
+import type { AutoplanResult, FoodSelectionEntry } from '../domain/autoplan/types';
 import {
   bestGapSpan,
   clampFillToDistance,
@@ -34,6 +34,7 @@ import {
   type RouteInput,
   type Vessel,
   type Fill,
+  type PlanState,
   type ShopStop,
   type Sport,
   type XUnit,
@@ -258,6 +259,16 @@ interface AppState {
     removePreviousAutoStops: boolean,
     options?: AutoplanOptions,
   ) => void;
+  /** Applies a plan the caller already has — e.g. one `runAutoplan()` posted from the thinking
+   *  modal's worker — without running `autoplan()` itself. `removePreviousAutoStops` defaults to
+   *  true (a prior run's own stops are replaced), same as every `applyAutoplan` caller but its own
+   *  false case; `applyAutoplan` is the version of this that also runs the engine and lets the
+   *  rider additionally clear his own stops via `options.stopsMode`. */
+  insertAutoplan: (
+    result: AutoplanResult,
+    options?: AutoplanOptions,
+    removePreviousAutoStops?: boolean,
+  ) => void;
 
   clearPlan: () => void;
 }
@@ -334,6 +345,23 @@ const defaultFoodLib: FoodLibEntry[] = [
     carbs: 30,
   },
 ];
+
+/**
+ * The plain data `autoplan()` — and the thinking modal's worker, which is why this is a plain
+ * function and not a store action — actually needs: `route`, `mix`, `gear` (narrowed by
+ * `options.carriedVesselGids`, see `applyAutoplan` below), `fills`, `foods`, `foodLib`. Nothing
+ * else in the store crosses the worker boundary, and nothing here does either, which is what lets
+ * the result pass through `structuredClone()` (a store object's actions/`ui`/id counters would
+ * throw `DataCloneError`).
+ */
+export function autoplanInput(
+  s: PlanState & { shops: ShopStop[] },
+  options: AutoplanOptions,
+): PlanState {
+  const carried = options.carriedVesselGids;
+  const gear = carried ? s.gear.filter((g) => carried.includes(g.gid)) : s.gear;
+  return { route: s.route, mix: s.mix, gear, fills: s.fills, foods: s.foods, foodLib: s.foodLib };
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -747,20 +775,32 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
-      // Wholesale-replaces fills/foods with a freshly computed plan (see domain/autoplan) rather
-      // than merging, mirroring loadTourDemoData's replace-not-append precedent — an autoplan run
-      // is meant to stand in for the current plan, not pile onto it. Shops are the exception:
-      // surviving stops are preserved and only the run's own new stops are appended. When
-      // removePreviousAutoStops is true, stops this function itself created on a prior run
-      // (tagged autoCreated) are dropped first — a rider-placed stop never has that tag, and an
-      // edited one loses it (see updateShop), so neither is ever touched by this cleanup.
-      //
-      // `options` (see autoplanOptions.ts) is what the pre-flight modal collects. The engine's own
-      // signature takes neither: both are applied around the call. carriedVesselGids narrows the
-      // gear autoplan() gets to see, stopsMode 'clear' additionally drops the rider's own stops —
-      // without ever touching the saved `gear`/`shops` themselves. Omitted by call sites that
-      // don't collect options, so it defaults to the plain "keep his stops, carry everything" run.
+      // Runs the engine, then hands its result to insertAutoplan — the composition R2 settled on
+      // so every existing test of this action keeps passing unchanged. `options` (see
+      // autoplanOptions.ts) is what the pre-flight modal collects; `autoplanInput` is what applies
+      // its carriedVesselGids side (narrowing the gear the engine gets to see), `insertAutoplan`
+      // is what applies its stopsMode side (below).
       applyAutoplan: (selection, removePreviousAutoStops, options = DEFAULT_AUTOPLAN_OPTIONS) =>
+        get().insertAutoplan(
+          autoplan(autoplanInput(get(), options), selection),
+          options,
+          removePreviousAutoStops,
+        ),
+
+      // Wholesale-replaces fills/foods with a plan already computed — by applyAutoplan just now,
+      // or by the thinking modal's worker after several better ones arrived — rather than
+      // merging, mirroring loadTourDemoData's replace-not-append precedent: a plan is meant to
+      // stand in for the current one, not pile onto it. Shops are the exception: surviving stops
+      // are preserved and only the run's own new stops are appended. When removePreviousAutoStops
+      // is true (the default — every caller but applyAutoplan's own false case wants this), stops
+      // this function itself created on a prior run (tagged autoCreated) are dropped first — a
+      // rider-placed stop never has that tag, and an edited one loses it (see updateShop), so
+      // neither is ever touched by this cleanup.
+      insertAutoplan: (
+        result,
+        options = DEFAULT_AUTOPLAN_OPTIONS,
+        removePreviousAutoStops = true,
+      ) =>
         set((s) => {
           const survivingShops = removePreviousAutoStops
             ? s.shops.filter((sh) => !sh.autoCreated)
@@ -771,9 +811,6 @@ export const useAppStore = create<AppState>()(
           // instead of inventing one — and `autoplan()` has no way to be told that, so for now
           // it lands on the same behaviour as 'keepAndAdd'. It was the same on `feat/autoplan`.
           const shopsForRun = options.stopsMode === 'clear' ? [] : survivingShops;
-          const carried = options.carriedVesselGids;
-          const gearForRun = carried ? s.gear.filter((g) => carried.includes(g.gid)) : s.gear;
-          const result = autoplan({ ...s, gear: gearForRun }, selection);
 
           let fid = s.nextFid;
           const fills: Fill[] = result.fills.map((f) => ({ ...f, fid: fid++ }));
