@@ -9,14 +9,14 @@
  * `exhaustive.ts` (ruling R3, 2026-09-24) for why neither cut is implemented.
  */
 import { describe, expect, test } from 'vitest';
-import { planSummary } from '../fuel';
+import { carbsFill, planSummary, preRideGut } from '../fuel';
 import { DEFAULT_MIX } from '../types';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 import { improve } from './exhaustive';
 import { oracle } from './oracle';
 import { compareScore } from './score';
 import { climb, decisionAt, evaluate, space } from './search';
-import type { Decision, Evaluated } from './search';
+import type { Decision, Evaluated, Space } from './search';
 import type { FoodSelectionEntry } from './types';
 
 function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
@@ -95,21 +95,58 @@ const FIXTURES = [
   ['bladder+flask kit', bladderFlask, SELECTION] as const,
 ];
 
+/**
+ * The most fluid/carbs a Decision's vessels and offers could possibly deliver — `exhaustive.ts`'s
+ * `unreachable()` computes exactly this (`fluid`/`carbs`) as the best case its cut can rule out,
+ * including the generous, safe bound on `layout.ts`'s spent-vessel water/izo top-up (`capFor`,
+ * mirrored here). Reimplemented independently, as the ceiling the "credited/planned never exceed
+ * what was packed" test checks the engine's own numbers against.
+ */
+function caps(st: PlanState, s: Space, d: Decision): { fluidCap: number; carbCap: number } {
+  const capFor = (i: number, content: string) =>
+    Math.max(0, ...s.vessels[i].filter((o) => o.content === content).map((o) => o.loads));
+  let fluidCap = 0;
+  let carbCap = preRideGut(st.route);
+  d.assignment.forEach((a, i) => {
+    const v = st.gear.find((g) => g.gid === a.gid)!;
+    if (a.content !== 'gel') fluidCap += v.vol * a.loads;
+    carbCap +=
+      carbsFill({ fid: 0, gid: a.gid, content: a.content, from: 0, to: 1 }, st.gear, st.mix) *
+      a.loads;
+    if (a.content !== 'water') {
+      fluidCap += v.vol * (capFor(i, 'water') + capFor(i, 'izo'));
+      carbCap +=
+        carbsFill({ fid: 0, gid: a.gid, content: 'izo', from: 0, to: 1 }, st.gear, st.mix) *
+        capFor(i, 'izo');
+    }
+  });
+  s.offers.forEach((o, i) => {
+    fluidCap += (o.ml ?? 0) * d.counts[i];
+    carbCap += o.carbs * d.counts[i];
+  });
+  return { fluidCap, carbCap };
+}
+
 describe('the bounds the cuts rely on', () => {
   test.each(FIXTURES)(
     '%s: credited carbs and planned fluid never exceed what was packed',
     (_, st, sel) => {
       const s = space(st, sel);
       for (let n = 0; n < s.size; n++) {
-        const e = evaluate(st, s.offers, decisionAt(s, n));
+        const d = decisionAt(s, n);
+        const e = evaluate(st, s.offers, d);
         const sum = planSummary({
           ...st,
           fills: e.draft.fills.map((f, i) => ({ ...f, fid: i + 1 })),
           foods: e.draft.foods.map((f, i) => ({ ...f, id: i + 1, name: f.key })),
         });
         expect(sum.coveredCarbs).toBeLessThanOrEqual(sum.totalCarbs + 1e-6);
+        const { fluidCap, carbCap } = caps(st, s, d);
+        expect(sum.fluidPlanned).toBeLessThanOrEqual(fluidCap + 1e-6);
+        expect(sum.totalCarbs).toBeLessThanOrEqual(carbCap + 1e-6);
       }
     },
+    20000,
   );
 
   /**
@@ -151,12 +188,16 @@ describe('the bounds the cuts rely on', () => {
 });
 
 describe('improve', () => {
-  test.each(FIXTURES)('%s: its last plan is the oracle’s best', (_, st, sel) => {
-    const start = climb(st, sel);
-    let best = start;
-    for (const e of improve(st, sel, start)) best = e;
-    expect(compareScore(best.score, oracle(st, sel, 1e6)!.best.score)).toBe(0);
-  });
+  test.each(FIXTURES)(
+    '%s: its last plan is the oracle’s best',
+    (_, st, sel) => {
+      const start = climb(st, sel);
+      let best = start;
+      for (const e of improve(st, sel, start)) best = e;
+      expect(compareScore(best.score, oracle(st, sel, 1e6)!.best.score)).toBe(0);
+    },
+    20000,
+  );
 
   test.each(FIXTURES)(
     '%s: every plan it yields is strictly better than the one before',
@@ -167,7 +208,50 @@ describe('improve', () => {
         prev = e;
       }
     },
+    20000,
   );
+
+  /**
+   * `climb()` itself exhaustively scans any space at or under `EXHAUSTIVE_LIMIT` (search.ts) — the
+   * bladder+flask kit's space (108 points) and the two ad hoc one-vessel fixtures below are all
+   * under that limit, so starting `improve()` from `climb()`'s own answer there leaves it nothing
+   * to do (it's already the oracle's best). Starting from `decisionAt(s, 0)` instead — every
+   * vessel left home, nothing bought, the worst point in the space — forces `improve()` to do the
+   * climbing itself, on the twins kit too (where `climb()`'s tiers can and do get stuck on a
+   * ridge — see `search()`'s own doc comment).
+   */
+  test.each([FIXTURES[0], FIXTURES[2]])(
+    '%s: from the worst possible start, still climbs to the oracle’s best, yielding several plans on the way',
+    (_, st, sel) => {
+      const s = space(st, sel);
+      const start = evaluate(st, s.offers, decisionAt(s, 0));
+      let prev = start;
+      let yielded = 0;
+      for (const e of improve(st, sel, start)) {
+        expect(compareScore(e.score, prev.score)).toBeLessThan(0);
+        prev = e;
+        yielded += 1;
+      }
+      expect(yielded).toBeGreaterThan(1);
+      expect(compareScore(prev.score, oracle(st, sel, 1e6)!.best.score)).toBe(0);
+    },
+    20000,
+  );
+
+  test('cut 3 actually prunes once the search has settled (twins kit)', () => {
+    // Starting from the worst point again (see above), so `settled(best)` only turns true
+    // partway through the traversal and there's a real "before" (unpruned) and "after" (pruned)
+    // to compare — proof that cut 3 does something, not just that it never misfires (the other
+    // tests here).
+    const [, st, sel] = FIXTURES[0];
+    const s = space(st, sel);
+    const start = evaluate(st, s.offers, decisionAt(s, 0));
+    const seen = { n: 0 };
+    for (const _e of improve(st, sel, start, seen)) {
+      /* draining for seen.n */
+    }
+    expect(seen.n).toBeLessThan(s.size);
+  }, 20000);
 
   test('with no green plan anywhere, cut 3 never fires', () => {
     // 200 km at 30 °C on a single 500 ml bottle: even at its largest load the bottle cannot close
@@ -185,7 +269,7 @@ describe('improve', () => {
       expect(_e.score.toGreen).toBeGreaterThan(0);
     }
     expect(seen.n).toBe(space(state, SELECTION).size);
-  });
+  }, 20000);
 
   test('yields nothing when the climb already found the best', () => {
     // The one-bottle izo kit from oracle.test.ts, where the climb is already known (by that file's

@@ -113,7 +113,7 @@ function segments(
  * never leaves the 1.2-2.5 band, so those two cannot currently reach zero; the guard is applied
  * uniformly so that nothing here starts producing `NaN` if that ever changes.)
  */
-function penalty(over: number, limit: number): number {
+export function penalty(over: number, limit: number): number {
   if (!(limit > 0)) return 0;
   return Math.max(0, over) / limit;
 }
