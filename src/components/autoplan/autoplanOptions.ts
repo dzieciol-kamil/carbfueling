@@ -1,10 +1,8 @@
 /**
- * Options the pre-flight modal (`AutoplanPreflightModal`) collects and threads through to the
- * `autoplan()` call site in `appStore.ts`'s `applyAutoplan`.
- *
- * `autoplan(state, selection)` itself takes none of this: both options are applied by the caller,
- * around the call — one filters the gear the engine gets to see, the other decides which of the
- * rider's existing stops survive the run.
+ * Options the pre-flight modal (`AutoplanPreflightModal`) collects and threads through around the
+ * autoplan run, not into it: `carriedVesselGids` filters the gear passed into `autoplanInput()`
+ * before the worker starts, and `stopsMode` governs which of the rider's stops survive each
+ * `insertAutoplan()` call as plans arrive from the worker.
  */
 
 /**

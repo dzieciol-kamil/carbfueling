@@ -98,7 +98,7 @@ describe('runAutoplan', () => {
   // vol: NaN doesn't actually make the engine throw — the NaN just propagates through the
   // arithmetic — so this only pins the ordinary no-throw path; the catch/log path below is what
   // exercises the actual error handling, via the injected `deps.improve` seam.
-  test('an engine error still ends with done, keeping what was posted', () => {
+  test('a malformed vessel still ends with done', () => {
     const msgs: AutoplanMessage[] = [];
     runAutoplan(
       { ...state, gear: [{ gid: 'x', name: 'x', vol: NaN, allowed: ['water'], gelParts: 1 }] },
@@ -111,16 +111,19 @@ describe('runAutoplan', () => {
 
   test('an injected engine error still ends with done and is logged (test-only seam)', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const msgs: AutoplanMessage[] = [];
-    runAutoplan(state, sel, (m) => msgs.push(m), {
-      improve: () => {
-        throw new Error('x');
-      },
-    });
+    try {
+      const msgs: AutoplanMessage[] = [];
+      runAutoplan(state, sel, (m) => msgs.push(m), {
+        improve: () => {
+          throw new Error('x');
+        },
+      });
 
-    expect(msgs.at(-1)).toEqual({ type: 'done' });
-    expect(msgs[0].type).toBe('plan'); // the climb was posted before the engine blew up
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
+      expect(msgs.at(-1)).toEqual({ type: 'done' });
+      expect(msgs[0].type).toBe('plan'); // the climb was posted before the engine blew up
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });

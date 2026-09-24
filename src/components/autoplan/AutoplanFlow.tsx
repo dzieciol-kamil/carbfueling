@@ -161,25 +161,21 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const received = useRef(false);
 
+  // Cancel's own setPhase (below) must be the last word on phase — a hold timer armed by a
+  // `finish()` that raced it can't be left to fire later and overwrite that with `appliedNote`.
   function stopWorker() {
     runId.current++;
     worker.current?.terminate();
     worker.current = null;
     clearTimeout(limitTimer.current);
+    clearTimeout(holdTimer.current);
   }
 
-  useEffect(
-    () => () => {
-      stopWorker();
-      clearTimeout(holdTimer.current);
-    },
-    [],
-  );
+  useEffect(() => stopWorker, []);
 
   function run(selection: FoodSelectionEntry[], options: AutoplanOptions) {
     const runGate = gate === 'shortRide' ? 'shortRide' : 'ready';
     stopWorker();
-    clearTimeout(holdTimer.current);
     const id = runId.current;
     const startedAt = performance.now();
     received.current = false;
@@ -224,6 +220,9 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   }
 
   function handleTrigger() {
+    // The button sits behind the thinking overlay but isn't visually disabled while it runs, so a
+    // keyboard user tabbing past it could otherwise fire a second run mid-flight.
+    if (phase === 'thinking') return;
     if (gate === 'shortRide') {
       // Nothing here to ask about: carbs never enter a plan this short (autoplanGate), so the
       // pre-flight screen would only cover blocks that don't apply. A previous run's own stops
