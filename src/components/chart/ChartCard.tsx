@@ -16,6 +16,7 @@ import { TimelineSection } from '../timeline/TimelineSection';
 import { Chart } from './Chart';
 import { elevationTicks } from './ElevationLayer';
 import { CHART_COLORS } from './theme';
+import { UndoRedo } from '../ui/UndoRedo';
 
 const CHART_HEIGHT = 300;
 const CHART_PB = 22;
@@ -144,6 +145,7 @@ export function ChartCard() {
           <div style={{ position: 'relative' }}>
             {/* They all share one gap, so the row reads as a single group of actions. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <UndoRedo variant="desktop" />
               <button onClick={() => setClearConfirmOpen(true)} style={planBtnStyle}>
                 <StartOverIcon />
                 <span>{strings.clearPlanButton}</span>

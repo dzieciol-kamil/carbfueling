@@ -390,6 +390,8 @@ export interface StringTable {
   sharePrevFormat: string;
   exportPlanError: string;
   clearPlanButton: string;
+  undoButton: string;
+  redoButton: string;
   printPlanButton: string;
   printStripBottles: string;
   printStripFood: string;
@@ -873,6 +875,8 @@ export const STR: Record<Lang, StringTable> = {
     sharePrevFormat: 'Poprzedni format',
     exportPlanError: 'Nie udało się zapisać pliku. Spróbuj ponownie.',
     clearPlanButton: 'Od nowa',
+    undoButton: 'Cofnij',
+    redoButton: 'Ponów',
     printPlanButton: 'Drukuj',
     printStripBottles: 'Bidony',
     printStripFood: 'Jedzenie',
@@ -1402,6 +1406,8 @@ export const STR: Record<Lang, StringTable> = {
     sharePrevFormat: 'Previous format',
     exportPlanError: 'Could not save the file. Please try again.',
     clearPlanButton: 'Start over',
+    undoButton: 'Undo',
+    redoButton: 'Redo',
     printPlanButton: 'Print',
     printStripBottles: 'Bottles',
     printStripFood: 'Food',
@@ -2017,6 +2023,8 @@ export const STR: Record<Lang, StringTable> = {
     sharePrevFormat: 'Vorheriges Format',
     exportPlanError: 'Datei konnte nicht gespeichert werden. Bitte versuche es erneut.',
     clearPlanButton: 'Neu starten',
+    undoButton: 'Rückgängig',
+    redoButton: 'Wiederholen',
     printPlanButton: 'Drucken',
     printStripBottles: 'Flaschen',
     printStripFood: 'Essen',
@@ -2553,6 +2561,8 @@ export const STR: Record<Lang, StringTable> = {
     sharePrevFormat: 'Formato precedente',
     exportPlanError: 'Impossibile salvare il file. Riprova.',
     clearPlanButton: 'Ricomincia',
+    undoButton: 'Annulla',
+    redoButton: 'Ripeti',
     printPlanButton: 'Stampa',
     printStripBottles: 'Borracce',
     printStripFood: 'Cibo',

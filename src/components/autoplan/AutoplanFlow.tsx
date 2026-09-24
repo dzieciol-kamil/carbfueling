@@ -5,6 +5,7 @@ import { totalHours } from '../../domain/fuel';
 import type { RouteInput } from '../../domain/types';
 import { t } from '../../i18n/strings';
 import { autoplanInput, autoplanStopRules, useAppStore } from '../../store/appStore';
+import { planHistory } from '../../store/planHistory';
 import { DEFAULT_AUTOPLAN_OPTIONS, type AutoplanOptions } from './autoplanOptions';
 import { AutoplanPreflightModal } from './AutoplanPreflightModal';
 import { AutoplanThinkingModal } from './AutoplanThinkingModal';
@@ -163,11 +164,17 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   const worker = useRef<Worker | null>(null);
   const limitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const holdingHistory = useRef(false);
   const received = useRef(false);
 
   // Cancel's own setPhase (below) must be the last word on phase — a hold timer armed by a
   // `finish()` that raced it can't be left to fire later and overwrite that with `appliedNote`.
   function stopWorker() {
+    // A run is one step of the plan's history however many plans it inserts (planHistory.ts).
+    if (holdingHistory.current) {
+      holdingHistory.current = false;
+      planHistory.release();
+    }
     runId.current++;
     worker.current?.terminate();
     worker.current = null;
@@ -180,6 +187,8 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
   function run(selection: FoodSelectionEntry[], options: AutoplanOptions) {
     const runGate = gate === 'shortRide' ? 'shortRide' : 'ready';
     stopWorker();
+    planHistory.hold();
+    holdingHistory.current = true;
     const id = runId.current;
     const startedAt = performance.now();
     received.current = false;
