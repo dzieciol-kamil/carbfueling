@@ -598,3 +598,54 @@ describe('the pre-ride meal is the first feed', () => {
     for (const f of draft.foods) expect(f.from).toBeGreaterThanOrEqual(clear);
   });
 });
+
+describe("the rider's own stops (R46 'Tylko moje', R47 'Dołóż')", () => {
+  /** The ride of 'a bought product creates the stop it is bought at': the bottle covers all of it,
+   *  so every stop in any plan here is a purchase. */
+  const shortRide = makeState(makeRoute({ distance: 40, speed: 20, intensity: 'low', temp: 15 }), [
+    vessel('g1', 750, ['water']),
+  ]);
+
+  test("'Tylko moje' with no stops of his: nothing is bought, and no stop is made", () => {
+    const d = search(shortRide, [{ key: 'cola', count: 3 }], { riderStops: [], newStops: false });
+    expect(d.foods.filter((f) => f.key === 'cola')).toEqual([]);
+    expect(d.stops).toEqual([]);
+  });
+
+  test("'Tylko moje' buys only at his stops, and adds none", () => {
+    const d = search(shortRide, [{ key: 'cola', count: 3 }], { riderStops: [20], newStops: false });
+    const colas = d.foods.filter((f) => f.key === 'cola');
+    // Never two of the same product at one stop, so one stop takes one cola.
+    expect(colas).toHaveLength(1);
+    expect(colas[0].from).toBe(20);
+    expect(d.stops).toEqual([]);
+  });
+
+  /**
+   * A 500 ml bottle on 100 km at 25 °C needs several refill stops. With the rider's own stops put
+   * exactly where the plan would put them, the same plan costs no new stop at all — and it is at
+   * least as close to green, since the space is small enough that the search looks at all of it.
+   */
+  test("'Dołóż' with his stops where the plan wants them adds none, and loses nothing", () => {
+    const state = makeState(makeRoute({ distance: 100, temp: 25 }), [
+      vessel('g1', 500, ['water', 'izo']),
+    ]);
+    const plain = climb(state);
+    expect(plain.draft.stops.length).toBeGreaterThan(1);
+    const riderStops = plain.draft.stops.map((s) => s.at);
+    const withHis = climb(state, [], { riderStops, newStops: true });
+    expect(withHis.draft.stops).toEqual([]);
+    expect(withHis.score.toGreen).toBeLessThanOrEqual(plain.score.toGreen + 1e-9);
+  });
+
+  test("'Tylko moje' is never closer to green than 'Dołóż' on the same stops", () => {
+    const state = makeState(makeRoute({ distance: 100, temp: 25 }), [
+      vessel('g1', 500, ['water', 'izo']),
+    ]);
+    const riderStops = [45];
+    const onlyMine = climb(state, [], { riderStops, newStops: false });
+    const addMore = climb(state, [], { riderStops, newStops: true });
+    expect(onlyMine.draft.stops).toEqual([]);
+    expect(addMore.score.toGreen).toBeLessThanOrEqual(onlyMine.score.toGreen + 1e-9);
+  });
+});

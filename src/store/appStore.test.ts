@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   autoplanInput,
+  autoplanStopRules,
   hasPlanData,
   resolveTheme,
   shouldConfirmViewModeChange,
@@ -476,6 +477,26 @@ describe('applyAutoplan', () => {
 
       const after = useAppStore.getState();
       expect(after.shops.some((sh) => sh.id === 1 || sh.name === 'Manual stop')).toBe(false);
+    });
+
+    test("stopsMode 'keepOnly' keeps the rider's stops and adds none of its own", () => {
+      // The same 300 km ride that needs refill stops above, with one stop of the rider's.
+      useAppStore.setState({
+        route: route({ distance: 300, speed: 25 }),
+        fills: [],
+        foods: [],
+        shops: [{ id: 1, at: 40, name: 'Manual stop' }],
+        nextShopId: 501,
+      });
+
+      useAppStore.getState().applyAutoplan([], true, {
+        stopsMode: 'keepOnly',
+        carriedVesselGids: null,
+      });
+
+      const after = useAppStore.getState();
+      expect(after.shops).toEqual([{ id: 1, at: 40, name: 'Manual stop' }]);
+      expect(after.fills.length).toBeGreaterThan(0);
     });
 
     test('carriedVesselGids keeps an unchecked vessel out of the run without touching saved gear', () => {
@@ -1127,5 +1148,38 @@ describe('share preferences', () => {
     expect(useAppStore.getState().ui.panel).toBe('share');
     useAppStore.getState().closePanel();
     expect(useAppStore.getState().ui.panel).toBeNull();
+  });
+});
+
+describe('autoplanStopRules', () => {
+  const shops = [
+    { id: 1, at: 40, name: 'Mine' },
+    { id: 2, at: 90, name: 'Guess', autoCreated: true },
+  ];
+  const opts = (stopsMode: 'keepAndAdd' | 'keepOnly' | 'clear') => ({
+    stopsMode,
+    carriedVesselGids: null,
+  });
+
+  test("'Od nowa': none of his, new ones wherever", () => {
+    expect(autoplanStopRules({ shops }, opts('clear'))).toEqual({ riderStops: [], newStops: true });
+  });
+
+  test("'Dołóż': his stops, not a previous run's, and new ones allowed", () => {
+    expect(autoplanStopRules({ shops }, opts('keepAndAdd'))).toEqual({
+      riderStops: [40],
+      newStops: true,
+    });
+  });
+
+  test("'Tylko moje': his stops and nothing new", () => {
+    expect(autoplanStopRules({ shops }, opts('keepOnly'))).toEqual({
+      riderStops: [40],
+      newStops: false,
+    });
+  });
+
+  test("a previous run's stops count too when they are being kept", () => {
+    expect(autoplanStopRules({ shops }, opts('keepOnly'), false).riderStops).toEqual([40, 90]);
   });
 });

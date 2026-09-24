@@ -33,7 +33,8 @@ import type { VesselAssignment } from './layout';
 import { compareScore, penalty, SHAPE_TOLERANCE } from './score';
 import { evaluate, space, usableGear } from './search';
 import type { Decision, Evaluated, Space } from './search';
-import type { FoodSelectionEntry } from './types';
+import { FREE_STOPS } from './types';
+import type { FoodSelectionEntry, StopRules } from './types';
 
 const EPS = 1e-9;
 
@@ -62,11 +63,16 @@ function settled(e: Evaluated): boolean {
  * (measured: three 400 ml water bottles refilled ~10 times each plus a 150 ml water/gel flask on a
  * 250 km, 32 °C ride — the flask's own capped `loadCap` is 14, but the other bottles' refills buy
  * 16 stops, and the flask gets topped up at all but one of them: 15, not 14).
+ *
+ * The rider's own stops are on that list too, used or not (`place()` tops up at every one of them),
+ * so they are added to the bound. Leaving them out would understate the caps and cut Decisions that
+ * in fact win.
  */
 export function packedCaps(
   state: PlanState,
   s: Space,
   decision: Decision,
+  rules: StopRules = FREE_STOPS,
 ): { fluidCap: number; carbCap: number } {
   const gear = usableGear(state.gear);
   const volOf = (gid: string) => gear.find((v) => v.gid === gid)!.vol;
@@ -77,7 +83,8 @@ export function packedCaps(
 
   const stopBound =
     decision.assignment.reduce((n, a) => n + Math.max(0, a.loads - 1), 0) +
-    s.offers.reduce((n, o, i) => n + (o.needsStop ? decision.counts[i] : 0), 0);
+    s.offers.reduce((n, o, i) => n + (o.needsStop ? decision.counts[i] : 0), 0) +
+    rules.riderStops.length;
 
   let fluidCap = 0;
   let carbCap = preRideGut(state.route);
@@ -108,6 +115,7 @@ export function* improve(
   selection: FoodSelectionEntry[],
   start: Evaluated,
   seen: { n: number } = { n: 0 },
+  rules: StopRules = FREE_STOPS,
 ): Generator<Evaluated, void, void> {
   const s = space(state, selection);
   const hrs = totalHours(state.route);
@@ -140,7 +148,7 @@ export function* improve(
    * one and can cut a Decision that would in fact have tied on `toGreen` and won on `stops`.
    */
   function unreachable(assignment: VesselAssignment[], counts: number[]): boolean {
-    const { fluidCap: fluid, carbCap: carbs } = packedCaps(state, s, { assignment, counts });
+    const { fluidCap: fluid, carbCap: carbs } = packedCaps(state, s, { assignment, counts }, rules);
     const deficitAtCap = Math.max(
       0,
       -waterBalancePct({ sweatLoss, fluidPlanned: fluid, weight: state.route.weight }),
@@ -158,7 +166,7 @@ export function* improve(
     if (i === s.offers.length) {
       if (settled(best) && unreachable(assignment, acc)) return;
       seen.n += 1;
-      const e = evaluate(state, s.offers, { assignment, counts: acc.slice() } as Decision);
+      const e = evaluate(state, s.offers, { assignment, counts: acc.slice() } as Decision, rules);
       if (compareScore(e.score, best.score) < 0) {
         best = e;
         yield e;

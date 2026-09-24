@@ -7,14 +7,17 @@
  * is typed here as only the slice of the worker global scope this file actually uses, rather than
  * pulling in `lib.webworker.d.ts` for the whole app.
  */
-import type { FoodSelectionEntry } from './types';
+import type { FoodSelectionEntry, StopRules } from './types';
 import type { PlanState } from '../types';
 import { runAutoplan } from './run';
 import type { AutoplanMessage } from './run';
 
 const scope = self as unknown as {
-  onmessage: (e: MessageEvent<{ state: PlanState; selection: FoodSelectionEntry[] }>) => void;
+  onmessage: (
+    e: MessageEvent<{ state: PlanState; selection: FoodSelectionEntry[]; rules: StopRules }>,
+  ) => void;
   postMessage: (m: AutoplanMessage) => void;
 };
 
-scope.onmessage = (e) => runAutoplan(e.data.state, e.data.selection, (m) => scope.postMessage(m));
+scope.onmessage = (e) =>
+  runAutoplan(e.data.state, e.data.selection, (m) => scope.postMessage(m), undefined, e.data.rules);

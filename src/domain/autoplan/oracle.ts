@@ -17,7 +17,8 @@ import type { PlanState } from '../types';
 import { compareScore } from './score';
 import { decisionAt, evaluate, space } from './search';
 import type { Evaluated } from './search';
-import type { FoodSelectionEntry } from './types';
+import { FREE_STOPS } from './types';
+import type { FoodSelectionEntry, StopRules } from './types';
 
 export type OracleResult = {
   size: number;
@@ -32,13 +33,14 @@ export function oracle(
   selection: FoodSelectionEntry[],
   limit: number,
   than?: Evaluated['score'],
+  rules: StopRules = FREE_STOPS,
 ): OracleResult | null {
   const s = space(state, selection);
   if (s.size > limit) return null;
   let best: Evaluated | null = null;
   let better = 0;
   for (let n = 0; n < s.size; n++) {
-    const e = evaluate(state, s.offers, decisionAt(s, n));
+    const e = evaluate(state, s.offers, decisionAt(s, n), rules);
     if (than && compareScore(e.score, than) < 0) better += 1;
     if (best === null || compareScore(e.score, best.score) < 0) best = e;
   }

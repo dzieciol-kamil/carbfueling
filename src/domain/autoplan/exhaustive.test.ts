@@ -309,3 +309,71 @@ describe('improve', () => {
     expect(best.decision.assignment.every((a) => a.loads === 0)).toBe(true);
   });
 });
+
+describe("the rider's own stops", () => {
+  const RIDER_STOPS = [15, 30, 45];
+  const MODES = [
+    ["'Tylko moje'", { riderStops: RIDER_STOPS, newStops: false }] as const,
+    ["'Dołóż'", { riderStops: RIDER_STOPS, newStops: true }] as const,
+  ];
+  const CASES = FIXTURES.flatMap(([name, st, sel]) =>
+    MODES.map(([mode, rules]) => [`${name}, ${mode}`, st, sel, rules] as const),
+  );
+
+  test.each(CASES)(
+    '%s: planned fluid and carbs never exceed packedCaps()',
+    (_, st, sel, rules) => {
+      const s = space(st, sel);
+      for (let n = 0; n < s.size; n++) {
+        const d = decisionAt(s, n);
+        const e = evaluate(st, s.offers, d, rules);
+        const sum = planSummary({
+          ...st,
+          fills: e.draft.fills.map((f, i) => ({ ...f, fid: i + 1 })),
+          foods: e.draft.foods.map((f, i) => ({ ...f, id: i + 1, name: f.key })),
+        });
+        const { fluidCap, carbCap } = packedCaps(st, s, d, rules);
+        expect(sum.fluidPlanned).toBeLessThanOrEqual(fluidCap + 1e-6);
+        expect(sum.totalCarbs).toBeLessThanOrEqual(carbCap + 1e-6);
+      }
+    },
+    60000,
+  );
+
+  test('his stops have to be in the bound: a bottle is topped up at them, used or not', () => {
+    // Two izo bottles on their home loads alone buy no stop, so without his stops the bound allows
+    // them no top-up at all — but both are empty long before the finish, and every stop of his
+    // after that pours water into them.
+    const [, st, sel] = FIXTURES[0];
+    const s = space(st, sel);
+    const rules = { riderStops: RIDER_STOPS, newStops: false };
+    const d: Decision = {
+      assignment: [
+        { gid: 'g1', content: 'izo', loads: 1 },
+        { gid: 'g2', content: 'izo', loads: 1 },
+        { gid: 'g3', content: 'gel', loads: 0 },
+      ],
+      counts: s.offers.map(() => 0),
+    };
+    const e = evaluate(st, s.offers, d, rules);
+    const fluid = planSummary({
+      ...st,
+      fills: e.draft.fills.map((f, i) => ({ ...f, fid: i + 1 })),
+    }).fluidPlanned;
+    expect(fluid).toBeGreaterThan(packedCaps(st, s, d).fluidCap);
+    expect(fluid).toBeLessThanOrEqual(packedCaps(st, s, d, rules).fluidCap + 1e-6);
+  });
+
+  // The water+izo kit is the slowest of the three and adds no stop shape the other two lack.
+  test.each(CASES.filter(([name]) => !name.startsWith('water+izo')))(
+    '%s: improve()’s last plan is the oracle’s best under the same rules',
+    (_, st, sel, rules) => {
+      const s = space(st, sel);
+      const start = evaluate(st, s.offers, decisionAt(s, 0), rules);
+      let best = start;
+      for (const e of improve(st, sel, start, { n: 0 }, rules)) best = e;
+      expect(compareScore(best.score, oracle(st, sel, 1e6, undefined, rules)!.best.score)).toBe(0);
+    },
+    60000,
+  );
+});

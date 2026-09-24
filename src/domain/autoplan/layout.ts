@@ -97,7 +97,8 @@ import type { Sample } from '../fuel';
 import type { Content, Fill, PlanState, Vessel } from '../types';
 import { carbSpanEndKm, waterSpanEndKm } from './spans';
 import type { Draft } from './score';
-import type { DraftFill, DraftFood, DraftStop } from './types';
+import { FREE_STOPS } from './types';
+import type { DraftFill, DraftFood, DraftStop, StopRules } from './types';
 
 /** What one vessel does for the whole ride. */
 export type VesselAssignment = {
@@ -132,7 +133,8 @@ export function mergeWindowKm(D: number): number {
  */
 const GEL_FINISH_GAP_FRACTION = 0.02;
 
-/** A load, before merging has had its say. `refill` is the reason a stop exists. */
+/** A load, before merging has had its say. `refill` is the reason a stop exists: a refill the
+ *  rider's own stop already serves (see `riderStopGate`) is not one, since it buys nothing. */
 type Load = DraftFill & { refill: boolean };
 
 /** A count of loads is a count: negative, fractional and non-finite all mean "no loads". */
@@ -238,6 +240,54 @@ type Gate = (from: number, placed: Load[]) => number;
 const NO_GATE: Gate = (from) => from;
 
 /**
+ * Where a refill may be poured, given the rider's own stops: `at` is where it starts, `narrowTo`
+ * (when set) is where the vessel's previous load is cut short so it can be refilled there, and
+ * `served` says one of his stops pays for it. `null`: nowhere, so the turn is not taken.
+ */
+type StopGate = (
+  x: number,
+  gid: string,
+  emptyFrom: number,
+  stream: Load[],
+) => { at: number; narrowTo?: number; served: boolean } | null;
+
+/**
+ * The rider's stops, as a gate on refills — R46/R47, owner 2026-09-24.
+ *
+ * A refill needs a tap somewhere between where its vessel ran dry and where it is opened again
+ * (`carryStop`). When one of his stops sits there it is simply charged to it. When none does:
+ *
+ * - **Just passed one while this very bottle was being drunk** — *"jak dopiero co minęliśmy postój,
+ *   to zwęzić by została dolana na stopie"*: the load is finished at that stop and the refill poured
+ *   there. Only when the bottle is the one the rider is drinking right now (the last load of the
+ *   stream), because cutting an earlier load would move every one after it.
+ * - **Otherwise the refill waits for the next of his stops**, and the rider rides the gap on an
+ *   empty bottle — *"tak"*, owner, to exactly that.
+ *
+ * "Just passed" and "the next one" are both the merge window's idea of the same stop
+ * (`mergeWindowKm`), and when both are in reach the nearer wins. With `newStops` ("Dołóż") that
+ * window is also as far as the refill will wait: past it, it buys a stop of its own, as it would
+ * with no stops of his at all. Without it ("Tylko moje") it waits however far the next one is, and
+ * with none left on the route the turn is not taken.
+ */
+function riderStopGate(stops: number[], w: number, newStops: boolean): StopGate {
+  return (x, gid, emptyFrom, stream) => {
+    if (carryStop(stops, emptyFrom, x) !== null) return { at: x, served: true };
+    const last = stream[stream.length - 1];
+    const passed =
+      last && last.gid === gid
+        ? stops.filter((s) => s > last.from && s < emptyFrom && emptyFrom - s < w).at(-1)
+        : undefined;
+    const next = stops.find((s) => s > x && (!newStops || s - x < w));
+    if (passed !== undefined && (next === undefined || emptyFrom - passed <= next - x)) {
+      return { at: passed, narrowTo: passed, served: true };
+    }
+    if (next !== undefined) return { at: next, served: true };
+    return newStops ? { at: x, served: false } : null;
+  };
+}
+
+/**
  * Run `legs` as a round-robin relay from km 0, each load starting where the last one ended — or
  * where `gate` lets it, if that is later.
  *
@@ -248,26 +298,55 @@ const NO_GATE: Gate = (from) => from;
  *
  * The gate moves `x` rather than only the load about to be placed, so a deferral is permanent: the
  * relay never walks back to fill in a gap it was told the rider could not absorb.
+ *
+ * `stopGate`, when given, is asked first about every refill — see `riderStopGate`.
  */
-function relay(legs: Leg[], D: number, gate: Gate = NO_GATE): Load[] {
+function relay(legs: Leg[], D: number, gate: Gate = NO_GATE, stopGate?: StopGate): Load[] {
   const rounds = Math.max(0, ...legs.map((l) => l.turns));
-  const used = new Set<string>();
+  const emptyFrom = new Map<string, number>();
   const stream: Load[] = [];
   let x = 0;
   for (let r = 0; r < rounds && x < D; r++) {
     for (const leg of legs) {
       if (x >= D) break;
       if (leg.turns <= r) continue;
-      x = Math.max(x, gate(x, stream));
-      if (x >= D) break;
+      const { gid, content } = leg.a;
+      const prevTo = emptyFrom.get(gid);
+      const refill = prevTo !== undefined;
+      // The rider's stops decide where a refill may go before the gut does: the gut gate then
+      // defers from there, and a later start is still inside the stop's carry window.
+      const where =
+        refill && stopGate ? stopGate(x, gid, prevTo, stream) : { at: x, served: false };
+      if (where === null) continue;
+      const last = stream[stream.length - 1];
+      const lastTo = last?.to;
+      if (where.narrowTo !== undefined) last.to = where.narrowTo;
+      // A move the stops made holds only if the load is placed; the gut's deferral of `x` is
+      // permanent either way, as it always was.
+      const moved = where.at !== x;
+      const undo = () => {
+        if (where.narrowTo !== undefined) last.to = lastTo as number;
+      };
+      const at = Math.max(where.at, gate(where.at, stream));
+      if (!moved) x = at;
+      if (at >= D) {
+        undo();
+        if (moved) continue;
+        break;
+      }
       // A turn that would open past its leg's last start is not taken; the relay moves on to the
       // next vessel, which may still have somewhere to go.
-      if (leg.latestStart !== undefined && x >= leg.latestStart) continue;
-      const to = Math.min(D, leg.spanEnd(x));
-      if (!(to > x)) continue;
-      const { gid, content } = leg.a;
-      stream.push({ gid, content, from: x, to, refill: used.has(gid) });
-      used.add(gid);
+      if (leg.latestStart !== undefined && at >= leg.latestStart) {
+        undo();
+        continue;
+      }
+      const to = Math.min(D, leg.spanEnd(at));
+      if (!(to > at)) {
+        undo();
+        continue;
+      }
+      stream.push({ gid, content, from: at, to, refill: refill && !where.served });
+      emptyFrom.set(gid, to);
       x = to;
     }
   }
@@ -387,9 +466,19 @@ export function stretch(fills: DraftFill[], D: number, stops: DraftStop[] = []):
  * error — that is a legal way to say a vessel is left at home, and neither is `loads: 2` on a gel
  * vessel: gel is refilled like anything else.
  */
-export function place(state: PlanState, assignment: VesselAssignment[], foods: DraftFood[]): Draft {
+export function place(
+  state: PlanState,
+  assignment: VesselAssignment[],
+  foods: DraftFood[],
+  rules: StopRules = FREE_STOPS,
+): Draft {
   const { route, gear, foodLib } = state;
   const D = dist(route);
+  const riderStops = riderStopsOn(rules, D);
+  const stopGate =
+    riderStops.length > 0 || !rules.newStops
+      ? riderStopGate(riderStops, mergeWindowKm(D), rules.newStops)
+      : undefined;
 
   const vesselOf = new Map<string, Vessel>();
   for (const a of assignment) {
@@ -423,13 +512,15 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
   // paying for that with a cap that is one plan behind. Nobody has measured the two against each
   // other on the scenario suites.
   //
-  // The curve is a function of the loads placed, so it is rebuilt when that list grows and not once
-  // per attempted load: `samples()` is the expensive call in this file.
+  // The curve is a function of the loads placed, so it is rebuilt when that list changes and not
+  // once per attempted load: `samples()` is the expensive call in this file. It changes by growing,
+  // or by its last load being cut short to meet one of the rider's stops (`riderStopGate`).
   const gutFoods = foods.map((f, i) => ({ ...f, id: i + 1, name: f.key }));
   let curve: Sample[] | null = null;
-  let curveFor = -1;
+  let curveFor = '';
   const carbGate: Gate = (from, placed) => {
-    if (curve === null || curveFor !== placed.length) {
+    const key = `${placed.length}:${placed.at(-1)?.to}`;
+    if (curve === null || curveFor !== key) {
       curve = samples({
         ...state,
         fills: placed.map((f, i) => ({
@@ -441,7 +532,7 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
         })),
         foods: gutFoods,
       });
-      curveFor = placed.length;
+      curveFor = key;
     }
     return gutClearKm(curve, from);
   };
@@ -474,6 +565,7 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
       }),
     D,
     carbGate,
+    stopGate,
   );
 
   // --- Tile the water stream, against what the izo leaves unmet -------------------------------
@@ -523,6 +615,8 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
         };
       }),
     D,
+    NO_GATE,
+    stopGate,
   );
 
   // *"Woda do końca"* used to be stated right here, as `lastWater.to = D` — the last load of the
@@ -544,6 +638,8 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
   // is read back through `state.foodLib` by key.
   const stopFoods = foods.filter((f) => foodLib.find((e) => e.key === f.key)?.needsStop);
 
+  // A refill one of the rider's stops serves is not a candidate: it buys nothing, so there is
+  // nothing to merge (`riderStopGate` has already put it where his stop can serve it).
   const candidates: Candidate[] = [];
   for (const stream of streams) {
     for (const f of stream) if (f.refill) candidates.push({ at: f.from, movable: true });
@@ -629,11 +725,16 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
   // fill is in, and it has to be that way round: pruning first would offer the top-ups a shorter
   // list and change what the plan delivers, and the only thing the carry rule is allowed to change
   // is how many times the rider pulls over.
-  const seen = new Set<string>();
-  const opened = new Set<number>();
+  //
+  // The rider's own stops are all on it, whether or not a refill is charged to one: he pulls over
+  // there anyway, so a bottle empty by then takes water for free. A refill one of them serves adds
+  // nothing of its own.
+  const lastTo = new Map<string, number>();
+  const opened = new Set<number>(riderStops);
   for (const f of [...fills].sort((a, b) => a.from - b.from)) {
-    if (seen.has(f.gid)) opened.add(f.from);
-    else seen.add(f.gid);
+    const prev = lastTo.get(f.gid);
+    lastTo.set(f.gid, prev === undefined ? f.to : Math.max(prev, f.to));
+    if (prev !== undefined && carryStop(riderStops, prev, f.from) === null) opened.add(f.from);
   }
   for (const f of stopFoods) opened.add(repOf(f.from));
   const stops: DraftStop[] = [...opened].sort((a, b) => a - b).map((x) => ({ at: x }));
@@ -698,8 +799,21 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
           ? waterSpanEndKm(route, s.at, vessel.vol)
           : loadSpanEnd(state, vessel, 'izo', s.at);
       // A top-up fills a gap; it never runs into the load the vessel is next due to take, which
-      // would draw one bottle holding two things at once.
-      const to = Math.min(due < own.length ? own[due].from : D, reach);
+      // would draw one bottle holding two things at once. Nor past the last stop that load can be
+      // poured at: a bottle still holding the top-up cannot be refilled, and with only the rider's
+      // stops to pour at (a refill one of them serves has no stop of its own) the bottle has to be
+      // empty again by one of them. With no such stop after this one, the refill takes this one.
+      let dueBy = D;
+      if (due < own.length) {
+        const pourAt = carryStop(
+          stops.map((x) => x.at).filter((x) => x > s.at),
+          s.at,
+          own[due].from,
+        );
+        if (pourAt === null) continue;
+        dueBy = pourAt;
+      }
+      const to = Math.min(dueBy, reach);
       if (!(to > s.at)) continue;
       fills.push({ gid: a.gid, content: topUp, from: s.at, to });
       empty = to;
@@ -730,6 +844,7 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
     stops: stopsNeeded(
       fills,
       stopFoods.map((f) => repOf(f.from)),
+      riderStops,
     ),
   };
 }
@@ -753,8 +868,12 @@ export function place(state: PlanState, assignment: VesselAssignment[], foods: D
  * Both directions the suites check still hold by construction: every refill is served by a stop in
  * its own carry window, and every stop is either a product's or the one a refill had to buy.
  */
-function stopsNeeded(fills: DraftFill[], productStops: number[]): DraftStop[] {
-  const at = new Set<number>(productStops);
+function stopsNeeded(
+  fills: DraftFill[],
+  productStops: number[],
+  riderStops: number[] = [],
+): DraftStop[] {
+  const at = new Set<number>([...riderStops, ...productStops]);
   const emptyFrom = new Map<string, number>();
   for (const f of [...fills].sort((a, b) => a.from - b.from)) {
     const prev = emptyFrom.get(f.gid);
@@ -763,7 +882,16 @@ function stopsNeeded(fills: DraftFill[], productStops: number[]): DraftStop[] {
     if (prev === undefined) continue;
     if (carryStop(at, prev, f.from) === null) at.add(f.from);
   }
-  return [...at].sort((a, b) => a - b).map((x) => ({ at: x }));
+  // The rider's own stops are his, not the plan's: only the ones it had to add are handed back.
+  return [...at]
+    .filter((x) => !riderStops.includes(x))
+    .sort((a, b) => a - b)
+    .map((x) => ({ at: x }));
+}
+
+/** The rider's stops the plan can use: strictly inside the route, in ride order, once each. */
+export function riderStopsOn(rules: StopRules, D: number): number[] {
+  return [...new Set(rules.riderStops)].filter((x) => x > 0 && x < D).sort((a, b) => a - b);
 }
 
 /**
@@ -779,7 +907,11 @@ export function layout(
   state: PlanState,
   assignment: VesselAssignment[],
   foods: DraftFood[],
+  rules: StopRules = FREE_STOPS,
 ): Draft {
-  const draft = place(state, assignment, foods);
-  return { ...draft, fills: stretch(draft.fills, dist(state.route), draft.stops) };
+  const draft = place(state, assignment, foods, rules);
+  const D = dist(state.route);
+  // `draft.stops` is only what the plan adds; a bottle is refilled at the rider's own stops too.
+  const allStops = [...draft.stops, ...riderStopsOn(rules, D).map((at) => ({ at }))];
+  return { ...draft, fills: stretch(draft.fills, D, allStops) };
 }

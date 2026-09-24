@@ -5,7 +5,7 @@ import {
   type AutoplanOptions,
 } from '../components/autoplan/autoplanOptions';
 import { autoplan } from '../domain/autoplan';
-import type { AutoplanResult, FoodSelectionEntry } from '../domain/autoplan/types';
+import type { AutoplanResult, FoodSelectionEntry, StopRules } from '../domain/autoplan/types';
 import {
   bestGapSpan,
   clampFillToDistance,
@@ -361,6 +361,22 @@ export function autoplanInput(
   const carried = options.carriedVesselGids;
   const gear = carried ? s.gear.filter((g) => carried.includes(g.gid)) : s.gear;
   return { route: s.route, mix: s.mix, gear, fills: s.fills, foods: s.foods, foodLib: s.foodLib };
+}
+
+/**
+ * What the engine may do about stops, from `options.stopsMode` — R46/R47. The stops it is told
+ * about are exactly the ones `insertAutoplan` will keep: none under "Od nowa", and otherwise every
+ * stop but a previous run's own (unless `removePreviousAutoStops` is false and those stay too).
+ * Plain data, for the same worker-boundary reason as `autoplanInput`.
+ */
+export function autoplanStopRules(
+  s: { shops: ShopStop[] },
+  options: AutoplanOptions,
+  removePreviousAutoStops = true,
+): StopRules {
+  if (options.stopsMode === 'clear') return { riderStops: [], newStops: true };
+  const kept = removePreviousAutoStops ? s.shops.filter((sh) => !sh.autoCreated) : s.shops;
+  return { riderStops: kept.map((sh) => sh.at), newStops: options.stopsMode === 'keepAndAdd' };
 }
 
 export const useAppStore = create<AppState>()(
@@ -782,7 +798,11 @@ export const useAppStore = create<AppState>()(
       // is what applies its stopsMode side (below).
       applyAutoplan: (selection, removePreviousAutoStops, options = DEFAULT_AUTOPLAN_OPTIONS) =>
         get().insertAutoplan(
-          autoplan(autoplanInput(get(), options), selection),
+          autoplan(
+            autoplanInput(get(), options),
+            selection,
+            autoplanStopRules(get(), options, removePreviousAutoStops),
+          ),
           options,
           removePreviousAutoStops,
         ),
@@ -806,10 +826,8 @@ export const useAppStore = create<AppState>()(
             ? s.shops.filter((sh) => !sh.autoCreated)
             : s.shops;
           // "Od nowa" clears the rider's own stops too, not just autoplan's prior guesses —
-          // that's the whole point of the option. 'keepOnly' promises more than this line can
-          // deliver — planning within the stops he already has, and reporting the shortfall
-          // instead of inventing one — and `autoplan()` has no way to be told that, so for now
-          // it lands on the same behaviour as 'keepAndAdd'. It was the same on `feat/autoplan`.
+          // that's the whole point of the option. The other two keep them; what sets them apart
+          // is decided in the engine (`autoplanStopRules`), which under 'keepOnly' adds none.
           const shopsForRun = options.stopsMode === 'clear' ? [] : survivingShops;
 
           let fid = s.nextFid;

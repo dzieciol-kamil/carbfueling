@@ -76,6 +76,8 @@ moved, trust the filesystem over this file and update it.
 - `utils/` — `fileSave.ts`, `fileSystemAccess.d.ts`.
 - `static/` — components shared by the prerendered static pages (`LangMenu.tsx`, `ThemeToggle.tsx`).
 - `styles/`, `assets/` — CSS and static assets bundled into the app.
+- `test/setup.ts` — Vitest setup file (`vite.config.ts` → `test.setupFiles`): yields to the event
+  loop before each test so long synchronous suites don't trip Vitest's 60 s worker RPC timeout.
 
 ## Where to look for...
 

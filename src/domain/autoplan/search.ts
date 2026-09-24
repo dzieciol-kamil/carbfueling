@@ -45,11 +45,12 @@
  */
 import { CARB_GRADING_MIN_HOURS, carbsFill, cph, dist, samples, sweat, totalHours } from '../fuel';
 import type { Content, PlanState, RouteInput, Vessel } from '../types';
-import { gutClearKm, layout } from './layout';
+import { gutClearKm, layout, riderStopsOn } from './layout';
 import type { VesselAssignment } from './layout';
 import { compareScore, score } from './score';
 import type { Draft, Score } from './score';
-import type { DraftFood, FoodSelectionEntry } from './types';
+import { FREE_STOPS } from './types';
+import type { DraftFood, FoodSelectionEntry, StopRules } from './types';
 
 /**
  * Nothing is eaten in the last slice of the route: carbs arriving at the line never finish
@@ -238,6 +239,7 @@ function placeFoods(
   chosen: Offer[],
   snapTo?: number[],
   stack = false,
+  snapOnly = false,
 ): DraftFood[] {
   const D = dist(state.route);
   const end = D * (1 - FINISH_GAP_FRACTION);
@@ -253,7 +255,14 @@ function placeFoods(
   let at: number[] = [];
   for (let j = 0; j < k; j++) at.push(((j + 1) * end) / (k + 1));
   if (snapTo) {
-    const snapped = snapPurchases(pinned, at, snapTo, end, stack ? MAX_PURCHASES_PER_STOP : 1);
+    // `snapOnly` is "Tylko moje" (R46): a purchase no stop of the rider's can take is not made.
+    const snapped = snapPurchases(
+      pinned,
+      at,
+      snapTo,
+      end,
+      stack ? MAX_PURCHASES_PER_STOP : 1,
+    ).filter((p) => !snapOnly || p.snapped);
     pinned = snapped.map((p) => p.c);
     at = snapped.map((p) => p.pos);
   }
@@ -315,8 +324,8 @@ const MAX_PURCHASES_PER_STOP = 3;
  * Moves each even-spaced purchase onto the nearest stop the refills already have that can still
  * take it — *"obiad powinien wymuszać postój"*, but a stop the plan pays for anyway is the cheapest
  * place to buy it. Taken in ride order. A stop takes at most `perStop` purchases and never two of
- * the same product; a purchase with no stop left keeps its even position. Returned in ride order so
- * the gaps between purchases stay well formed.
+ * the same product; a purchase with no stop left keeps its even position and says so (`snapped`).
+ * Returned in ride order so the gaps between purchases stay well formed.
  */
 function snapPurchases(
   pinned: Offer[],
@@ -324,7 +333,7 @@ function snapPurchases(
   stops: number[],
   end: number,
   perStop: number,
-): { c: Offer; pos: number }[] {
+): { c: Offer; pos: number; snapped: boolean }[] {
   const taken = new Map<number, string[]>();
   const usable = stops.filter((x) => x > 0 && x < end);
   const out = pinned.map((c, j) => {
@@ -334,9 +343,9 @@ function snapPurchases(
       if (keys.length >= perStop || keys.includes(c.key)) continue;
       if (best === null || Math.abs(x - at[j]) < Math.abs(best - at[j])) best = x;
     }
-    if (best === null) return { c, pos: at[j] };
+    if (best === null) return { c, pos: at[j], snapped: false };
     taken.set(best, [...(taken.get(best) ?? []), c.key]);
-    return { c, pos: best };
+    return { c, pos: best, snapped: true };
   });
   return out.sort((p, q) => p.pos - q.pos);
 }
@@ -352,27 +361,47 @@ function snapPurchases(
  * snapped ones are what a rider does by hand — the meal at the stop they pull over at anyway — and
  * the even spread stays for rides where no refill stop sits anywhere useful. Ties go to the earlier of the three, so purchases share a
  * stop only when nothing else does better.
+ *
+ * The rider's own stops are stops the plan has anyway, so they are always among those a purchase
+ * may move onto. Under "Tylko moje" (`rules.newStops === false`) they are the only ones: there is
+ * no even spread, and a purchase none of them can take is not made.
  */
-export function evaluate(state: PlanState, offers: Offer[], decision: Decision): Evaluated {
+export function evaluate(
+  state: PlanState,
+  offers: Offer[],
+  decision: Decision,
+  rules: StopRules = FREE_STOPS,
+): Evaluated {
   const chosen = chosenOf(offers, decision.counts);
+  const snapOnly = !rules.newStops;
   const look = (snapTo?: number[], stack = false): Evaluated => {
-    const draft = layout(state, decision.assignment, placeFoods(state, chosen, snapTo, stack));
+    const foods = placeFoods(state, chosen, snapTo, stack, snapOnly);
+    const draft = layout(state, decision.assignment, foods, rules);
     return { decision, draft, score: score(state, draft) };
   };
-  let best = look();
-  if (!chosen.some((c) => c.needsStop)) return best;
-
-  const refillStops = layout(
-    state,
-    decision.assignment,
-    placeFoods(
-      state,
-      chosen.filter((c) => !c.needsStop),
-    ),
-  ).stops.map((s) => s.at);
+  const riderStops = riderStopsOn(rules, dist(state.route));
+  if (!chosen.some((c) => c.needsStop)) return look();
+  const refillStops = snapOnly
+    ? riderStops
+    : [
+        ...riderStops,
+        ...layout(
+          state,
+          decision.assignment,
+          placeFoods(
+            state,
+            chosen.filter((c) => !c.needsStop),
+          ),
+          rules,
+        ).stops.map((s) => s.at),
+      ].sort((a, b) => a - b);
+  // Under "Tylko moje" the placement onto his stops is the first look rather than the second.
+  let best = snapOnly ? look(refillStops) : look();
   if (refillStops.length === 0) return best;
-  const spread = look(refillStops);
-  if (compareScore(spread.score, best.score) < 0) best = spread;
+  if (!snapOnly) {
+    const spread = look(refillStops);
+    if (compareScore(spread.score, best.score) < 0) best = spread;
+  }
   const stacked = look(refillStops, true);
   if (stacked.score.gutPeak <= STACKED_GUT_CEILING_G && compareScore(stacked.score, best.score) < 0)
     best = stacked;
@@ -498,7 +527,11 @@ function keyOf(d: Decision): string {
  * load count on the same bottle. Widening the move set to pairs is a real answer to this, and a much
  * bigger search than the owner asked for; it is deliberately not attempted here.
  */
-export function climb(state: PlanState, selection: FoodSelectionEntry[] = []): Evaluated {
+export function climb(
+  state: PlanState,
+  selection: FoodSelectionEntry[] = [],
+  rules: StopRules = FREE_STOPS,
+): Evaluated {
   const gear = usableGear(state.gear);
   // Under `CARB_GRADING_MIN_HOURS` the app greys the carb chart out and `coverageStatus` answers
   // 'unneeded', so the owner's ruling is that the planner hands back an empty product list there:
@@ -521,7 +554,7 @@ export function climb(state: PlanState, selection: FoodSelectionEntry[] = []): E
     const k = keyOf(d);
     const hit = seen.get(k);
     if (hit) return hit;
-    const e = evaluate(state, offers, d);
+    const e = evaluate(state, offers, d, rules);
     seen.set(k, e);
     return e;
   };
@@ -569,6 +602,10 @@ export function climb(state: PlanState, selection: FoodSelectionEntry[] = []): E
 }
 
 /** Just the draft `climb()` settles on, for callers that do not need its score. */
-export function search(state: PlanState, selection: FoodSelectionEntry[] = []): Draft {
-  return climb(state, selection).draft;
+export function search(
+  state: PlanState,
+  selection: FoodSelectionEntry[] = [],
+  rules: StopRules = FREE_STOPS,
+): Draft {
+  return climb(state, selection, rules).draft;
 }

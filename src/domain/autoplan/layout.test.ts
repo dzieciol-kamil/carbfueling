@@ -1662,3 +1662,144 @@ describe('a drink is stretched to the end of the room it has', () => {
     });
   });
 });
+
+describe("the rider's own stops (R46 'Tylko moje', R47 'Dołóż')", () => {
+  /**
+   * One 750 ml bottle of water, filled twice, on 100 km at 20 °C: nothing else on board, so the
+   * water stream is matched against the whole fluid need and a load reaches `L = waterSpan(750)`
+   * km — 26.8 on this route. Without stops of the rider's the refill buys a stop at `L`. Water has
+   * no gut gate, so every position below is the arithmetic of `L` and the stops alone.
+   */
+  const route = makeRoute({ distance: 100 });
+  const state = makeState(route, [vessel('w', 750, ['water'])]);
+  const assignment: VesselAssignment[] = [{ gid: 'w', content: 'water', loads: 2 }];
+  const L = waterSpan(route, 750);
+  const only = (riderStops: number[]) => ({ riderStops, newStops: false });
+  const add = (riderStops: number[]) => ({ riderStops, newStops: true });
+
+  test('the fixture: one load is L km, and the window is 10 km', () => {
+    expect(L).toBeGreaterThan(20);
+    expect(L).toBeLessThan(30);
+    expect(mergeWindowKm(dist(route))).toBe(10);
+    const { fills, stops } = place(state, assignment, []);
+    expectFillsClose(fills, [
+      { gid: 'w', content: 'water', from: 0, to: L },
+      { gid: 'w', content: 'water', from: L, to: 2 * L },
+    ]);
+    expect(stopXs(stops)).toEqual([L]);
+  });
+
+  describe("'Tylko moje' never adds a stop", () => {
+    test('a stop just passed: the bottle is finished there and refilled there', () => {
+      const s = L - 5;
+      const { fills, stops } = place(state, assignment, [], only([s]));
+      expectFillsClose(fills, [
+        { gid: 'w', content: 'water', from: 0, to: s },
+        { gid: 'w', content: 'water', from: s, to: s + L },
+      ]);
+      expect(stops).toEqual([]);
+    });
+
+    test('a stop further on: the refill waits for it, and the rider rides the gap dry', () => {
+      const { fills, stops } = place(state, assignment, [], only([60]));
+      expectFillsClose(fills, [
+        { gid: 'w', content: 'water', from: 0, to: L },
+        { gid: 'w', content: 'water', from: 60, to: 60 + L },
+      ]);
+      expect(stops).toEqual([]);
+    });
+
+    test('a stop passed longer ago than the window, and none after: no refill at all', () => {
+      const { fills, stops } = place(state, assignment, [], only([L - 12]));
+      expectFillsClose(fills, [{ gid: 'w', content: 'water', from: 0, to: L }]);
+      expect(stops).toEqual([]);
+    });
+
+    test('no stops of his at all: the home load and nothing else', () => {
+      const { fills, stops } = place(state, assignment, [], only([]));
+      expectFillsClose(fills, [{ gid: 'w', content: 'water', from: 0, to: L }]);
+      expect(stops).toEqual([]);
+    });
+
+    test('one just passed and one just ahead: the nearer wins', () => {
+      // 2 km back beats 3 km on.
+      const back = place(state, assignment, [], only([L - 2, L + 3])).fills;
+      expect(back[1].from).toBeCloseTo(L - 2, 9);
+      expect(back[0].to).toBeCloseTo(L - 2, 9);
+      // 3 km back loses to 2 km on.
+      const ahead = place(state, assignment, [], only([L - 3, L + 2])).fills;
+      expect(ahead[1].from).toBeCloseTo(L + 2, 9);
+      expect(ahead[0].to).toBeCloseTo(L, 9);
+    });
+
+    test('stops on the start line, past the finish, or twice over are ignored', () => {
+      const { fills } = place(state, assignment, [], only([0, 60, 60, 100, 140]));
+      expect(fills[1].from).toBeCloseTo(60, 9);
+    });
+  });
+
+  describe("'Dołóż' adds a stop only where none of his will do", () => {
+    test('one of his within the window: the refill goes there and buys nothing', () => {
+      const { fills, stops } = place(state, assignment, [], add([L + 5]));
+      expect(fills[1].from).toBeCloseTo(L + 5, 9);
+      expect(stops).toEqual([]);
+    });
+
+    test('his only stop is far away: the refill buys its own, exactly as with none', () => {
+      const { fills, stops } = place(state, assignment, [], add([70]));
+      expectFillsClose(fills, [
+        { gid: 'w', content: 'water', from: 0, to: L },
+        { gid: 'w', content: 'water', from: L, to: 2 * L },
+      ]);
+      expect(stopXs(stops)).toEqual([L]);
+    });
+  });
+
+  /**
+   * The two-bottle kit of 'the first refill is the first stop': `a` is empty from km 50 and opened
+   * again at 100, so any stop of the rider's in between serves its refill, and the fills do not
+   * move at all.
+   */
+  describe('a stop of his inside the carry window', () => {
+    const route150 = makeRoute({ distance: 150 });
+    const gear = [vessel('a', 750, ['izo', 'water']), vessel('b', 750, ['izo', 'water'])];
+    const kit = makeState(route150, gear);
+    const relayOf: VesselAssignment[] = [
+      { gid: 'a', content: 'izo', loads: 2 },
+      { gid: 'b', content: 'izo', loads: 1 },
+    ];
+
+    test.each([
+      ['Tylko moje', false],
+      ['Dołóż', true],
+    ])('%s: the refill is charged to it, and nothing moves', (_label, newStops) => {
+      const { fills, stops } = place(kit, relayOf, [], { riderStops: [70], newStops });
+      expectFillsClose(of(fills, 'izo'), [
+        { gid: 'a', content: 'izo', from: 0, to: 50 },
+        { gid: 'b', content: 'izo', from: 50, to: 100 },
+        { gid: 'a', content: 'izo', from: 100, to: 150 },
+      ]);
+      expect(stops).toEqual([]);
+    });
+
+    test('a bottle is not topped up where that would leave its refill nowhere to be poured', () => {
+      // `a` is empty at 70, but 70 is also the only stop its izo refill can be poured at: water
+      // there would still be in the bottle when the izo has to go in.
+      const { fills } = place(kit, relayOf, [], { riderStops: [70], newStops: false });
+      expect(of(fills, 'water')).toEqual([]);
+    });
+
+    test('with a second stop of his later on, it is — up to that stop', () => {
+      const { fills } = place(kit, relayOf, [], { riderStops: [70, 90], newStops: false });
+      expectFillsClose(of(fills, 'water'), [{ gid: 'a', content: 'water', from: 70, to: 90 }]);
+    });
+
+    test('the stretch knows the refill was poured at his stop', () => {
+      // `layout`'s stretch may not draw `a`'s water past 90, where its izo went in.
+      const { fills } = layout(kit, relayOf, [], { riderStops: [70, 90], newStops: false });
+      const water = of(fills, 'water');
+      expect(water).toHaveLength(1);
+      expect(water[0].to).toBeLessThanOrEqual(90);
+    });
+  });
+});
