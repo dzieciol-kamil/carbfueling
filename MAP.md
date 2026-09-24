@@ -27,7 +27,8 @@ moved, trust the filesystem over this file and update it.
     curve), `score.ts` (distance to both green badges), `exhaustive.ts` (`improve()` — pruned
     exhaustive search yielding each strictly-better plan, for the thinking modal), `types.ts`;
     test-only `oracle.ts` + `oracleExpect.ts` (brute-force check of the search, run with
-    `ORACLE=1`).
+    `ORACLE=1`); `exhaustive.measure.test.ts` (timing probe for `improve()` on the 194km pacing
+    ride, run with `MEASURE=1`).
   - `combinedRefill.ts` — combined stop/refill logic.
   - `printSheet.ts` — printable one-page plan (schedule strip + bottle recipes).
   - `gpx.ts` — GPX file parsing.
@@ -38,7 +39,9 @@ moved, trust the filesystem over this file and update it.
   - `shareSummary.ts` — the figures the share blurb/badge/chart PNG all quote.
   - `shareQr.ts` — QR module matrix for the share panel's image formats.
   - `types.ts` — shared domain types.
-  - `__fixtures__/` — sample route data (e.g. `kielceMarkiEle.ts`) used by domain tests.
+  - `__fixtures__/` — sample route data (e.g. `kielceMarkiEle.ts`) used by domain tests;
+    `pacing194.ts` (route/mix/gear/foodLib/selection for the rider's 194km ride, shared by
+    `autoplanPacing.test.ts` and `exhaustive.measure.test.ts`).
 - `store/` — `appStore.ts` (zustand, single source of app state) + `persistStorage.ts`
   (localStorage persistence). No backend.
 - `i18n/strings.ts` — **all** user-facing copy; don't inline strings in components.
