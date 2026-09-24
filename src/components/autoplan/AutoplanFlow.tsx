@@ -239,6 +239,12 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
     else setTab('gear');
   }
 
+  function openFood() {
+    setPhase('idle');
+    if (variant === 'desktop') openPanel('food');
+    else setTab('food');
+  }
+
   return (
     <>
       <button
@@ -271,6 +277,7 @@ export function AutoplanFlow({ variant }: { variant: 'desktop' | 'mobile' }) {
           lang={lang}
           showReplaceNote={needsReplaceConfirm({ fills, foods, shops })}
           onOpenGear={openGear}
+          onOpenFood={openFood}
           onCancel={() => setPhase('idle')}
           onConfirm={(selection, options) => {
             // Previous-run stops are always replaced now — re-running is what that means (see

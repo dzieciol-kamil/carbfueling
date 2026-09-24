@@ -422,6 +422,7 @@ export interface StringTable {
   autoplanGearTitle: string;
   autoplanGearHint: string;
   autoplanGearEditLink: string;
+  autoplanFoodEditLink: string;
   autoplanFoodTitle: string;
   autoplanDialogHint: string;
   autoplanDialogCountLabel: string;
@@ -915,6 +916,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanGearHint:
       'Odznacz to, czego dziś nie bierzesz — tylko na ten plan, nie zmienia zapisanego sprzętu.',
     autoplanGearEditLink: 'Edytuj sprzęt',
+    autoplanFoodEditLink: 'Edytuj produkty',
     autoplanFoodTitle: 'Produkty',
     autoplanDialogHint:
       'Ustaw ile sztuk każdego produktu niesiesz i przeciągnij, żeby ułożyć kolejność użycia — góra to pierwszy wybór.',
@@ -1442,6 +1444,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanGearHint:
       "Uncheck anything you're not carrying today — for this plan only, it won't change your saved gear.",
     autoplanGearEditLink: 'Edit gear',
+    autoplanFoodEditLink: 'Edit products',
     autoplanFoodTitle: 'Food',
     autoplanDialogHint:
       "Set how many of each you're carrying and drag to set the order you'd reach for them — top is first choice.",
@@ -1845,6 +1848,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanGearHint:
       'Entferne das Häkchen bei allem, was du heute nicht mitnimmst — nur für diesen Plan, deine gespeicherte Ausrüstung bleibt unverändert.',
     autoplanGearEditLink: 'Ausrüstung bearbeiten',
+    autoplanFoodEditLink: 'Produkte bearbeiten',
     autoplanFoodTitle: 'Essen',
     autoplanDialogHint:
       'Lege fest, wie viel du von jedem mitnimmst, und ziehe die Einträge in die Reihenfolge, in der du danach greifst — oben ist die erste Wahl.',
@@ -2381,6 +2385,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanGearHint:
       "Togli la spunta a ciò che oggi non porti — solo per questo piano, l'attrezzatura salvata non cambia.",
     autoplanGearEditLink: 'Modifica attrezzatura',
+    autoplanFoodEditLink: 'Modifica prodotti',
     autoplanFoodTitle: 'Cibo',
     autoplanDialogHint:
       "Indica quanti ne porti di ciascuno e trascinali nell'ordine in cui li useresti — in alto la prima scelta.",

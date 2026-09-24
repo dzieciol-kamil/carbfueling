@@ -20,6 +20,7 @@ interface AutoplanPreflightModalProps {
    *  shown as a one-line reminder, not a separate confirmation step. */
   showReplaceNote: boolean;
   onOpenGear: () => void;
+  onOpenFood: () => void;
   onCancel: () => void;
   onConfirm: (selection: { key: string; count: number }[], options: AutoplanOptions) => void;
 }
@@ -125,6 +126,17 @@ const mobileFooterStyle: CSSProperties = {
   background: 'var(--surface)',
   borderTop: '1px solid var(--border-soft)',
 };
+const editLinkStyle: CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: 'var(--ink-soft)',
+  textDecoration: 'underline',
+  fontSize: 11.5,
+  fontWeight: 600,
+  fontFamily: 'Archivo, sans-serif',
+  cursor: 'pointer',
+  padding: 0,
+};
 const gearRowStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -173,6 +185,7 @@ export function AutoplanPreflightModal({
   lang,
   showReplaceNote,
   onOpenGear,
+  onOpenFood,
   onCancel,
   onConfirm,
 }: AutoplanPreflightModalProps) {
@@ -255,21 +268,7 @@ export function AutoplanPreflightModal({
       <Section>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={sectionTitleStyle}>{strings.autoplanGearTitle}</span>
-          <button
-            type="button"
-            onClick={onOpenGear}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--ink-soft)',
-              textDecoration: 'underline',
-              fontSize: 11.5,
-              fontWeight: 600,
-              fontFamily: 'Archivo, sans-serif',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
+          <button type="button" onClick={onOpenGear} style={editLinkStyle}>
             {strings.autoplanGearEditLink}
           </button>
         </div>
@@ -297,7 +296,12 @@ export function AutoplanPreflightModal({
       </Section>
 
       <Section>
-        <span style={sectionTitleStyle}>{strings.autoplanFoodTitle}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={sectionTitleStyle}>{strings.autoplanFoodTitle}</span>
+          <button type="button" onClick={onOpenFood} style={editLinkStyle}>
+            {strings.autoplanFoodEditLink}
+          </button>
+        </div>
         <p style={hintTextStyle}>{strings.autoplanDialogHint}</p>
         <div data-food-list style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {orderedFood.map((entry) => (
