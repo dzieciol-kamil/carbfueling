@@ -12,6 +12,8 @@ interface InfoPopoverProps {
   triggerStyle?: CSSProperties;
   /** Extra style applied to the popover bubble (mainly used for positioning). */
   popoverStyle?: CSSProperties;
+  /** Also open while a mouse hovers the trigger; a tap still toggles it on touch. */
+  openOnHover?: boolean;
 }
 
 const basePopoverStyle: CSSProperties = {
@@ -46,6 +48,7 @@ export function InfoPopover({
   ariaLabel,
   triggerStyle,
   popoverStyle,
+  openOnHover = false,
 }: InfoPopoverProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLSpanElement | null>(null);
@@ -68,6 +71,12 @@ export function InfoPopover({
         tabIndex={0}
         aria-expanded={open}
         aria-label={ariaLabel}
+        onPointerEnter={(e) => {
+          if (openOnHover && e.pointerType === 'mouse') setOpen(true);
+        }}
+        onPointerLeave={(e) => {
+          if (openOnHover && e.pointerType === 'mouse') setOpen(false);
+        }}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);

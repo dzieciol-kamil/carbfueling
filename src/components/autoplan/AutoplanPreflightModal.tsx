@@ -3,6 +3,7 @@ import { dist, fmtHM, prof, totalHours } from '../../domain/fuel';
 import type { Content, FoodLibEntry, RouteInput, ShopStop, Vessel } from '../../domain/types';
 import { t, type Lang } from '../../i18n/strings';
 import { sourceColor } from '../chart/theme';
+import { InfoPopover } from '../ui/InfoPopover';
 import { NumberInput } from '../ui/NumberInput';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { createFoodReorderHandler } from './listReorderHandler';
@@ -327,6 +328,27 @@ export function AutoplanPreflightModal({
               <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600 }}>
                 {entry[lang] || entry.en}
               </span>
+              {entry.needsStop && (
+                <InfoPopover
+                  openOnHover
+                  hint={strings.autoplanDialogNeedsStop}
+                  ariaLabel={strings.autoplanDialogNeedsStop}
+                  triggerStyle={{ display: 'flex', cursor: 'default' }}
+                  popoverStyle={{
+                    bottom: 'calc(100% + 6px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  <svg width="12" height="19" viewBox="0 0 16 25" style={{ display: 'block' }}>
+                    <path
+                      d="M8 18C8 18 1 10.5 1 7A7 7 0 1 1 15 7C15 10.5 8 18 8 18Z"
+                      fill="var(--ink)"
+                    />
+                    <line x1="8" y1="17" x2="8" y2="25" stroke="var(--ink)" strokeWidth="2" />
+                  </svg>
+                </InfoPopover>
+              )}
               <span style={{ fontSize: 10, color: 'var(--muted-3)' }}>
                 {strings.autoplanDialogCountLabel}
               </span>
