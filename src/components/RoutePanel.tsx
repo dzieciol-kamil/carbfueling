@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { paceToSpeed, prof, speedToPace } from '../domain/fuel';
+import { hasGpxTrack, paceToSpeed, prof, speedToPace } from '../domain/fuel';
 import type { Intensity, RouteInput } from '../domain/types';
 import { t, type StringTable } from '../i18n/strings';
 import { useAppStore } from '../store/appStore';
@@ -128,6 +128,7 @@ function elevationGain(routeState: RouteInput): number {
 
 export function RoutePanel() {
   const route = useAppStore((s) => s.route);
+  const hasTrack = hasGpxTrack(route);
   const lang = useAppStore((s) => s.ui.lang);
   const setMode = useAppStore((s) => s.setMode);
   const setDistance = useAppStore((s) => s.setDistance);
@@ -407,20 +408,22 @@ export function RoutePanel() {
               whiteSpace: 'nowrap',
             }}
           >
-            {route.gpxName || strings.gpxFile}
+            {hasTrack ? route.gpxName : strings.gpxNone}
           </span>
         </span>
-        <span
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 12,
-            color: 'var(--muted-2)',
-            flex: '0 0 auto',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          +{elevationGain(route)} m
-        </span>
+        {hasTrack && (
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 12,
+              color: 'var(--muted-2)',
+              flex: '0 0 auto',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            +{elevationGain(route)} m
+          </span>
+        )}
         <span style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
           <label
             style={{
@@ -449,22 +452,26 @@ export function RoutePanel() {
               style={{ display: 'none' }}
             />
           </label>
-          <button
-            onClick={toggleGpx}
-            style={{
-              border: '1px solid var(--chip-border)',
-              background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
-              color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
-              borderRadius: 8,
-              padding: '6px 11px',
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Archivo, sans-serif',
-              cursor: 'pointer',
-            }}
-          >
-            {strings.gpxOn}
-          </button>
+          {hasTrack && (
+            <button
+              onClick={toggleGpx}
+              aria-pressed={route.useGpx}
+              aria-label={strings.gpx}
+              style={{
+                border: '1px solid var(--chip-border)',
+                background: route.useGpx ? 'var(--selected-bg)' : 'var(--surface)',
+                color: route.useGpx ? 'var(--on-brand)' : 'var(--muted-2)',
+                borderRadius: 8,
+                padding: '6px 11px',
+                fontSize: 11,
+                fontWeight: 600,
+                fontFamily: 'Archivo, sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              {route.useGpx ? strings.gpxOn : strings.gpxOff}
+            </button>
+          )}
         </span>
       </div>
       {route.gpxError && (

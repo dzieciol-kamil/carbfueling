@@ -19,6 +19,7 @@ import {
   fmtX,
   fracFill,
   fracFood,
+  hasGpxTrack,
   honeyGramsFromCarbs,
   hydrationStatus,
   mixSplit,
@@ -391,11 +392,18 @@ describe('prof / eff', () => {
     expect(P.pts.every((p) => p.effort >= 0.6 && p.effort <= 1.8)).toBe(true);
   });
 
-  test('synthetic profile (useGpx on, no track) stays within physical bounds', () => {
-    const route = makeRoute({ mode: 'route', distance: 100, useGpx: true, gpxTrack: null });
+  test('no track (useGpx on, gpxTrack null) gives a flat profile: effort 1, time linear', () => {
+    const route = makeRoute({ mode: 'route', distance: 90, useGpx: true, gpxTrack: null });
     const P = prof(route);
-    expect(P.pts.every((p) => p.ele >= 40)).toBe(true);
-    expect(P.pts.every((p) => p.effort >= 0.32 && p.effort <= 2.3)).toBe(true);
+    expect(P.pts.every((p) => p.effort === 1 && p.grad === 0)).toBe(true);
+    expect(hasGpxTrack(route)).toBe(false);
+    const flat = prof(makeRoute({ mode: 'route', distance: 90, useGpx: false }));
+    expect(P.cumTime).toEqual(flat.cumTime);
+  });
+
+  test('a track with no elevation points counts as no track', () => {
+    expect(hasGpxTrack(makeRoute({ gpxTrack: { id: 1, ele: [] } }))).toBe(false);
+    expect(hasGpxTrack(makeRoute({ gpxTrack: { id: 1, ele: [100] } }))).toBe(true);
   });
 
   test('GPX track elevation is interpolated across samples', () => {

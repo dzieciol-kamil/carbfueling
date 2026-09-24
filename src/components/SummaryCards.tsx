@@ -81,6 +81,8 @@ const footerRowStyle: CSSProperties = {
   fontSize: 12,
   color: 'var(--muted-2)',
 };
+/** Absorbed on top, Requirement/Planned under it: one block, tighter than the card's own gap. */
+const footerStackStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };
 const footerValueStyle: CSSProperties = {
   fontFamily: "'JetBrains Mono', monospace",
   color: 'var(--ink)',
@@ -164,31 +166,43 @@ export function SummaryCards() {
             }}
           />
         </div>
-        <div style={footerRowStyle}>
-          <span>
-            {strings.needSum} <b style={footerValueStyle}>{fmt(summary.target)}g</b>{' '}
-            <InfoPopover
-              hint={strings.recoveryHint}
-              triggerStyle={recoveryAnnotationStyle}
-              popoverStyle={{ bottom: 'calc(100% + 6px)', left: 0 }}
-            >
-              ({strings.recoveryLabel}: ~{recovery.min}–{recovery.max}g ⓘ)
-            </InfoPopover>
-          </span>
-          <span>
-            {strings.planned}{' '}
-            <b style={footerValueStyle}>
-              {fmt(summary.totalCarbs)} g – {fmt(summary.carbRateGph)} g/h
-            </b>{' '}
-            <InfoPopover
-              hint={strings.carbRateHint}
-              triggerStyle={recoveryAnnotationStyle}
-              popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
-            >
-              ⓘ
-            </InfoPopover>{' '}
-            <b style={footerValueStyle}>({fmt(summary.totalCarbs * 4)} kcal)</b>
-          </span>
+        {/* coveredCarbs, not absorbedTotal: the percentage above is exactly this fraction, so
+            the card can't contradict itself. Same line as the mobile plan list. */}
+        <div style={footerStackStyle}>
+          <div style={footerRowStyle}>
+            <span>
+              {strings.tAbsorbed}{' '}
+              <b style={footerValueStyle}>
+                {fmt(summary.coveredCarbs)} / {fmt(summary.target)} g
+              </b>
+            </span>
+          </div>
+          <div style={footerRowStyle}>
+            <span>
+              {strings.needSum} <b style={footerValueStyle}>{fmt(summary.target)}g</b>{' '}
+              <InfoPopover
+                hint={strings.recoveryHint}
+                triggerStyle={recoveryAnnotationStyle}
+                popoverStyle={{ bottom: 'calc(100% + 6px)', left: 0 }}
+              >
+                ({strings.recoveryLabel}: ~{recovery.min}–{recovery.max}g ⓘ)
+              </InfoPopover>
+            </span>
+            <span>
+              {strings.planned}{' '}
+              <b style={footerValueStyle}>
+                {fmt(summary.totalCarbs)} g – {fmt(summary.carbRateGph)} g/h
+              </b>{' '}
+              <InfoPopover
+                hint={strings.carbRateHint}
+                triggerStyle={recoveryAnnotationStyle}
+                popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+              >
+                ⓘ
+              </InfoPopover>{' '}
+              <b style={footerValueStyle}>({fmt(summary.totalCarbs * 4)} kcal)</b>
+            </span>
+          </div>
         </div>
       </div>
 

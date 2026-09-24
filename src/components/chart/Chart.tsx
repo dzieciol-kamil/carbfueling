@@ -4,6 +4,7 @@ import {
   carbsFill,
   dist,
   distanceAtTime,
+  hasGpxTrack,
   FLUID_ABSORPTION_CAP_ML_H,
   fmtX,
   GUT_LIMIT,
@@ -222,7 +223,7 @@ export function Chart({ height, showAxis }: ChartProps) {
           height={height}
           bottomPadding={PB}
           share={showAxis ? 0.62 : 0.7}
-          visible={route.useGpx}
+          visible={route.useGpx && hasGpxTrack(route)}
         />
 
         {!fluidMode && (
