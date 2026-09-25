@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   autoplanInput,
   autoplanStopRules,
-  hasPlanData,
   resolveTheme,
   shouldConfirmViewModeChange,
   withColaAtStop,
@@ -35,40 +34,6 @@ function route(overrides: Partial<RouteInput> = {}): RouteInput {
     ...overrides,
   };
 }
-
-describe('hasPlanData', () => {
-  test('false when route, fills, foods and shops are all default/empty', () => {
-    expect(hasPlanData({ route: route(), fills: [], foods: [], shops: [] })).toBe(false);
-  });
-
-  test('true once the route has a distance', () => {
-    expect(hasPlanData({ route: route({ distance: 50 }), fills: [], foods: [], shops: [] })).toBe(
-      true,
-    );
-  });
-
-  test('true once a fill exists, even with a default route', () => {
-    expect(
-      hasPlanData({
-        route: route(),
-        fills: [{ fid: 1, gid: 'g1', content: 'izo', from: 0, to: 10 }],
-        foods: [],
-        shops: [],
-      }),
-    ).toBe(true);
-  });
-
-  test('true once a shop stop exists', () => {
-    expect(
-      hasPlanData({
-        route: route(),
-        fills: [],
-        foods: [],
-        shops: [{ id: 1, at: 40, name: 'Shop' }],
-      }),
-    ).toBe(true);
-  });
-});
 
 describe('setSport', () => {
   test('switching sport resets speed to that sport default', () => {
@@ -248,7 +213,7 @@ describe('loadTourDemoData', () => {
     expect(s.gear).toHaveLength(TOUR_DEMO.gear.length);
     const target = s.fills.find((f) => f.fid === s.ui.tourDemoFid);
     expect(target?.content).toBe('izo');
-    expect(s.ui.sampleActive).toBe(true);
+    expect(s.preTourDoc).not.toBeNull();
   });
 
   test('every id it hands out is new, and the fills name its own vessels', () => {
@@ -305,7 +270,7 @@ describe('restoring the plan the tour replaced', () => {
     useAppStore.getState().removeShop(useAppStore.getState().shops[0].id);
     useAppStore.getState().restorePreTourPlan();
     expect(doc()).toEqual(before);
-    expect(useAppStore.getState().ui.sampleActive).toBe(false);
+    expect(useAppStore.getState().preTourDoc).toBeNull();
   });
 
   test('a replay while the sample is still up restores the plan from before the first one', () => {
@@ -326,13 +291,44 @@ describe('restoring the plan the tour replaced', () => {
     const sample = doc();
     useAppStore.getState().restorePreTourPlan();
     expect(doc()).toEqual(sample);
-    expect(useAppStore.getState().ui.sampleActive).toBe(false);
+    expect(useAppStore.getState().preTourDoc).toBeNull();
   });
 
   test('starting over ends the sample', () => {
     useAppStore.getState().loadTourDemoData();
     useAppStore.getState().clearPlan();
-    expect(useAppStore.getState().ui.sampleActive).toBe(false);
+    expect(useAppStore.getState().preTourDoc).toBeNull();
+  });
+
+  // A reload, or a phone killing the tab, must not turn the sample into the rider's plan for good.
+  test('the restore point survives a reload', () => {
+    ownPlan();
+    const before = doc();
+    useAppStore.getState().loadTourDemoData();
+    const merge = useAppStore.persist.getOptions().merge!;
+    const saved = JSON.parse(JSON.stringify(useAppStore.getState()));
+    const merged = merge(saved, initialState) as typeof initialState;
+    useAppStore.setState(merged, true);
+    useAppStore.getState().restorePreTourPlan();
+    expect(doc()).toEqual(before);
+  });
+
+  // Saving the setup or importing a plan while the sample is up are the rider's own edits; a
+  // later "Restore my plan" must not take them back.
+  test('saving the setup keeps the sample and ends the offer to restore', () => {
+    ownPlan();
+    useAppStore.getState().loadTourDemoData();
+    const { gear, foodLib } = useAppStore.getState();
+    useAppStore.getState().applySetup({ weight: 65, gear, foodLib });
+    expect(useAppStore.getState().preTourDoc).toBeNull();
+    expect(useAppStore.getState().route.weight).toBe(65);
+  });
+
+  test('importing a plan ends the offer to restore', () => {
+    useAppStore.getState().loadTourDemoData();
+    const data = useAppStore.getState().getSettingsExportData();
+    useAppStore.getState().importSettings(data);
+    expect(useAppStore.getState().preTourDoc).toBeNull();
   });
 });
 
@@ -1093,18 +1089,17 @@ describe('persisted ui merge — no overlay survives a reload', () => {
     expect(merged.ui.scrubX).toBeNull();
   });
 
-  // The tour only runs on request now, and its restore point lived in memory: after a reload
-  // there is nothing to resume and nothing to restore.
+  // The tour only runs on request now: after a reload it does not resume (the sample and its
+  // restore point are document state and stay — see "the restore point survives a reload").
   test('a tour interrupted by a reload does not come back', () => {
     const merge = useAppStore.persist.getOptions().merge!;
     const currentState = useAppStore.getState();
     const merged = merge(
-      { ui: { ...currentState.ui, tourStep: 2, tourDemoFid: 7, sampleActive: true } },
+      { ui: { ...currentState.ui, tourStep: 2, tourDemoFid: 7 } },
       currentState,
     ) as typeof currentState;
     expect(merged.ui.tourStep).toBeNull();
     expect(merged.ui.tourDemoFid).toBeNull();
-    expect(merged.ui.sampleActive).toBe(false);
   });
 
   // Where the rider is in the first-run flow is progress, not a view: it has to survive.

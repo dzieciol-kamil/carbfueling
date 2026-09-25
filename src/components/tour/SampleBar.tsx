@@ -8,7 +8,7 @@ import { tourGhostBtn, tourPrimaryBtn } from './tourStyles';
  * mistaken for theirs, and so "Restore my plan" is still there after Skip or "Keep exploring".
  */
 export function SampleBar({ style }: { style?: CSSProperties }) {
-  const active = useAppStore((s) => s.ui.sampleActive && s.ui.tourStep === null);
+  const active = useAppStore((s) => s.preTourDoc !== null && s.ui.tourStep === null);
   const lang = useAppStore((s) => s.ui.lang);
   const restorePreTourPlan = useAppStore((s) => s.restorePreTourPlan);
   const dismissSample = useAppStore((s) => s.dismissSample);

@@ -231,9 +231,14 @@ export function TourOverlay() {
             marginTop: 4,
           }}
         >
-          <button onClick={closeTour} style={tourGhostBtn}>
-            {strings.tourSkip}
-          </button>
+          {/* The last step's "Keep exploring the sample" already does what Skip would. */}
+          {isLast ? (
+            <span />
+          ) : (
+            <button onClick={closeTour} style={tourGhostBtn}>
+              {strings.tourSkip}
+            </button>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             {!isFirst && (
               <button onClick={() => setTourStep(tourStep - 1)} style={tourGhostBtn}>

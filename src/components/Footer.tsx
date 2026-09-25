@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { absCap } from '../domain/fuel';
 import { t } from '../i18n/strings';
-import { hasPlanData, useAppStore } from '../store/appStore';
+import { useAppStore } from '../store/appStore';
 import { TourReplayConfirm } from './tour/TourReplayConfirm';
 import { FAQ_HREF_FROM_CALCULATOR } from '../urls';
 import { CoffeeIcon, GitHubIcon, HeartIcon } from './ui/BrandIcons';
@@ -34,11 +34,8 @@ export function Footer() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleReplay = () => {
-    if (hasPlanData(useAppStore.getState())) {
-      setConfirmOpen(true);
-    } else {
-      startTour();
-    }
+    // Always asked: the sample replaces the rider's kit and weight too, not just a plan.
+    setConfirmOpen(true);
   };
 
   return (

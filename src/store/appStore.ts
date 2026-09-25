@@ -141,9 +141,6 @@ interface UiState {
   /** The first-run hint on screen, or `null` once the sequence is over or was closed. */
   onboardingHint: OnboardingHint | null;
   setupOpen: boolean;
-  /** The tour's sample plan is on screen in place of the rider's own, which
-   *  `restorePreTourPlan` can still bring back. */
-  sampleActive: boolean;
   scrubX: number | null;
   gpxPeek: boolean;
   mixSheet: boolean;
@@ -168,6 +165,10 @@ interface AppState {
   // RecipesSection / MobileMixSheet) — any fill of any vessel, not just each
   // vessel's start fill. Unrelated to shop stops.
   combinedFillIds: number[];
+  /** The rider's own plan while the tour's sample stands in for it — what "Restore my plan"
+   *  brings back. Saved like the rest of the document (a reload must not turn the sample into
+   *  the rider's plan for good) and part of undo/redo, so the sample bar follows both. */
+  preTourDoc: PlanDoc | null;
   ui: UiState;
   nextGid: number;
   nextFid: number;
@@ -289,6 +290,20 @@ interface AppState {
 
   clearPlan: () => void;
 }
+
+/** The plan document: what undo/redo steps through and what "Restore my plan" brings back. */
+export const PLAN_DOC_KEYS = [
+  'route',
+  'mix',
+  'gear',
+  'fills',
+  'foods',
+  'shops',
+  'foodLib',
+  'combinedFillIds',
+] as const;
+type PlanDocKey = (typeof PLAN_DOC_KEYS)[number];
+export type PlanDoc = Pick<AppState, PlanDocKey>;
 
 /**
  * What "Set me up" saves. A vessel whose `gid`, or a product whose `key`, starts with `new:` is
@@ -420,18 +435,11 @@ export function autoplanStopRules(
   return { riderStops: kept.map((sh) => sh.at), newStops: options.stopsMode === 'keepAndAdd' };
 }
 
-type PlanDoc = Pick<
-  AppState,
-  'route' | 'mix' | 'gear' | 'fills' | 'foods' | 'shops' | 'foodLib' | 'combinedFillIds'
->;
-
 function planDocOf(s: PlanDoc): PlanDoc {
-  const { route, mix, gear, fills, foods, shops, foodLib, combinedFillIds } = s;
-  return { route, mix, gear, fills, foods, shops, foodLib, combinedFillIds };
+  const doc = {} as Record<PlanDocKey, unknown>;
+  for (const k of PLAN_DOC_KEYS) doc[k] = s[k];
+  return doc as PlanDoc;
 }
-
-/** The rider's plan from before the tour loaded its sample — see `loadTourDemoData`. */
-let preTourDoc: PlanDoc | null = null;
 
 /** Closing the setup for the first time is what starts the hints; reopening it later does not. */
 function finishSetup(ui: UiState): UiState {
@@ -450,6 +458,7 @@ export const useAppStore = create<AppState>()(
       shops: defaultShops,
       foodLib: DEFAULT_FOOD_LIB,
       combinedFillIds: defaultCombinedFillIds,
+      preTourDoc: null,
       ui: {
         lang: defaultLang(),
         viewMode: 'auto',
@@ -469,7 +478,6 @@ export const useAppStore = create<AppState>()(
         onboardingVersion: 0,
         onboardingHint: null,
         setupOpen: false,
-        sampleActive: false,
         scrubX: null,
         gpxPeek: false,
         mixSheet: false,
@@ -591,9 +599,9 @@ export const useAppStore = create<AppState>()(
               shopSheet: null,
               chartHelp: false,
               tourStep: null,
-              sampleActive: false,
               tourDemoFid: null,
             },
+            preTourDoc: null,
           };
         }),
 
@@ -629,11 +637,10 @@ export const useAppStore = create<AppState>()(
       // Replaces the whole plan document with TOUR_DEMO, ids remapped onto this store's counters.
       // The rider's own document is kept aside the first time, so "Restore my plan" can bring it
       // back however much the sample was played with — and a replay while the sample is still up
-      // keeps that first copy rather than saving the sample over it. In memory only (Q11).
+      // keeps that first copy rather than saving the sample over it.
       loadTourDemoData: () =>
         set((s) => {
           if (s.ui.tourDemoFid !== null) return {};
-          if (!s.ui.sampleActive) preTourDoc = planDocOf(s);
           const gids = new Map(TOUR_DEMO.gear.map((v, i) => [v.gid, 'g' + (s.nextGid + i)]));
           const gidOf = (gid: string) => gids.get(gid) ?? gid;
           const fills = TOUR_DEMO.fills.map((f) => ({
@@ -660,6 +667,7 @@ export const useAppStore = create<AppState>()(
             foods,
             shops,
             combinedFillIds: [],
+            preTourDoc: s.preTourDoc ?? planDocOf(s),
             nextGid: s.nextGid + TOUR_DEMO.gear.length,
             nextFid: s.nextFid + fills.length,
             nextFoodId: s.nextFoodId + foods.length,
@@ -667,7 +675,6 @@ export const useAppStore = create<AppState>()(
             ui: {
               ...s.ui,
               tourDemoFid: fills[TOUR_DEMO.targetFill].fid,
-              sampleActive: true,
               selKey: null,
               hoverKey: null,
               dragKey: null,
@@ -676,28 +683,24 @@ export const useAppStore = create<AppState>()(
         }),
       restorePreTourPlan: () =>
         set((s) => {
-          const doc = s.ui.sampleActive ? preTourDoc : null;
-          preTourDoc = null;
+          const doc = s.preTourDoc;
           const ui = {
             ...s.ui,
-            sampleActive: false,
             tourDemoFid: null,
             selKey: null,
             hoverKey: null,
             dragKey: null,
           };
-          return doc ? { ...doc, ui } : { ui };
+          return doc ? { ...doc, preTourDoc: null, ui } : { ui };
         }),
-      dismissSample: () => {
-        preTourDoc = null;
-        set((s) => ({ ui: { ...s.ui, sampleActive: false, tourDemoFid: null } }));
-      },
+      dismissSample: () => set((s) => ({ preTourDoc: null, ui: { ...s.ui, tourDemoFid: null } })),
 
       openSetup: () => set((s) => ({ ui: { ...s.ui, setupOpen: true, tourStep: null } })),
       closeSetup: () => set((s) => ({ ui: finishSetup(s.ui) })),
       // One write for the whole dialog, so it is one undo step. Vessels and products left out
       // are removed the way removeVessel/removeFoodLibEntry remove them: a vessel takes its
-      // fills along, a product leaves what is already on the chart.
+      // fills along, a product leaves what is already on the chart. Saving it also keeps the
+      // tour's sample as the plan: "Restore my plan" would otherwise undo this setup too.
       applySetup: (setup) =>
         set((s) => {
           let nextGid = s.nextGid;
@@ -719,6 +722,7 @@ export const useAppStore = create<AppState>()(
             foodLib,
             nextGid,
             nextFoodKey,
+            preTourDoc: null,
             ui: finishSetup(s.ui),
           };
         }),
@@ -1018,12 +1022,12 @@ export const useAppStore = create<AppState>()(
           foods: [],
           shops: [],
           combinedFillIds: [],
+          preTourDoc: null,
           ui: {
             ...s.ui,
             selKey: null,
             hoverKey: null,
             dragKey: null,
-            sampleActive: false,
             tourDemoFid: null,
           },
         })),
@@ -1140,13 +1144,12 @@ export const useAppStore = create<AppState>()(
             // sheet open stores `mixSheet: true`, and the next visit opens on that sheet
             // instead of the plan.
             //
-            // The tour is one of them now that it only ever runs on request. Its sample plan
-            // stays, but the copy of the rider's own plan it would restore lived in memory and is
-            // gone, so there is nothing left to offer "Restore my plan" for either. The setup
-            // needs no saving: App opens it again for as long as it has not been finished.
+            // The tour is one of them now that it only ever runs on request; its sample plan and
+            // the rider's own plan (preTourDoc) are document state and survive, so the sample bar
+            // still offers the restore. The setup needs no saving: App opens it again for as
+            // long as it has not been finished.
             tourStep: currentState.ui.tourStep,
             tourDemoFid: currentState.ui.tourDemoFid,
-            sampleActive: currentState.ui.sampleActive,
             setupOpen: currentState.ui.setupOpen,
             mixSheet: currentState.ui.mixSheet,
             routeSheet: currentState.ui.routeSheet,
@@ -1177,18 +1180,4 @@ export function resolveTheme(themeMode: ThemeMode, autoTheme: 'light' | 'dark'):
 
 export function shouldConfirmViewModeChange(next: ViewMode, current: ViewMode): boolean {
   return next !== 'auto' && next !== current;
-}
-
-export function hasPlanData(state: Pick<AppState, 'route' | 'fills' | 'foods' | 'shops'>): boolean {
-  const r = state.route;
-  return (
-    r.distance > 0 ||
-    r.speed > 0 ||
-    r.hours > 0 ||
-    r.minutes > 0 ||
-    r.gpxTrack !== null ||
-    state.fills.length > 0 ||
-    state.foods.length > 0 ||
-    state.shops.length > 0
-  );
 }

@@ -38,8 +38,10 @@ function sameRect(a: Rect | null, b: Rect | null): boolean {
  */
 export function OnboardingHints() {
   const hint = useAppStore((s) => s.ui.onboardingHint);
-  const routeReady = useAppStore((s) => autoplanGate(s.route) !== 'noDuration');
-  const hasPlan = useAppStore((s) => s.fills.length + s.foods.length > 0);
+  const gate = useAppStore((s) => autoplanGate(s.route));
+  // Under an hour autoplan returns nothing, so "Generate your first plan" would wait forever:
+  // a short ride counts as planned and goes straight to the chart hint.
+  const hasPlan = useAppStore((s) => s.fills.length + s.foods.length > 0) || gate === 'shortRide';
   const covered = useAppStore(
     (s) =>
       s.ui.setupOpen ||
@@ -48,7 +50,10 @@ export function OnboardingHints() {
       s.ui.routeSheet ||
       s.ui.mixSheet ||
       s.ui.shopSheet !== null ||
-      s.ui.chartHelp,
+      s.ui.chartHelp ||
+      // The tour's sample is not the rider's plan: it must neither advance the hints nor be
+      // pointed at by them.
+      s.preTourDoc !== null,
   );
   const desktop = useAppStore((s) => isDesktopView(s.ui.viewMode, s.ui.autoView));
   const lang = useAppStore((s) => s.ui.lang);
@@ -56,27 +61,34 @@ export function OnboardingHints() {
   const [rect, setRect] = useState<Rect | null>(null);
 
   useEffect(() => {
-    const next = nextHint(hint, { routeReady, hasPlan });
+    if (covered) return;
+    const next = nextHint(hint, { routeReady: gate !== 'noDuration', hasPlan });
     if (next !== hint) setOnboardingHint(next);
-  }, [hint, routeReady, hasPlan, setOnboardingHint]);
+  }, [covered, hint, gate, hasPlan, setOnboardingHint]);
 
   const visible = hint !== null && !covered;
 
-  // Follows the anchor every frame, like the tour's spotlight: the mobile header scrolls away and
-  // the desktop layout reflows as the plan fills in.
+  // Follows the anchor as the page scrolls or reflows (the mobile header scrolls away, the desktop
+  // layout moves as the plan fills in). Events plus a slow poll, not a per-frame loop: the chart
+  // hint can stay up for a whole session.
   useEffect(() => {
     if (!visible) return;
-    let raf = 0;
-    const tick = () => {
+    const measure = () => {
       const el = document.querySelector(ANCHOR[hint]);
       const r = el?.getBoundingClientRect();
       const next =
         r && r.width > 0 ? { top: r.top, left: r.left, width: r.width, height: r.height } : null;
       setRect((prev) => (sameRect(prev, next) ? prev : next));
-      raf = requestAnimationFrame(tick);
     };
-    tick();
-    return () => cancelAnimationFrame(raf);
+    measure();
+    const poll = setInterval(measure, 300);
+    window.addEventListener('scroll', measure, true);
+    window.addEventListener('resize', measure);
+    return () => {
+      clearInterval(poll);
+      window.removeEventListener('scroll', measure, true);
+      window.removeEventListener('resize', measure);
+    };
   }, [visible, hint]);
 
   if (!visible || !rect) return null;

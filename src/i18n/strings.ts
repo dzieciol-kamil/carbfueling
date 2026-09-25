@@ -758,7 +758,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Oprowadź mnie',
     tourConfirmTitle: 'Pokazać, jak to działa?',
     tourConfirmBody:
-      'Samouczek podmieni Twój plan na przykładowy. Na końcu „Przywróć mój plan” odda Ci Twój.',
+      'Samouczek podmieni Twój plan i sprzęt na przykładowe. Na końcu „Przywróć mój plan” odda Ci Twoje.',
     tourConfirmCancel: 'Anuluj',
     tourConfirmStart: 'Uruchom tour',
     tourRestore: 'Przywróć mój plan',
@@ -1336,7 +1336,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Show me around',
     tourConfirmTitle: 'Show you around?',
     tourConfirmBody:
-      'The tour swaps your plan for a sample. ‘Restore my plan’ at the end brings yours back.',
+      'The tour swaps your plan and kit for a sample. ‘Restore my plan’ at the end brings yours back.',
     tourConfirmCancel: 'Cancel',
     tourConfirmStart: 'Start tour',
     tourRestore: 'Restore my plan',
@@ -1911,7 +1911,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Zeig mir alles',
     tourConfirmTitle: 'Kurze Tour starten?',
     tourConfirmBody:
-      'Die Tour ersetzt deinen Plan durch ein Beispiel. Mit „Meinen Plan zurückholen“ am Ende bekommst du ihn zurück.',
+      'Die Tour ersetzt deinen Plan und deine Ausrüstung durch ein Beispiel. Mit „Meinen Plan zurückholen“ am Ende bekommst du alles zurück.',
     tourConfirmCancel: 'Abbrechen',
     tourConfirmStart: 'Tour starten',
     tourRestore: 'Meinen Plan zurückholen',
@@ -2492,7 +2492,7 @@ export const STR: Record<Lang, StringTable> = {
     tourReplayButton: 'Fammi fare un giro',
     tourConfirmTitle: 'Fare un giro guidato?',
     tourConfirmBody:
-      'Il tour sostituisce il tuo piano con uno di esempio. ‘Ripristina il mio piano’ alla fine te lo restituisce.',
+      'Il tour sostituisce piano e attrezzatura con un esempio. ‘Ripristina il mio piano’ alla fine te li restituisce.',
     tourConfirmCancel: 'Annulla',
     tourConfirmStart: 'Avvia il tour',
     tourRestore: 'Ripristina il mio piano',

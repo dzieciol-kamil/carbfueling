@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { t } from '../../i18n/strings';
-import { hasPlanData, useAppStore } from '../../store/appStore';
+import { useAppStore } from '../../store/appStore';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { tourGhostBtn } from '../tour/tourStyles';
 import { ChartHelpDiagram } from './ChartHelpDiagram';
@@ -22,11 +22,8 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
 
   function openFullTour() {
     closeChartHelp();
-    if (hasPlanData(useAppStore.getState())) {
-      setConfirmOpen(true);
-    } else {
-      startTour();
-    }
+    // Always asked: the sample replaces the rider's kit and weight too, not just a plan.
+    setConfirmOpen(true);
   }
 
   // Header padding kept in sync with panelStyle's own padding-top/sides: the sticky

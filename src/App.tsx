@@ -42,9 +42,15 @@ function App() {
   // First run opens "Set me up", not the tour (plan 2.1). Someone arriving on a share link is
   // asked about that plan instead; the setup waits for their next visit.
   useEffect(() => {
-    if (!shouldOpenSetup(onboardingVersion) || hasPendingSharedPlan()) return;
-    const id = setTimeout(openSetup, 400);
-    return () => clearTimeout(id);
+    if (!shouldOpenSetup(onboardingVersion)) return;
+    let cancelled = false;
+    const id = setTimeout(async () => {
+      if (!(await hasPendingSharedPlan()) && !cancelled) openSetup();
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
   }, [onboardingVersion, openSetup]);
 
   useEffect(() => {

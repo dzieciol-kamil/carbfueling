@@ -2,12 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { absCap, WEIGHT_MAX_KG, WEIGHT_MIN_KG } from '../../domain/fuel';
 import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { LANGS, t } from '../../i18n/strings';
-import {
-  hasPlanData,
-  shouldConfirmViewModeChange,
-  useAppStore,
-  type ViewMode,
-} from '../../store/appStore';
+import { shouldConfirmViewModeChange, useAppStore, type ViewMode } from '../../store/appStore';
 import { CoffeeIcon, GitHubIcon, HeartIcon } from '../ui/BrandIcons';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -63,11 +58,8 @@ export function MobileProfile() {
   } = usePlanFileTransfer();
 
   const handleReplay = () => {
-    if (hasPlanData(useAppStore.getState())) {
-      setConfirmOpen(true);
-    } else {
-      startTour();
-    }
+    // Always asked: the sample replaces the rider's kit and weight too, not just a plan.
+    setConfirmOpen(true);
   };
 
   const handleViewModePick = (v: ViewMode) => {
