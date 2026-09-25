@@ -85,13 +85,18 @@ const primaryBtnStyle: CSSProperties = {
   fontWeight: 700,
 };
 
+// A real checkbox inside each chip, like the bottle rows above: a filled vs. an outlined pill
+// alone did not read as ticked vs. not, least of all in dark mode.
 function chipStyle(on: boolean): CSSProperties {
   return {
-    border: '1px solid ' + (on ? 'var(--selected-bg)' : 'var(--chip-border)'),
-    background: on ? 'var(--selected-bg)' : 'var(--surface)',
-    color: on ? 'var(--on-brand)' : 'var(--ink-soft)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 7,
+    border: '1px solid ' + (on ? 'var(--ink)' : 'var(--chip-border)'),
+    background: 'var(--surface)',
+    color: on ? 'var(--ink)' : 'var(--muted)',
     borderRadius: 999,
-    padding: '8px 13px',
+    padding: '7px 13px 7px 10px',
     fontFamily: 'Archivo, sans-serif',
     fontSize: 12.5,
     fontWeight: 600,
@@ -293,17 +298,19 @@ function SetMeUpForm() {
       >
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {food.map((row, i) => (
-            <button
-              key={row.item.key}
-              type="button"
-              aria-pressed={row.on}
-              onClick={() =>
-                setFood((rows) => rows.map((r, j) => (j === i ? { ...r, on: !r.on } : r)))
-              }
-              style={chipStyle(row.on)}
-            >
+            <label key={row.item.key} style={chipStyle(row.on)}>
+              <input
+                type="checkbox"
+                checked={row.on}
+                onChange={(e) =>
+                  setFood((rows) =>
+                    rows.map((r, j) => (j === i ? { ...r, on: e.target.checked } : r)),
+                  )
+                }
+                style={{ width: 16, height: 16, margin: 0 }}
+              />
               {row.item[lang] || row.item.en}
-            </button>
+            </label>
           ))}
         </div>
         <form
