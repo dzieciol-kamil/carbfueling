@@ -131,7 +131,8 @@ function CountdownBar({ durationMs, onDone }: { durationMs: number; onDone: () =
       aria-hidden="true"
       style={{
         position: 'absolute',
-        top: 0,
+        // One pixel in from the edge, so it doesn't melt into the page behind the note.
+        top: 1,
         left: 0,
         right: 0,
         height: 3,
