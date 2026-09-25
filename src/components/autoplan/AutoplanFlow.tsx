@@ -348,7 +348,7 @@ export function AutoplanFlow({
           style={gate === 'noDuration' ? { ...baseStyle, ...disabledStyle } : baseStyle}
         >
           {variant === 'desktop' && <WandIcon />}
-          <span>{strings.autoplanButton}</span>
+          <span>{strings.autoplanButton} (beta)</span>
         </button>
       )}
 

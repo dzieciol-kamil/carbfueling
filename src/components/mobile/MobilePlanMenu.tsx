@@ -52,7 +52,7 @@ export function MobilePlanMenu() {
             items={[
               {
                 key: 'autoplan',
-                label: strings.autoplanButton,
+                label: `${strings.autoplanButton} (beta)`,
                 icon: <WandIcon />,
                 accent: true,
                 disabled,
