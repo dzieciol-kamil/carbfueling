@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { WEIGHT_MAX_KG } from './fuel';
 import {
   buildSharedPlan,
   decodeSharedPlan,
@@ -422,6 +423,13 @@ describe('sharedPlanToSettingsData', () => {
     recipient.route.weight = 64;
     const merged = sharedPlanToSettingsData(buildSharedPlan(baseData(), true), recipient);
     expect(merged.route.weight).toBe(78);
+  });
+
+  test('clamps a shared weight to the sliders range', () => {
+    const sender = baseData();
+    sender.route.weight = 200;
+    const merged = sharedPlanToSettingsData(buildSharedPlan(sender, true), baseData());
+    expect(merged.route.weight).toBe(WEIGHT_MAX_KG);
   });
 
   test('clears the recipient gpx track rather than keeping a stale one', () => {
