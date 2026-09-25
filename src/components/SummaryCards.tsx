@@ -154,6 +154,9 @@ export function SummaryCards() {
             {/* The colour is a verdict on g/h against the absorption limit, not on the
                 percentage beside it — say so when it isn't the coverage being graded. */}
             {carbStatus === 'over' && strings.carbOverCapLabel + ' · '}
+            {carbStatus === 'unneeded' &&
+              totalHours(route) > 0 &&
+              strings.carbUnneededLabel + ' · '}
             {summary.coverage}%
           </span>
         </div>

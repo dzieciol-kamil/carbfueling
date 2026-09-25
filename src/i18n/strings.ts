@@ -64,6 +64,7 @@ export interface StringTable {
   axisTime: string;
   gutOver: string;
   carbOverCapLabel: string;
+  carbUnneededLabel: string;
   gutAt: string;
   dry: string;
   dryAt: string;
@@ -278,6 +279,7 @@ export interface StringTable {
   hintRouteMobile: string;
   hintAutoplan: string;
   hintChart: string;
+  hintChartMobile: string;
   hintClose: string;
   tabMix: string;
   editRoutePrefix: string;
@@ -537,6 +539,7 @@ export const STR: Record<Lang, StringTable> = {
     axisTime: 'godziny',
     gutOver: 'Za dużo naraz — ',
     carbOverCapLabel: 'ponad limit wchłaniania',
+    carbUnneededLabel: 'wysiłek krótszy niż 1 h',
     gutAt: ' g zalega w żołądku ok. ',
     dry: 'Dziura w tankowaniu: ',
     dryAt: ' bez cukru, ok. ',
@@ -787,11 +790,15 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Pomiń',
     setupSave: 'Zapisz',
     setupMenuItem: 'Ty i Twój sprzęt',
-    hintRoute: 'Gotowe. Wpisz tu swoją trasę: dystans i tempo albo plik GPX.',
-    hintRouteMobile: 'Gotowe. Stuknij tutaj i wpisz trasę: dystans i tempo albo plik GPX.',
+    hintRoute:
+      'Teraz wpisz tu swoją trasę: dystans i prędkość dla jazdy rowerem albo dystans i tempo dla biegania.',
+    hintRouteMobile:
+      'Teraz stuknij tutaj i wpisz trasę: dystans i prędkość dla jazdy rowerem albo dystans i tempo dla biegania.',
     hintAutoplan: 'Wygeneruj swój pierwszy plan.',
     hintChart:
-      'Linia ciągła: co wchłaniasz. Przerywana: ile potrzebujesz. Zielone: pokryte. Resztę wyjaśnia „?”.',
+      'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Na wykresie pod nim przerywana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nKliknij „?”, żeby dowiedzieć się więcej.',
+    hintChartMobile:
+      'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Na wykresie pod nim przerywana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nStuknij „?”, żeby dowiedzieć się więcej.',
     hintClose: 'Zamknij podpowiedzi',
     tabMix: 'Mieszanka',
     editRoutePrefix: 'Edytuj trasę:',
@@ -1116,6 +1123,7 @@ export const STR: Record<Lang, StringTable> = {
     axisTime: 'hours',
     gutOver: 'Too much at once — ',
     carbOverCapLabel: 'above absorption limit',
+    carbUnneededLabel: 'effort under 1 h',
     gutAt: ' g sitting in the stomach around ',
     dry: 'Fuelling gap: ',
     dryAt: ' with no carbs, around ',
@@ -1353,10 +1361,10 @@ export const STR: Record<Lang, StringTable> = {
     setupGearWhere: 'Change it later in Gear.',
     setupAddBottle: 'Bottle',
     setupAddFlask: 'Flask',
-    setupAddBladder: 'Bladder',
+    setupAddBladder: 'Hydration pack',
     setupBottleName: 'Bottle',
     setupFlaskName: 'Flask',
-    setupBladderName: 'Bladder',
+    setupBladderName: 'Hydration pack',
     setupFoodTitle: 'What you usually take (optional)',
     setupFoodHint: 'Tick the products you eat on the move.',
     setupFoodWhere: 'Change it later in Products.',
@@ -1365,11 +1373,15 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Skip',
     setupSave: 'Save',
     setupMenuItem: 'You & your kit',
-    hintRoute: 'You’re set. Enter your route here: distance and pace, or a GPX file.',
-    hintRouteMobile: 'You’re set. Tap here to enter your route: distance and pace, or a GPX file.',
+    hintRoute:
+      'Now enter your route here: distance and speed for cycling, or distance and pace for running.',
+    hintRouteMobile:
+      'Now tap here to enter your route: distance and speed for cycling, or distance and pace for running.',
     hintAutoplan: 'Generate your first plan.',
     hintChart:
-      'Solid line: what you absorb. Dashed: what you need. Green: covered. ‘?’ explains the rest.',
+      'The top strip is your stomach: what it’s digesting right now. On the chart below it, the dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nClick ‘?’ to learn more.',
+    hintChartMobile:
+      'The top strip is your stomach: what it’s digesting right now. On the chart below it, the dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nTap ‘?’ to learn more.',
     hintClose: 'Close tips',
     tabMix: 'Mix',
     editRoutePrefix: 'Edit route:',
@@ -1690,6 +1702,7 @@ export const STR: Record<Lang, StringTable> = {
     axisTime: 'Stunden',
     gutOver: 'Zu viel auf einmal — ',
     carbOverCapLabel: 'über dem Aufnahmelimit',
+    carbUnneededLabel: 'Belastung unter 1 h',
     gutAt: ' g liegen im Magen gegen ',
     dry: 'Versorgungslücke: ',
     dryAt: ' ohne Kohlenhydrate, gegen ',
@@ -1940,12 +1953,15 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Überspringen',
     setupSave: 'Speichern',
     setupMenuItem: 'Du & deine Ausrüstung',
-    hintRoute: 'Fertig. Gib hier deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
+    hintRoute:
+      'Gib jetzt hier deine Strecke ein: Distanz und Geschwindigkeit fürs Radfahren oder Distanz und Pace fürs Laufen.',
     hintRouteMobile:
-      'Fertig. Tippe hier und gib deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
+      'Tippe jetzt hier und gib deine Strecke ein: Distanz und Geschwindigkeit fürs Radfahren oder Distanz und Pace fürs Laufen.',
     hintAutoplan: 'Erstelle deinen ersten Plan.',
     hintChart:
-      'Durchgezogen: was du aufnimmst. Gestrichelt: was du brauchst. Grün: gedeckt. „?“ erklärt den Rest.',
+      'Der obere Streifen ist dein Magen: was er gerade verdaut. Im Diagramm darunter zeigt die gestrichelte Linie, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nKlick auf „?“ für mehr.',
+    hintChartMobile:
+      'Der obere Streifen ist dein Magen: was er gerade verdaut. Im Diagramm darunter zeigt die gestrichelte Linie, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nTipp auf „?“ für mehr.',
     hintClose: 'Tipps schließen',
     tabMix: 'Mix',
     editRoutePrefix: 'Strecke bearbeiten:',
@@ -2271,6 +2287,7 @@ export const STR: Record<Lang, StringTable> = {
     axisTime: 'ore',
     gutOver: 'Troppo in una volta — ',
     carbOverCapLabel: 'oltre il limite di assorbimento',
+    carbUnneededLabel: 'sforzo sotto 1 h',
     gutAt: ' g fermi nello stomaco verso ',
     dry: 'Buco nel rifornimento: ',
     dryAt: ' senza carboidrati, verso ',
@@ -2521,11 +2538,15 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Salta',
     setupSave: 'Salva',
     setupMenuItem: 'Tu e la tua attrezzatura',
-    hintRoute: 'Fatto. Inserisci qui il percorso: distanza e ritmo, o un file GPX.',
-    hintRouteMobile: 'Fatto. Tocca qui e inserisci il percorso: distanza e ritmo, o un file GPX.',
+    hintRoute:
+      'Ora inserisci qui il percorso: distanza e velocità per la bici, o distanza e ritmo per la corsa.',
+    hintRouteMobile:
+      'Ora tocca qui e inserisci il percorso: distanza e velocità per la bici, o distanza e ritmo per la corsa.',
     hintAutoplan: 'Genera il tuo primo piano.',
     hintChart:
-      'Continua: ciò che assorbi. Tratteggiata: ciò che ti serve. Verde: coperto. ‘?’ spiega il resto.',
+      'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. Nel grafico sotto, la linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nClicca ‘?’ per saperne di più.',
+    hintChartMobile:
+      'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. Nel grafico sotto, la linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nTocca ‘?’ per saperne di più.',
     hintClose: 'Chiudi i suggerimenti',
     tabMix: 'Mix',
     editRoutePrefix: 'Modifica percorso:',

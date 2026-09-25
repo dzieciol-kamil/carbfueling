@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { t, type StringTable } from '../../i18n/strings';
 import { isDesktopView, useAppStore } from '../../store/appStore';
 import { autoplanGate } from '../autoplan/AutoplanFlow';
@@ -15,7 +15,8 @@ const ANCHOR: Record<OnboardingHint, string> = {
 
 function hintText(hint: OnboardingHint, strings: StringTable, desktop: boolean): string {
   if (hint === 1) return desktop ? strings.hintRoute : strings.hintRouteMobile;
-  return hint === 2 ? strings.hintAutoplan : strings.hintChart;
+  if (hint === 2) return strings.hintAutoplan;
+  return desktop ? strings.hintChart : strings.hintChartMobile;
 }
 
 function sameRect(a: Rect | null, b: Rect | null): boolean {
@@ -68,6 +69,23 @@ export function OnboardingHints() {
 
   const visible = hint !== null && !covered;
 
+  // The route hint asks for a distance, so put the cursor there — once, as it first appears
+  // (after the setup closes or on a reload that resumes it). Desktop only: on a phone the anchor
+  // is the "Edit route" button, and popping the keyboard unasked would be worse than a tap.
+  // Only while the hint really stays on 1 (no route yet): a returning rider who already has one
+  // moves straight past it and must not find the cursor in their route form. Route mode only —
+  // in time mode the first field is hours, not the distance the hint talks about.
+  const focused = useRef(false);
+  const routeMode = useAppStore((s) => s.route.mode === 'route');
+  useEffect(() => {
+    if (!visible || hint !== 1 || gate !== 'noDuration' || !desktop || !routeMode) return;
+    if (focused.current) return;
+    const input = document.querySelector<HTMLInputElement>(`${ANCHOR[1]} input`);
+    if (!input) return;
+    focused.current = true;
+    input.focus();
+  }, [visible, hint, gate, desktop, routeMode]);
+
   // Follows the anchor as the page scrolls or reflows (the mobile header scrolls away, the desktop
   // layout moves as the plan fills in). Events plus a slow poll, not a per-frame loop: the chart
   // hint can stay up for a whole session.
@@ -75,7 +93,10 @@ export function OnboardingHints() {
     if (!visible) return;
     const measure = () => {
       const el = document.querySelector(ANCHOR[hint]);
-      const r = el?.getBoundingClientRect();
+      // Step aside while the anchor's own menu is open (the phone's Plan menu): the bubble
+      // would sit right on top of the list it is asking the rider to use.
+      const menuOpen = !!el?.querySelector('[aria-expanded="true"]');
+      const r = menuOpen ? undefined : el?.getBoundingClientRect();
       const next =
         r && r.width > 0 ? { top: r.top, left: r.left, width: r.width, height: r.height } : null;
       setRect((prev) => (sameRect(prev, next) ? prev : next));
@@ -84,17 +105,26 @@ export function OnboardingHints() {
     const poll = setInterval(measure, 300);
     window.addEventListener('scroll', measure, true);
     window.addEventListener('resize', measure);
+    // After the click has been handled, so an opened menu is already marked expanded.
+    let clickTimer: ReturnType<typeof setTimeout> | undefined;
+    const onClick = () => {
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(measure);
+    };
+    window.addEventListener('click', onClick, true);
     return () => {
+      clearTimeout(clickTimer);
       clearInterval(poll);
       window.removeEventListener('scroll', measure, true);
       window.removeEventListener('resize', measure);
+      window.removeEventListener('click', onClick, true);
     };
   }, [visible, hint]);
 
   if (!visible || !rect) return null;
 
   const strings = t(lang);
-  const { width, style } = bubblePosition(rect, 280, 120);
+  const { width, style } = bubblePosition(rect, hint === 3 ? 380 : 280, hint === 3 ? 220 : 120);
   // The bubble has to point at something, or it reads as a stray toast: a caret on the edge
   // facing the anchor, aimed near its left end (a wide anchor such as the chart has no useful
   // centre), and a ring around the anchor itself.
@@ -155,7 +185,9 @@ export function OnboardingHints() {
             borderRadius: 2,
           }}
         />
-        <span style={{ flex: 1, position: 'relative' }}>{hintText(hint, strings, desktop)}</span>
+        <span style={{ flex: 1, position: 'relative', whiteSpace: 'pre-line' }}>
+          {hintText(hint, strings, desktop)}
+        </span>
         <button
           type="button"
           onClick={() => setOnboardingHint(null)}

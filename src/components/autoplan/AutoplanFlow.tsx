@@ -86,7 +86,66 @@ function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
     gap: 12,
     fontSize: 12.5,
     boxShadow: '0 14px 34px rgba(0,0,0,0.28)',
+    overflow: 'hidden',
   };
+}
+
+/** How long the applied note stays up on its own. */
+const APPLIED_NOTE_MS = 8000;
+
+/**
+ * A thin light strip along the note's top edge that runs out right to left, then closes it: it
+ * draws the eye to a note at the bottom of the screen that was easy to miss, and saves the click
+ * on OK. `paused` holds it while the note is hovered or focused, so nobody is cut off mid-read.
+ */
+function CountdownBar({
+  durationMs,
+  paused,
+  onDone,
+}: {
+  durationMs: number;
+  paused: boolean;
+  onDone: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const anim = useRef<Animation | null>(null);
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const a = el.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], {
+      duration: durationMs,
+      easing: 'linear',
+      fill: 'forwards',
+    });
+    anim.current = a;
+    a.finished.then(
+      () => done.current(),
+      () => {},
+    );
+    return () => a.cancel();
+  }, [durationMs]);
+  useEffect(() => {
+    if (paused) anim.current?.pause();
+    else anim.current?.play();
+  }, [paused]);
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        // One pixel in from the edge, so it doesn't melt into the page behind the note.
+        top: 1,
+        left: 0,
+        right: 0,
+        height: 3,
+        background: 'rgba(255,255,255,0.85)',
+        transformOrigin: 'left',
+      }}
+    />
+  );
 }
 
 /**
@@ -156,6 +215,11 @@ export function AutoplanFlow({
   const setTab = useAppStore((s) => s.setTab);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
+  // Hover or keyboard focus on the applied note holds its countdown.
+  const [noteHeld, setNoteHeld] = useState(false);
+  useEffect(() => {
+    if (phase !== 'appliedNote') setNoteHeld(false);
+  }, [phase]);
   const gate = autoplanGate(route);
 
   // One run at a time. `runId` is bumped whenever a run ends (done, limit, error, Cancel,
@@ -313,7 +377,19 @@ export function AutoplanFlow({
       )}
 
       {phase === 'appliedNote' && (
-        <div style={noteStyle(variant)}>
+        <div
+          role="status"
+          style={noteStyle(variant)}
+          onPointerEnter={() => setNoteHeld(true)}
+          onPointerLeave={() => setNoteHeld(false)}
+          onFocus={() => setNoteHeld(true)}
+          onBlur={() => setNoteHeld(false)}
+        >
+          <CountdownBar
+            durationMs={APPLIED_NOTE_MS}
+            paused={noteHeld}
+            onDone={() => setPhase('idle')}
+          />
           <span>
             {gate === 'shortRide' ? strings.autoplanShortRideNote : strings.autoplanAppliedNote}
           </span>
