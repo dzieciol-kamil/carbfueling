@@ -43,6 +43,7 @@ moved, trust the filesystem over this file and update it.
   - `sharePlan.ts` — encode/decode a plan into the `?p=` share link.
   - `shareSummary.ts` — the figures the share blurb/badge/chart PNG all quote.
   - `shareQr.ts` — QR module matrix for the share panel's image formats.
+  - `tourDemo.ts` — the tour's sample plan (90 km, green on both badges; its test keeps it so).
   - `types.ts` — shared domain types.
   - `__fixtures__/` — sample route data (e.g. `kielceMarkiEle.ts`) used by domain tests;
     `pacing194.ts` (route/mix/gear/foodLib/selection for the rider's 194km ride, shared by
@@ -66,7 +67,12 @@ moved, trust the filesystem over this file and update it.
   - `lanes/` — fill/food lane bars and drag handlers (`FillBar.tsx`, `FoodBar.tsx`, `dragHandlers.ts`).
   - `timeline/` — `TimelineSection.tsx`.
   - `recipes/` — `RecipesSection.tsx`.
-  - `tour/` — onboarding tour overlay (`TourOverlay.tsx`, `tourSteps.ts`).
+  - `tour/` — the on-demand tour (`TourOverlay.tsx`, `tourSteps.ts`), `SampleBar.tsx` (the
+    "sample plan / Restore my plan" strip while the tour's sample stands in for the rider's plan),
+    `placement.ts` (card placement shared with the onboarding hints).
+  - `onboarding/` — first run: `SetMeUpDialog.tsx` (weight, gear, products; opens by itself at
+    first run), `OnboardingHints.tsx` (the three one-off hints that follow it), `onboardingFlow.ts`
+    (`ONBOARDING_VERSION`, hint sequencing).
   - `print/` — printable plan sheet (`PrintSheet.tsx`, `PrintIcon.tsx`).
   - `share/` — share panel and the canvas renderer behind its PNG formats
     (`SharePanel.tsx`, `shareCanvas.ts`, `ShareIcon.tsx`).

@@ -41,6 +41,11 @@ function readSharedPlanFromUrl(): Promise<SharedPlan | null> | null {
   return decodeSharedPlan(param);
 }
 
+/** Whether a share link's plan is still waiting for an answer — the first-run setup holds off. */
+export function hasPendingSharedPlan(): boolean {
+  return pendingSharedPlan !== null;
+}
+
 /** Drops the cached plan once the user has answered, so a later remount in the other
  *  branch does not re-ask. Idempotent — a second call is a no-op. */
 function consumePendingSharedPlan(): void {

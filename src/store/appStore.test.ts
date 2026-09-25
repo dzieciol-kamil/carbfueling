@@ -11,6 +11,8 @@ import {
 import { WEIGHT_MAX_KG, WEIGHT_MIN_KG } from '../domain/fuel';
 import { DEFAULT_AUTOPLAN_OPTIONS } from '../components/autoplan/autoplanOptions';
 import type { AutoplanResult } from '../domain/autoplan/types';
+import { TOUR_DEMO } from '../domain/tourDemo';
+import { ONBOARDING_VERSION } from '../components/onboarding/onboardingFlow';
 import type { Fill, RouteInput } from '../domain/types';
 
 function route(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -208,11 +210,12 @@ describe('rescaling the plan when the distance domain moves', () => {
 });
 
 describe('tour lifecycle', () => {
-  test('startTour opens at step 0 and marks tourSeen', () => {
+  test('startTour opens at step 0 on the plan tab', () => {
+    useAppStore.setState((s) => ({ ui: { ...s.ui, tab: 'gear' } }));
     useAppStore.getState().startTour();
     const ui = useAppStore.getState().ui;
     expect(ui.tourStep).toBe(0);
-    expect(ui.tourSeen).toBe(true);
+    expect(ui.tab).toBe('plan');
   });
 
   test('closeTour clears the running step', () => {
@@ -235,38 +238,173 @@ describe('tour lifecycle', () => {
 });
 
 describe('loadTourDemoData', () => {
-  test('sets a demo route and adds one fill on the first vessel', () => {
+  test('loads the sample plan and points the tour at its first iso fill', () => {
     useAppStore.getState().loadTourDemoData();
     const s = useAppStore.getState();
-    expect(s.route.distance).toBe(90);
-    expect(s.route.speed).toBe(28);
-    expect(s.fills).toHaveLength(1);
-    expect(s.fills[0].gid).toBe('g1');
-    expect(s.ui.tourDemoFid).toBe(s.fills[0].fid);
+    expect(s.route.distance).toBe(TOUR_DEMO.route.distance);
+    expect(s.fills).toHaveLength(TOUR_DEMO.fills.length);
+    expect(s.foods).toHaveLength(TOUR_DEMO.foods.length);
+    expect(s.shops).toHaveLength(TOUR_DEMO.shops.length);
+    expect(s.gear).toHaveLength(TOUR_DEMO.gear.length);
+    const target = s.fills.find((f) => f.fid === s.ui.tourDemoFid);
+    expect(target?.content).toBe('izo');
+    expect(s.ui.sampleActive).toBe(true);
+  });
+
+  test('every id it hands out is new, and the fills name its own vessels', () => {
+    const before = useAppStore.getState();
+    useAppStore.getState().loadTourDemoData();
+    const s = useAppStore.getState();
+    const gids = new Set(s.gear.map((v) => v.gid));
+    expect(s.fills.every((f) => gids.has(f.gid))).toBe(true);
+    expect(before.gear.some((v) => gids.has(v.gid))).toBe(false);
+    expect(Math.min(...s.fills.map((f) => f.fid))).toBe(before.nextFid);
+    expect(s.nextFid).toBe(before.nextFid + TOUR_DEMO.fills.length);
   });
 
   test('is a no-op the second time it is called', () => {
     useAppStore.getState().loadTourDemoData();
+    const fills = useAppStore.getState().fills;
     useAppStore.getState().loadTourDemoData();
-    expect(useAppStore.getState().fills).toHaveLength(1);
+    expect(useAppStore.getState().fills).toBe(fills);
   });
 
-  test('replacing the plan across separate tour runs does not accumulate fills', () => {
+  test('replaying the tour does not accumulate fills', () => {
     useAppStore.getState().startTour();
     useAppStore.getState().loadTourDemoData();
-    useAppStore.getState().startTour(); // resets tourDemoFid, simulating a footer replay
+    useAppStore.getState().startTour(); // resets tourDemoFid, as a replay from the footer does
     useAppStore.getState().loadTourDemoData();
     const s = useAppStore.getState();
-    expect(s.fills).toHaveLength(1);
-    expect(s.fills[0].fid).toBe(s.ui.tourDemoFid);
+    expect(s.fills).toHaveLength(TOUR_DEMO.fills.length);
+    expect(s.fills.some((f) => f.fid === s.ui.tourDemoFid)).toBe(true);
+  });
+});
+
+describe('restoring the plan the tour replaced', () => {
+  function ownPlan() {
+    useAppStore.getState().setDistance(120);
+    useAppStore.getState().setSpeed(25);
+    useAppStore.getState().addFillInGap('g1');
+    useAppStore.getState().addShop();
+    useAppStore.getState().setWeight(64);
+  }
+  const doc = () => {
+    const { route, mix, gear, fills, foods, shops, foodLib, combinedFillIds } =
+      useAppStore.getState();
+    return { route, mix, gear, fills, foods, shops, foodLib, combinedFillIds };
+  };
+
+  test('Given my own plan, When I go through the tour and restore, Then my plan is back as it was', () => {
+    ownPlan();
+    const before = doc();
+    useAppStore.getState().startTour();
+    useAppStore.getState().loadTourDemoData();
+    // Playing with the sample during the tour is not something restore has to undo step by step.
+    const { fills } = useAppStore.getState();
+    useAppStore.getState().updateFill(fills[0].fid, { to: 30 });
+    useAppStore.getState().removeShop(useAppStore.getState().shops[0].id);
+    useAppStore.getState().restorePreTourPlan();
+    expect(doc()).toEqual(before);
+    expect(useAppStore.getState().ui.sampleActive).toBe(false);
   });
 
-  test('clears pre-existing foods and shops, not just fills', () => {
-    useAppStore.getState().addShop();
+  test('a replay while the sample is still up restores the plan from before the first one', () => {
+    ownPlan();
+    const before = doc();
+    useAppStore.getState().startTour();
     useAppStore.getState().loadTourDemoData();
+    useAppStore.getState().startTour();
+    useAppStore.getState().loadTourDemoData();
+    useAppStore.getState().restorePreTourPlan();
+    expect(doc()).toEqual(before);
+  });
+
+  test('keeping the sample forgets the old plan', () => {
+    ownPlan();
+    useAppStore.getState().loadTourDemoData();
+    useAppStore.getState().dismissSample();
+    const sample = doc();
+    useAppStore.getState().restorePreTourPlan();
+    expect(doc()).toEqual(sample);
+    expect(useAppStore.getState().ui.sampleActive).toBe(false);
+  });
+
+  test('starting over ends the sample', () => {
+    useAppStore.getState().loadTourDemoData();
+    useAppStore.getState().clearPlan();
+    expect(useAppStore.getState().ui.sampleActive).toBe(false);
+  });
+});
+
+describe('Set me up', () => {
+  const lib = () => useAppStore.getState().foodLib;
+
+  test('closing it the first time finishes onboarding and starts the hints', () => {
+    useAppStore.getState().openSetup();
+    useAppStore.getState().closeSetup();
+    const ui = useAppStore.getState().ui;
+    expect(ui.setupOpen).toBe(false);
+    expect(ui.onboardingVersion).toBe(ONBOARDING_VERSION);
+    expect(ui.onboardingHint).toBe(1);
+  });
+
+  test('Skip changes nothing of the plan', () => {
+    const { route, gear, foodLib } = useAppStore.getState();
+    useAppStore.getState().openSetup();
+    useAppStore.getState().closeSetup();
     const s = useAppStore.getState();
-    expect(s.shops).toHaveLength(0);
-    expect(s.foods).toHaveLength(0);
+    expect(s.route).toBe(route);
+    expect(s.gear).toBe(gear);
+    expect(s.foodLib).toBe(foodLib);
+  });
+
+  test('opening it again later does not restart the hints', () => {
+    useAppStore.getState().closeSetup();
+    useAppStore.getState().setOnboardingHint(null);
+    useAppStore.getState().openSetup();
+    useAppStore.getState().closeSetup();
+    expect(useAppStore.getState().ui.onboardingHint).toBeNull();
+  });
+
+  test('saving writes weight, gear and products to the same data Settings, Gear and Products edit', () => {
+    const [bidon] = useAppStore.getState().gear;
+    const gel = lib().find((e) => e.key === 'gel')!;
+    useAppStore.getState().applySetup({
+      weight: 66,
+      gear: [
+        { ...bidon, vol: 750 },
+        { gid: 'new:1', name: 'Bladder', vol: 1500, allowed: ['water'], gelParts: 4 },
+      ],
+      foodLib: [
+        gel,
+        { key: 'new:1', pl: 'Daktyle', en: 'Daktyle', de: 'Daktyle', it: 'Daktyle', carbs: 18 },
+      ],
+    });
+    const s = useAppStore.getState();
+    expect(s.route.weight).toBe(66);
+    expect(s.gear.map((v) => [v.name, v.vol])).toEqual([
+      ['Bidon', 750],
+      ['Bladder', 1500],
+    ]);
+    expect(s.gear[1].gid).toBe('g' + initialState.nextGid);
+    expect(s.nextGid).toBe(initialState.nextGid + 1);
+    expect(s.foodLib.map((e) => e.key)).toEqual(['gel', 'u' + initialState.nextFoodKey]);
+    expect(s.ui.onboardingHint).toBe(1);
+  });
+
+  test('a vessel left out takes its fills along, like removing it in Gear', () => {
+    useAppStore.getState().setDistance(100);
+    useAppStore.getState().setSpeed(25);
+    useAppStore.getState().addFillInGap('g1');
+    useAppStore.getState().addFillInGap('g2');
+    const [, flask] = useAppStore.getState().gear;
+    useAppStore.getState().applySetup({ weight: 78, gear: [flask], foodLib: lib() });
+    expect(useAppStore.getState().fills.map((f) => f.gid)).toEqual(['g2']);
+  });
+
+  test('weight is held to the one weight range', () => {
+    useAppStore.getState().applySetup({ weight: 500, gear: [], foodLib: [] });
+    expect(useAppStore.getState().route.weight).toBe(WEIGHT_MAX_KG);
   });
 });
 
@@ -955,30 +1093,31 @@ describe('persisted ui merge — no overlay survives a reload', () => {
     expect(merged.ui.scrubX).toBeNull();
   });
 
-  // tourSeen is the opposite case: it is a genuine preference, and resetting it would replay
-  // the tour on every visit.
-  test('but tourSeen is a preference and is still restored', () => {
+  // The tour only runs on request now, and its restore point lived in memory: after a reload
+  // there is nothing to resume and nothing to restore.
+  test('a tour interrupted by a reload does not come back', () => {
     const merge = useAppStore.persist.getOptions().merge!;
     const currentState = useAppStore.getState();
     const merged = merge(
-      { ui: { ...currentState.ui, tourSeen: true } },
-      { ...currentState, ui: { ...currentState.ui, tourSeen: false } },
-    ) as typeof currentState;
-    expect(merged.ui.tourSeen).toBe(true);
-  });
-
-  // The tour is the one overlay that must survive, and it survives as a pair: startTour sets
-  // tourSeen at step 0, so dropping the step while keeping tourSeen would leave a first-time
-  // visitor who reloaded mid-tour with no tour and no way back to it.
-  test('a tour interrupted mid-way resumes where it was', () => {
-    const merge = useAppStore.persist.getOptions().merge!;
-    const currentState = useAppStore.getState();
-    const merged = merge(
-      { ui: { ...currentState.ui, tourStep: 2, tourSeen: true } },
+      { ui: { ...currentState.ui, tourStep: 2, tourDemoFid: 7, sampleActive: true } },
       currentState,
     ) as typeof currentState;
-    expect(merged.ui.tourStep).toBe(2);
-    expect(merged.ui.tourSeen).toBe(true);
+    expect(merged.ui.tourStep).toBeNull();
+    expect(merged.ui.tourDemoFid).toBeNull();
+    expect(merged.ui.sampleActive).toBe(false);
+  });
+
+  // Where the rider is in the first-run flow is progress, not a view: it has to survive.
+  test('onboarding progress is restored', () => {
+    const merge = useAppStore.persist.getOptions().merge!;
+    const currentState = useAppStore.getState();
+    const merged = merge(
+      { ui: { ...currentState.ui, onboardingVersion: 1, onboardingHint: 2, setupOpen: true } },
+      currentState,
+    ) as typeof currentState;
+    expect(merged.ui.onboardingVersion).toBe(1);
+    expect(merged.ui.onboardingHint).toBe(2);
+    expect(merged.ui.setupOpen).toBe(false);
   });
 });
 
@@ -1230,5 +1369,20 @@ describe('cola is a stop by default (v5 -> v6, and on import)', () => {
     const lib = useAppStore.getState().foodLib;
     expect(lib.find((e) => e.key === 'cola')?.needsStop).toBe(true);
     expect(lib.find((e) => e.key === 'gel')?.needsStop).toBeUndefined();
+  });
+});
+
+describe('migrate: tourSeen -> onboardingVersion (v6 -> v7)', () => {
+  const migrate = useAppStore.persist.getOptions().migrate!;
+  const ui = (v: unknown) => (v as { ui: Record<string, unknown> }).ui;
+
+  test('a rider who saw the tour is on onboarding version 1', () => {
+    const migrated = ui(migrate({ ui: { tourSeen: true } }, 6));
+    expect(migrated.onboardingVersion).toBe(1);
+    expect(migrated).not.toHaveProperty('tourSeen');
+  });
+
+  test('a rider who never saw it is on 0', () => {
+    expect(ui(migrate({ ui: { tourSeen: false } }, 6)).onboardingVersion).toBe(0);
   });
 });

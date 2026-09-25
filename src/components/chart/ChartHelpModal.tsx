@@ -116,6 +116,20 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
               </button>
             </div>
             <ChartHelpDiagram mode={yMode} strings={strings} desktop={desktop} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>{strings.chartHelpEditTitle}</span>
+              {[
+                desktop ? strings.chartHelpAddFillBody : strings.chartHelpAddFillBodyMobile,
+                desktop ? strings.chartHelpAddStopBody : strings.chartHelpAddStopBodyMobile,
+              ].map((text) => (
+                <p
+                  key={text}
+                  style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: 'var(--ink-soft)' }}
+                >
+                  {text}
+                </p>
+              ))}
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={openFullTour} style={tourGhostBtn}>
                 {strings.chartHelpFullTour}

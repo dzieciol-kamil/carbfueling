@@ -92,12 +92,10 @@ export function LanesSection() {
   const fills = useAppStore((s) => s.fills);
   const foods = useAppStore((s) => s.foods);
   const lang = useAppStore((s) => s.ui.lang);
-  const tourDemoFid = useAppStore((s) => s.ui.tourDemoFid);
   const addFillInGap = useAppStore((s) => s.addFillInGap);
   const strings = t(lang);
   const distanceKm = dist(route);
 
-  const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;
   const foodRows = packFoodRows(foods, distanceKm);
 
   return (
@@ -126,7 +124,6 @@ export function LanesSection() {
             </div>
             <div style={addColStyle}>
               <button
-                data-tour={vessel.gid === demoVesselGid ? 'demo-add-fill' : undefined}
                 onClick={() => addFillInGap(vessel.gid)}
                 disabled={!hasGap}
                 title={

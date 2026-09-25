@@ -223,8 +223,6 @@ export interface StringTable {
   ftSponsor: string;
   ftContact: string;
   ftCopyright: string;
-  tourWelcomeTitle: string;
-  tourWelcomeBody: string;
   tourRouteTitle: string;
   tourRouteBody: string;
   tourRouteBodyMobile: string;
@@ -234,25 +232,52 @@ export interface StringTable {
   tourFillTitle: string;
   tourFillBody: string;
   tourFillBodyMobile: string;
-  tourAddFillTitle: string;
-  tourAddFillBody: string;
-  tourAddFillBodyMobile: string;
-  tourAddShopTitle: string;
-  tourAddShopBody: string;
-  tourAddShopBodyMobile: string;
-  tourClosingTitle: string;
-  tourClosingBody: string;
-  tourClosingBodyMobile: string;
+  tourAutoplanTitle: string;
+  tourAutoplanBody: string;
+  tourAutoplanBodyMobile: string;
+  tourRecipesTitle: string;
+  tourRecipesBody: string;
+  tourRecipesBodyMobile: string;
   tourNext: string;
   tourBack: string;
   tourSkip: string;
-  tourFinish: string;
   tourStepLabel: string;
   tourReplayButton: string;
   tourConfirmTitle: string;
   tourConfirmBody: string;
   tourConfirmCancel: string;
   tourConfirmStart: string;
+  tourRestore: string;
+  tourKeepSample: string;
+  sampleBarText: string;
+  sampleBarKeep: string;
+  setupTitle: string;
+  setupIntro: string;
+  setupWeightTitle: string;
+  setupWeightWhere: string;
+  setupWeightWhereMobile: string;
+  setupGearTitle: string;
+  setupGearHint: string;
+  setupGearWhere: string;
+  setupAddBottle: string;
+  setupAddFlask: string;
+  setupAddBladder: string;
+  setupBottleName: string;
+  setupFlaskName: string;
+  setupBladderName: string;
+  setupFoodTitle: string;
+  setupFoodHint: string;
+  setupFoodWhere: string;
+  setupOwnFoodPlaceholder: string;
+  setupOwnFoodAdd: string;
+  setupSkip: string;
+  setupSave: string;
+  setupMenuItem: string;
+  hintRoute: string;
+  hintRouteMobile: string;
+  hintAutoplan: string;
+  hintChart: string;
+  hintClose: string;
   tabMix: string;
   editRoutePrefix: string;
   narrationRate: string;
@@ -263,6 +288,11 @@ export interface StringTable {
   chartHelpBtnLabel: string;
   chartHelpTitle: string;
   chartHelpFullTour: string;
+  chartHelpEditTitle: string;
+  chartHelpAddFillBody: string;
+  chartHelpAddFillBodyMobile: string;
+  chartHelpAddStopBody: string;
+  chartHelpAddStopBodyMobile: string;
   chartHelpScrubNote: string;
   chartHelpAxisNote: string;
   chartHelpAbsorbedBody: string;
@@ -694,50 +724,73 @@ export const STR: Record<Lang, StringTable> = {
     ftContact: 'Napisz do mnie',
     ftSources2: 'Utrata potu: przybliżenie z wagi, intensywności i temperatury.',
     ftCopyright: '© 2026 Carb Fueling · open source',
-    tourWelcomeTitle: 'Witaj w Carb Fueling',
-    tourWelcomeBody:
-      'W kilku krokach pokażemy, jak zaplanować węglowodany i płyny na trasę oraz jak czytać wynik. Zajmie to około minuty.',
     tourRouteTitle: 'Trasa i wynik',
     tourRouteBody:
-      'Tu opisujesz przejazd — dystansem i tempem albo czasem trwania — oraz warunki (intensywność, temperatura, posiłek przed startem). Karty obok pokazują, czy Twój plan pokrywa zapotrzebowanie na węglowodany i płyny. Możesz też wczytać własny plik GPX — wtedy tempo i zapotrzebowanie dopasują się do prawdziwego profilu Twojej trasy (podjazdów i zjazdów), a nie uśrednionego.',
+      'To przykładowa trasa 90 km. Podaj dystans i tempo albo wczytaj GPX, do tego warunki. Karty obok pokazują, czy plan pokrywa węgle i płyny.',
     tourRouteBodyMobile:
-      'Trasę edytujesz przyciskiem u góry ekranu — dystansem i tempem albo czasem trwania, plus warunkami (intensywność, temperatura, posiłek przed startem) oraz wczytaniem pliku GPX. Te karty pokazują, czy Twój plan pokrywa zapotrzebowanie na węglowodany i płyny.',
-    tourChartTitle: 'Wykres: podaż kontra zapotrzebowanie',
+      'To przykładowa trasa 90 km. Stuknij tutaj, żeby zmienić dystans i tempo, wczytać GPX albo zmienić warunki.',
+    tourChartTitle: 'Wykres: podaż kontra potrzeby',
     tourChartBody:
-      'Liczby po lewej to skala: gramy węglowodanów na godzinę (g/h). Ciągła linia to ile realnie dostarczasz, przerywana — ile potrzebujesz. Kropkowana pozioma linia to limit wchłaniania: tyle maksymalnie na godzinę wchłonie Twoje jelito, niezależnie od tego, ile zjesz — nadwyżka czeka w żołądku. Pasek nad wykresem to właśnie ten żołądek: pokazuje, co aktualnie trawi. Dodaliśmy przykładowy bidon, żebyś zobaczył, jak to wygląda w praktyce.',
+      'Linia ciągła: ile węgli wchłaniasz na godzinę. Przerywana: ile potrzebujesz. Trzymaj ciągłą blisko przerywanej i pod kropkowanym limitem. Więcej pod „?”.',
     tourChartBodyMobile:
-      'Ciągła linia to ile węglowodanów na godzinę realnie dostarczasz, przerywana — ile potrzebujesz. Kropkowana pozioma linia to limit wchłaniania: tyle maksymalnie na godzinę wchłonie Twoje jelito, niezależnie od tego, ile zjesz — nadwyżka czeka w żołądku. Górna część wykresu to właśnie ten żołądek: pokazuje, co aktualnie trawi. Przesuń palcem po wykresie, żeby odczytać dokładne wartości w danym miejscu trasy. Dodaliśmy przykładowy bidon, żebyś zobaczył, jak to wygląda w praktyce.',
-    tourFillTitle: 'Bidon: przesuwanie, zwężanie, zmiana zawartości',
+      'Linia ciągła: ile węgli wchłaniasz na godzinę. Przerywana: ile potrzebujesz. Trzymaj się pod kropkowanym limitem. Przesuń palcem po wykresie, żeby odczytać wartości.',
+    tourFillTitle: 'Bidon na trasie',
     tourFillBody:
-      'Ten pasek to właśnie dodany bidon. Środek można chwycić i przesunąć po trasie, a lewą lub prawą krawędź — żeby skrócić lub wydłużyć odcinek, na którym z niego pijesz. Po najechaniu kursorem pojawiają się przyciski zmiany zawartości (woda / izo / żel), jeśli bidon obsługuje więcej niż jeden rodzaj. Spróbuj tego po zamknięciu touru.',
+      'Przeciągnij pasek, żeby przesunąć bidon po trasie, a krawędź, żeby zmienić, jak długo z niego pijesz. Najedź kursorem, żeby zmienić zawartość.',
     tourFillBodyMobile:
-      'To dodany bidon. Stuknij w niego, żeby rozwinąć edycję — przyciskami „od” i „do” przesuniesz go po trasie albo zmienisz długość odcinka, a przyciski obok pozwolą zmienić zawartość (woda / izo / żel), jeśli bidon obsługuje więcej niż jeden rodzaj.',
-    tourAddFillTitle: 'Dodaj kolejną dolewkę',
-    tourAddFillBody:
-      'Ten przycisk „+” wstawia kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów pod wykresem dodają kolejne pozycje jednym kliknięciem.',
-    tourAddFillBodyMobile:
-      'Ten przycisk dodaje kolejną dolewkę w pierwszej wolnej luce na trasie — przydaje się, gdy bidon się skończy i trzeba go napełnić czymś innym. To samo dotyczy jedzenia: przyciski z listą produktów niżej dodają kolejne pozycje jednym stuknięciem.',
-    tourAddShopTitle: 'Punkty zaopatrzenia',
-    tourAddShopBody:
-      'Ten „+” dodaje na wykresie znacznik punktu zaopatrzenia (np. sklepu) — możesz przeciągnąć go w dowolne miejsce trasy, żeby zaznaczyć, na którym kilometrze planujesz dokupić jedzenie lub napój.',
-    tourAddShopBodyMobile:
-      'Ten przycisk otwiera formularz punktu zaopatrzenia — wpisujesz kilometr i nazwę (np. sklep), żeby zaznaczyć, gdzie planujesz dokupić jedzenie lub napój.',
-    tourClosingTitle: 'To wszystko na start',
-    tourClosingBody:
-      'Przepisy na uzupełnianie dodanych bidonów i dolewek znajdziesz pod wykresem. Sprzęt, Mieszankę, Produkty i Ustawienia (waga, tryb widoku) znajdziesz w nagłówku. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w stopce. Jeśli zechcesz dowiedzieć się więcej, zawsze możesz zajrzeć do FAQ — znajdziesz je też w stopce.',
-    tourClosingBodyMobile:
-      'Przepisy na uzupełnianie bidonów znajdziesz pod przyciskiem „Skład bidonów” na liście planu. Ustawienia i język zmienisz w zakładce „Ja”, a proporcje mieszanki i dostępne bidony — w zakładkach „Mix” i „Sprzęt”. Ten tour możesz odpalić ponownie w każdej chwili przyciskiem w zakładce „Ja”. Jeśli zechcesz dowiedzieć się więcej, FAQ znajdziesz też w zakładce „Ja”.',
+      'Stuknij bidon, żeby go otworzyć. „Od” i „do” przesuwają go po trasie, a przyciski obok zmieniają zawartość.',
+    tourAutoplanTitle: 'Niech aplikacja to ułoży',
+    tourAutoplanBody:
+      'Kliknij „Zaproponuj plan”, a ułoży się z Twojej trasy, sprzętu i produktów. Potraktuj go jako punkt wyjścia i dopracuj na wykresie.',
+    tourAutoplanBodyMobile:
+      'Otwórz menu „Plan” i wybierz „Zaproponuj plan”. Ułoży się z Twojej trasy, sprzętu i produktów, a potem go dopracujesz.',
+    tourRecipesTitle: 'Przepisy i wydruk',
+    tourRecipesBody:
+      'Tu są przepisy: co wlać do którego bidonu. Plan wydrukujesz z menu „Więcej” nad wykresem i zabierzesz ze sobą.',
+    tourRecipesBodyMobile:
+      'Pod „Skład bidonów” są przepisy na każdy bidon. Plan wydrukujesz albo udostępnisz z menu „Plan” u góry.',
     tourNext: 'Dalej',
     tourBack: 'Wstecz',
     tourSkip: 'Pomiń',
-    tourFinish: 'Zakończ',
     tourStepLabel: 'Krok',
-    tourReplayButton: 'Pokaż tour ponownie',
-    tourConfirmTitle: 'Uruchomić tour ponownie?',
+    tourReplayButton: 'Oprowadź mnie',
+    tourConfirmTitle: 'Pokazać, jak to działa?',
     tourConfirmBody:
-      'Tour wczyta przykładowe dane (trasa i jeden bidon) w miejsce Twojego aktualnego planu. Możesz to cofnąć strzałką ↶, dopóki nie odświeżysz strony.',
+      'Samouczek podmieni Twój plan na przykładowy. Na końcu „Przywróć mój plan” odda Ci Twój.',
     tourConfirmCancel: 'Anuluj',
     tourConfirmStart: 'Uruchom tour',
+    tourRestore: 'Przywróć mój plan',
+    tourKeepSample: 'Zostaw przykład',
+    sampleBarText: 'Oglądasz przykładowy plan z samouczka.',
+    sampleBarKeep: 'Zostaw przykład',
+    setupTitle: 'Ty i Twój sprzęt',
+    setupIntro: 'Trzy szybkie pytania o Ciebie i Twój sprzęt. Na nich opiera się każdy plan.',
+    setupWeightTitle: 'Twoja waga',
+    setupWeightWhere: 'Zmienisz ją później w Ustawieniach → Waga.',
+    setupWeightWhereMobile: 'Zmienisz ją później w zakładce Ja.',
+    setupGearTitle: 'Bidony, z którymi jeździsz',
+    setupGearHint: 'Zaznacz, co masz, i ustaw pojemność każdego.',
+    setupGearWhere: 'Zmienisz to później w zakładce Sprzęt.',
+    setupAddBottle: 'Bidon',
+    setupAddFlask: 'Flask',
+    setupAddBladder: 'Bukłak',
+    setupBottleName: 'Bidon',
+    setupFlaskName: 'Flask',
+    setupBladderName: 'Bukłak',
+    setupFoodTitle: 'Co zwykle zabierasz (opcjonalnie)',
+    setupFoodHint: 'Zaznacz produkty, które jesz w trasie.',
+    setupFoodWhere: 'Zmienisz to później w zakładce Produkty.',
+    setupOwnFoodPlaceholder: 'Własny produkt',
+    setupOwnFoodAdd: 'Dodaj',
+    setupSkip: 'Pomiń',
+    setupSave: 'Zapisz',
+    setupMenuItem: 'Ty i Twój sprzęt',
+    hintRoute: 'Gotowe. Wpisz tu swoją trasę: dystans i tempo albo plik GPX.',
+    hintRouteMobile: 'Gotowe. Stuknij tutaj i wpisz trasę: dystans i tempo albo plik GPX.',
+    hintAutoplan: 'Wygeneruj swój pierwszy plan.',
+    hintChart:
+      'Linia ciągła: co wchłaniasz. Przerywana: ile potrzebujesz. Zielone: pokryte. Resztę wyjaśnia „?”.',
+    hintClose: 'Zamknij podpowiedzi',
     tabMix: 'Mieszanka',
     editRoutePrefix: 'Edytuj trasę:',
     narrationRate:
@@ -751,6 +804,15 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpBtnLabel: 'Wyjaśnij wykres',
     chartHelpTitle: 'Jak czytać ten wykres',
     chartHelpFullTour: 'Pokaż mi cały samouczek',
+    chartHelpEditTitle: 'Dodawanie do planu',
+    chartHelpAddFillBody:
+      '„+” na końcu toru bidonu dodaje dolewkę w pierwszej wolnej luce. Przyciski produktów pod wykresem dodają jedzenie.',
+    chartHelpAddFillBodyMobile:
+      '„+ dolewka” pod bidonem dodaje kolejne napełnienie w pierwszej wolnej luce. Przyciski produktów niżej dodają jedzenie.',
+    chartHelpAddStopBody:
+      '„+” obok wykresu dodaje postój, np. sklep. Przeciągnij go na kilometr, na którym kupisz jedzenie albo picie.',
+    chartHelpAddStopBodyMobile:
+      'Przycisk dodawania postoju na liście planu zaznacza, gdzie kupisz jedzenie albo picie: wpisz kilometr i nazwę.',
     chartHelpScrubNote:
       'Przeciągnij palcem po wykresie, żeby zobaczyć dokładne liczby w danym miejscu trasy.',
     chartHelpAxisNote: 'Dokładne wartości pokazują liczby przy osiach po lewej i na dole wykresu.',
@@ -1239,50 +1301,73 @@ export const STR: Record<Lang, StringTable> = {
     ftContact: 'Get in touch',
     ftSources2: 'Sweat loss: an estimate from weight, intensity and temperature.',
     ftCopyright: '© 2026 Carb Fueling · open source',
-    tourWelcomeTitle: 'Welcome to Carb Fueling',
-    tourWelcomeBody:
-      'A few steps to show you how to plan carbs and fluids for your ride, and how to read the result. Takes about a minute.',
     tourRouteTitle: 'Route & result',
     tourRouteBody:
-      "Describe your ride here — distance and pace, or a duration — plus conditions (intensity, temperature, pre-ride meal). The cards next to it show whether your plan covers your carb and fluid needs. You can also load your own GPX file — pace and requirement will then match your route's real profile (climbs and descents) instead of an averaged one.",
+      'This is a sample 90 km ride. Set distance and pace or load a GPX file, plus conditions. The cards show whether carbs and fluids are covered.',
     tourRouteBodyMobile:
-      'Edit your route with the button at the top of the screen — distance and pace, or a duration, plus conditions (intensity, temperature, pre-ride meal) and loading a GPX file. These cards show whether your plan covers your carb and fluid needs.',
-    tourChartTitle: 'The chart: supply vs. requirement',
+      'This is a sample 90 km ride. Tap here to set distance and pace, load a GPX file or change the conditions.',
+    tourChartTitle: 'The chart: supply vs. need',
     tourChartBody:
-      "The numbers on the left are the scale: grams of carbs per hour (g/h). The solid line is how many carbs you're actually delivering, the dashed line is how many you need. The dotted horizontal line is the absorption limit: the most your gut can absorb per hour no matter how much you eat — anything above it waits in the stomach. The bar above the chart is that stomach: it shows what it's currently digesting. We added a sample bottle so you can see how this looks in practice.",
+      'Solid line: carbs you absorb per hour. Dashed: what you need. Keep solid near dashed and under the dotted gut limit. Click ‘?’ for more.',
     tourChartBodyMobile:
-      "The solid line is how many carbs per hour you're actually delivering, the dashed line is how many you need. The dotted horizontal line is the absorption limit: the most your gut can absorb per hour no matter how much you eat — anything above it waits in the stomach. The top of the chart is that stomach: it shows what it's currently digesting. Drag your finger across the chart to read exact values at any point on the route. We added a sample bottle so you can see how this looks in practice.",
-    tourFillTitle: 'A bottle: move it, resize it, change its contents',
+      'Solid line: carbs you absorb per hour. Dashed: what you need. Stay under the dotted gut limit. Drag a finger across to read values.',
+    tourFillTitle: 'A bottle on the route',
     tourFillBody:
-      'This bar is the bottle we just added. You can drag the middle to move it along the route, or either edge to shorten or lengthen the stretch you drink it over. Hovering it reveals buttons to switch its contents (water / izo / gel) if the bottle allows more than one. Try it once you close the tour.',
+      'Drag the bar to move this bottle along the route; drag an edge to change how long it lasts. Hover it to change what’s inside.',
     tourFillBodyMobile:
-      'This is the bottle we just added. Tap it to expand its editor — the "from" and "to" buttons move it along the route or change how long the segment is, and the buttons next to them switch its contents (water / izo / gel) if the bottle allows more than one.',
-    tourAddFillTitle: 'Add another fill',
-    tourAddFillBody:
-      'This "+" button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same idea applies to food: the product buttons under the chart add another item with one click.',
-    tourAddFillBodyMobile:
-      'This button inserts another fill into the first free gap on the route — useful once a bottle runs dry and needs refilling with something else. The same applies to food: the product buttons further down add another item with one tap.',
-    tourAddShopTitle: 'Resupply points',
-    tourAddShopBody:
-      'This "+" adds a resupply marker on the chart (e.g. a shop) — drag it anywhere on the route to mark which kilometer you plan to buy more food or drink at.',
-    tourAddShopBodyMobile:
-      'This button opens a small form for a resupply point — enter the kilometer and a name (e.g. a shop) to mark where you plan to buy more food or drink.',
-    tourClosingTitle: "That's the essentials",
-    tourClosingBody:
-      "Recipes for topping up the bottles and fills you've added are under the chart. Gear, Mix, Products and Settings (weight, view mode) are in the header. Replay this tour any time from the button in the footer. Want to know more? The FAQ is in the footer too.",
-    tourClosingBodyMobile:
-      'Recipes for topping up bottles are behind the "Bottle recipes" button on the plan list. Change settings and language in the "Me" tab, and mix ratios and available bottles in the "Mix" and "Gear" tabs. Replay this tour any time from the button in the "Me" tab. Want to know more? The FAQ is in the "Me" tab too.',
+      'Tap a bottle to open it. ‘From’ and ‘to’ move it along the route; the buttons beside them change what’s inside.',
+    tourAutoplanTitle: 'Let the app plan it',
+    tourAutoplanBody:
+      'Click ‘Suggest a plan’ to build one from your route, gear and products. Treat it as a starting point and fine-tune it on the chart.',
+    tourAutoplanBodyMobile:
+      'Open the Plan menu and pick ‘Suggest a plan’. It builds one from your route, gear and products; fine-tune it afterwards.',
+    tourRecipesTitle: 'Recipes and printing',
+    tourRecipesBody:
+      'Recipes here say what goes into each bottle. Print the plan from the ‘More’ menu above the chart and take it along.',
+    tourRecipesBodyMobile:
+      '‘Bottle recipes’ says what goes into each bottle. Print or share the plan from the Plan menu at the top.',
     tourNext: 'Next',
     tourBack: 'Back',
     tourSkip: 'Skip',
-    tourFinish: 'Finish',
     tourStepLabel: 'Step',
-    tourReplayButton: 'Replay tour',
-    tourConfirmTitle: 'Replay the tour?',
+    tourReplayButton: 'Show me around',
+    tourConfirmTitle: 'Show you around?',
     tourConfirmBody:
-      'The tour will load sample data (a route and one bottle) over your current plan. You can undo this with ↶ until you reload the page.',
+      'The tour swaps your plan for a sample. ‘Restore my plan’ at the end brings yours back.',
     tourConfirmCancel: 'Cancel',
     tourConfirmStart: 'Start tour',
+    tourRestore: 'Restore my plan',
+    tourKeepSample: 'Keep exploring the sample',
+    sampleBarText: 'You’re looking at the tour’s sample plan.',
+    sampleBarKeep: 'Keep the sample',
+    setupTitle: 'You & your kit',
+    setupIntro: 'Three quick things about you and your kit. Every plan is built from them.',
+    setupWeightTitle: 'Your weight',
+    setupWeightWhere: 'Change it later in Settings → Weight.',
+    setupWeightWhereMobile: 'Change it later in the Me tab.',
+    setupGearTitle: 'Bottles you ride with',
+    setupGearHint: 'Tick what you have and set each one’s volume.',
+    setupGearWhere: 'Change it later in Gear.',
+    setupAddBottle: 'Bottle',
+    setupAddFlask: 'Flask',
+    setupAddBladder: 'Bladder',
+    setupBottleName: 'Bottle',
+    setupFlaskName: 'Flask',
+    setupBladderName: 'Bladder',
+    setupFoodTitle: 'What you usually take (optional)',
+    setupFoodHint: 'Tick the products you eat on the move.',
+    setupFoodWhere: 'Change it later in Products.',
+    setupOwnFoodPlaceholder: 'Your own product',
+    setupOwnFoodAdd: 'Add',
+    setupSkip: 'Skip',
+    setupSave: 'Save',
+    setupMenuItem: 'You & your kit',
+    hintRoute: 'You’re set. Enter your route here: distance and pace, or a GPX file.',
+    hintRouteMobile: 'You’re set. Tap here to enter your route: distance and pace, or a GPX file.',
+    hintAutoplan: 'Generate your first plan.',
+    hintChart:
+      'Solid line: what you absorb. Dashed: what you need. Green: covered. ‘?’ explains the rest.',
+    hintClose: 'Close tips',
     tabMix: 'Mix',
     editRoutePrefix: 'Edit route:',
     narrationRate:
@@ -1295,6 +1380,15 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpBtnLabel: 'Explain the chart',
     chartHelpTitle: 'How to read this chart',
     chartHelpFullTour: 'Show me the full tour',
+    chartHelpEditTitle: 'Adding to the plan',
+    chartHelpAddFillBody:
+      'The ‘+’ at the end of a bottle’s lane adds a refill in its first free gap. The product buttons under the chart add food.',
+    chartHelpAddFillBodyMobile:
+      '‘+ refill’ under a bottle adds another fill in its first free gap. The product buttons further down add food.',
+    chartHelpAddStopBody:
+      'The ‘+’ beside the chart adds a stop, e.g. a shop. Drag it to the kilometre where you’ll buy food or drink.',
+    chartHelpAddStopBodyMobile:
+      'The add-stop button in the plan list marks where you’ll buy food or drink: enter the kilometre and a name.',
     chartHelpScrubNote:
       'Drag your finger across the chart to see exact numbers at any point on the route.',
     chartHelpAxisNote: 'Exact values are shown by the numbers along the left and bottom axes.',
@@ -1781,50 +1875,74 @@ export const STR: Record<Lang, StringTable> = {
     ftSponsor: 'Unterstützen',
     ftContact: 'Kontakt aufnehmen',
     ftCopyright: '© 2026 Carb Fueling · Open Source',
-    tourWelcomeTitle: 'Willkommen bei Carb Fueling',
-    tourWelcomeBody:
-      'In ein paar Schritten zeigen wir dir, wie du Kohlenhydrate und Flüssigkeit für deine Strecke planst und wie du das Ergebnis liest. Dauert etwa eine Minute.',
     tourRouteTitle: 'Strecke & Ergebnis',
     tourRouteBody:
-      'Hier beschreibst du deine Fahrt — Distanz und Tempo oder eine Dauer — sowie die Bedingungen (Intensität, Temperatur, Mahlzeit vor dem Start). Die Karten daneben zeigen, ob dein Plan deinen Kohlenhydrat- und Flüssigkeitsbedarf deckt. Du kannst auch eine eigene GPX-Datei laden — dann passen sich Tempo und Bedarf an das echte Profil deiner Strecke an (Anstiege und Abfahrten) statt an einen Durchschnittswert.',
+      'Das ist eine Beispielfahrt über 90 km. Gib Distanz und Tempo ein oder lade eine GPX-Datei, dazu die Bedingungen. Die Karten zeigen, ob Kohlenhydrate und Flüssigkeit gedeckt sind.',
     tourRouteBodyMobile:
-      'Die Strecke bearbeitest du über den Button oben am Bildschirm — Distanz und Tempo oder eine Dauer, plus Bedingungen (Intensität, Temperatur, Mahlzeit vor dem Start) und das Laden einer GPX-Datei. Diese Karten zeigen, ob dein Plan deinen Kohlenhydrat- und Flüssigkeitsbedarf deckt.',
-    tourChartTitle: 'Das Diagramm: Zufuhr gegen Bedarf',
+      'Das ist eine Beispielfahrt über 90 km. Tippe hier, um Distanz und Tempo einzugeben, eine GPX-Datei zu laden oder die Bedingungen zu ändern.',
+    tourChartTitle: 'Das Diagramm: Zufuhr vs. Bedarf',
     tourChartBody:
-      'Die Zahlen links sind die Skala: Gramm Kohlenhydrate pro Stunde (g/h). Die durchgezogene Linie zeigt, wie viel du tatsächlich lieferst, die gestrichelte, wie viel du brauchst. Die gepunktete waagerechte Linie ist das Aufnahmelimit: So viel nimmt dein Darm pro Stunde maximal auf, egal wie viel du isst — der Rest wartet im Magen. Der Balken über dem Diagramm ist genau dieser Magen: Er zeigt, was gerade verdaut wird. Wir haben eine Beispielflasche hinzugefügt, damit du siehst, wie das in der Praxis aussieht.',
+      'Durchgezogene Linie: aufgenommene Kohlenhydrate pro Stunde. Gestrichelt: dein Bedarf. Halte sie nah beieinander und unter dem gepunkteten Magenlimit. Mehr unter „?“.',
     tourChartBodyMobile:
-      'Die durchgezogene Linie zeigt, wie viele Kohlenhydrate pro Stunde du tatsächlich lieferst, die gestrichelte, wie viel du brauchst. Die gepunktete waagerechte Linie ist das Aufnahmelimit: So viel nimmt dein Darm pro Stunde maximal auf, egal wie viel du isst — der Rest wartet im Magen. Der obere Teil des Diagramms ist genau dieser Magen: Er zeigt, was gerade verdaut wird. Fahre mit dem Finger über das Diagramm, um genaue Werte an jeder Stelle der Strecke abzulesen. Wir haben eine Beispielflasche hinzugefügt, damit du siehst, wie das in der Praxis aussieht.',
-    tourFillTitle: 'Eine Flasche: verschieben, anpassen, Inhalt ändern',
+      'Durchgezogene Linie: aufgenommene Kohlenhydrate pro Stunde. Gestrichelt: dein Bedarf. Bleib unter dem gepunkteten Magenlimit. Wisch mit dem Finger darüber, um Werte abzulesen.',
+    tourFillTitle: 'Eine Flasche auf der Strecke',
     tourFillBody:
-      'Dieser Balken ist die Flasche, die wir gerade hinzugefügt haben. Du kannst die Mitte greifen und entlang der Strecke verschieben, oder den linken oder rechten Rand, um den Abschnitt, auf dem du daraus trinkst, zu verkürzen oder zu verlängern. Beim Darüberfahren mit der Maus erscheinen Buttons zum Wechseln des Inhalts (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt. Probier das nach dem Schließen der Tour aus.',
+      'Zieh den Balken, um die Flasche entlang der Strecke zu verschieben, oder eine Kante, um die Trinkstrecke zu ändern. Mit der Maus darüber änderst du den Inhalt.',
     tourFillBodyMobile:
-      'Das ist die Flasche, die wir gerade hinzugefügt haben. Tippe darauf, um die Bearbeitung zu öffnen — mit den Buttons „von“ und „bis“ verschiebst du sie entlang der Strecke oder änderst die Länge des Abschnitts, und die Buttons daneben wechseln den Inhalt (Wasser / Izo / Gel), falls die Flasche mehr als eine Sorte zulässt.',
-    tourAddFillTitle: 'Weitere Füllung hinzufügen',
-    tourAddFillBody:
-      'Dieser „+“-Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons unter dem Diagramm fügen mit einem Klick eine weitere Position hinzu.',
-    tourAddFillBodyMobile:
-      'Dieser Button fügt eine weitere Füllung in die erste freie Lücke auf der Strecke ein — praktisch, wenn eine Flasche leer wird und mit etwas anderem befüllt werden muss. Dasselbe gilt für Essen: Die Produkt-Buttons weiter unten fügen mit einem Tipp eine weitere Position hinzu.',
-    tourAddShopTitle: 'Versorgungspunkte',
-    tourAddShopBody:
-      'Dieser „+“ fügt im Diagramm eine Markierung für einen Versorgungspunkt hinzu (z. B. einen Laden) — du kannst sie an eine beliebige Stelle der Strecke ziehen, um zu markieren, bei welchem Kilometer du zusätzliches Essen oder Trinken einplanst.',
-    tourAddShopBodyMobile:
-      'Dieser Button öffnet ein kleines Formular für einen Versorgungspunkt — du gibst den Kilometer und einen Namen ein (z. B. einen Laden), um zu markieren, wo du zusätzliches Essen oder Trinken einplanst.',
-    tourClosingTitle: 'Das ist erstmal alles',
-    tourClosingBody:
-      'Rezepte zum Nachfüllen deiner Flaschen und Füllungen findest du unter dem Diagramm. Ausrüstung, Mischung, Produkte und Einstellungen (Gewicht, Anzeigemodus) findest du im Header. Diese Tour kannst du jederzeit über den Button in der Fußzeile erneut starten. Willst du mehr wissen? Die FAQ findest du auch dort.',
-    tourClosingBodyMobile:
-      'Rezepte zum Nachfüllen von Flaschen findest du hinter dem Button „Flaschenrezepte“ in der Planliste. Einstellungen und Sprache änderst du im Tab „Ich“, Mischungsverhältnisse und verfügbare Flaschen in den Tabs „Mischung“ und „Ausrüstung“. Diese Tour kannst du jederzeit über den Button im Tab „Ich“ erneut starten. Willst du mehr wissen? Die FAQ findest du auch im Tab „Ich“.',
+      'Tippe auf eine Flasche, um sie zu öffnen. „Von“ und „bis“ verschieben sie entlang der Strecke, die Knöpfe daneben ändern den Inhalt.',
+    tourAutoplanTitle: 'Lass die App planen',
+    tourAutoplanBody:
+      'Klick auf „Plan vorschlagen“, um einen Plan aus Strecke, Ausrüstung und Produkten zu erstellen. Nimm ihn als Ausgangspunkt und verfeinere ihn im Diagramm.',
+    tourAutoplanBodyMobile:
+      'Öffne das Menü „Plan“ und wähle „Plan vorschlagen“. Er entsteht aus Strecke, Ausrüstung und Produkten; danach verfeinerst du ihn.',
+    tourRecipesTitle: 'Rezepte und Drucken',
+    tourRecipesBody:
+      'Die Rezepte hier sagen, was in jede Flasche kommt. Drucke den Plan über das Menü „Mehr“ über dem Diagramm und nimm ihn mit.',
+    tourRecipesBodyMobile:
+      '„Flaschenrezepte“ sagt, was in jede Flasche kommt. Drucken oder teilen kannst du den Plan über das Menü „Plan“ oben.',
     tourNext: 'Weiter',
     tourBack: 'Zurück',
     tourSkip: 'Überspringen',
-    tourFinish: 'Fertig',
     tourStepLabel: 'Schritt',
-    tourReplayButton: 'Tour erneut zeigen',
-    tourConfirmTitle: 'Tour erneut starten?',
+    tourReplayButton: 'Zeig mir alles',
+    tourConfirmTitle: 'Kurze Tour starten?',
     tourConfirmBody:
-      'Die Tour lädt Beispieldaten (eine Strecke und eine Flasche) anstelle deines aktuellen Plans. Du kannst das mit ↶ rückgängig machen, bis du die Seite neu lädst.',
+      'Die Tour ersetzt deinen Plan durch ein Beispiel. Mit „Meinen Plan zurückholen“ am Ende bekommst du ihn zurück.',
     tourConfirmCancel: 'Abbrechen',
     tourConfirmStart: 'Tour starten',
+    tourRestore: 'Meinen Plan zurückholen',
+    tourKeepSample: 'Beispiel weiter erkunden',
+    sampleBarText: 'Du siehst den Beispielplan aus der Tour.',
+    sampleBarKeep: 'Beispiel behalten',
+    setupTitle: 'Du & deine Ausrüstung',
+    setupIntro: 'Drei kurze Fragen zu dir und deiner Ausrüstung. Jeder Plan baut darauf auf.',
+    setupWeightTitle: 'Dein Gewicht',
+    setupWeightWhere: 'Später änderbar unter Einstellungen → Gewicht.',
+    setupWeightWhereMobile: 'Später änderbar im Tab „Ich“.',
+    setupGearTitle: 'Flaschen, mit denen du fährst',
+    setupGearHint: 'Hake an, was du hast, und stelle jeweils das Volumen ein.',
+    setupGearWhere: 'Später änderbar unter Ausrüstung.',
+    setupAddBottle: 'Flasche',
+    setupAddFlask: 'Flask',
+    setupAddBladder: 'Trinkblase',
+    setupBottleName: 'Flasche',
+    setupFlaskName: 'Flask',
+    setupBladderName: 'Trinkblase',
+    setupFoodTitle: 'Was du meist mitnimmst (optional)',
+    setupFoodHint: 'Hake die Produkte an, die du unterwegs isst.',
+    setupFoodWhere: 'Später änderbar unter Produkte.',
+    setupOwnFoodPlaceholder: 'Eigenes Produkt',
+    setupOwnFoodAdd: 'Hinzufügen',
+    setupSkip: 'Überspringen',
+    setupSave: 'Speichern',
+    setupMenuItem: 'Du & deine Ausrüstung',
+    hintRoute: 'Fertig. Gib hier deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
+    hintRouteMobile:
+      'Fertig. Tippe hier und gib deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
+    hintAutoplan: 'Erstelle deinen ersten Plan.',
+    hintChart:
+      'Durchgezogen: was du aufnimmst. Gestrichelt: was du brauchst. Grün: gedeckt. „?“ erklärt den Rest.',
+    hintClose: 'Tipps schließen',
     tabMix: 'Mix',
     editRoutePrefix: 'Strecke bearbeiten:',
     narrationRate:
@@ -1837,6 +1955,15 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpBtnLabel: 'Diagramm erklären',
     chartHelpTitle: 'So liest du dieses Diagramm',
     chartHelpFullTour: 'Zeig mir die ganze Tour',
+    chartHelpEditTitle: 'Zum Plan hinzufügen',
+    chartHelpAddFillBody:
+      'Das „+“ am Ende einer Flaschenspur fügt in der ersten freien Lücke eine Nachfüllung hinzu. Die Produktknöpfe unter dem Diagramm fügen Essen hinzu.',
+    chartHelpAddFillBodyMobile:
+      '„+ Nachfüllen“ unter einer Flasche fügt in der ersten freien Lücke eine weitere Füllung hinzu. Die Produktknöpfe weiter unten fügen Essen hinzu.',
+    chartHelpAddStopBody:
+      'Das „+“ neben dem Diagramm fügt einen Stopp hinzu, z. B. einen Laden. Zieh ihn auf den Kilometer, an dem du Essen oder Getränke kaufst.',
+    chartHelpAddStopBodyMobile:
+      'Der Knopf zum Hinzufügen eines Stopps in der Planliste markiert, wo du Essen oder Getränke kaufst: Kilometer und Namen eingeben.',
     chartHelpScrubNote:
       'Ziehe mit dem Finger über das Diagramm, um genaue Werte an jedem Punkt der Strecke zu sehen.',
     chartHelpAxisNote: 'Genaue Werte zeigen die Zahlen an der linken und unteren Achse.',
@@ -2328,50 +2455,73 @@ export const STR: Record<Lang, StringTable> = {
     ftContact: 'Scrivimi',
     ftSources2: 'Perdita di sudore: una stima da peso, intensità e temperatura.',
     ftCopyright: '© 2026 Carb Fueling · open source',
-    tourWelcomeTitle: 'Benvenuto su Carb Fueling',
-    tourWelcomeBody:
-      'In pochi passaggi ti mostriamo come pianificare carboidrati e liquidi per il tuo percorso e come leggere il risultato. Richiede circa un minuto.',
     tourRouteTitle: 'Percorso e risultato',
     tourRouteBody:
-      'Qui descrivi il tuo giro — distanza e ritmo, oppure una durata — insieme alle condizioni (intensità, temperatura, pasto prima della partenza). Le schede accanto mostrano se il tuo piano copre il fabbisogno di carboidrati e liquidi. Puoi anche caricare un tuo file GPX — ritmo e fabbisogno si adatteranno così al profilo reale del percorso (salite e discese) invece che a una media.',
+      'Questa è un’uscita di esempio di 90 km. Imposta distanza e ritmo o carica un file GPX, più le condizioni. Le schede mostrano se carboidrati e liquidi sono coperti.',
     tourRouteBodyMobile:
-      'Modifichi il percorso con il pulsante in alto sullo schermo — distanza e ritmo, oppure una durata, più le condizioni (intensità, temperatura, pasto prima della partenza) e il caricamento di un file GPX. Queste schede mostrano se il tuo piano copre il fabbisogno di carboidrati e liquidi.',
-    tourChartTitle: 'Il grafico: apporto contro fabbisogno',
+      'Questa è un’uscita di esempio di 90 km. Tocca qui per impostare distanza e ritmo, caricare un file GPX o cambiare le condizioni.',
+    tourChartTitle: 'Il grafico: apporto e fabbisogno',
     tourChartBody:
-      "I numeri a sinistra sono la scala: grammi di carboidrati all'ora (g/h). La linea continua è quanto stai davvero fornendo, quella tratteggiata è quanto ti serve. La linea orizzontale punteggiata è la soglia di assorbimento: il massimo che il tuo intestino assorbe in un'ora, qualunque cosa tu mangi — l'eccedenza aspetta nello stomaco. La barra sopra il grafico è proprio quello stomaco: mostra cosa sta digerendo in quel momento. Abbiamo aggiunto una borraccia di esempio per farti vedere come funziona in pratica.",
+      'Linea continua: carboidrati assorbiti all’ora. Tratteggiata: il tuo fabbisogno. Tienile vicine e sotto il limite punteggiato dello stomaco. Altro sotto ‘?’.',
     tourChartBodyMobile:
-      "La linea continua è quanti carboidrati all'ora stai davvero fornendo, quella tratteggiata è quanti te ne servono. La linea orizzontale punteggiata è la soglia di assorbimento: il massimo che il tuo intestino assorbe in un'ora, qualunque cosa tu mangi — l'eccedenza aspetta nello stomaco. La parte alta del grafico è proprio quello stomaco: mostra cosa sta digerendo in quel momento. Trascina il dito sul grafico per leggere i valori esatti in ogni punto del percorso. Abbiamo aggiunto una borraccia di esempio per farti vedere come funziona in pratica.",
-    tourFillTitle: 'Una borraccia: spostarla, ridimensionarla, cambiarne il contenuto',
+      'Linea continua: carboidrati assorbiti all’ora. Tratteggiata: il tuo fabbisogno. Resta sotto il limite punteggiato. Scorri col dito sul grafico per leggere i valori.',
+    tourFillTitle: 'Una borraccia sul percorso',
     tourFillBody:
-      'Questa barra è la borraccia appena aggiunta. Puoi trascinare il centro per spostarla lungo il percorso, oppure il bordo sinistro o destro per accorciare o allungare il tratto in cui la bevi. Passandoci sopra con il cursore compaiono i pulsanti per cambiare il contenuto (acqua / izo / gel), se la borraccia ne ammette più di uno. Provalo dopo aver chiuso il tour.',
+      'Trascina la barra per spostare la borraccia lungo il percorso, o un bordo per cambiare quanto dura. Passaci sopra col mouse per cambiarne il contenuto.',
     tourFillBodyMobile:
-      'Questa è la borraccia appena aggiunta. Toccala per aprire la modifica — i pulsanti «da» e «a» la spostano lungo il percorso o ne cambiano la lunghezza del tratto, e i pulsanti accanto cambiano il contenuto (acqua / izo / gel), se la borraccia ne ammette più di uno.',
-    tourAddFillTitle: "Aggiungi un'altra ricarica",
-    tourAddFillBody:
-      "Questo pulsante «+» inserisce un'altra ricarica nel primo spazio libero del percorso — utile quando una borraccia si svuota e va riempita con qualcos'altro. Vale lo stesso per il cibo: i pulsanti dei prodotti sotto il grafico aggiungono un altro elemento con un clic.",
-    tourAddFillBodyMobile:
-      "Questo pulsante inserisce un'altra ricarica nel primo spazio libero del percorso — utile quando una borraccia si svuota e va riempita con qualcos'altro. Vale lo stesso per il cibo: i pulsanti dei prodotti più sotto aggiungono un altro elemento con un tocco.",
-    tourAddShopTitle: 'Punti di rifornimento',
-    tourAddShopBody:
-      'Questo «+» aggiunge sul grafico un indicatore di rifornimento (ad es. un negozio) — trascinalo in qualsiasi punto del percorso per segnare a che chilometro prevedi di comprare altro cibo o da bere.',
-    tourAddShopBodyMobile:
-      'Questo pulsante apre un piccolo modulo per un punto di rifornimento — inserisci il chilometro e un nome (ad es. un negozio) per segnare dove prevedi di comprare altro cibo o da bere.',
-    tourClosingTitle: "Questo è l'essenziale",
-    tourClosingBody:
-      "Le ricette per riempire borracce e ricariche sono sotto il grafico. Attrezzatura, Miscela, Prodotti e Impostazioni (peso, modalità di visualizzazione) sono nell'intestazione. Puoi rivedere questo tour in qualsiasi momento dal pulsante nel piè di pagina. Vuoi saperne di più? Trovi anche le FAQ nel piè di pagina.",
-    tourClosingBodyMobile:
-      'Le ricette per riempire le borracce sono dietro il pulsante «Ricette per borraccia» nella lista del piano. Impostazioni e lingua si cambiano nella scheda «Io», i rapporti della miscela e le borracce disponibili nelle schede «Mix» e «Attrezzatura». Puoi rivedere questo tour in qualsiasi momento dal pulsante nella scheda «Io». Vuoi saperne di più? Trovi le FAQ anche nella scheda «Io».',
+      'Tocca una borraccia per aprirla. ‘Da’ e ‘a’ la spostano lungo il percorso; i pulsanti accanto ne cambiano il contenuto.',
+    tourAutoplanTitle: 'Lascia fare all’app',
+    tourAutoplanBody:
+      'Clicca ‘Suggerisci un piano’ per crearne uno da percorso, attrezzatura e prodotti. Usalo come punto di partenza e rifiniscilo sul grafico.',
+    tourAutoplanBodyMobile:
+      'Apri il menu ‘Piano’ e scegli ‘Suggerisci un piano’. Nasce da percorso, attrezzatura e prodotti; poi lo rifinisci tu.',
+    tourRecipesTitle: 'Ricette e stampa',
+    tourRecipesBody:
+      'Le ricette qui dicono cosa mettere in ogni borraccia. Stampa il piano dal menu ‘Altro’ sopra il grafico e portalo con te.',
+    tourRecipesBodyMobile:
+      '‘Ricette per borraccia’ dice cosa mettere in ogni borraccia. Stampa o condividi il piano dal menu ‘Piano’ in alto.',
     tourNext: 'Avanti',
     tourBack: 'Indietro',
     tourSkip: 'Salta',
-    tourFinish: 'Fine',
     tourStepLabel: 'Passo',
-    tourReplayButton: 'Rivedi il tour',
-    tourConfirmTitle: 'Rivedere il tour?',
+    tourReplayButton: 'Fammi fare un giro',
+    tourConfirmTitle: 'Fare un giro guidato?',
     tourConfirmBody:
-      'Il tour caricherà dati di esempio (un percorso e una borraccia) al posto del tuo piano attuale. Puoi annullarlo con ↶ finché non ricarichi la pagina.',
+      'Il tour sostituisce il tuo piano con uno di esempio. ‘Ripristina il mio piano’ alla fine te lo restituisce.',
     tourConfirmCancel: 'Annulla',
     tourConfirmStart: 'Avvia il tour',
+    tourRestore: 'Ripristina il mio piano',
+    tourKeepSample: 'Continua con l’esempio',
+    sampleBarText: 'Stai guardando il piano di esempio del tour.',
+    sampleBarKeep: 'Tieni l’esempio',
+    setupTitle: 'Tu e la tua attrezzatura',
+    setupIntro: 'Tre domande veloci su di te e sulla tua attrezzatura. Ogni piano parte da qui.',
+    setupWeightTitle: 'Il tuo peso',
+    setupWeightWhere: 'Puoi cambiarlo poi in Impostazioni → Peso.',
+    setupWeightWhereMobile: 'Puoi cambiarlo poi nella scheda Io.',
+    setupGearTitle: 'Le borracce che usi',
+    setupGearHint: 'Spunta quello che hai e imposta il volume di ognuna.',
+    setupGearWhere: 'Puoi cambiarlo poi in Attrezzatura.',
+    setupAddBottle: 'Borraccia',
+    setupAddFlask: 'Flask',
+    setupAddBladder: 'Sacca idrica',
+    setupBottleName: 'Borraccia',
+    setupFlaskName: 'Flask',
+    setupBladderName: 'Sacca idrica',
+    setupFoodTitle: 'Cosa porti di solito (facoltativo)',
+    setupFoodHint: 'Spunta i prodotti che mangi in movimento.',
+    setupFoodWhere: 'Puoi cambiarlo poi in Prodotti.',
+    setupOwnFoodPlaceholder: 'Prodotto tuo',
+    setupOwnFoodAdd: 'Aggiungi',
+    setupSkip: 'Salta',
+    setupSave: 'Salva',
+    setupMenuItem: 'Tu e la tua attrezzatura',
+    hintRoute: 'Fatto. Inserisci qui il percorso: distanza e ritmo, o un file GPX.',
+    hintRouteMobile: 'Fatto. Tocca qui e inserisci il percorso: distanza e ritmo, o un file GPX.',
+    hintAutoplan: 'Genera il tuo primo piano.',
+    hintChart:
+      'Continua: ciò che assorbi. Tratteggiata: ciò che ti serve. Verde: coperto. ‘?’ spiega il resto.',
+    hintClose: 'Chiudi i suggerimenti',
     tabMix: 'Mix',
     editRoutePrefix: 'Modifica percorso:',
     narrationRate:
@@ -2385,6 +2535,15 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpBtnLabel: 'Spiega il grafico',
     chartHelpTitle: 'Come leggere questo grafico',
     chartHelpFullTour: 'Mostrami tutto il tour',
+    chartHelpEditTitle: 'Aggiungere al piano',
+    chartHelpAddFillBody:
+      'Il ‘+’ in fondo alla corsia di una borraccia aggiunge una ricarica nel primo spazio libero. I pulsanti dei prodotti sotto il grafico aggiungono cibo.',
+    chartHelpAddFillBodyMobile:
+      '‘+ ricarica’ sotto una borraccia aggiunge un altro riempimento nel primo spazio libero. I pulsanti dei prodotti più in basso aggiungono cibo.',
+    chartHelpAddStopBody:
+      'Il ‘+’ accanto al grafico aggiunge una sosta, ad es. un negozio. Trascinala al chilometro in cui comprerai cibo o bevande.',
+    chartHelpAddStopBodyMobile:
+      'Il pulsante per aggiungere una sosta nella lista del piano segna dove comprerai cibo o bevande: inserisci chilometro e nome.',
     chartHelpScrubNote:
       'Trascina il dito sul grafico per vedere i numeri esatti in ogni punto del percorso.',
     chartHelpAxisNote: 'I valori esatti sono indicati dai numeri sugli assi a sinistra e in basso.',

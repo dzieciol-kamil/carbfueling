@@ -33,6 +33,7 @@ export function SettingsPanel() {
   const themeMode = useAppStore((s) => s.ui.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const closePanel = useAppStore((s) => s.closePanel);
+  const openSetup = useAppStore((s) => s.openSetup);
   const strings = t(lang);
   const [pendingViewMode, setPendingViewMode] = useState<ViewMode | null>(null);
 
@@ -127,6 +128,27 @@ export function SettingsPanel() {
             style={{ width: '100%' }}
           />
         </label>
+
+        <button
+          type="button"
+          onClick={() => {
+            closePanel();
+            openSetup();
+          }}
+          style={{
+            border: '1px solid var(--chip-border)',
+            background: 'var(--surface)',
+            borderRadius: 10,
+            padding: '10px 14px',
+            fontFamily: 'Archivo, sans-serif',
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--ink)',
+            cursor: 'pointer',
+          }}
+        >
+          {strings.setupMenuItem}
+        </button>
       </PanelShell>
       {pendingViewMode && (
         <ConfirmDialog

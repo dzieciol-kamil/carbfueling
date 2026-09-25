@@ -4,6 +4,7 @@ import {
   DEFAULT_AUTOPLAN_OPTIONS,
   type AutoplanOptions,
 } from '../components/autoplan/autoplanOptions';
+import { ONBOARDING_VERSION, type OnboardingHint } from '../components/onboarding/onboardingFlow';
 import { autoplan } from '../domain/autoplan';
 import type { AutoplanResult, FoodSelectionEntry, StopRules } from '../domain/autoplan/types';
 import {
@@ -20,6 +21,7 @@ import { startFillOf } from '../domain/combinedRefill';
 import { clampWeightKg, dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
 import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
+import { TOUR_DEMO } from '../domain/tourDemo';
 import { LANGS, t, type Lang } from '../i18n/strings';
 import { createDebouncedLocalStorage } from './persistStorage';
 import {
@@ -133,8 +135,15 @@ interface UiState {
   timelineOpen: boolean;
   tab: MobileTab;
   tourStep: number | null;
-  tourSeen: boolean;
   tourDemoFid: number | null;
+  /** The newest first-run flow (see `ONBOARDING_VERSION`) this rider has been through. */
+  onboardingVersion: number;
+  /** The first-run hint on screen, or `null` once the sequence is over or was closed. */
+  onboardingHint: OnboardingHint | null;
+  setupOpen: boolean;
+  /** The tour's sample plan is on screen in place of the rider's own, which
+   *  `restorePreTourPlan` can still bring back. */
+  sampleActive: boolean;
   scrubX: number | null;
   gpxPeek: boolean;
   mixSheet: boolean;
@@ -210,6 +219,14 @@ interface AppState {
   closeTour: () => void;
   setTourStep: (n: number) => void;
   loadTourDemoData: () => void;
+  restorePreTourPlan: () => void;
+  dismissSample: () => void;
+
+  openSetup: () => void;
+  /** Closes "Set me up" without changing anything — Skip, ×, or after `applySetup`. */
+  closeSetup: () => void;
+  applySetup: (setup: SetupInput) => void;
+  setOnboardingHint: (hint: OnboardingHint | null) => void;
 
   setHoverKey: (key: string | null) => void;
   setDragKey: (key: string | null) => void;
@@ -273,6 +290,18 @@ interface AppState {
   clearPlan: () => void;
 }
 
+/**
+ * What "Set me up" saves. A vessel whose `gid`, or a product whose `key`, starts with `new:` is
+ * one the dialog added; the store gives it a real id.
+ */
+export interface SetupInput {
+  weight: number;
+  gear: Vessel[];
+  foodLib: FoodLibEntry[];
+}
+
+export const SETUP_NEW_PREFIX = 'new:';
+
 const defaultRoute: RouteInput = {
   sport: 'cycling',
   mode: 'route',
@@ -318,7 +347,7 @@ export function withColaAtStop(foodLib: FoodLibEntry[]): FoodLibEntry[] {
   );
 }
 
-const defaultFoodLib: FoodLibEntry[] = [
+export const DEFAULT_FOOD_LIB: FoodLibEntry[] = [
   {
     key: 'gel',
     pl: 'Żel energetyczny',
@@ -391,6 +420,25 @@ export function autoplanStopRules(
   return { riderStops: kept.map((sh) => sh.at), newStops: options.stopsMode === 'keepAndAdd' };
 }
 
+type PlanDoc = Pick<
+  AppState,
+  'route' | 'mix' | 'gear' | 'fills' | 'foods' | 'shops' | 'foodLib' | 'combinedFillIds'
+>;
+
+function planDocOf(s: PlanDoc): PlanDoc {
+  const { route, mix, gear, fills, foods, shops, foodLib, combinedFillIds } = s;
+  return { route, mix, gear, fills, foods, shops, foodLib, combinedFillIds };
+}
+
+/** The rider's plan from before the tour loaded its sample — see `loadTourDemoData`. */
+let preTourDoc: PlanDoc | null = null;
+
+/** Closing the setup for the first time is what starts the hints; reopening it later does not. */
+function finishSetup(ui: UiState): UiState {
+  if (ui.onboardingVersion >= ONBOARDING_VERSION) return { ...ui, setupOpen: false };
+  return { ...ui, setupOpen: false, onboardingVersion: ONBOARDING_VERSION, onboardingHint: 1 };
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -400,7 +448,7 @@ export const useAppStore = create<AppState>()(
       fills: defaultFills,
       foods: defaultFoods,
       shops: defaultShops,
-      foodLib: defaultFoodLib,
+      foodLib: DEFAULT_FOOD_LIB,
       combinedFillIds: defaultCombinedFillIds,
       ui: {
         lang: defaultLang(),
@@ -417,8 +465,11 @@ export const useAppStore = create<AppState>()(
         timelineOpen: false,
         tab: 'plan',
         tourStep: null,
-        tourSeen: false,
         tourDemoFid: null,
+        onboardingVersion: 0,
+        onboardingHint: null,
+        setupOpen: false,
+        sampleActive: false,
         scrubX: null,
         gpxPeek: false,
         mixSheet: false,
@@ -540,6 +591,8 @@ export const useAppStore = create<AppState>()(
               shopSheet: null,
               chartHelp: false,
               tourStep: null,
+              sampleActive: false,
+              tourDemoFid: null,
             },
           };
         }),
@@ -569,34 +622,107 @@ export const useAppStore = create<AppState>()(
       closeShopSheet: () => set((s) => ({ ui: { ...s.ui, shopSheet: null } })),
       startTour: () =>
         set((s) => ({
-          ui: { ...s.ui, tab: 'plan', tourStep: 0, tourSeen: true, tourDemoFid: null },
+          ui: { ...s.ui, tab: 'plan', tourStep: 0, tourDemoFid: null, setupOpen: false },
         })),
       closeTour: () => set((s) => ({ ui: { ...s.ui, tourStep: null } })),
       setTourStep: (n) => set((s) => ({ ui: { ...s.ui, tourStep: Math.max(0, n) } })),
+      // Replaces the whole plan document with TOUR_DEMO, ids remapped onto this store's counters.
+      // The rider's own document is kept aside the first time, so "Restore my plan" can bring it
+      // back however much the sample was played with — and a replay while the sample is still up
+      // keeps that first copy rather than saving the sample over it. In memory only (Q11).
       loadTourDemoData: () =>
         set((s) => {
           if (s.ui.tourDemoFid !== null) return {};
-          // Clears fills/foods/shops rather than appending to them: the replay
-          // confirmation promises demo data "in place of" the current plan, so
-          // repeated replays must not accumulate fills instead of replacing them.
-          const route: RouteInput = { ...s.route, mode: 'route', distance: 90, speed: 28 };
-          const distanceKm = dist(route);
-          const vessel = s.gear[0];
-          if (!vessel) return { route, fills: [], foods: [], shops: [] };
-          const span = bestGapSpan(gaps([], distanceKm), distanceKm);
-          if (!span) return { route, fills: [], foods: [], shops: [] };
-          const allowed: Fill['content'][] = vessel.allowed?.length ? vessel.allowed : ['izo'];
-          const content: Fill['content'] = allowed.includes('izo') ? 'izo' : allowed[0];
-          const fid = s.nextFid;
+          if (!s.ui.sampleActive) preTourDoc = planDocOf(s);
+          const gids = new Map(TOUR_DEMO.gear.map((v, i) => [v.gid, 'g' + (s.nextGid + i)]));
+          const gidOf = (gid: string) => gids.get(gid) ?? gid;
+          const fills = TOUR_DEMO.fills.map((f) => ({
+            ...f,
+            fid: s.nextFid + f.fid,
+            gid: gidOf(f.gid),
+          }));
+          const lib = new Map(DEFAULT_FOOD_LIB.map((e) => [e.key, e]));
+          const foods = TOUR_DEMO.foods.map((f) => {
+            const entry = lib.get(f.key);
+            return { ...f, id: s.nextFoodId + f.id, name: entry ? entry[s.ui.lang] : f.name };
+          });
+          const stopName = t(s.ui.lang).shopDefaultName;
+          const shops = TOUR_DEMO.shops.map((sh, i) => ({
+            id: s.nextShopId + i,
+            at: sh.at,
+            name: stopName,
+          }));
           return {
-            route,
-            fills: [{ fid, gid: vessel.gid, content, from: span.from, to: span.to }],
-            foods: [],
-            shops: [],
-            nextFid: fid + 1,
-            ui: { ...s.ui, tourDemoFid: fid },
+            route: TOUR_DEMO.route,
+            mix: TOUR_DEMO.mix,
+            gear: TOUR_DEMO.gear.map((v) => ({ ...v, gid: gidOf(v.gid) })),
+            fills,
+            foods,
+            shops,
+            combinedFillIds: [],
+            nextGid: s.nextGid + TOUR_DEMO.gear.length,
+            nextFid: s.nextFid + fills.length,
+            nextFoodId: s.nextFoodId + foods.length,
+            nextShopId: s.nextShopId + shops.length,
+            ui: {
+              ...s.ui,
+              tourDemoFid: fills[TOUR_DEMO.targetFill].fid,
+              sampleActive: true,
+              selKey: null,
+              hoverKey: null,
+              dragKey: null,
+            },
           };
         }),
+      restorePreTourPlan: () =>
+        set((s) => {
+          const doc = s.ui.sampleActive ? preTourDoc : null;
+          preTourDoc = null;
+          const ui = {
+            ...s.ui,
+            sampleActive: false,
+            tourDemoFid: null,
+            selKey: null,
+            hoverKey: null,
+            dragKey: null,
+          };
+          return doc ? { ...doc, ui } : { ui };
+        }),
+      dismissSample: () => {
+        preTourDoc = null;
+        set((s) => ({ ui: { ...s.ui, sampleActive: false, tourDemoFid: null } }));
+      },
+
+      openSetup: () => set((s) => ({ ui: { ...s.ui, setupOpen: true, tourStep: null } })),
+      closeSetup: () => set((s) => ({ ui: finishSetup(s.ui) })),
+      // One write for the whole dialog, so it is one undo step. Vessels and products left out
+      // are removed the way removeVessel/removeFoodLibEntry remove them: a vessel takes its
+      // fills along, a product leaves what is already on the chart.
+      applySetup: (setup) =>
+        set((s) => {
+          let nextGid = s.nextGid;
+          let nextFoodKey = s.nextFoodKey;
+          const gear = setup.gear.map((v) =>
+            v.gid.startsWith(SETUP_NEW_PREFIX) ? { ...v, gid: 'g' + nextGid++ } : v,
+          );
+          const foodLib = setup.foodLib.map((e) =>
+            e.key.startsWith(SETUP_NEW_PREFIX) ? { ...e, key: 'u' + nextFoodKey++ } : e,
+          );
+          const kept = new Set(gear.map((v) => v.gid));
+          const fills = s.fills.filter((f) => kept.has(f.gid));
+          const fids = new Set(fills.map((f) => f.fid));
+          return {
+            route: { ...s.route, weight: clampWeightKg(setup.weight) },
+            gear,
+            fills,
+            combinedFillIds: s.combinedFillIds.filter((fid) => fids.has(fid)),
+            foodLib,
+            nextGid,
+            nextFoodKey,
+            ui: finishSetup(s.ui),
+          };
+        }),
+      setOnboardingHint: (onboardingHint) => set((s) => ({ ui: { ...s.ui, onboardingHint } })),
 
       setHoverKey: (hoverKey) => set((s) => ({ ui: { ...s.ui, hoverKey } })),
       setDragKey: (dragKey) => set((s) => ({ ui: { ...s.ui, dragKey } })),
@@ -892,12 +1018,19 @@ export const useAppStore = create<AppState>()(
           foods: [],
           shops: [],
           combinedFillIds: [],
-          ui: { ...s.ui, selKey: null, hoverKey: null, dragKey: null },
+          ui: {
+            ...s.ui,
+            selKey: null,
+            hoverKey: null,
+            dragKey: null,
+            sampleActive: false,
+            tourDemoFid: null,
+          },
         })),
     }),
     {
       name: 'carbfueling',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => createDebouncedLocalStorage(400)),
       // v1 -> v2: the combine-bottles feature moved from a per-vessel "start fill only"
       // checkbox (combineStartGids: vessel ids) to a per-fill one (combinedFillIds: fill
@@ -915,6 +1048,9 @@ export const useAppStore = create<AppState>()(
       // selected back to "rate" instead of leaving a value the type no longer allows.
       // v5 -> v6: cola in a library saved before `needsStop` existed gets its default, a stop
       // (see withColaAtStop).
+      // v6 -> v7: `tourSeen` became `onboardingVersion` — a number, so a later release can open
+      // the first-run setup again for riders who have already been through it (Q10). Having seen
+      // the tour counts as version 1.
       migrate: (persistedState, version) => {
         const s = persistedState as
           (Partial<AppState> & { combineStartGids?: string[] }) | undefined;
@@ -950,6 +1086,11 @@ export const useAppStore = create<AppState>()(
         }
         if (version < 6 && Array.isArray(s.foodLib)) {
           s.foodLib = withColaAtStop(s.foodLib);
+        }
+        if (version < 7 && s.ui) {
+          const ui = s.ui as Partial<UiState> & { tourSeen?: boolean };
+          ui.onboardingVersion = ui.tourSeen ? 1 : 0;
+          delete ui.tourSeen;
         }
         return s;
       },
@@ -999,12 +1140,14 @@ export const useAppStore = create<AppState>()(
             // sheet open stores `mixSheet: true`, and the next visit opens on that sheet
             // instead of the plan.
             //
-            // tourStep is deliberately NOT in this list, even though it gates an overlay too.
-            // startTour sets tourSeen at step 0, and tourSeen is a preference that has to
-            // survive — so resetting the step alone would strand a first-time visitor who
-            // reloaded mid-tour: the overlay would go, and App's `if (tourSeen) return` guard
-            // would never bring it back. Leaving the step persisted resumes the tour where it
-            // was, which is what happened before this block existed.
+            // The tour is one of them now that it only ever runs on request. Its sample plan
+            // stays, but the copy of the rider's own plan it would restore lived in memory and is
+            // gone, so there is nothing left to offer "Restore my plan" for either. The setup
+            // needs no saving: App opens it again for as long as it has not been finished.
+            tourStep: currentState.ui.tourStep,
+            tourDemoFid: currentState.ui.tourDemoFid,
+            sampleActive: currentState.ui.sampleActive,
+            setupOpen: currentState.ui.setupOpen,
             mixSheet: currentState.ui.mixSheet,
             routeSheet: currentState.ui.routeSheet,
             shopSheet: currentState.ui.shopSheet,

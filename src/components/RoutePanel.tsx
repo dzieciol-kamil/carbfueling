@@ -155,6 +155,7 @@ export function RoutePanel() {
 
   return (
     <div
+      data-onboarding="route"
       style={{
         // flexShrink 0 pins this to exactly 760px; a residual flexGrow of 1 (vs.
         // SummaryCards' 9999) only matters once this wraps onto its own row, where
