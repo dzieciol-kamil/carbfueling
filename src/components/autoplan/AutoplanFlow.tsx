@@ -91,40 +91,45 @@ function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
 }
 
 /** How long the applied note stays up on its own. */
-export const APPLIED_NOTE_MS = 8000;
+const APPLIED_NOTE_MS = 8000;
 
 /**
  * A thin light strip along the note's top edge that runs out right to left, then closes it: it
  * draws the eye to a note at the bottom of the screen that was easy to miss, and saves the click
- * on OK. Hovering holds it, so a slow reader isn't cut off.
+ * on OK. `paused` holds it while the note is hovered or focused, so nobody is cut off mid-read.
  */
-function CountdownBar({ durationMs, onDone }: { durationMs: number; onDone: () => void }) {
+function CountdownBar({
+  durationMs,
+  paused,
+  onDone,
+}: {
+  durationMs: number;
+  paused: boolean;
+  onDone: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const anim = useRef<Animation | null>(null);
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const anim = el.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], {
+    const a = el.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], {
       duration: durationMs,
       easing: 'linear',
       fill: 'forwards',
     });
-    anim.finished.then(
+    anim.current = a;
+    a.finished.then(
       () => done.current(),
       () => {},
     );
-    const note = el.parentElement;
-    const pause = () => anim.pause();
-    const play = () => anim.play();
-    note?.addEventListener('pointerenter', pause);
-    note?.addEventListener('pointerleave', play);
-    return () => {
-      anim.cancel();
-      note?.removeEventListener('pointerenter', pause);
-      note?.removeEventListener('pointerleave', play);
-    };
+    return () => a.cancel();
   }, [durationMs]);
+  useEffect(() => {
+    if (paused) anim.current?.pause();
+    else anim.current?.play();
+  }, [paused]);
   return (
     <div
       ref={ref}
@@ -210,6 +215,11 @@ export function AutoplanFlow({
   const setTab = useAppStore((s) => s.setTab);
   const strings = t(lang);
   const [phase, setPhase] = useState<Phase>('idle');
+  // Hover or keyboard focus on the applied note holds its countdown.
+  const [noteHeld, setNoteHeld] = useState(false);
+  useEffect(() => {
+    if (phase !== 'appliedNote') setNoteHeld(false);
+  }, [phase]);
   const gate = autoplanGate(route);
 
   // One run at a time. `runId` is bumped whenever a run ends (done, limit, error, Cancel,
@@ -367,8 +377,19 @@ export function AutoplanFlow({
       )}
 
       {phase === 'appliedNote' && (
-        <div style={noteStyle(variant)}>
-          <CountdownBar durationMs={APPLIED_NOTE_MS} onDone={() => setPhase('idle')} />
+        <div
+          role="status"
+          style={noteStyle(variant)}
+          onPointerEnter={() => setNoteHeld(true)}
+          onPointerLeave={() => setNoteHeld(false)}
+          onFocus={() => setNoteHeld(true)}
+          onBlur={() => setNoteHeld(false)}
+        >
+          <CountdownBar
+            durationMs={APPLIED_NOTE_MS}
+            paused={noteHeld}
+            onDone={() => setPhase('idle')}
+          />
           <span>
             {gate === 'shortRide' ? strings.autoplanShortRideNote : strings.autoplanAppliedNote}
           </span>

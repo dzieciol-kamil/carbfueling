@@ -279,6 +279,7 @@ export interface StringTable {
   hintRouteMobile: string;
   hintAutoplan: string;
   hintChart: string;
+  hintChartMobile: string;
   hintClose: string;
   tabMix: string;
   editRoutePrefix: string;
@@ -795,7 +796,9 @@ export const STR: Record<Lang, StringTable> = {
       'Teraz stuknij tutaj i wpisz trasę: dystans i prędkość dla jazdy rowerem albo dystans i tempo dla biegania.',
     hintAutoplan: 'Wygeneruj swój pierwszy plan.',
     hintChart:
-      'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Kreskowana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nKliknij „?”, żeby dowiedzieć się więcej.',
+      'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Na wykresie pod nim przerywana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nKliknij „?”, żeby dowiedzieć się więcej.',
+    hintChartMobile:
+      'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Na wykresie pod nim przerywana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nStuknij „?”, żeby dowiedzieć się więcej.',
     hintClose: 'Zamknij podpowiedzi',
     tabMix: 'Mieszanka',
     editRoutePrefix: 'Edytuj trasę:',
@@ -1376,7 +1379,9 @@ export const STR: Record<Lang, StringTable> = {
       'Now tap here to enter your route: distance and speed for cycling, or distance and pace for running.',
     hintAutoplan: 'Generate your first plan.',
     hintChart:
-      'The top strip is your stomach: what it’s digesting right now. The dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nClick ‘?’ to learn more.',
+      'The top strip is your stomach: what it’s digesting right now. On the chart below it, the dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nClick ‘?’ to learn more.',
+    hintChartMobile:
+      'The top strip is your stomach: what it’s digesting right now. On the chart below it, the dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nTap ‘?’ to learn more.',
     hintClose: 'Close tips',
     tabMix: 'Mix',
     editRoutePrefix: 'Edit route:',
@@ -1954,7 +1959,9 @@ export const STR: Record<Lang, StringTable> = {
       'Tippe jetzt hier und gib deine Strecke ein: Distanz und Geschwindigkeit fürs Radfahren oder Distanz und Pace fürs Laufen.',
     hintAutoplan: 'Erstelle deinen ersten Plan.',
     hintChart:
-      'Der obere Streifen ist dein Magen: was er gerade verdaut. Die gestrichelte Linie zeigt, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nKlick auf „?“ für mehr.',
+      'Der obere Streifen ist dein Magen: was er gerade verdaut. Im Diagramm darunter zeigt die gestrichelte Linie, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nKlick auf „?“ für mehr.',
+    hintChartMobile:
+      'Der obere Streifen ist dein Magen: was er gerade verdaut. Im Diagramm darunter zeigt die gestrichelte Linie, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nTipp auf „?“ für mehr.',
     hintClose: 'Tipps schließen',
     tabMix: 'Mix',
     editRoutePrefix: 'Strecke bearbeiten:',
@@ -2537,7 +2544,9 @@ export const STR: Record<Lang, StringTable> = {
       'Ora tocca qui e inserisci il percorso: distanza e velocità per la bici, o distanza e ritmo per la corsa.',
     hintAutoplan: 'Genera il tuo primo piano.',
     hintChart:
-      'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. La linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nClicca ‘?’ per saperne di più.',
+      'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. Nel grafico sotto, la linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nClicca ‘?’ per saperne di più.',
+    hintChartMobile:
+      'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. Nel grafico sotto, la linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nTocca ‘?’ per saperne di più.',
     hintClose: 'Chiudi i suggerimenti',
     tabMix: 'Mix',
     editRoutePrefix: 'Modifica percorso:',

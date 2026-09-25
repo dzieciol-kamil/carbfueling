@@ -172,7 +172,7 @@ export function MobilePlanList() {
           >
             {carbPct}%
           </div>
-          {(carbStatus === 'over' || carbStatus === 'unneeded') && (
+          {(carbStatus === 'over' || (carbStatus === 'unneeded' && totalHours(route) > 0)) && (
             <div style={{ fontSize: 10, fontWeight: 600, color: carbTint.fg }}>
               {carbStatus === 'over' ? strings.carbOverCapLabel : strings.carbUnneededLabel}
             </div>
