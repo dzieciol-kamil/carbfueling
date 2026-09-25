@@ -23,17 +23,18 @@ const headerTagline: CSSProperties = {
   textTransform: 'uppercase',
   color: 'var(--muted)',
 };
+// The calculator's autoplan button's green, so the way in looks like the thing it leads to.
 const ctaButton: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 8,
-  border: '1px solid var(--chip-border)',
-  background: 'var(--surface)',
+  border: '1px solid color-mix(in srgb, var(--status-good-fg) 35%, transparent)',
+  background: 'var(--status-good-bg)',
   borderRadius: 999,
   padding: '9px 16px',
   fontSize: 13,
   fontWeight: 600,
-  color: 'var(--ink)',
+  color: 'var(--status-good-fg)',
   whiteSpace: 'nowrap',
 };
 
@@ -139,10 +140,9 @@ body { padding-top: var(--landing-header-h); }
   border-radius: 0.75em; border: 1px solid var(--border); background: var(--surface);
   box-shadow: 0 1.5em 3.5em rgba(22, 25, 28, 0.16);
 }
-.landing-cap br { display: none; }
-/* Each phrase is atomic, so this line can only break at its separators, never
-   mid-phrase. */
-.landing-cap span { white-space: nowrap; }
+/* The closing slide's headline is a list of short phrases; each is atomic, so the line can only
+   break at its separators, never mid-phrase. */
+.landing-cta-title span { white-space: nowrap; }
 .landing-cap {
   margin: 0 0 0.83em; max-width: 31.6em;
   font-family: 'JetBrains Mono', monospace; font-size: 0.75em; font-weight: 600;
@@ -297,6 +297,9 @@ body { padding-top: var(--landing-header-h); }
     padding: 6px 10px !important; font-size: 11px !important; white-space: nowrap;
   }
   .landing-actions { gap: 6px; }
+  /* The arrow is the part of the button a phone can spare: it buys back the width the bar is
+     short of, and the green alone still reads as the way in. */
+  .landing-cta-arrow { display: none; }
 
   /* Each slide becomes a window onto its own photograph. "clip-path" makes the slide a
      containing block for a "position: fixed" child, so the picture is pinned to the
@@ -336,18 +339,14 @@ body { padding-top: var(--landing-header-h); }
     font-size: clamp(24px, 7vw, 32px); line-height: 1.2; min-height: 0;
   }
   /* The desktop rag is hand-set; let the text find its own breaks when narrow. */
-  .landing-q br,
-  .landing-cta-title br { display: none; }
+  .landing-q br { display: none; }
   .landing-shot {
-    width: 100%; margin: calc(2.2em + 2svh) 0 0 !important;
+    width: 100%; margin: calc(0.8em + 1svh) 0 0 !important;
     align-items: flex-start !important; text-align: left !important;
   }
   /* Sits with the screenshot it labels, over on the right, rather than stranded at the
      opposite edge. */
-  /* Wide enough that only the explicit break splits it — the 72% cap was clipping the
-     second line into a third. */
   .landing-cap { max-width: 100%; margin-left: auto; text-align: right; }
-  .landing-cap br { display: inline; }
   /* Half a screenshot, hung off the right edge and dropped below the question, so the
      rider along the bottom-left of the photograph stays in view. The transform keeps
      this purely visual — the caption above it does not move with it. */
@@ -382,9 +381,9 @@ body { padding-top: var(--landing-header-h); }
   .landing-slide[data-slide='2'] .landing-cap {
     margin-left: 0 !important; margin-right: auto !important; text-align: left !important;
   }
-  /* mix.jpg is a 3.5:1 banner, so its width is what governs. Sized so the window
-     starts below 48% of the card — "Sugar 1:1" begins at 54% and "Lemon" at 52.5%,
-     and both need to be whole for the slide to make its point. */
+  /* mix.png is the Drink card (~1.7:1), sized off the viewport height like the others. The
+     window shows its right half, from the "Honey 0.8:1" button on, which is the part that
+     makes the slide's point — honey rather than a bought mix. */
   .landing-slide[data-slide='2'] .landing-shot img {
     width: 66vh; height: auto;
     margin-left: calc(78.6vw - 63.49vh - 62.5px);
@@ -421,11 +420,6 @@ body { padding-top: var(--landing-header-h); }
     margin-top: 30svh !important;
   }
 
-  .landing-slide[data-slide='4'] .landing-cap {
-    margin: 0 auto !important; text-align: center !important;
-    font-size: 0.66em; letter-spacing: 0.06em;
-  }
-
   .site-footer { padding: 16px 1.35em 20px; gap: 16px; }
   .site-footer-columns { grid-template-columns: 1fr; gap: 18px; }
 
@@ -453,7 +447,8 @@ export default function LandingEn() {
             labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
           />
           <a href={calculatorHref('en')} style={ctaButton}>
-            Open the calculator →
+            Open the planner
+            <span className="landing-cta-arrow">→</span>
           </a>
         </div>
       </header>
@@ -478,11 +473,12 @@ export default function LandingEn() {
             </h1>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
-                This is what <br />a plan for your route looks like
+                Plan how many carbs and how much fluid to take on your route — and how to spread
+                them out over time.
               </figcaption>
               <img
                 className="is-light"
-                src={assetHref('/landing/hero.jpg')}
+                src={assetHref('/landing/hero.png')}
                 alt="Carb Fueling app: route, coverage cards, and the fueling plan chart"
               />
               <img
@@ -514,18 +510,18 @@ export default function LandingEn() {
             </h2>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
-                You probably already have <br />
-                what you need in your kitchen
+                Mix your own drink from what you have in your kitchen — the planner gives you the
+                proportions.
               </figcaption>
               <img
                 className="is-light"
-                src={assetHref('/landing/mix.jpg')}
-                alt="Mix & bottles panel: the isotonic recipe, measured out in sugar, salt and lemon"
+                src={assetHref('/landing/mix.png')}
+                alt="Mix & bottles panel: the isotonic recipe, measured out in honey, salt and lemon"
               />
               <img
                 className="is-dark"
                 src={assetHref('/landing/mix-dark.png')}
-                alt="Mix & bottles panel: the isotonic recipe, measured out in sugar, salt and lemon"
+                alt="Mix & bottles panel: the isotonic recipe, measured out in honey, salt and lemon"
               />
             </figure>
           </div>
@@ -548,10 +544,13 @@ export default function LandingEn() {
               it coming?
             </h2>
             <figure className="landing-shot">
-              <figcaption className="landing-cap">See the gap before it turns critical</figcaption>
+              <figcaption className="landing-cap">
+                Enter your route and what you carry — the chart shows the gap before it turns
+                critical.
+              </figcaption>
               <img
                 className="is-light"
-                src={assetHref('/landing/chart.jpg')}
+                src={assetHref('/landing/chart.png')}
                 alt="The planning chart, showing the gap between the carbs absorbed and the carbs burned"
               />
               <img
@@ -586,18 +585,12 @@ export default function LandingEn() {
               padding: 24,
             }}
           >
-            <p
-              className="landing-cap"
-              style={{ margin: 0, maxWidth: 'none', color: 'var(--muted-3)' }}
-            >
-              <span>Free</span> · <span>no account</span> · <span>runs in your browser</span>
-            </p>
             <h2
               className="landing-cta-title"
               style={{ fontSize: 28, lineHeight: 1.3, fontWeight: 700, margin: 0 }}
             >
-              Plan how many carbs and how much fluid to take on your route — and how to spread them
-              out over time.
+              <span>Free</span> · <span>no account</span> · <span>no cookies</span> ·{' '}
+              <span>runs in your browser</span>
             </h2>
             <a
               href={calculatorHref('en')}
@@ -605,8 +598,9 @@ export default function LandingEn() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                background: 'var(--selected-bg)',
-                color: 'var(--on-brand)',
+                border: ctaButton.border,
+                background: ctaButton.background,
+                color: ctaButton.color,
                 borderRadius: 999,
                 padding: '14px 28px',
                 fontSize: 15,
@@ -614,7 +608,7 @@ export default function LandingEn() {
                 marginTop: 8,
               }}
             >
-              Open the calculator →
+              Open the planner →
             </a>
             <a
               href={faqHref('en')}
