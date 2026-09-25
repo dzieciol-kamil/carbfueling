@@ -85,7 +85,10 @@ export function OnboardingHints() {
     if (!visible) return;
     const measure = () => {
       const el = document.querySelector(ANCHOR[hint]);
-      const r = el?.getBoundingClientRect();
+      // Step aside while the anchor's own menu is open (the phone's Plan menu): the bubble
+      // would sit right on top of the list it is asking the rider to use.
+      const menuOpen = !!el?.querySelector('[aria-expanded="true"]');
+      const r = menuOpen ? undefined : el?.getBoundingClientRect();
       const next =
         r && r.width > 0 ? { top: r.top, left: r.left, width: r.width, height: r.height } : null;
       setRect((prev) => (sameRect(prev, next) ? prev : next));
@@ -94,10 +97,14 @@ export function OnboardingHints() {
     const poll = setInterval(measure, 300);
     window.addEventListener('scroll', measure, true);
     window.addEventListener('resize', measure);
+    // After the click has been handled, so an opened menu is already marked expanded.
+    const onClick = () => setTimeout(measure);
+    window.addEventListener('click', onClick, true);
     return () => {
       clearInterval(poll);
       window.removeEventListener('scroll', measure, true);
       window.removeEventListener('resize', measure);
+      window.removeEventListener('click', onClick, true);
     };
   }, [visible, hint]);
 
