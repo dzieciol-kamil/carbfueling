@@ -789,8 +789,10 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Pomiń',
     setupSave: 'Zapisz',
     setupMenuItem: 'Ty i Twój sprzęt',
-    hintRoute: 'Gotowe. Wpisz tu swoją trasę: dystans i tempo albo plik GPX.',
-    hintRouteMobile: 'Gotowe. Stuknij tutaj i wpisz trasę: dystans i tempo albo plik GPX.',
+    hintRoute:
+      'Teraz wpisz tu swoją trasę: dystans i prędkość dla jazdy rowerem albo dystans i tempo dla biegania.',
+    hintRouteMobile:
+      'Teraz stuknij tutaj i wpisz trasę: dystans i prędkość dla jazdy rowerem albo dystans i tempo dla biegania.',
     hintAutoplan: 'Wygeneruj swój pierwszy plan.',
     hintChart:
       'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Kreskowana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nKliknij „?”, żeby dowiedzieć się więcej.',
@@ -1368,8 +1370,10 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Skip',
     setupSave: 'Save',
     setupMenuItem: 'You & your kit',
-    hintRoute: 'You’re set. Enter your route here: distance and pace, or a GPX file.',
-    hintRouteMobile: 'You’re set. Tap here to enter your route: distance and pace, or a GPX file.',
+    hintRoute:
+      'Now enter your route here: distance and speed for cycling, or distance and pace for running.',
+    hintRouteMobile:
+      'Now tap here to enter your route: distance and speed for cycling, or distance and pace for running.',
     hintAutoplan: 'Generate your first plan.',
     hintChart:
       'The top strip is your stomach: what it’s digesting right now. The dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nClick ‘?’ to learn more.',
@@ -1944,9 +1948,10 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Überspringen',
     setupSave: 'Speichern',
     setupMenuItem: 'Du & deine Ausrüstung',
-    hintRoute: 'Fertig. Gib hier deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
+    hintRoute:
+      'Gib jetzt hier deine Strecke ein: Distanz und Geschwindigkeit fürs Radfahren oder Distanz und Pace fürs Laufen.',
     hintRouteMobile:
-      'Fertig. Tippe hier und gib deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
+      'Tippe jetzt hier und gib deine Strecke ein: Distanz und Geschwindigkeit fürs Radfahren oder Distanz und Pace fürs Laufen.',
     hintAutoplan: 'Erstelle deinen ersten Plan.',
     hintChart:
       'Der obere Streifen ist dein Magen: was er gerade verdaut. Die gestrichelte Linie zeigt, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nKlick auf „?“ für mehr.',
@@ -2526,8 +2531,10 @@ export const STR: Record<Lang, StringTable> = {
     setupSkip: 'Salta',
     setupSave: 'Salva',
     setupMenuItem: 'Tu e la tua attrezzatura',
-    hintRoute: 'Fatto. Inserisci qui il percorso: distanza e ritmo, o un file GPX.',
-    hintRouteMobile: 'Fatto. Tocca qui e inserisci il percorso: distanza e ritmo, o un file GPX.',
+    hintRoute:
+      'Ora inserisci qui il percorso: distanza e velocità per la bici, o distanza e ritmo per la corsa.',
+    hintRouteMobile:
+      'Ora tocca qui e inserisci il percorso: distanza e velocità per la bici, o distanza e ritmo per la corsa.',
     hintAutoplan: 'Genera il tuo primo piano.',
     hintChart:
       'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. La linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nClicca ‘?’ per saperne di più.',
