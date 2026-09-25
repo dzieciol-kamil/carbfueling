@@ -63,6 +63,7 @@ export interface StringTable {
   timeline: string;
   axisTime: string;
   gutOver: string;
+  carbOverCapLabel: string;
   gutAt: string;
   dry: string;
   dryAt: string;
@@ -535,6 +536,7 @@ export const STR: Record<Lang, StringTable> = {
     timeline: 'Rozkład',
     axisTime: 'godziny',
     gutOver: 'Za dużo naraz — ',
+    carbOverCapLabel: 'ponad limit wchłaniania',
     gutAt: ' g zalega w żołądku ok. ',
     dry: 'Dziura w tankowaniu: ',
     dryAt: ' bez cukru, ok. ',
@@ -1113,6 +1115,7 @@ export const STR: Record<Lang, StringTable> = {
     timeline: 'Schedule',
     axisTime: 'hours',
     gutOver: 'Too much at once — ',
+    carbOverCapLabel: 'above absorption limit',
     gutAt: ' g sitting in the stomach around ',
     dry: 'Fuelling gap: ',
     dryAt: ' with no carbs, around ',
@@ -1686,6 +1689,7 @@ export const STR: Record<Lang, StringTable> = {
     timeline: 'Zeitplan',
     axisTime: 'Stunden',
     gutOver: 'Zu viel auf einmal — ',
+    carbOverCapLabel: 'über dem Aufnahmelimit',
     gutAt: ' g liegen im Magen gegen ',
     dry: 'Versorgungslücke: ',
     dryAt: ' ohne Kohlenhydrate, gegen ',
@@ -2266,6 +2270,7 @@ export const STR: Record<Lang, StringTable> = {
     timeline: 'Programma',
     axisTime: 'ore',
     gutOver: 'Troppo in una volta — ',
+    carbOverCapLabel: 'oltre il limite di assorbimento',
     gutAt: ' g fermi nello stomaco verso ',
     dry: 'Buco nel rifornimento: ',
     dryAt: ' senza carboidrati, verso ',

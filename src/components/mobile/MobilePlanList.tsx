@@ -172,6 +172,11 @@ export function MobilePlanList() {
           >
             {carbPct}%
           </div>
+          {carbStatus === 'over' && (
+            <div style={{ fontSize: 10, fontWeight: 600, color: carbTint.fg }}>
+              {strings.carbOverCapLabel}
+            </div>
+          )}
           <div
             style={{
               height: 4,
