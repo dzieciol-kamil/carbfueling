@@ -83,46 +83,87 @@ export function OnboardingHints() {
 
   const strings = t(lang);
   const { width, style } = bubblePosition(rect, 280, 120);
+  // The bubble has to point at something, or it reads as a stray toast: a caret on the edge
+  // facing the anchor, aimed near its left end (a wide anchor such as the chart has no useful
+  // centre), and a ring around the anchor itself.
+  const below = style.top !== undefined;
+  const bubbleLeft = Number(style.left);
+  const caretX = Math.min(
+    Math.max(rect.left + Math.min(rect.width / 2, 60) - bubbleLeft, 18),
+    width - 18,
+  );
 
   return (
-    <div
-      role="status"
-      style={{
-        ...style,
-        width,
-        zIndex: 150,
-        background: 'var(--selected-bg)',
-        color: 'var(--on-brand)',
-        borderRadius: 12,
-        padding: '10px 12px 10px 14px',
-        boxShadow: '0 14px 34px rgba(0,0,0,0.24)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 10,
-        fontSize: 13,
-        lineHeight: 1.45,
-        boxSizing: 'border-box',
-      }}
-    >
-      <span style={{ flex: 1 }}>{hintText(hint, strings, desktop)}</span>
-      <button
-        type="button"
-        onClick={() => setOnboardingHint(null)}
-        aria-label={strings.hintClose}
-        title={strings.hintClose}
+    <>
+      <div
+        aria-hidden="true"
         style={{
-          border: 'none',
-          background: 'none',
-          color: 'inherit',
-          opacity: 0.8,
-          cursor: 'pointer',
+          position: 'fixed',
+          top: rect.top - 5,
+          left: rect.left - 5,
+          width: rect.width + 10,
+          height: rect.height + 10,
+          border: '2px solid var(--selected-bg)',
+          borderRadius: 14,
+          boxShadow: '0 0 0 4px rgba(90,163,63,0.25)',
+          pointerEvents: 'none',
+          zIndex: 149,
+          boxSizing: 'border-box',
+        }}
+      />
+      <div
+        role="status"
+        style={{
+          ...style,
+          width,
+          zIndex: 150,
+          background: 'var(--selected-bg)',
+          color: 'var(--on-brand)',
+          borderRadius: 12,
+          padding: '10px 12px 10px 14px',
+          boxShadow: '0 14px 34px rgba(0,0,0,0.24)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
           fontSize: 13,
-          padding: 2,
-          flex: '0 0 auto',
+          lineHeight: 1.45,
+          boxSizing: 'border-box',
         }}
       >
-        ✕
-      </button>
-    </div>
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: caretX - 7,
+            [below ? 'top' : 'bottom']: -6,
+            width: 14,
+            height: 14,
+            background: 'var(--selected-bg)',
+            transform: 'rotate(45deg)',
+            borderRadius: 2,
+          }}
+        />
+        <span style={{ flex: 1, position: 'relative' }}>{hintText(hint, strings, desktop)}</span>
+        <button
+          type="button"
+          onClick={() => setOnboardingHint(null)}
+          aria-label={strings.hintClose}
+          title={strings.hintClose}
+          style={{
+            position: 'relative',
+            border: 'none',
+            background: 'none',
+            color: 'inherit',
+            opacity: 0.8,
+            cursor: 'pointer',
+            fontSize: 13,
+            padding: 2,
+            flex: '0 0 auto',
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    </>
   );
 }
