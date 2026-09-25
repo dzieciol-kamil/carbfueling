@@ -212,6 +212,16 @@ export function AutoplanPreflightModal({
     { value: 'keepOnly' as const, label: strings.autoplanStopsKeepOnly },
     { value: 'clear' as const, label: strings.autoplanStopsClear },
   ];
+  // Without stops of his own there is nothing to keep or clear, so the choice is only whether
+  // the plan may add stops: 'keepOnly' then means none at all (see autoplanStopRules).
+  const noStopsOptions = [
+    { value: 'keepAndAdd' as const, label: strings.autoplanStopsAllow },
+    { value: 'keepOnly' as const, label: strings.autoplanStopsNone },
+  ];
+  const noStopsHints: Partial<Record<StopsMode, string>> = {
+    keepAndAdd: strings.autoplanStopsAllowHint,
+    keepOnly: strings.autoplanStopsNoneHint,
+  };
   const stopsModeHints: Record<StopsMode, string> = {
     keepAndAdd: strings.autoplanStopsKeepAndAddHint,
     keepOnly: strings.autoplanStopsKeepOnlyHint,
@@ -275,11 +285,17 @@ export function AutoplanPreflightModal({
         </div>
       </Section>
 
-      {hasOwnStops && (
+      {hasOwnStops ? (
         <Section>
           <span style={sectionTitleStyle}>{strings.autoplanStopsTitle}</span>
           <SegmentedControl options={stopsModeOptions} value={stopsMode} onChange={setStopsMode} />
           <p style={segmentDescriptionStyle}>{stopsModeHints[stopsMode]}</p>
+        </Section>
+      ) : (
+        <Section>
+          <span style={sectionTitleStyle}>{strings.autoplanStopsTitleNone}</span>
+          <SegmentedControl options={noStopsOptions} value={stopsMode} onChange={setStopsMode} />
+          <p style={segmentDescriptionStyle}>{noStopsHints[stopsMode]}</p>
         </Section>
       )}
 
