@@ -40,11 +40,13 @@ const ROOT_STYLE = `
   :root { --ink:#16191c; --bg:#eff0ec; --surface:#fff; --border:#e3e5e0; --border-soft:#edefea;
     --chip-border:#dde0da; --muted:#7a817c; --muted-2:#6e7573; --muted-3:#9aa09b;
     --ink-soft:#3d423e; --carb:#5aa33f; --gel:#c9922e; --food:#b4552f; --water:#3d8fbf;
-    --link-hover:#2f7099; --selected-bg:#16191c; --on-brand:#fff; --wash-rgb:239, 240, 236; }
+    --link-hover:#2f7099; --selected-bg:#16191c; --on-brand:#fff; --wash-rgb:239, 240, 236;
+    --status-good-bg:#e7f2e1; --status-good-fg:#3d7a26; }
   [data-theme='dark'] {
     --ink:#f0ebe0; --bg:#1c1a17; --surface:#26221d; --border:#383229; --border-soft:#2e2a24;
     --chip-border:#443c30; --muted:#a89f8e; --muted-2:#c4bcac; --muted-3:#6e6658;
     --ink-soft:#d8d2c6; --link-hover:#5aa8d6; --wash-rgb:28, 26, 23;
+    --status-good-bg:#1f2a1a; --status-good-fg:#7fc468;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Archivo', Helvetica, sans-serif;
