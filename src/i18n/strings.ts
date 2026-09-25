@@ -421,6 +421,12 @@ export interface StringTable {
   autoplanWeightHintDesktop: string;
   autoplanWeightHintMobile: string;
   autoplanStopsTitle: string;
+  /** Stops section when the rider has placed none: may the plan add any? */
+  autoplanStopsTitleNone: string;
+  autoplanStopsAllow: string;
+  autoplanStopsAllowHint: string;
+  autoplanStopsNone: string;
+  autoplanStopsNoneHint: string;
   autoplanStopsKeepAndAdd: string;
   autoplanStopsKeepAndAddHint: string;
   autoplanStopsKeepOnly: string;
@@ -918,6 +924,12 @@ export const STR: Record<Lang, StringTable> = {
     autoplanWeightHintDesktop: 'Zmienisz ją w Ustawieniach',
     autoplanWeightHintMobile: 'Zmienisz ją w zakładce Ja',
     autoplanStopsTitle: 'Twoje postoje',
+    autoplanStopsTitleNone: 'Postoje',
+    autoplanStopsAllow: 'Dodaj, jeśli trzeba',
+    autoplanStopsAllowHint: 'Postoje pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
+    autoplanStopsNone: 'Bez postojów',
+    autoplanStopsNoneHint:
+      'Jedziesz bez zatrzymywania: plan zrobi, co się da, z tym, co zabierasz.',
     autoplanStopsKeepAndAdd: 'Dołóż',
     autoplanStopsKeepAndAddHint:
       'Twoje postoje zostają, a nowe pojawią się tylko tam, gdzie trasa naprawdę tego wymaga.',
@@ -1452,6 +1464,11 @@ export const STR: Record<Lang, StringTable> = {
     autoplanWeightHintDesktop: 'Change it in Settings',
     autoplanWeightHintMobile: 'Change it in the Me tab',
     autoplanStopsTitle: 'Your stops',
+    autoplanStopsTitleNone: 'Stops',
+    autoplanStopsAllow: 'Add if needed',
+    autoplanStopsAllowHint: 'Stops appear only where the route really needs them.',
+    autoplanStopsNone: 'No stops',
+    autoplanStopsNoneHint: 'No stopping: the plan makes the most of what you carry.',
     autoplanStopsKeepAndAdd: 'Add more',
     autoplanStopsKeepAndAddHint:
       'Your stops stay, and new ones only appear where the ride genuinely needs them.',
@@ -1858,6 +1875,11 @@ export const STR: Record<Lang, StringTable> = {
     autoplanWeightHintDesktop: 'Änderbar in den Einstellungen',
     autoplanWeightHintMobile: 'Änderbar im Tab „Ich“',
     autoplanStopsTitle: 'Deine Stopps',
+    autoplanStopsTitleNone: 'Stopps',
+    autoplanStopsAllow: 'Bei Bedarf',
+    autoplanStopsAllowHint: 'Stopps kommen nur dorthin, wo die Strecke sie wirklich braucht.',
+    autoplanStopsNone: 'Ohne Stopps',
+    autoplanStopsNoneHint: 'Kein Anhalten: Der Plan macht das Beste aus dem, was du mitnimmst.',
     autoplanStopsKeepAndAdd: 'Ergänzen',
     autoplanStopsKeepAndAddHint:
       'Deine Stopps bleiben, neue kommen nur dort dazu, wo die Strecke sie wirklich braucht.',
@@ -2401,6 +2423,11 @@ export const STR: Record<Lang, StringTable> = {
     autoplanWeightHintDesktop: 'Puoi cambiarlo in Impostazioni',
     autoplanWeightHintMobile: 'Puoi cambiarlo nella scheda Io',
     autoplanStopsTitle: 'Le tue soste',
+    autoplanStopsTitleNone: 'Soste',
+    autoplanStopsAllow: 'Se servono',
+    autoplanStopsAllowHint: 'Le soste compaiono solo dove il percorso le richiede davvero.',
+    autoplanStopsNone: 'Senza soste',
+    autoplanStopsNoneHint: 'Nessuna sosta: il piano fa il meglio con quello che porti.',
     autoplanStopsKeepAndAdd: 'Aggiungi',
     autoplanStopsKeepAndAddHint:
       'Le tue soste restano, e se ne aggiungono di nuove solo dove il percorso ne ha davvero bisogno.',

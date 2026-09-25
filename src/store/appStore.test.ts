@@ -1194,6 +1194,14 @@ describe('autoplanStopRules', () => {
     });
   });
 
+  test("'Bez postojów' — no stops of his own: 'Tylko moje' plans with no stops at all", () => {
+    const onlyGuesses = [{ id: 2, at: 90, name: 'Guess', autoCreated: true }];
+    expect(autoplanStopRules({ shops: onlyGuesses }, opts('keepOnly'))).toEqual({
+      riderStops: [],
+      newStops: false,
+    });
+  });
+
   test("a previous run's stops count too when they are being kept", () => {
     expect(autoplanStopRules({ shops }, opts('keepOnly'), false).riderStops).toEqual([40, 90]);
   });
