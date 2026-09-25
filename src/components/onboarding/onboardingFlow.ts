@@ -6,7 +6,7 @@
  * what first run looks like) opens the setup again for everyone below it, returning riders
  * included; they see their own saved data in it, not defaults.
  */
-export const ONBOARDING_VERSION = 1;
+export const ONBOARDING_VERSION = 2;
 
 export type OnboardingHint = 1 | 2 | 3;
 
