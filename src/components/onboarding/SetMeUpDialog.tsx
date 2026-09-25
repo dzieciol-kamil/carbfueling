@@ -117,10 +117,12 @@ function Section({
 }) {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={sectionTitleStyle}>{title}</span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={sectionTitleStyle}>{title}</span>
+        <span style={whereStyle}>{where}</span>
+      </span>
       {hint && <p style={hintStyle}>{hint}</p>}
       {children}
-      <p style={whereStyle}>{where}</p>
     </section>
   );
 }
