@@ -22,8 +22,8 @@ function fmt(n: number): string {
  *  in a colour helper. Only the palette is this layout's own. */
 function statusColor(status: CoverageStatus, goodColor: string): string {
   if (status === 'good') return goodColor;
-  // Deeper and cooler than the "short" brick on purpose: both ends of the water scale are bad,
-  // but they are not the same problem, and the number next to the bar says which one it is.
+  // Burgundy, deeper and cooler than the "short" brick: too much at once is unhealthy too, but a
+  // different problem from too little — which is why the carb card names it next to the number.
   if (status === 'over') return 'var(--status-over-fg)';
   if (status === 'short') return 'var(--food)';
   // Neutral, not a verdict: under 1h carbs don't move the needle either way — see coverageStatus.
@@ -102,17 +102,15 @@ export function SummaryCards() {
   const strings = t(lang);
 
   const summary = planSummary({ route, mix, gear, fills, foods, foodLib });
-  const carbColor = statusColor(
-    coverageStatus(
-      summary.carbRateGph,
-      totalHours(route),
-      summary.carbPlannedRateGph,
-      summary.carbAbsCapGph,
-      summary.carbTargetGph,
-      route.intensity,
-    ),
-    'var(--carb)',
+  const carbStatus = coverageStatus(
+    summary.carbRateGph,
+    totalHours(route),
+    summary.carbPlannedRateGph,
+    summary.carbAbsCapGph,
+    summary.carbTargetGph,
+    route.intensity,
   );
+  const carbColor = statusColor(carbStatus, 'var(--carb)');
   // Colour and parenthetical come from the same number on purpose: the bar's headline percentage
   // is capped by absorption and can sit at 99 on a plan that pours nearly twice its sweat loss,
   // so without the balance next to it a maroon bar at 99% would be unreadable.
@@ -153,6 +151,9 @@ export function SummaryCards() {
               color: carbColor,
             }}
           >
+            {/* The colour is a verdict on g/h against the absorption limit, not on the
+                percentage beside it — say so when it isn't the coverage being graded. */}
+            {carbStatus === 'over' && strings.carbOverCapLabel + ' · '}
             {summary.coverage}%
           </span>
         </div>

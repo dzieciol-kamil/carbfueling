@@ -41,6 +41,13 @@ function readSharedPlanFromUrl(): Promise<SharedPlan | null> | null {
   return decodeSharedPlan(param);
 }
 
+/** Whether a share link brought a plan that is waiting for an answer — the first-run setup holds
+ *  off for it. A link that fails to decode brings nothing, so it does not hold anything up. */
+export async function hasPendingSharedPlan(): Promise<boolean> {
+  const plan = pendingSharedPlan;
+  return plan !== null && (await plan) !== null;
+}
+
 /** Drops the cached plan once the user has answered, so a later remount in the other
  *  branch does not re-ask. Idempotent — a second call is a no-op. */
 function consumePendingSharedPlan(): void {

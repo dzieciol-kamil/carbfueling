@@ -13,6 +13,7 @@ import { MobilePlanList } from './MobilePlanList';
 import { MobileProfile } from './MobileProfile';
 import { MobileRouteSheet } from './MobileRouteSheet';
 import { MobileShopSheet } from './MobileShopSheet';
+import { SampleBar } from '../tour/SampleBar';
 
 const TABS: { tab: MobileTab; icon: ReactNode }[] = [
   { tab: 'plan', icon: <path d="M2 16 L7 9 L11 12 L16 4.5 L20 8" /> },
@@ -109,6 +110,7 @@ export function MobileApp() {
             <button
               type="button"
               data-tour="route-summary"
+              data-onboarding="route"
               onClick={openRouteSheet}
               style={{
                 border: '1px solid var(--chip-border)',
@@ -130,6 +132,7 @@ export function MobileApp() {
 
         {tab === 'plan' && (
           <>
+            <SampleBar style={{ margin: '10px 14px 0', width: 'auto' }} />
             <MobileChartPanel />
             <MobilePlanList />
           </>

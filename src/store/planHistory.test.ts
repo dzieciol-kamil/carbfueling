@@ -13,6 +13,7 @@ type S = {
   shops: number[];
   foodLib: number;
   combinedFillIds: number[];
+  preTourDoc: null;
   ui: { dragKey: string | null; selKey: string | null; hoverKey: string | null; lang: string };
 };
 
@@ -28,6 +29,7 @@ function setup() {
     shops: [],
     foodLib: 0,
     combinedFillIds: [],
+    preTourDoc: null,
     ui: { dragKey: null, selKey: null, hoverKey: null, lang: 'pl' },
   }));
   const history = createPlanHistory(store, { idleMs: IDLE });
@@ -167,6 +169,7 @@ describe('plan history', () => {
       shops: [],
       foodLib: 0,
       combinedFillIds: [],
+      preTourDoc: null,
       ui: { dragKey: null, selKey: null, hoverKey: null, lang: 'pl' },
     }));
     const history = createPlanHistory(store, { idleMs: IDLE, limit: 3 });
@@ -235,6 +238,10 @@ describe('the app store', () => {
     planHistory.undo();
     expect(useAppStore.getState().route).toBe(route);
     expect(useAppStore.getState().fills).toBe(fills);
+    // …and with it the offer to restore: the sample bar goes with the sample.
+    expect(useAppStore.getState().preTourDoc).toBeNull();
+    planHistory.redo();
+    expect(useAppStore.getState().preTourDoc).not.toBeNull();
     vi.unstubAllGlobals();
   });
 });

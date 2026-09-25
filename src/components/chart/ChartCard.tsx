@@ -152,7 +152,9 @@ export function ChartCard() {
                 <StartOverIcon />
                 <span>{strings.clearPlanButton}</span>
               </button>
-              <AutoplanFlow variant="desktop" />
+              <span data-tour="autoplan" style={{ display: 'flex' }}>
+                <AutoplanFlow variant="desktop" />
+              </span>
               <MenuButton
                 label={strings.moreMenuButton}
                 triggerStyle={planBtnStyle}
@@ -343,7 +345,6 @@ export function ChartCard() {
         </div>
         <div style={{ width: 40, flex: '0 0 40px', position: 'relative', height: CHART_HEIGHT }}>
           <button
-            data-tour="add-shop"
             onClick={addShop}
             title={strings.addShopStop}
             style={{

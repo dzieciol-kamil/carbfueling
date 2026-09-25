@@ -2,7 +2,7 @@
  * Undo / redo for the plan.
  *
  * **What a step restores is the whole document**: route, mix, gear, fills, foods, stops, the food
- * library and the "prepare together" batch. Never the view (`ui`) and never the id counters. The
+ * library, the "prepare together" batch and the tour's restore point. Never the view (`ui`) and never the id counters. The
  * whole document rather than just the fills and foods, because they refer to each other: removing a
  * vessel removes its fills, shortening the route trims them, so restoring the fills alone could
  * bring back bars for a bottle or a stretch of road that no longer exists.
@@ -17,18 +17,11 @@
  */
 import { create } from 'zustand';
 import type { StoreApi, UseBoundStore } from 'zustand';
-import { useAppStore } from './appStore';
+import { PLAN_DOC_KEYS, useAppStore } from './appStore';
 
-const DOC_KEYS = [
-  'route',
-  'mix',
-  'gear',
-  'fills',
-  'foods',
-  'shops',
-  'foodLib',
-  'combinedFillIds',
-] as const;
+// The tour's restore point goes with the plan: undoing the sample's arrival brings the rider's
+// plan back *and* drops the offer to restore it, and redo brings both back together.
+const DOC_KEYS = [...PLAN_DOC_KEYS, 'preTourDoc'] as const;
 
 type DocKey = (typeof DOC_KEYS)[number];
 

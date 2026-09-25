@@ -206,6 +206,7 @@ export function RoutePanel() {
 
         {route.mode === 'route' ? (
           <div
+            data-onboarding="route"
             style={{
               display: 'flex',
               gap: 12,
@@ -249,6 +250,7 @@ export function RoutePanel() {
           </div>
         ) : (
           <div
+            data-onboarding="route"
             style={{
               display: 'flex',
               gap: 12,

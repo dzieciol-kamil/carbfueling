@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { t } from '../../i18n/strings';
-import { hasPlanData, useAppStore } from '../../store/appStore';
+import { useAppStore } from '../../store/appStore';
 import { TourReplayConfirm } from '../tour/TourReplayConfirm';
 import { tourGhostBtn } from '../tour/tourStyles';
 import { ChartHelpDiagram } from './ChartHelpDiagram';
@@ -22,11 +22,8 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
 
   function openFullTour() {
     closeChartHelp();
-    if (hasPlanData(useAppStore.getState())) {
-      setConfirmOpen(true);
-    } else {
-      startTour();
-    }
+    // Always asked: the sample replaces the rider's kit and weight too, not just a plan.
+    setConfirmOpen(true);
   }
 
   // Header padding kept in sync with panelStyle's own padding-top/sides: the sticky
@@ -116,6 +113,20 @@ export function ChartHelpModal({ desktop }: ChartHelpModalProps) {
               </button>
             </div>
             <ChartHelpDiagram mode={yMode} strings={strings} desktop={desktop} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>{strings.chartHelpEditTitle}</span>
+              {[
+                desktop ? strings.chartHelpAddFillBody : strings.chartHelpAddFillBodyMobile,
+                desktop ? strings.chartHelpAddStopBody : strings.chartHelpAddStopBodyMobile,
+              ].map((text) => (
+                <p
+                  key={text}
+                  style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: 'var(--ink-soft)' }}
+                >
+                  {text}
+                </p>
+              ))}
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={openFullTour} style={tourGhostBtn}>
                 {strings.chartHelpFullTour}

@@ -18,6 +18,7 @@ export function MobilePlanMenu() {
   const lang = useAppStore((s) => s.ui.lang);
   const clearPlan = useAppStore((s) => s.clearPlan);
   const openPanel = useAppStore((s) => s.openPanel);
+  const openSetup = useAppStore((s) => s.openSetup);
   const strings = t(lang);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const {
@@ -40,7 +41,7 @@ export function MobilePlanMenu() {
   }, [planFeedback, setPlanFeedback]);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div data-tour="autoplan" style={{ position: 'relative' }}>
       <AutoplanFlow
         variant="mobile"
         renderTrigger={({ start, disabled, title, style }) => (
@@ -87,6 +88,11 @@ export function MobilePlanMenu() {
                 label: strings.printPlanButton,
                 icon: <PrintIcon />,
                 onSelect: () => window.print(),
+              },
+              {
+                key: 'setup',
+                label: strings.setupMenuItem,
+                onSelect: openSetup,
               },
             ]}
           />

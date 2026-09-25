@@ -9,15 +9,9 @@ import {
 } from 'react';
 import { t } from '../../i18n/strings';
 import { useAppStore } from '../../store/appStore';
+import { bubblePosition, mobileScrollEl, type Rect } from './placement';
 import { tourGhostBtn, tourPrimaryBtn } from './tourStyles';
 import { TOUR_STEPS, type TourStep } from './tourSteps';
-
-interface Rect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
 
 function measure(target: string): Rect | null {
   const el = document.querySelector(`[data-tour="${target}"]`);
@@ -26,18 +20,8 @@ function measure(target: string): Rect | null {
   return { top: r.top, left: r.left, width: r.width, height: r.height };
 }
 
-// On mobile the page itself doesn't scroll — MobileApp is a fixed-position shell and
-// this inner element (flex:1, between the sticky header and the bottom tab bar) is the
-// actual scroll container. Centering/placement math must scroll and bound itself against
-// this element instead of `window` there, since `window.scrollTo` is a no-op on that shell
-// and `window.innerHeight` would ignore the tab bar sitting below it.
-function mobileScrollEl(): HTMLElement | null {
-  return document.querySelector('[data-mobile-scroll]');
-}
-
 const PAD = 8;
 const TOOLTIP_WIDTH = 320;
-const MARGIN = 14;
 const BACKDROP = 'rgba(18,20,18,0.55)';
 
 export function TourOverlay() {
@@ -45,6 +29,7 @@ export function TourOverlay() {
   const lang = useAppStore((s) => s.ui.lang);
   const setTourStep = useAppStore((s) => s.setTourStep);
   const closeTour = useAppStore((s) => s.closeTour);
+  const restorePreTourPlan = useAppStore((s) => s.restorePreTourPlan);
   const strings = t(lang);
   const [rect, setRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -246,23 +231,45 @@ export function TourOverlay() {
             marginTop: 4,
           }}
         >
-          <button onClick={closeTour} style={tourGhostBtn}>
-            {strings.tourSkip}
-          </button>
+          {/* The last step's "Keep exploring the sample" already does what Skip would. */}
+          {isLast ? (
+            <span />
+          ) : (
+            <button onClick={closeTour} style={tourGhostBtn}>
+              {strings.tourSkip}
+            </button>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             {!isFirst && (
               <button onClick={() => setTourStep(tourStep - 1)} style={tourGhostBtn}>
                 {strings.tourBack}
               </button>
             )}
-            <button
-              onClick={() => (isLast ? closeTour() : setTourStep(tourStep + 1))}
-              style={tourPrimaryBtn}
-            >
-              {isLast ? strings.tourFinish : strings.tourNext}
-            </button>
+            {!isLast && (
+              <button onClick={() => setTourStep(tourStep + 1)} style={tourPrimaryBtn}>
+                {strings.tourNext}
+              </button>
+            )}
           </div>
         </div>
+        {/* The tour ends on a choice rather than "Finish": the sample took the rider's own plan's
+            place, and Skip or × above keep it too (the sample bar still offers the restore). */}
+        {isLast && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8 }}>
+            <button onClick={closeTour} style={tourGhostBtn}>
+              {strings.tourKeepSample}
+            </button>
+            <button
+              onClick={() => {
+                restorePreTourPlan();
+                closeTour();
+              }}
+              style={tourPrimaryBtn}
+            >
+              {strings.tourRestore}
+            </button>
+          </div>
+        )}
       </TourTooltip>
     </div>
   );
@@ -277,23 +284,17 @@ const TourTooltip = forwardRef<HTMLDivElement, TourTooltipProps>(function TourTo
   { cutout, children },
   ref,
 ) {
-  // Narrow phones can't fit the desktop-sized tooltip between the margins.
-  const width = Math.min(TOOLTIP_WIDTH, window.innerWidth - MARGIN * 2);
-  // The mobile scroll container's own rect already excludes the bottom tab bar (a flex
-  // sibling below it), so bound placement against it there instead of window.innerHeight,
-  // which would let the tooltip land underneath the tab bar.
-  const viewportBottom = mobileScrollEl()?.getBoundingClientRect().bottom ?? window.innerHeight;
-
-  const pos: CSSProperties = cutout
-    ? (() => {
-        const spaceBelow = viewportBottom - (cutout.top + cutout.height);
-        const placeBelow = spaceBelow > 280 || spaceBelow > cutout.top;
-        const left = Math.min(Math.max(MARGIN, cutout.left), window.innerWidth - width - MARGIN);
-        return placeBelow
-          ? { position: 'fixed', top: cutout.top + cutout.height + 14, left }
-          : { position: 'fixed', bottom: window.innerHeight - cutout.top + 14, left };
-      })()
-    : { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+  const { width, style: pos } = cutout
+    ? bubblePosition(cutout, TOOLTIP_WIDTH, 280)
+    : {
+        width: Math.min(TOOLTIP_WIDTH, window.innerWidth - 28),
+        style: {
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+        } as CSSProperties,
+      };
 
   return (
     <div

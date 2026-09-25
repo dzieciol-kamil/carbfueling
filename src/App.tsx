@@ -11,25 +11,23 @@ import { MixPanel } from './components/panels/MixPanel';
 import { SettingsPanel } from './components/panels/SettingsPanel';
 import { RecipesSection } from './components/recipes/RecipesSection';
 import { RoutePanel } from './components/RoutePanel';
-import { SharedPlanPrompt } from './components/SharedPlanPrompt';
+import { hasPendingSharedPlan, SharedPlanPrompt } from './components/SharedPlanPrompt';
 import { SharePanel } from './components/share/SharePanel';
 import { SummaryCards } from './components/SummaryCards';
+import { OnboardingHints } from './components/onboarding/OnboardingHints';
+import { shouldOpenSetup } from './components/onboarding/onboardingFlow';
+import { SetMeUpDialog } from './components/onboarding/SetMeUpDialog';
+import { SampleBar } from './components/tour/SampleBar';
 import { TourOverlay } from './components/tour/TourOverlay';
 import { usePlanHistoryKeys } from './components/ui/UndoRedo';
-import {
-  DESKTOP_BREAKPOINT,
-  hasPlanData,
-  isDesktopView,
-  resolveTheme,
-  useAppStore,
-} from './store/appStore';
+import { DESKTOP_BREAKPOINT, isDesktopView, resolveTheme, useAppStore } from './store/appStore';
 import { nextLangPath } from './urls';
 import { LANGS, type Lang } from './i18n/strings';
 
 function App() {
   const panel = useAppStore((s) => s.ui.panel);
-  const tourSeen = useAppStore((s) => s.ui.tourSeen);
-  const startTour = useAppStore((s) => s.startTour);
+  const onboardingVersion = useAppStore((s) => s.ui.onboardingVersion);
+  const openSetup = useAppStore((s) => s.openSetup);
   const lang = useAppStore((s) => s.ui.lang);
   const viewMode = useAppStore((s) => s.ui.viewMode);
   const autoView = useAppStore((s) => s.ui.autoView);
@@ -41,11 +39,19 @@ function App() {
 
   usePlanHistoryKeys();
 
+  // First run opens "Set me up", not the tour (plan 2.1). Someone arriving on a share link is
+  // asked about that plan instead; the setup waits for their next visit.
   useEffect(() => {
-    if (tourSeen || hasPlanData(useAppStore.getState())) return;
-    const id = setTimeout(startTour, 400);
-    return () => clearTimeout(id);
-  }, [tourSeen, startTour]);
+    if (!shouldOpenSetup(onboardingVersion)) return;
+    let cancelled = false;
+    const id = setTimeout(async () => {
+      if (!(await hasPendingSharedPlan()) && !cancelled) openSetup();
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
+  }, [onboardingVersion, openSetup]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -100,6 +106,8 @@ function App() {
         <div className="app-shell">
           <MobileApp />
           <TourOverlay />
+          <SetMeUpDialog />
+          <OnboardingHints />
           <SharedPlanPrompt />
           <SharePanel desktop={false} />
           <ChartHelpModal desktop={false} />
@@ -136,6 +144,7 @@ function App() {
             gap: 16,
           }}
         >
+          <SampleBar />
           <div
             data-tour="route-summary"
             style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}
@@ -148,6 +157,8 @@ function App() {
         </div>
         <Footer />
         <TourOverlay />
+        <SetMeUpDialog />
+        <OnboardingHints />
         <SharedPlanPrompt />
         <SharePanel desktop />
         <ChartHelpModal desktop />

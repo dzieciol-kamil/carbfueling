@@ -60,7 +60,6 @@ export function MobilePlanList() {
   const foodLib = useAppStore((s) => s.foodLib);
   const shops = useAppStore((s) => s.shops);
   const selKey = useAppStore((s) => s.ui.selKey);
-  const tourDemoFid = useAppStore((s) => s.ui.tourDemoFid);
   const selectedElRef = useRef<HTMLDivElement | null>(null);
   const prevContentTopRef = useRef<number | null>(null);
   const prevSelKeyRef = useRef<string | null>(null);
@@ -93,7 +92,6 @@ export function MobilePlanList() {
   const hydBar = balanceBarGeometry(summary.waterBalancePct);
   const hydTint = COVERAGE_TINT[hydStatus];
   const recovery = recoveryCarbs(route.weight);
-  const demoVesselGid = fills.find((f) => f.fid === tourDemoFid)?.gid;
 
   const items: PlanCardItem[] = [
     ...fills.map((f): PlanCardItem => ({ kind: 'fill', fid: f.fid })),
@@ -174,6 +172,11 @@ export function MobilePlanList() {
           >
             {carbPct}%
           </div>
+          {carbStatus === 'over' && (
+            <div style={{ fontSize: 10, fontWeight: 600, color: carbTint.fg }}>
+              {strings.carbOverCapLabel}
+            </div>
+          )}
           <div
             style={{
               height: 4,
@@ -354,7 +357,6 @@ export function MobilePlanList() {
           <button
             key={vessel.gid}
             type="button"
-            data-tour={vessel.gid === demoVesselGid ? 'demo-add-fill' : undefined}
             disabled={!hasGap}
             onClick={() => addFillInGap(vessel.gid)}
             style={{
@@ -411,7 +413,6 @@ export function MobilePlanList() {
 
       <button
         type="button"
-        data-tour="add-shop"
         onClick={() => openShopSheet(null)}
         style={{
           border: '1px dashed var(--border-dashed)',
@@ -431,6 +432,7 @@ export function MobilePlanList() {
 
       <button
         type="button"
+        data-tour="recipes"
         onClick={openMixSheet}
         style={{
           display: 'flex',
