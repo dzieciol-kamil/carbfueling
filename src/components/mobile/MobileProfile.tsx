@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { absCap } from '../../domain/fuel';
+import { absCap, WEIGHT_MAX_KG, WEIGHT_MIN_KG } from '../../domain/fuel';
 import { FAQ_HREF_FROM_CALCULATOR, LANDING_HREF_FROM_CALCULATOR } from '../../urls';
 import { LANGS, t } from '../../i18n/strings';
 import {
@@ -91,8 +91,8 @@ export function MobileProfile() {
         <MobileStepper
           label={strings.meWeight + ' (kg)'}
           value={weight}
-          min={40}
-          max={130}
+          min={WEIGHT_MIN_KG}
+          max={WEIGHT_MAX_KG}
           smallStep={1}
           bigStep={5}
           onChange={setWeight}

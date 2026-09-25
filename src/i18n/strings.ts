@@ -417,6 +417,9 @@ export interface StringTable {
   autoplanPreflightConfirm: string;
   autoplanRouteTitle: string;
   autoplanElevationLabel: string;
+  /** Preflight weight is read-only; this says where the rider edits it. */
+  autoplanWeightHintDesktop: string;
+  autoplanWeightHintMobile: string;
   autoplanStopsTitle: string;
   autoplanStopsKeepAndAdd: string;
   autoplanStopsKeepAndAddHint: string;
@@ -912,6 +915,8 @@ export const STR: Record<Lang, StringTable> = {
     autoplanPreflightConfirm: 'Ułóż plan',
     autoplanRouteTitle: 'Trasa i warunki',
     autoplanElevationLabel: 'Przewyższenie',
+    autoplanWeightHintDesktop: 'Zmienisz ją w Ustawieniach',
+    autoplanWeightHintMobile: 'Zmienisz ją w zakładce Ja',
     autoplanStopsTitle: 'Twoje postoje',
     autoplanStopsKeepAndAdd: 'Dołóż',
     autoplanStopsKeepAndAddHint:
@@ -1444,6 +1449,8 @@ export const STR: Record<Lang, StringTable> = {
     autoplanPreflightConfirm: 'Build the plan',
     autoplanRouteTitle: 'Route & conditions',
     autoplanElevationLabel: 'Elevation',
+    autoplanWeightHintDesktop: 'Change it in Settings',
+    autoplanWeightHintMobile: 'Change it in the Me tab',
     autoplanStopsTitle: 'Your stops',
     autoplanStopsKeepAndAdd: 'Add more',
     autoplanStopsKeepAndAddHint:
@@ -1848,6 +1855,8 @@ export const STR: Record<Lang, StringTable> = {
     autoplanPreflightConfirm: 'Plan erstellen',
     autoplanRouteTitle: 'Strecke & Bedingungen',
     autoplanElevationLabel: 'Höhenprofil',
+    autoplanWeightHintDesktop: 'Änderbar in den Einstellungen',
+    autoplanWeightHintMobile: 'Änderbar im Tab „Ich“',
     autoplanStopsTitle: 'Deine Stopps',
     autoplanStopsKeepAndAdd: 'Ergänzen',
     autoplanStopsKeepAndAddHint:
@@ -2389,6 +2398,8 @@ export const STR: Record<Lang, StringTable> = {
     autoplanPreflightConfirm: 'Crea il piano',
     autoplanRouteTitle: 'Percorso e condizioni',
     autoplanElevationLabel: 'Altimetria',
+    autoplanWeightHintDesktop: 'Puoi cambiarlo in Impostazioni',
+    autoplanWeightHintMobile: 'Puoi cambiarlo nella scheda Io',
     autoplanStopsTitle: 'Le tue soste',
     autoplanStopsKeepAndAdd: 'Aggiungi',
     autoplanStopsKeepAndAddHint:

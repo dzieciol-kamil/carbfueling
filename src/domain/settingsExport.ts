@@ -1,4 +1,5 @@
 import { LANGS, type Lang } from '../i18n/strings';
+import { WEIGHT_MAX_KG, WEIGHT_MIN_KG } from './fuel';
 import type {
   Content,
   Fill,
@@ -125,7 +126,7 @@ function isValidRoute(v: unknown): v is RouteInput {
   if (
     !isInRange(v.distance, 0, 2000) ||
     !isInRange(v.speed, 0, 100) ||
-    !isInRange(v.weight, 20, 300) ||
+    !isInRange(v.weight, WEIGHT_MIN_KG, WEIGHT_MAX_KG) ||
     !isInRange(v.hours, 0, 999) ||
     !isFiniteNumber(v.minutes) ||
     !isInRange(v.preMealCarbs, 0, 500) ||

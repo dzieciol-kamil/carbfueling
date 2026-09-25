@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { WEIGHT_MAX_KG, WEIGHT_MIN_KG } from '../../domain/fuel';
 import { t } from '../../i18n/strings';
 import {
   shouldConfirmViewModeChange,
@@ -118,8 +119,8 @@ export function SettingsPanel() {
           </span>
           <input
             type="range"
-            min={45}
-            max={120}
+            min={WEIGHT_MIN_KG}
+            max={WEIGHT_MAX_KG}
             step={1}
             value={weight}
             onChange={(e) => setWeight(parseFloat(e.target.value))}
