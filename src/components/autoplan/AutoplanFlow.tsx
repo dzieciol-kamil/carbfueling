@@ -86,7 +86,60 @@ function noteStyle(variant: 'desktop' | 'mobile'): CSSProperties {
     gap: 12,
     fontSize: 12.5,
     boxShadow: '0 14px 34px rgba(0,0,0,0.28)',
+    overflow: 'hidden',
   };
+}
+
+/** How long the applied note stays up on its own. */
+export const APPLIED_NOTE_MS = 8000;
+
+/**
+ * A thin light strip along the note's top edge that runs out right to left, then closes it: it
+ * draws the eye to a note at the bottom of the screen that was easy to miss, and saves the click
+ * on OK. Hovering holds it, so a slow reader isn't cut off.
+ */
+function CountdownBar({ durationMs, onDone }: { durationMs: number; onDone: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const anim = el.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], {
+      duration: durationMs,
+      easing: 'linear',
+      fill: 'forwards',
+    });
+    anim.finished.then(
+      () => done.current(),
+      () => {},
+    );
+    const note = el.parentElement;
+    const pause = () => anim.pause();
+    const play = () => anim.play();
+    note?.addEventListener('pointerenter', pause);
+    note?.addEventListener('pointerleave', play);
+    return () => {
+      anim.cancel();
+      note?.removeEventListener('pointerenter', pause);
+      note?.removeEventListener('pointerleave', play);
+    };
+  }, [durationMs]);
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        background: 'rgba(255,255,255,0.85)',
+        transformOrigin: 'left',
+      }}
+    />
+  );
 }
 
 /**
@@ -314,6 +367,7 @@ export function AutoplanFlow({
 
       {phase === 'appliedNote' && (
         <div style={noteStyle(variant)}>
+          <CountdownBar durationMs={APPLIED_NOTE_MS} onDone={() => setPhase('idle')} />
           <span>
             {gate === 'shortRide' ? strings.autoplanShortRideNote : strings.autoplanAppliedNote}
           </span>
