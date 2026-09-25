@@ -1,4 +1,5 @@
 import { LANGS, type Lang } from '../i18n/strings';
+import { clampWeightKg } from './fuel';
 import type {
   Content,
   Fill,
@@ -281,7 +282,11 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
     ok: true,
     data: {
       ...parsed.data,
-      route: { ...parsed.data.route, sport: parsed.data.route.sport ?? DEFAULT_SPORT },
+      route: {
+        ...parsed.data.route,
+        sport: parsed.data.route.sport ?? DEFAULT_SPORT,
+        weight: clampWeightKg(parsed.data.route.weight),
+      },
     },
   };
 }

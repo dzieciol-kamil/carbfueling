@@ -8,6 +8,7 @@ import {
   settingsExportFileName,
   type SettingsExportData,
 } from './settingsExport';
+import { WEIGHT_MAX_KG, WEIGHT_MIN_KG } from './fuel';
 
 function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportData {
   return {
@@ -108,6 +109,19 @@ describe('settingsExport', () => {
     for (const bad of badFiles) {
       const result = parseSettingsImport(JSON.stringify(bad));
       expect(result.ok).toBe(false);
+    }
+  });
+
+  test('clamps an old file weight to the sliders range instead of rejecting it', () => {
+    for (const [weight, expected] of [
+      [42, WEIGHT_MIN_KG],
+      [200, WEIGHT_MAX_KG],
+    ]) {
+      const file = buildSettingsExport(makeData());
+      const result = parseSettingsImport(
+        JSON.stringify({ ...file, data: { ...file.data, route: { ...file.data.route, weight } } }),
+      );
+      expect(result.ok && result.data.route.weight).toBe(expected);
     }
   });
 

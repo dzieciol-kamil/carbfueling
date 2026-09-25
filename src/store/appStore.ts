@@ -17,7 +17,7 @@ import {
   scalePlan,
 } from '../domain/dragMath';
 import { startFillOf } from '../domain/combinedRefill';
-import { dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
+import { clampWeightKg, dist, presetTagFor, SPORT_DEFAULT_SPEED } from '../domain/fuel';
 import { loadGpxFile } from '../domain/gpx';
 import type { SettingsExportData } from '../domain/settingsExport';
 import { LANGS, t, type Lang } from '../i18n/strings';
@@ -450,7 +450,7 @@ export const useAppStore = create<AppState>()(
       // Deliberately unclamped — see normalizeHoursMinutes, applied on commit via reconcilePlan.
       setMinutes: (n) => set((s) => withRoute(s, { ...s.route, minutes: n })),
       reconcilePlan: () => set((s) => withRoute(s, normalizeHoursMinutes(s.route))),
-      setWeight: (n) => set((s) => ({ route: { ...s.route, weight: clamp(n, 20, 300) } })),
+      setWeight: (n) => set((s) => ({ route: { ...s.route, weight: clampWeightKg(n) } })),
       setPreMealCarbs: (n) =>
         set((s) => ({ route: { ...s.route, preMealCarbs: clamp(n, 0, 500) } })),
       setPreMealMinutes: (n) =>

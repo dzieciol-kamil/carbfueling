@@ -158,7 +158,7 @@ function chipStyle(color: string): CSSProperties {
   };
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: ReactNode; value: string }) {
   return (
     <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <span style={statLabelStyle}>{label}</span>
@@ -242,7 +242,25 @@ export function AutoplanPreflightModal({
           <Stat label={strings.distance} value={Math.round(dist(route)) + ' km'} />
           <Stat label={strings.autoplanElevationLabel} value={'+' + elevationGain(route) + ' m'} />
           <Stat label={strings.temp} value={route.temp + ' °C'} />
-          <Stat label={strings.weight} value={route.weight + ' kg'} />
+          <InfoPopover
+            openOnHover
+            hint={
+              variant === 'mobile'
+                ? strings.autoplanWeightHintMobile
+                : strings.autoplanWeightHintDesktop
+            }
+            triggerStyle={{ display: 'flex', cursor: 'help' }}
+            popoverStyle={{ top: 'calc(100% + 6px)', right: 0 }}
+          >
+            <Stat
+              label={
+                <>
+                  {strings.weight} <span style={{ lineHeight: 0 }}>ⓘ</span>
+                </>
+              }
+              value={route.weight + ' kg'}
+            />
+          </InfoPopover>
           <Stat
             label={strings.intensity}
             value={

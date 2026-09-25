@@ -64,6 +64,16 @@ export const CARB_GRADING_MIN_HOURS = 1;
  */
 export const LOW_INTENSITY_PLATEAU_GPH = 30;
 
+/** Rider body-weight range, kg — shared by both weight sliders, `setWeight` and plan import. */
+export const WEIGHT_MIN_KG = 45;
+export const WEIGHT_MAX_KG = 150;
+
+/** Clamps a body weight into the sliders' range. Files and share links keep a looser range
+ *  (20–300) so an old export still loads; this is where such a weight lands. */
+export function clampWeightKg(kg: number): number {
+  return Math.min(WEIGHT_MAX_KG, Math.max(WEIGHT_MIN_KG, kg));
+}
+
 /** Chart reference line for typical untrained gut carb-absorption capacity, g/h. */
 export const GUT_LIMIT = 60;
 

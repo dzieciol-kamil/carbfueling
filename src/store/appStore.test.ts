@@ -8,6 +8,7 @@ import {
   withColaAtStop,
   useAppStore,
 } from './appStore';
+import { WEIGHT_MAX_KG, WEIGHT_MIN_KG } from '../domain/fuel';
 import { DEFAULT_AUTOPLAN_OPTIONS } from '../components/autoplan/autoplanOptions';
 import type { AutoplanResult } from '../domain/autoplan/types';
 import type { Fill, RouteInput } from '../domain/types';
@@ -83,6 +84,17 @@ describe('setSport', () => {
     useAppStore.setState({ route: route({ sport: 'cycling', speed: 32 }) });
     useAppStore.getState().setSport('cycling');
     expect(useAppStore.getState().route.speed).toBe(32);
+  });
+});
+
+describe('setWeight', () => {
+  test('clamps to the same range the weight sliders use', () => {
+    useAppStore.setState({ route: route() });
+    useAppStore.getState().setWeight(20);
+    expect(useAppStore.getState().route.weight).toBe(WEIGHT_MIN_KG);
+    useAppStore.getState().setWeight(300);
+    expect(useAppStore.getState().route.weight).toBe(WEIGHT_MAX_KG);
+    expect([WEIGHT_MIN_KG, WEIGHT_MAX_KG]).toEqual([45, 150]);
   });
 });
 

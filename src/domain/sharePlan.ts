@@ -1,3 +1,4 @@
+import { clampWeightKg } from './fuel';
 import type { SettingsExportData } from './settingsExport';
 import type {
   CitricSource,
@@ -351,7 +352,7 @@ export function sharedPlanToSettingsData(
   return {
     route: {
       ...plan.route,
-      weight: plan.weight ?? base.route.weight,
+      weight: clampWeightKg(plan.weight ?? base.route.weight),
       // A link carries no elevation, so leaving the recipient's own track in place would
       // draw someone else's hills under this plan's distance.
       useGpx: false,
