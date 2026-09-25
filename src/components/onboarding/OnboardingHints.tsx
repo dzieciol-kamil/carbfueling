@@ -104,7 +104,7 @@ export function OnboardingHints() {
   if (!visible || !rect) return null;
 
   const strings = t(lang);
-  const { width, style } = bubblePosition(rect, 280, 120);
+  const { width, style } = bubblePosition(rect, hint === 3 ? 380 : 280, 120);
   // The bubble has to point at something, or it reads as a stray toast: a caret on the edge
   // facing the anchor, aimed near its left end (a wide anchor such as the chart has no useful
   // centre), and a ring around the anchor itself.

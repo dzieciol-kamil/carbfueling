@@ -791,7 +791,7 @@ export const STR: Record<Lang, StringTable> = {
     hintRouteMobile: 'Gotowe. Stuknij tutaj i wpisz trasę: dystans i tempo albo plik GPX.',
     hintAutoplan: 'Wygeneruj swój pierwszy plan.',
     hintChart:
-      'Linia ciągła: co wchłaniasz.\nPrzerywana: ile potrzebujesz.\nZielone: pokryte.\nKliknij „?”, żeby dowiedzieć się więcej.',
+      'Górny pasek to Twój żołądek: pokazuje, co się w nim teraz trawi. Kreskowana linia to ile węglowodanów potrzebujesz, a ciągła to ile faktycznie wchłaniasz z tego, co zjesz i wypijesz. Kropkowana to limit wchłaniania.\nKliknij „?”, żeby dowiedzieć się więcej.',
     hintClose: 'Zamknij podpowiedzi',
     tabMix: 'Mieszanka',
     editRoutePrefix: 'Edytuj trasę:',
@@ -1369,7 +1369,7 @@ export const STR: Record<Lang, StringTable> = {
     hintRouteMobile: 'You’re set. Tap here to enter your route: distance and pace, or a GPX file.',
     hintAutoplan: 'Generate your first plan.',
     hintChart:
-      'Solid line: what you absorb.\nDashed: what you need.\nGreen: covered.\nClick ‘?’ to learn more.',
+      'The top strip is your stomach: what it’s digesting right now. The dashed line is how many carbs you need, the solid one how many you actually absorb from what you eat and drink. The dotted one is the absorption limit.\nClick ‘?’ to learn more.',
     hintClose: 'Close tips',
     tabMix: 'Mix',
     editRoutePrefix: 'Edit route:',
@@ -1945,7 +1945,7 @@ export const STR: Record<Lang, StringTable> = {
       'Fertig. Tippe hier und gib deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
     hintAutoplan: 'Erstelle deinen ersten Plan.',
     hintChart:
-      'Durchgezogen: was du aufnimmst.\nGestrichelt: was du brauchst.\nGrün: gedeckt.\nKlick auf „?“ für mehr.',
+      'Der obere Streifen ist dein Magen: was er gerade verdaut. Die gestrichelte Linie zeigt, wie viele Kohlenhydrate du brauchst, die durchgezogene, wie viele du aus Essen und Trinken tatsächlich aufnimmst. Die gepunktete ist das Aufnahmelimit.\nKlick auf „?“ für mehr.',
     hintClose: 'Tipps schließen',
     tabMix: 'Mix',
     editRoutePrefix: 'Strecke bearbeiten:',
@@ -2525,7 +2525,7 @@ export const STR: Record<Lang, StringTable> = {
     hintRouteMobile: 'Fatto. Tocca qui e inserisci il percorso: distanza e ritmo, o un file GPX.',
     hintAutoplan: 'Genera il tuo primo piano.',
     hintChart:
-      'Continua: ciò che assorbi.\nTratteggiata: ciò che ti serve.\nVerde: coperto.\nClicca ‘?’ per saperne di più.',
+      'La striscia in alto è il tuo stomaco: ciò che sta digerendo ora. La linea tratteggiata è quanti carboidrati ti servono, quella continua quanti ne assorbi davvero da cibo e bevande. Quella punteggiata è il limite di assorbimento.\nClicca ‘?’ per saperne di più.',
     hintClose: 'Chiudi i suggerimenti',
     tabMix: 'Mix',
     editRoutePrefix: 'Modifica percorso:',
