@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { t, type StringTable } from '../../i18n/strings';
 import { isDesktopView, useAppStore } from '../../store/appStore';
 import { autoplanGate } from '../autoplan/AutoplanFlow';
@@ -67,6 +67,16 @@ export function OnboardingHints() {
   }, [covered, hint, gate, hasPlan, setOnboardingHint]);
 
   const visible = hint !== null && !covered;
+
+  // The route hint asks for a distance, so put the cursor there — once, as it first appears
+  // (after the setup closes or on a reload that resumes it). Desktop only: on a phone the anchor
+  // is the "Edit route" button, and popping the keyboard unasked would be worse than a tap.
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!visible || hint !== 1 || !desktop || focused.current) return;
+    focused.current = true;
+    document.querySelector<HTMLInputElement>(`${ANCHOR[1]} input`)?.focus();
+  }, [visible, hint, desktop]);
 
   // Follows the anchor as the page scrolls or reflows (the mobile header scrolls away, the desktop
   // layout moves as the plan fills in). Events plus a slow poll, not a per-frame loop: the chart
