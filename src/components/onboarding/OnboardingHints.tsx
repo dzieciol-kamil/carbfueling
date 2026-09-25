@@ -155,7 +155,9 @@ export function OnboardingHints() {
             borderRadius: 2,
           }}
         />
-        <span style={{ flex: 1, position: 'relative' }}>{hintText(hint, strings, desktop)}</span>
+        <span style={{ flex: 1, position: 'relative', whiteSpace: 'pre-line' }}>
+          {hintText(hint, strings, desktop)}
+        </span>
         <button
           type="button"
           onClick={() => setOnboardingHint(null)}

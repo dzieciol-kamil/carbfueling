@@ -791,7 +791,7 @@ export const STR: Record<Lang, StringTable> = {
     hintRouteMobile: 'Gotowe. Stuknij tutaj i wpisz trasę: dystans i tempo albo plik GPX.',
     hintAutoplan: 'Wygeneruj swój pierwszy plan.',
     hintChart:
-      'Linia ciągła: co wchłaniasz. Przerywana: ile potrzebujesz. Zielone: pokryte. Resztę wyjaśnia „?”.',
+      'Linia ciągła: co wchłaniasz.\nPrzerywana: ile potrzebujesz.\nZielone: pokryte.\nKliknij „?”, żeby dowiedzieć się więcej.',
     hintClose: 'Zamknij podpowiedzi',
     tabMix: 'Mieszanka',
     editRoutePrefix: 'Edytuj trasę:',
@@ -1353,10 +1353,10 @@ export const STR: Record<Lang, StringTable> = {
     setupGearWhere: 'Change it later in Gear.',
     setupAddBottle: 'Bottle',
     setupAddFlask: 'Flask',
-    setupAddBladder: 'Bladder',
+    setupAddBladder: 'Hydration pack',
     setupBottleName: 'Bottle',
     setupFlaskName: 'Flask',
-    setupBladderName: 'Bladder',
+    setupBladderName: 'Hydration pack',
     setupFoodTitle: 'What you usually take (optional)',
     setupFoodHint: 'Tick the products you eat on the move.',
     setupFoodWhere: 'Change it later in Products.',
@@ -1369,7 +1369,7 @@ export const STR: Record<Lang, StringTable> = {
     hintRouteMobile: 'You’re set. Tap here to enter your route: distance and pace, or a GPX file.',
     hintAutoplan: 'Generate your first plan.',
     hintChart:
-      'Solid line: what you absorb. Dashed: what you need. Green: covered. ‘?’ explains the rest.',
+      'Solid line: what you absorb.\nDashed: what you need.\nGreen: covered.\nClick ‘?’ to learn more.',
     hintClose: 'Close tips',
     tabMix: 'Mix',
     editRoutePrefix: 'Edit route:',
@@ -1945,7 +1945,7 @@ export const STR: Record<Lang, StringTable> = {
       'Fertig. Tippe hier und gib deine Strecke ein: Distanz und Tempo oder eine GPX-Datei.',
     hintAutoplan: 'Erstelle deinen ersten Plan.',
     hintChart:
-      'Durchgezogen: was du aufnimmst. Gestrichelt: was du brauchst. Grün: gedeckt. „?“ erklärt den Rest.',
+      'Durchgezogen: was du aufnimmst.\nGestrichelt: was du brauchst.\nGrün: gedeckt.\nKlick auf „?“ für mehr.',
     hintClose: 'Tipps schließen',
     tabMix: 'Mix',
     editRoutePrefix: 'Strecke bearbeiten:',
@@ -2525,7 +2525,7 @@ export const STR: Record<Lang, StringTable> = {
     hintRouteMobile: 'Fatto. Tocca qui e inserisci il percorso: distanza e ritmo, o un file GPX.',
     hintAutoplan: 'Genera il tuo primo piano.',
     hintChart:
-      'Continua: ciò che assorbi. Tratteggiata: ciò che ti serve. Verde: coperto. ‘?’ spiega il resto.',
+      'Continua: ciò che assorbi.\nTratteggiata: ciò che ti serve.\nVerde: coperto.\nClicca ‘?’ per saperne di più.',
     hintClose: 'Chiudi i suggerimenti',
     tabMix: 'Mix',
     editRoutePrefix: 'Modifica percorso:',
