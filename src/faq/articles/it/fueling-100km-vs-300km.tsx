@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function Fueling100kmVs300kmIt() {
@@ -72,7 +72,7 @@ export default function Fueling100kmVs300kmIt() {
         descrivi lo sforzo e lui calcola i numeri.
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Pianifica il tuo giro, breve o lungo →
         </a>
       </p>

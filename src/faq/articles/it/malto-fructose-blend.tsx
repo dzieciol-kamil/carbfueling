@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -68,7 +68,7 @@ export default function MaltoFructoseBlendIt() {
         glucosio-fruttosio).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Costruisci un mix glucosio-fruttosio che combacia col tuo obiettivo orario →
         </a>
       </p>

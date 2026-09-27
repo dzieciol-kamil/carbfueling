@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref, assetHref } from '../../../urls';
+import { faqHref, appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -43,7 +43,7 @@ export default function BonkCrisisIt() {
         crisi.
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Traccia il tuo apporto contro il fabbisogno →
         </a>
       </p>

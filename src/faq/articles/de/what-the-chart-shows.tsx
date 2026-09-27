@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref, assetHref } from '../../../urls';
+import { faqHref, appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -102,7 +102,7 @@ export default function WhatTheChartShowsDe() {
         im Voraus — und noch korrigieren kannst.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Sieh dir deine eigene Versorgungslinie an →
         </a>
       </p>

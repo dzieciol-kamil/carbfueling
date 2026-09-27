@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -105,7 +105,7 @@ export default function HydrationWaterPerHourIt() {
         colpire la prestazione).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Pianifica insieme i tuoi obiettivi di liquidi e carboidrati →
         </a>
       </p>

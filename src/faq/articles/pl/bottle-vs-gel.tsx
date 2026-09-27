@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function BottleVsGelPl() {
@@ -56,7 +56,7 @@ export default function BottleVsGelPl() {
         trasę.
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Zbuduj plan łączący bidon, żel i jedzenie →
         </a>
       </p>

@@ -1,4 +1,4 @@
-import { calculatorHref, assetHref } from '../../../urls';
+import { appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -39,7 +39,7 @@ export default function BottleRefillPlanningPl() {
         uzupełnienie przy 15-20% zapasu to plan, uzupełnienie przy zerowym zapasie to kryzys.
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Dodaj punkty zaopatrzenia do swojej trasy →
         </a>
       </p>

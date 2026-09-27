@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function DiyFlavorAdditivesDe() {
@@ -61,7 +61,7 @@ export default function DiyFlavorAdditivesDe() {
         verändern den Geschmack, nicht die eigentliche Kohlenhydrat-Mathematik.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Stelle Süßungsmittel und Säurekomponente deines Mixes ein →
         </a>
       </p>

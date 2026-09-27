@@ -12,10 +12,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        en: 'en/calculator/index.html',
-        pl: 'pl/calculator/index.html',
-        de: 'de/calculator/index.html',
-        it: 'it/calculator/index.html',
+        en: 'en/planner/index.html',
+        pl: 'pl/planner/index.html',
+        de: 'de/planner/index.html',
+        it: 'it/planner/index.html',
       },
     },
   },

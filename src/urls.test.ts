@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   assetHref,
-  calculatorHref,
+  appHref,
   FAQ_HREF_FROM_CALCULATOR,
   LANDING_HREF_FROM_CALCULATOR,
   faqHref,
@@ -25,12 +25,12 @@ describe('faqHref', () => {
   });
 });
 
-describe('calculatorHref', () => {
+describe('appHref', () => {
   test('per language', () => {
-    expect(calculatorHref('en')).toBe('__BASE__/en/calculator/');
-    expect(calculatorHref('pl')).toBe('__BASE__/pl/calculator/');
-    expect(calculatorHref('de')).toBe('__BASE__/de/calculator/');
-    expect(calculatorHref('it')).toBe('__BASE__/it/calculator/');
+    expect(appHref('en')).toBe('__BASE__/en/planner/');
+    expect(appHref('pl')).toBe('__BASE__/pl/planner/');
+    expect(appHref('de')).toBe('__BASE__/de/planner/');
+    expect(appHref('it')).toBe('__BASE__/it/planner/');
   });
 });
 
@@ -59,20 +59,20 @@ describe('FAQ_HREF_FROM_CALCULATOR', () => {
 
 describe('nextLangPath', () => {
   test('swaps the language segment', () => {
-    expect(nextLangPath('/en/calculator/', 'pl')).toBe('/pl/calculator/');
+    expect(nextLangPath('/en/planner/', 'pl')).toBe('/pl/planner/');
   });
 
   test('is base-path aware for free, since it substitutes within whatever pathname it is given', () => {
-    expect(nextLangPath('/preview/en/calculator/', 'pl')).toBe('/preview/pl/calculator/');
+    expect(nextLangPath('/preview/en/planner/', 'pl')).toBe('/preview/pl/planner/');
   });
 
   test('is a no-op when already at the target language — the pushState guard relies on this', () => {
-    expect(nextLangPath('/pl/calculator/', 'pl')).toBe('/pl/calculator/');
+    expect(nextLangPath('/pl/planner/', 'pl')).toBe('/pl/planner/');
   });
 
   test('swaps to and from German too', () => {
-    expect(nextLangPath('/en/calculator/', 'de')).toBe('/de/calculator/');
-    expect(nextLangPath('/de/calculator/', 'en')).toBe('/en/calculator/');
+    expect(nextLangPath('/en/planner/', 'de')).toBe('/de/planner/');
+    expect(nextLangPath('/de/planner/', 'en')).toBe('/en/planner/');
   });
 });
 
@@ -84,8 +84,8 @@ describe('LANDING_HREF_FROM_CALCULATOR', () => {
   test("resolves to the calculator's own language landing page, with or without a base path", () => {
     const resolve = (from: string) =>
       new URL(LANDING_HREF_FROM_CALCULATOR, `https://x${from}`).pathname;
-    expect(resolve('/en/calculator/')).toBe('/en/');
-    expect(resolve('/pl/calculator/')).toBe('/pl/');
-    expect(resolve('/preview/pl/calculator/')).toBe('/preview/pl/');
+    expect(resolve('/en/planner/')).toBe('/en/');
+    expect(resolve('/pl/planner/')).toBe('/pl/');
+    expect(resolve('/preview/pl/planner/')).toBe('/preview/pl/');
   });
 });

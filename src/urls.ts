@@ -12,8 +12,8 @@ export function faqHref(lang: Lang, slug?: string): string {
   return slug ? `${BASE_MARKER}/${lang}/faq/${slug}/` : `${BASE_MARKER}/${lang}/faq/`;
 }
 
-export function calculatorHref(lang: Lang): string {
-  return `${BASE_MARKER}/${lang}/calculator/`;
+export function appHref(lang: Lang): string {
+  return `${BASE_MARKER}/${lang}/planner/`;
 }
 
 export function landingHref(lang: Lang): string {
@@ -25,15 +25,15 @@ export function assetHref(path: string): string {
 }
 
 /** Used by the live calculator SPA (Footer, MobileProfile) instead of faqHref().
- *  The calculator always renders from /{lang}/calculator/ — two segments below site
- *  root (three under /preview/{lang}/calculator/) — so a path relative to the
+ *  The calculator always renders from /{lang}/planner/ — two segments below site
+ *  root (three under /preview/{lang}/planner/) — so a path relative to the
  *  *current* page needs no base-path knowledge at all: "../faq/" reaches the
  *  sibling FAQ directory whether or not a /preview prefix sits in front of it. */
 export const FAQ_HREF_FROM_CALCULATOR = '../faq/';
 
 /** Same reasoning as FAQ_HREF_FROM_CALCULATOR, for the way home. The calculator used
  *  to *be* the site root, so its wordmark never needed to link anywhere; now that it
- *  lives at /{lang}/calculator/, "../" reaches its own language's landing page under
+ *  lives at /{lang}/planner/, "../" reaches its own language's landing page under
  *  any base path. */
 export const LANDING_HREF_FROM_CALCULATOR = '../';
 

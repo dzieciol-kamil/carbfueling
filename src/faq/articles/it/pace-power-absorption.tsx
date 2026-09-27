@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -84,7 +84,7 @@ export default function PacePowerAbsorptionIt() {
         dall'intestino, rallentando svuotamento gastrico e assorbimento).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Guarda insieme il tuo fabbisogno e la tua soglia →
         </a>
       </p>

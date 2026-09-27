@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -86,7 +86,7 @@ export default function PacePowerAbsorptionDe() {
         weggeleitet, was die Magenentleerung und die Aufnahme verlangsamt).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Sieh dir Bedarf und Obergrenze gemeinsam an →
         </a>
       </p>

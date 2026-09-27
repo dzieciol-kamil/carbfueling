@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref, assetHref } from '../../../urls';
+import { faqHref, appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -72,7 +72,7 @@ export default function CarbTransporterMixDe() {
         (mehrfach transportierbare Kohlenhydrate, Oxidation bis ca. 105 g/h).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Finde deine eigene Aufnahmeobergrenze →
         </a>
       </p>

@@ -22,7 +22,7 @@ const isPreview = BASE !== '';
 // supports both — which is what the default covers. Built from LANGS inside main() (see
 // buildSitemapPriority) rather than one hardcoded pair of lines per language here.
 function buildSitemapPriority(langs) {
-  return new Map(langs.flatMap((l) => [[`/${l}/`, '1.0'], [`/${l}/calculator/`, '0.9']]));
+  return new Map(langs.flatMap((l) => [[`/${l}/`, '1.0'], [`/${l}/planner/`, '0.9']]));
 }
 
 // SEO title/description for the landing pages, per language. `description` feeds the meta/og/
@@ -80,7 +80,7 @@ async function main() {
   });
 
   const { ARTICLES } = await server.ssrLoadModule('/src/faq/registry.ts');
-  const { calculatorHref, faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
+  const { appHref, faqHref, landingHref } = await server.ssrLoadModule('/src/urls.ts');
   const { LANGS } = await server.ssrLoadModule('/src/i18n/strings.ts');
   const { FAQ_INDEX_META } = await server.ssrLoadModule('/src/faq/FaqLayout.tsx');
   // faqHref()/landingHref() always return a __BASE__-marked string (Task 1) — correct when
@@ -207,12 +207,18 @@ async function main() {
     'utf-8',
   );
 
-  // Retired /faq/* paths: back-compat redirect stubs -> /en/faq/*
+  // Retired paths: back-compat redirect stubs. /faq/* -> /en/faq/*, and /{lang}/calculator/ ->
+  // /{lang}/planner/ (shared plan links carry ?p=, which redirect.js passes through).
   const stubs = [
     { outPath: path.join(distDir, 'faq/index.html'), targetPath: '/en/faq/' },
     ...ARTICLES.map((a) => ({
       outPath: path.join(distDir, 'faq', a.slug, 'index.html'),
       targetPath: `/en/faq/${a.slug}/`,
+    })),
+    ...LANGS.map((lang) => ({
+      outPath: path.join(distDir, lang, 'calculator/index.html'),
+      targetPath: strip(appHref(lang)),
+      lang,
     })),
   ];
   for (const stub of stubs) {
@@ -221,7 +227,7 @@ async function main() {
       stub.outPath,
       // Always noindex, regardless of preview/prod: these are back-compat stubs for
       // retired paths, never the canonical page — see ADR 0001's "ranking equity" risk.
-      renderRedirectStub({ targetPath: stub.targetPath, base: BASE, noindex: true }),
+      renderRedirectStub({ ...stub, base: BASE, noindex: true }),
       'utf-8',
     );
   }
@@ -232,7 +238,7 @@ async function main() {
     // from the sitemap entirely (on master the calculator *was* the sitemap). Only `urlPath`
     // is read here, so a bare object is all an entry needs.
     await writeSitemap(
-      [...pages, ...LANGS.map((lang) => ({ urlPath: strip(calculatorHref(lang)) }))],
+      [...pages, ...LANGS.map((lang) => ({ urlPath: strip(appHref(lang)) }))],
       buildSitemapPriority(LANGS),
     );
   }

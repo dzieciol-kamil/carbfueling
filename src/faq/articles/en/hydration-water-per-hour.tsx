@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -94,7 +94,7 @@ export default function HydrationWaterPerHourEn() {
         (the 27°C skin-temperature threshold above which dehydration starts affecting performance).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Plan your fluid and carb targets together →
         </a>
       </p>

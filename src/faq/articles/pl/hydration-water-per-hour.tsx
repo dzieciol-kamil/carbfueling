@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -96,7 +96,7 @@ export default function HydrationWaterPerHourPl() {
         (próg 27°C temperatury skóry, powyżej którego odwodnienie zaczyna wpływać na wynik).
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Zaplanuj płyny i węglowodany razem →
         </a>
       </p>

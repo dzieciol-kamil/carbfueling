@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function BottleVsGelDe() {
@@ -60,7 +60,7 @@ export default function BottleVsGelDe() {
         nicht nur als Summe für die ganze Strecke.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Baue einen Plan, der Flasche, Gel und Essen kombiniert →
         </a>
       </p>

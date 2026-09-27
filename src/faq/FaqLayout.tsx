@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { LANGS, t, type Lang } from '../i18n/strings';
-import { assetHref, calculatorHref, faqHref, landingHref } from '../urls';
+import { assetHref, appHref, faqHref, landingHref } from '../urls';
 import LangMenu from '../static/LangMenu';
 import ThemeToggle from '../static/ThemeToggle';
 
@@ -201,7 +201,7 @@ export function FaqLayout({
             hrefFor={(code) => faqHref(code, slug)}
             labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
           />
-          <a href={calculatorHref(lang)} style={ctaButton}>
+          <a href={appHref(lang)} style={ctaButton}>
             {c.open}
           </a>
         </div>
@@ -236,7 +236,7 @@ export function FaqLayout({
           style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
         >
           <a href={indexHref}>{c.index}</a>
-          <a href={calculatorHref(lang)}>{c.back}</a>
+          <a href={appHref(lang)}>{c.back}</a>
         </div>
       </footer>
     </div>

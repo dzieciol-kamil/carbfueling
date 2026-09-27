@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function RiceCakeBarsDe() {
@@ -65,7 +65,7 @@ export default function RiceCakeBarsDe() {
         dazu).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Füge Rice Cake zu deinem Plan hinzu →
         </a>
       </p>

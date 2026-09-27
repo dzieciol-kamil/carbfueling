@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function RiceCakeBarsIt() {
@@ -59,7 +59,7 @@ export default function RiceCakeBarsIt() {
         monotonia solo se il suo sapore contrasta davvero con quello che hai già in borraccia.
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Aggiungi il rice cake al tuo piano →
         </a>
       </p>

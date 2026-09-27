@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function HoneySugarDiyMixDe() {
@@ -58,7 +58,7 @@ export default function HoneySugarDiyMixDe() {
         derselben Aufnahme-Mathematik um beide Optionen herum planen kannst.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Probiere die Zucker- und Honig-Presets aus →
         </a>
       </p>

@@ -1105,7 +1105,7 @@ export const useAppStore = create<AppState>()(
         // check above rather than requiring every test file to stub a DOM.
         // The attribute is not ours alone: Chrome's "always translate this page" rewrites it to
         // the translation's language. Accepting it unchecked would put e.g. `es` into ui.lang,
-        // which nextLangPath() then pushes into the address bar as /es/calculator/ — a URL that
+        // which nextLangPath() then pushes into the address bar as /es/planner/ — a URL that
         // 404s on reload — and merge's result goes straight back to localStorage, so it sticks.
         const attrLang = typeof document !== 'undefined' ? document.documentElement.lang : '';
         const htmlLang = LANGS.includes(attrLang as Lang) ? (attrLang as Lang) : undefined;
@@ -1117,10 +1117,10 @@ export const useAppStore = create<AppState>()(
           // citricSource) fall back to the current default instead of coming back undefined.
           mix: { ...currentState.mix, ...persisted?.mix },
           // Same deep-merge reasoning for ui, plus: the calculator's two HTML entries
-          // (en/calculator/index.html, pl/calculator/index.html) seed the language via a
+          // (en/planner/index.html, pl/planner/index.html) seed the language via a
           // static `<html lang>` attribute, read here. That HTML-seeded value always wins
           // over whatever language was previously persisted — otherwise a returning
-          // visitor's stored preference would silently override a shared /pl/calculator/
+          // visitor's stored preference would silently override a shared /pl/planner/
           // link, defeating the point of the URL carrying the language at all.
           ui: {
             ...currentState.ui,

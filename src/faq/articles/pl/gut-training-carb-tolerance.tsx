@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -91,7 +91,7 @@ export default function GutTrainingCarbTolerancePl() {
         egzogennych i wynik na czas o ok. 6%).
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Sprawdź swój sufit wchłaniania →
         </a>
       </p>

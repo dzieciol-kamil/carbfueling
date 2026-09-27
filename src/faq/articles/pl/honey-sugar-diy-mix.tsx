@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function HoneySugarDiyMixPl() {
@@ -55,7 +55,7 @@ export default function HoneySugarDiyMixPl() {
         wchłaniania.
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Wypróbuj presety cukru i miodu →
         </a>
       </p>

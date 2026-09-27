@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref, assetHref } from '../../../urls';
+import { faqHref, appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -67,7 +67,7 @@ export default function CarbTransporterMixEn() {
         (multiple transportable carbohydrates, oxidation up to ~105g/h).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           See your own ceiling →
         </a>
       </p>

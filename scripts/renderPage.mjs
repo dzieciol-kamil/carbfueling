@@ -194,7 +194,7 @@ function safeJsonLd(obj) {
  *  approach can't do either — it only ever replaces exactly what was deliberately marked. */
 export function prefixInternalUrls(html, base) {
   // Every marker already starts with its own '/', so a base ending in one would double it and
-  // yield /preview//en/calculator/ — a link that still resolves nowhere useful and raises no
+  // yield /preview//en/planner/ — a link that still resolves nowhere useful and raises no
   // error. The workflow spells the same base two ways one line apart, `--base=/preview/` for
   // Vite (which requires the slash) and `BASE=/preview` here (which requires its absence), so
   // anyone tidying those two into agreement would break the build silently. Normalising here
@@ -289,18 +289,18 @@ export function renderPage({
   return prefixInternalUrls(html, base);
 }
 
-/** The retired `/faq/*` paths, kept alive as redirects to their `/en/faq/*` replacements.
+/** Retired paths, kept alive as redirects to their replacements: `/faq/*` -> `/en/faq/*`, and
+ *  `/{lang}/calculator/` -> `/{lang}/planner/`.
  *  The head carries more than a refresh: a canonical naming the destination (so a crawler
  *  that indexes the stub before following it still credits the real page), a title (so a
  *  link unfurler has something other than a URL to show), and `lang` (so a screen reader
- *  reaching one doesn't have to guess). Every stub targets an English page — the retired
- *  paths only ever served English — hence the hardcoded `en`. Canonical is SITE-absolute
+ *  reaching one doesn't have to guess) — the language of the page it points at. Canonical is SITE-absolute
  *  like every other page's, never base-prefixed; on /preview the noindex flag is what
  *  keeps the stub out of the index. */
-export function renderRedirectStub({ targetPath, base = '', noindex = false }) {
+export function renderRedirectStub({ targetPath, lang = 'en', base = '', noindex = false }) {
   const robots = noindex ? '\n    <meta name="robots" content="noindex, nofollow" />' : '';
   const html = `<!doctype html>
-<html lang="en">
+<html lang="${lang}">
   <head>
     <meta charset="UTF-8" />
     <meta

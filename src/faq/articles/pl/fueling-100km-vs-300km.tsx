@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function Fueling100kmVs300kmPl() {
@@ -68,7 +68,7 @@ export default function Fueling100kmVs300kmPl() {
         zaplanowanego wysiłku.
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Zaplanuj swoją trasę, krótką czy długą →
         </a>
       </p>
