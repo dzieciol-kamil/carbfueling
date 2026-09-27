@@ -289,8 +289,8 @@ export function renderPage({
   return prefixInternalUrls(html, base);
 }
 
-/** Retired paths, kept alive as redirects to their replacements: `/faq/*` -> `/en/faq/*`, and
- *  `/{lang}/calculator/` -> `/{lang}/planner/`.
+/** Retired paths, kept alive as redirects to their replacements: `/{lang}/calculator/` ->
+ *  `/{lang}/planner/`.
  *  The head carries more than a refresh: a canonical naming the destination (so a crawler
  *  that indexes the stub before following it still credits the real page), a title (so a
  *  link unfurler has something other than a URL to show), and `lang` (so a screen reader
