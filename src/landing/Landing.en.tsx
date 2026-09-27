@@ -1,6 +1,6 @@
 // src/landing/Landing.en.tsx
 import type { CSSProperties } from 'react';
-import { calculatorHref, faqHref, assetHref, landingHref } from '../urls';
+import { appHref, faqHref, assetHref, landingHref } from '../urls';
 import { LANGS, t } from '../i18n/strings';
 import SiteFooter from './SiteFooter';
 import LangMenu from '../static/LangMenu';
@@ -163,7 +163,7 @@ body { padding-top: var(--landing-header-h); }
 /* The language switch is the shared LangMenu (src/static/LangMenu.tsx), styled in
    renderPage.mjs's ROOT_STYLE alongside the FAQ pages' copy of it. Its entries are plain
    links because the choice needs no storing — the URL already carries it: /pl/ leads to a
-   CTA pointing at /pl/calculator/, whose static "html lang" then wins over whatever the
+   CTA pointing at /pl/planner/, whose static "html lang" then wins over whatever the
    browser had persisted. */
 .landing-actions { display: flex; align-items: center; gap: 10px; }
 
@@ -446,7 +446,7 @@ export default function LandingEn() {
             hrefFor={landingHref}
             labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
           />
-          <a href={calculatorHref('en')} style={ctaButton}>
+          <a href={appHref('en')} style={ctaButton}>
             Open the planner
             <span className="landing-cta-arrow">→</span>
           </a>
@@ -593,7 +593,7 @@ export default function LandingEn() {
               <span>runs in your browser</span>
             </h2>
             <a
-              href={calculatorHref('en')}
+              href={appHref('en')}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

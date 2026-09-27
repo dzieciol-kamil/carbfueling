@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -82,7 +82,7 @@ export default function HeatCarbPlanDe() {
         aufrechterhaltener Flüssigkeitszufuhr, hauptsächlich durch verringerte Darmaufnahme).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Plane deine nächste heiße Ausfahrt →
         </a>
       </p>

@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -104,7 +104,7 @@ export default function RunningVsCyclingCarbsDe() {
         (Magen-Darm-Beschwerden und Ernährung bei einem nichtprofessionellen Radrennen).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Plane deine Kohlenhydratzufuhr →
         </a>
       </p>

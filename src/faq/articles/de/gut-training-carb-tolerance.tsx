@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -95,7 +95,7 @@ export default function GutTrainingCarbToleranceDe() {
         Kohlenhydratoxidation und die Zeitfahrleistung um ca. 6 %).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Prüfe deine Aufnahmeobergrenze →
         </a>
       </p>

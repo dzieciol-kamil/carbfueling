@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function DiyFlavorAdditivesEn() {
@@ -54,7 +54,7 @@ export default function DiyFlavorAdditivesEn() {
         taste, not the underlying carb math.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Set your sweetener and sour ingredient →
         </a>
       </p>

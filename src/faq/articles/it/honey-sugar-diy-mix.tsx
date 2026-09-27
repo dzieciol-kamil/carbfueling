@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function HoneySugarDiyMixIt() {
@@ -59,7 +59,7 @@ export default function HoneySugarDiyMixIt() {
         assorbimento.
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Prova i preset zucchero e miele →
         </a>
       </p>

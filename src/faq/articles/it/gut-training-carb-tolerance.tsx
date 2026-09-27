@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -93,7 +93,7 @@ export default function GutTrainingCarbToleranceIt() {
         l'ossidazione dei carboidrati esogeni e la prestazione a cronometro di circa il 6%).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Controlla la tua soglia di assorbimento →
         </a>
       </p>

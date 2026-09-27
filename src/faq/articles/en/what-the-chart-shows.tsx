@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref, assetHref } from '../../../urls';
+import { faqHref, appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -92,7 +92,7 @@ export default function WhatTheChartShowsEn() {
         something you can watch coming, hours ahead, and fix before it becomes a problem.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Watch your own fueling line →
         </a>
       </p>

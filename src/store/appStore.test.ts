@@ -1187,7 +1187,7 @@ describe('persisted ui merge — HTML-seeded language precedence', () => {
 
   // Chrome's "always translate this page" rewrites <html lang> to the translation's language,
   // so this attribute is not ours to trust. An unchecked value would be pushed into the URL by
-  // nextLangPath() — /es/calculator/ 404s on reload — and written straight back to localStorage.
+  // nextLangPath() — /es/planner/ 404s on reload — and written straight back to localStorage.
   test('a language we do not ship is ignored, and the persisted one survives', () => {
     vi.stubGlobal('document', { documentElement: { lang: 'es' } });
     const merge = useAppStore.persist.getOptions().merge!;

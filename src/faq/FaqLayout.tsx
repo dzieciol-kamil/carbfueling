@@ -1,33 +1,33 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { LANGS, t, type Lang } from '../i18n/strings';
-import { assetHref, calculatorHref, faqHref, landingHref } from '../urls';
+import { assetHref, appHref, faqHref, landingHref } from '../urls';
 import LangMenu from '../static/LangMenu';
 import ThemeToggle from '../static/ThemeToggle';
 
 const CHROME: Record<Lang, { back: string; index: string; brand: string; open: string }> = {
   en: {
-    back: '← Back to the calculator',
+    back: '← Back to the planner',
     index: 'More FAQ articles',
     brand: 'Carb Fueling',
-    open: 'Open the calculator →',
+    open: 'Open the planner →',
   },
   pl: {
-    back: '← Wróć do kalkulatora',
+    back: '← Wróć do planera',
     index: 'Więcej artykułów FAQ',
     brand: 'Carb Fueling',
-    open: 'Otwórz kalkulator →',
+    open: 'Otwórz planer →',
   },
   de: {
-    back: '← Zurück zum Rechner',
+    back: '← Zurück zum Planer',
     index: 'Weitere FAQ-Artikel',
     brand: 'Carb Fueling',
-    open: 'Rechner öffnen →',
+    open: 'Planer öffnen →',
   },
   it: {
-    back: '← Torna al calcolatore',
+    back: '← Torna al pianificatore',
     index: 'Altri articoli FAQ',
     brand: 'Carb Fueling',
-    open: 'Apri il calcolatore →',
+    open: 'Apri il pianificatore →',
   },
 };
 
@@ -201,7 +201,7 @@ export function FaqLayout({
             hrefFor={(code) => faqHref(code, slug)}
             labelFor={(code) => ({ short: t(code).langShort, name: t(code).langName })}
           />
-          <a href={calculatorHref(lang)} style={ctaButton}>
+          <a href={appHref(lang)} style={ctaButton}>
             {c.open}
           </a>
         </div>
@@ -236,7 +236,7 @@ export function FaqLayout({
           style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}
         >
           <a href={indexHref}>{c.index}</a>
-          <a href={calculatorHref(lang)}>{c.back}</a>
+          <a href={appHref(lang)}>{c.back}</a>
         </div>
       </footer>
     </div>

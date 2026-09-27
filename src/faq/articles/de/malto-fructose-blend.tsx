@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -68,7 +68,7 @@ export default function MaltoFructoseBlendDe() {
         (SGLT1-Obergrenze ca. 60 g/h, kombinierte Obergrenze bei Glukose-Fruktose-Mischung höher).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Stell einen Glukose-Fruktose-Mix für dein Stundenziel zusammen →
         </a>
       </p>

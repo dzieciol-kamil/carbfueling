@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -95,7 +95,7 @@ export default function RunningVsCyclingCarbsEn() {
         (GI symptoms and nutrition in a non-professional cycling event).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Plan your carb intake →
         </a>
       </p>

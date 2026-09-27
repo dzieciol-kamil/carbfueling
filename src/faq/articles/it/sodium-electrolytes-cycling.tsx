@@ -1,4 +1,4 @@
-import { calculatorHref, faqHref } from '../../../urls';
+import { appHref, faqHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -79,7 +79,7 @@ export default function SodiumElectrolytesCyclingIt() {
         bassi/tipici/salati).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Pianifica insieme carboidrati e liquidi →
         </a>
       </p>

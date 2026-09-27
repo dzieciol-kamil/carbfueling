@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -79,7 +79,7 @@ export default function CarbsPerHourByIntensityIt() {
         (le linee guida 30/60/90 g/h in base alla durata dell'esercizio).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Calcola il tuo obiettivo orario →
         </a>
       </p>

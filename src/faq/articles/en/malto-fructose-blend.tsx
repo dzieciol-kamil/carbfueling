@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -64,7 +64,7 @@ export default function MaltoFructoseBlendEn() {
         (SGLT1 ceiling of ~60g/h, higher combined ceiling with a glucose-fructose blend).
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Build a glucose-fructose mix that matches your hourly target →
         </a>
       </p>

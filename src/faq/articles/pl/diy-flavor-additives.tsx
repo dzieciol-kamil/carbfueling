@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function DiyFlavorAdditivesPl() {
@@ -56,7 +56,7 @@ export default function DiyFlavorAdditivesPl() {
         samą matematykę związaną z węglowodanami.
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Ustaw słodzik i składnik kwaśny swojego miksu →
         </a>
       </p>

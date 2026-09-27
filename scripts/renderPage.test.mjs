@@ -52,6 +52,11 @@ describe('renderRedirectStub', () => {
     expect(html).toContain('<link rel="canonical" href="https://carbfueling.com/en/faq/" />');
   });
 
+  test('takes the lang of the page it points at', () => {
+    const html = renderRedirectStub({ targetPath: '/pl/planner/', lang: 'pl' });
+    expect(html).toContain('<html lang="pl">');
+  });
+
   test('adds noindex when requested', () => {
     const html = renderRedirectStub({ targetPath: '/en/faq/', base: '/preview', noindex: true });
     expect(html).toContain('<meta name="robots" content="noindex, nofollow" />');

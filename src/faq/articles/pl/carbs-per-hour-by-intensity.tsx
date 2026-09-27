@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -74,7 +74,7 @@ export default function CarbsPerHourByIntensityPl() {
         (widełki 30/60/90 g/h wg czasu trwania wysiłku).
       </p>
       <p>
-        <a href={calculatorHref('pl')} style={articleLinkStyle}>
+        <a href={appHref('pl')} style={articleLinkStyle}>
           Wylicz swój cel na godzinę →
         </a>
       </p>

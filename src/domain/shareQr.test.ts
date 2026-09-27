@@ -11,13 +11,13 @@ function encode(text: string): boolean[][] {
 
 describe('qrModules', () => {
   test('returns a square matrix', () => {
-    const m = encode('https://carbfueling.com/pl/calculator/?p=abc');
+    const m = encode('https://carbfueling.com/pl/planner/?p=abc');
     expect(m.length).toBeGreaterThan(20);
     expect(m.every((row) => row.length === m.length)).toBe(true);
   });
 
   test('draws the three finder patterns as dark corners', () => {
-    const m = encode('https://carbfueling.com/pl/calculator/?p=abc');
+    const m = encode('https://carbfueling.com/pl/planner/?p=abc');
     const last = m.length - 1;
     expect(m[0][0]).toBe(true);
     expect(m[0][last]).toBe(true);
@@ -26,7 +26,7 @@ describe('qrModules', () => {
 
   test('grows with the payload', () => {
     const short = encode('https://carbfueling.com/');
-    const long = encode('https://carbfueling.com/pl/calculator/?p=' + 'A'.repeat(700));
+    const long = encode('https://carbfueling.com/pl/planner/?p=' + 'A'.repeat(700));
     expect(long.length).toBeGreaterThan(short.length);
   });
 
@@ -37,7 +37,7 @@ describe('qrModules', () => {
   });
 
   test('returns null past the ceiling rather than throwing', () => {
-    const tooLong = 'https://carbfueling.com/pl/calculator/?p=' + 'A'.repeat(QR_MAX_BYTES);
+    const tooLong = 'https://carbfueling.com/pl/planner/?p=' + 'A'.repeat(QR_MAX_BYTES);
     expect(tooLong.length).toBeGreaterThan(QR_MAX_BYTES);
     expect(qrModules(tooLong)).toBeNull();
     // One byte past is already too much: the ceiling is exact, not a safety margin.

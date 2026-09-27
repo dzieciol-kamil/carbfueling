@@ -1,4 +1,4 @@
-import { calculatorHref, assetHref } from '../../../urls';
+import { appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -43,7 +43,7 @@ export default function BottleRefillPlanningIt() {
         borracce oltre quanto possono contenere.
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Aggiungi tappe al tuo percorso →
         </a>
       </p>

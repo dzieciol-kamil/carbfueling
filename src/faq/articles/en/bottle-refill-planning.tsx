@@ -1,4 +1,4 @@
-import { calculatorHref, assetHref } from '../../../urls';
+import { appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -42,7 +42,7 @@ export default function BottleRefillPlanningEn() {
         they can carry.
       </p>
       <p>
-        <a href={calculatorHref('en')} style={articleLinkStyle}>
+        <a href={appHref('en')} style={articleLinkStyle}>
           Add shop stops to your route →
         </a>
       </p>

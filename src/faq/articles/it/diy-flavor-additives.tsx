@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref } from '../../../urls';
+import { faqHref, appHref } from '../../../urls';
 import { FaqLayout, articleH1Style, articleLinkStyle, articleTextStyle } from '../../FaqLayout';
 
 export default function DiyFlavorAdditivesIt() {
@@ -57,7 +57,7 @@ export default function DiyFlavorAdditivesIt() {
         cambiano il sapore, non la matematica di base dei carboidrati.
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Imposta il tuo dolcificante e l'ingrediente acido →
         </a>
       </p>

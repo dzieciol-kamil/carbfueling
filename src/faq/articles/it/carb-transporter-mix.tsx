@@ -1,4 +1,4 @@
-import { faqHref, calculatorHref, assetHref } from '../../../urls';
+import { faqHref, appHref, assetHref } from '../../../urls';
 import {
   FaqLayout,
   articleH1Style,
@@ -71,7 +71,7 @@ export default function CarbTransporterMixIt() {
         (carboidrati multipli trasportabili, ossidazione fino a ~105 g/h).
       </p>
       <p>
-        <a href={calculatorHref('it')} style={articleLinkStyle}>
+        <a href={appHref('it')} style={articleLinkStyle}>
           Scopri la tua soglia →
         </a>
       </p>
