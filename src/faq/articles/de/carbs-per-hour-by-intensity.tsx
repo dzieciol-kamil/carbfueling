@@ -78,7 +78,7 @@ export default function CarbsPerHourByIntensityDe() {
         (die 30/60/90-g/h-Richtwerte nach Belastungsdauer).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Berechne dein Stundenziel →
         </a>
       </p>

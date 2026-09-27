@@ -102,7 +102,7 @@ export default function WhatTheChartShowsDe() {
         im Voraus — und noch korrigieren kannst.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Sieh dir deine eigene Versorgungslinie an →
         </a>
       </p>

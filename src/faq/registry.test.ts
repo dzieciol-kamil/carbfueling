@@ -6,6 +6,11 @@ import { LANGS } from '../i18n/strings';
 // import.meta.glob resolves these paths at build/test time, so a missing component file
 // shows up as a missing key here rather than a runtime import failure.
 const articleModules = import.meta.glob('./articles/*/*.tsx');
+const articleSources = import.meta.glob<string>('./articles/*/*.tsx', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
 
 describe('ARTICLES registry', () => {
   it('has a unique, URL-safe slug per article', () => {
@@ -21,6 +26,17 @@ describe('ARTICLES registry', () => {
       for (const lang of LANGS) {
         expect(article[lang].title.trim().length).toBeGreaterThan(0);
         expect(article[lang].description.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  // German articles linked to /en/planner/ for weeks: written while German was FAQ-only,
+  // never repointed when /de/planner/ shipped.
+  it("links every article to the planner in the article's own language", () => {
+    for (const [file, source] of Object.entries(articleSources)) {
+      const lang = file.split('/')[2];
+      for (const [, target] of source.matchAll(/appHref\('([a-z]+)'\)/g)) {
+        expect(`${file}: ${target}`).toBe(`${file}: ${lang}`);
       }
     }
   });

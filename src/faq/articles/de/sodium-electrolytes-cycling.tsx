@@ -82,7 +82,7 @@ export default function SodiumElectrolytesCyclingDe() {
         low/typical/salty sweaters).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Plane Kohlenhydrate und Flüssigkeit gemeinsam →
         </a>
       </p>

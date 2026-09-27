@@ -72,7 +72,7 @@ export default function CarbTransporterMixDe() {
         (mehrfach transportierbare Kohlenhydrate, Oxidation bis ca. 105 g/h).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Finde deine eigene Aufnahmeobergrenze →
         </a>
       </p>

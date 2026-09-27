@@ -86,7 +86,7 @@ export default function PacePowerAbsorptionDe() {
         weggeleitet, was die Magenentleerung und die Aufnahme verlangsamt).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Sieh dir Bedarf und Obergrenze gemeinsam an →
         </a>
       </p>

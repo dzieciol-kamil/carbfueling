@@ -61,7 +61,7 @@ export default function DiyFlavorAdditivesDe() {
         verändern den Geschmack, nicht die eigentliche Kohlenhydrat-Mathematik.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Stelle Süßungsmittel und Säurekomponente deines Mixes ein →
         </a>
       </p>

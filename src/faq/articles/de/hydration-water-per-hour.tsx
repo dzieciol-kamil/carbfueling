@@ -104,7 +104,7 @@ export default function HydrationWaterPerHourDe() {
         beeinflussen).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Plane Flüssigkeit und Kohlenhydrate gemeinsam →
         </a>
       </p>

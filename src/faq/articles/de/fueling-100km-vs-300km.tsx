@@ -74,7 +74,7 @@ export default function Fueling100kmVs300kmDe() {
         entsprechend auf das geplante Vorhaben vor.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Plane deine Strecke, kurz oder lang →
         </a>
       </p>

@@ -104,7 +104,7 @@ export default function RunningVsCyclingCarbsDe() {
         (Magen-Darm-Beschwerden und Ernährung bei einem nichtprofessionellen Radrennen).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Plane deine Kohlenhydratzufuhr →
         </a>
       </p>

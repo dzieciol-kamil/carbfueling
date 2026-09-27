@@ -95,7 +95,7 @@ export default function GutTrainingCarbToleranceDe() {
         Kohlenhydratoxidation und die Zeitfahrleistung um ca. 6 %).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Prüfe deine Aufnahmeobergrenze →
         </a>
       </p>

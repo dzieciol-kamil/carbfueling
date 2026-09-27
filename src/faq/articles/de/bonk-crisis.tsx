@@ -43,7 +43,7 @@ export default function BonkCrisisDe() {
         daraus eine Krise wird.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Sieh dir dein eigenes Zufuhr-Bedarf-Diagramm an →
         </a>
       </p>
