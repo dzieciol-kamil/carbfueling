@@ -791,6 +791,20 @@ describe('fracFood', () => {
 });
 
 describe('samples', () => {
+  // A fresh app starts with distance 0 and speed 0 (or 0h 0min in time mode) — zero hours, so
+  // dt = 0. The chart's hover badge read "NaN g/h" off these samples.
+  test.each([
+    ['route', { mode: 'route', distance: 0, speed: 0 }],
+    ['time', { mode: 'time', hours: 0, minutes: 0 }],
+  ] as const)('a zero-duration %s route: every rate is a finite 0', (_, route) => {
+    const S = samples(
+      makePlan({ route: makeRoute({ ...route, preMealCarbs: 50, preMealMinutes: 45 }) }),
+    );
+    for (const p of S) {
+      expect([p.rate, p.needRate, p.fluidRate, p.fluidNeedRate]).toEqual([0, 0, 0, 0]);
+    }
+  });
+
   test('zero positions in the plan: no intake anywhere, need still ramps up', () => {
     const plan = makePlan({
       route: makeRoute({

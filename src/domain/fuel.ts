@@ -974,7 +974,9 @@ export function samples(state: PlanState): Sample[] {
 
   let needRateEma = 0;
   for (let i = 0; i <= N; i++) {
-    if (i > 0) {
+    // A zero-duration ride has no interval to take a rate over — rates stay 0, as in
+    // causalSmoothRate below, instead of 0/0.
+    if (i > 0 && dt > 0) {
       rateEma += alpha * ((out[i].absorbed - out[i - 1].absorbed) / dt - rateEma);
       needRateEma += alpha * ((out[i].need - out[i - 1].need) / dt - needRateEma);
     }
