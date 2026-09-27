@@ -6,28 +6,28 @@ import ThemeToggle from '../static/ThemeToggle';
 
 const CHROME: Record<Lang, { back: string; index: string; brand: string; open: string }> = {
   en: {
-    back: '← Back to the calculator',
+    back: '← Back to the planner',
     index: 'More FAQ articles',
     brand: 'Carb Fueling',
-    open: 'Open the calculator →',
+    open: 'Open the planner →',
   },
   pl: {
-    back: '← Wróć do kalkulatora',
+    back: '← Wróć do planera',
     index: 'Więcej artykułów FAQ',
     brand: 'Carb Fueling',
-    open: 'Otwórz kalkulator →',
+    open: 'Otwórz planer →',
   },
   de: {
-    back: '← Zurück zum Rechner',
+    back: '← Zurück zum Planer',
     index: 'Weitere FAQ-Artikel',
     brand: 'Carb Fueling',
-    open: 'Rechner öffnen →',
+    open: 'Planer öffnen →',
   },
   it: {
-    back: '← Torna al calcolatore',
+    back: '← Torna al pianificatore',
     index: 'Altri articoli FAQ',
     brand: 'Carb Fueling',
-    open: 'Apri il calcolatore →',
+    open: 'Apri il pianificatore →',
   },
 };
 
