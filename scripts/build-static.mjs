@@ -207,14 +207,11 @@ async function main() {
     'utf-8',
   );
 
-  // Retired paths: back-compat redirect stubs. /faq/* -> /en/faq/*, and /{lang}/calculator/ ->
-  // /{lang}/planner/ (shared plan links carry ?p=, which redirect.js passes through).
+  // Retired paths: back-compat redirect stubs, /{lang}/calculator/ -> /{lang}/planner/ (shared
+  // plan links carry ?p=, which redirect.js passes through). The old /faq/* stubs are gone on
+  // purpose: Google kept picking them as canonical over /en/faq/* despite noindex + canonical,
+  // so they 404 now and drop out of the index.
   const stubs = [
-    { outPath: path.join(distDir, 'faq/index.html'), targetPath: '/en/faq/' },
-    ...ARTICLES.map((a) => ({
-      outPath: path.join(distDir, 'faq', a.slug, 'index.html'),
-      targetPath: `/en/faq/${a.slug}/`,
-    })),
     ...LANGS.map((lang) => ({
       outPath: path.join(distDir, lang, 'calculator/index.html'),
       targetPath: strip(appHref(lang)),
