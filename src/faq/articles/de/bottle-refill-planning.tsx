@@ -39,7 +39,7 @@ export default function BottleRefillPlanningDe() {
         Krise.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Füge Verpflegungspunkte zu deiner Route hinzu →
         </a>
       </p>

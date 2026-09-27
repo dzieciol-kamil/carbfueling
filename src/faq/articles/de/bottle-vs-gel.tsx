@@ -60,7 +60,7 @@ export default function BottleVsGelDe() {
         nicht nur als Summe für die ganze Strecke.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Baue einen Plan, der Flasche, Gel und Essen kombiniert →
         </a>
       </p>

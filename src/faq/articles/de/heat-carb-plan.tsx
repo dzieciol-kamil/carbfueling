@@ -82,7 +82,7 @@ export default function HeatCarbPlanDe() {
         aufrechterhaltener Flüssigkeitszufuhr, hauptsächlich durch verringerte Darmaufnahme).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Plane deine nächste heiße Ausfahrt →
         </a>
       </p>

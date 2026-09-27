@@ -58,7 +58,7 @@ export default function HoneySugarDiyMixDe() {
         derselben Aufnahme-Mathematik um beide Optionen herum planen kannst.
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Probiere die Zucker- und Honig-Presets aus →
         </a>
       </p>

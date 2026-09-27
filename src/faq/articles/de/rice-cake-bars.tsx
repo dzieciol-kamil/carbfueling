@@ -65,7 +65,7 @@ export default function RiceCakeBarsDe() {
         dazu).
       </p>
       <p>
-        <a href={appHref('en')} style={articleLinkStyle}>
+        <a href={appHref('de')} style={articleLinkStyle}>
           Füge Rice Cake zu deinem Plan hinzu →
         </a>
       </p>
