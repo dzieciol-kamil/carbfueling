@@ -38,6 +38,22 @@ import type { FoodSelectionEntry, StopRules } from './types';
 
 const EPS = 1e-9;
 
+/**
+ * Which part of the space one worker searches, so a run can spread over every core: the Decisions
+ * whose place in `improve()`'s own order is `index` modulo `count`. Every Decision lands in exactly
+ * one share, and dealing them out in turn rather than in blocks keeps the shares equally hard —
+ * neighbouring Decisions cost about the same to lay out.
+ */
+export type Share = { index: number; count: number };
+
+/** One worker, the whole space. */
+export const WHOLE: Share = { index: 0, count: 1 };
+
+/** A plan `improve()` found, with its place in the search's order — what lets the main thread
+ *  merge several shares into the answer one search over the whole space gives (`replaces` in
+ *  `run.ts`). */
+export type Found = Evaluated & { order: number };
+
 /** A plan past which only fewer stops, sachets, bottles or gut can still win. */
 function settled(e: Evaluated): boolean {
   return e.score.toGreen <= EPS && e.score.shapeShort <= SHAPE_TOLERANCE;
@@ -116,7 +132,8 @@ export function* improve(
   start: Evaluated,
   seen: { n: number } = { n: 0 },
   rules: StopRules = FREE_STOPS,
-): Generator<Evaluated, void, void> {
+  share: Share = WHOLE,
+): Generator<Found, void, void> {
   const s = space(state, selection);
   const hrs = totalHours(state.route);
   const empty = planSummary({ ...state, fills: [], foods: [] });
@@ -134,6 +151,8 @@ export function* improve(
     hrs >= CARB_GRADING_MIN_HOURS ? carbFloorGph(empty.carbTargetGph, state.route.intensity) : 0;
 
   let best = start;
+  // Every Decision's place in the order below, counted in every share alike so that they agree.
+  let order = 0;
   const maxM = Math.max(1, ...s.vessels.map((opts) => Math.max(...opts.map((a) => a.loads))));
   const chosen: number[] = [];
 
@@ -162,14 +181,16 @@ export function* improve(
     assignment: VesselAssignment[],
     i: number,
     acc: number[],
-  ): Generator<Evaluated, void, void> {
+  ): Generator<Found, void, void> {
     if (i === s.offers.length) {
+      const at = order++;
+      if (at % share.count !== share.index) return;
       if (settled(best) && unreachable(assignment, acc)) return;
       seen.n += 1;
       const e = evaluate(state, s.offers, { assignment, counts: acc.slice() } as Decision, rules);
       if (compareScore(e.score, best.score) < 0) {
         best = e;
-        yield e;
+        yield { ...e, order: at };
       }
       return;
     }
@@ -180,7 +201,7 @@ export function* improve(
     }
   }
 
-  function* vessels(M: number, i: number, hitM: boolean): Generator<Evaluated, void, void> {
+  function* vessels(M: number, i: number, hitM: boolean): Generator<Found, void, void> {
     if (i === s.vessels.length) {
       if (!hitM) return;
       yield* counts(
