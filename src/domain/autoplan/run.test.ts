@@ -8,9 +8,9 @@ import { describe, expect, test, vi } from 'vitest';
 import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 import { compareScore, score } from './score';
-import type { Draft } from './score';
+import type { Draft, Score } from './score';
 import type { AutoplanMessage } from './run';
-import { runAutoplan } from './run';
+import { CLIMB_ORDER, replaces, runAutoplan } from './run';
 import type { AutoplanResult, FoodSelectionEntry } from './types';
 
 function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
@@ -68,10 +68,10 @@ const sel: FoodSelectionEntry[] = [
   { key: 'cola', count: 1 },
 ];
 
-/** `AutoplanMessage` doesn't carry a score — `run.ts`'s own `toResult` throws it away — so this
- *  recomputes it from the same state the message was built from, the same way `score()` grades
- *  any other draft. `newStops` and `Draft.stops` are the same shape under different names
- *  (types.ts), so no cast is needed. */
+/** Recomputed from the plan itself rather than read off the message's own `score`, so the test
+ *  does not take the worker's word for the thing it checks — from the same state the message was
+ *  built from, the same way `score()` grades any other draft. `newStops` and `Draft.stops` are the
+ *  same shape under different names (types.ts), so no cast is needed. */
 function scoreOf(result: AutoplanResult) {
   const draft: Draft = { fills: result.fills, foods: result.foods, stops: result.newStops };
   return score(state, draft);
@@ -87,7 +87,7 @@ describe('runAutoplan', () => {
     expect(msgs.at(-1)).toEqual({ type: 'done' });
 
     const plans = msgs.filter(
-      (m): m is { type: 'plan'; result: AutoplanResult } => m.type === 'plan',
+      (m): m is Extract<AutoplanMessage, { type: 'plan' }> => m.type === 'plan',
     );
     for (let i = 1; i < plans.length; i++) {
       expect(compareScore(scoreOf(plans[i].result), scoreOf(plans[i - 1].result))).toBeLessThan(0);
@@ -125,5 +125,47 @@ describe('runAutoplan', () => {
     } finally {
       errorSpy.mockRestore();
     }
+  });
+});
+
+describe('runAutoplan, one share of several', () => {
+  test('posts the climb first, then only plans from its own share, then done', () => {
+    const msgs: AutoplanMessage[] = [];
+    runAutoplan(state, sel, (m) => msgs.push(m), undefined, undefined, { index: 1, count: 2 });
+
+    expect(msgs[0]).toMatchObject({ type: 'plan', order: CLIMB_ORDER });
+    expect(msgs.at(-1)).toEqual({ type: 'done' });
+    for (const m of msgs.slice(1, -1)) {
+      expect(m.type === 'plan' && m.order % 2).toBe(1);
+    }
+  }, 20000);
+});
+
+describe('replaces', () => {
+  const at = (toGreen: number, order: number) => ({
+    score: {
+      toGreen,
+      shapeShort: 0,
+      stops: 0,
+      bottles: 1,
+      powderCarried: 0,
+      gutPeak: 0,
+    } satisfies Score,
+    order,
+  });
+
+  test('the first plan to arrive is shown', () => {
+    expect(replaces(at(0.5, 7), null)).toBe(true);
+  });
+
+  test('a better plan replaces a worse one, wherever it sits in the order', () => {
+    expect(replaces(at(0.1, 9), at(0.5, 2))).toBe(true);
+    expect(replaces(at(0.5, 2), at(0.1, 9))).toBe(false);
+  });
+
+  test('on a tie the earlier plan stays — the one a single search would have kept', () => {
+    expect(replaces(at(0.1, 3), at(0.1, 9))).toBe(true);
+    expect(replaces(at(0.1, 9), at(0.1, 3))).toBe(false);
+    expect(replaces(at(0.1, 4), at(0.1, CLIMB_ORDER))).toBe(false);
   });
 });

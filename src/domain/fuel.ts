@@ -487,27 +487,46 @@ export function hasGpxTrack(route: RouteInput): boolean {
  * the object cannot see — a route mutated in place rather than replaced, which the store never does
  * but a caller could.
  */
-const profCache = new WeakMap<RouteInput, { sig: string; profile: Profile }>();
+type ProfSig = Pick<RouteInput, 'mode' | 'distance' | 'speed' | 'hours' | 'minutes' | 'useGpx'> & {
+  trackId: number | null;
+  trackLen: number;
+};
 
-function profSig(route: RouteInput): string {
-  return [
-    route.mode,
-    route.distance,
-    route.speed,
-    route.hours,
-    route.minutes,
-    route.useGpx ? 1 : 0,
-    route.gpxTrack ? route.gpxTrack.id : 'none',
-    route.gpxTrack ? route.gpxTrack.ele.length : 0,
-  ].join('|');
+const profCache = new WeakMap<RouteInput, { sig: ProfSig; profile: Profile }>();
+
+function profSig(route: RouteInput): ProfSig {
+  return {
+    mode: route.mode,
+    distance: route.distance,
+    speed: route.speed,
+    hours: route.hours,
+    minutes: route.minutes,
+    useGpx: route.useGpx,
+    trackId: route.gpxTrack ? route.gpxTrack.id : null,
+    trackLen: route.gpxTrack ? route.gpxTrack.ele.length : 0,
+  };
+}
+
+/** Compared field by field rather than as a joined string: `samples()` asks for the profile
+ *  thousands of times per plan, and building that string was most of autoplan's running time. */
+function sameProfSig(sig: ProfSig, route: RouteInput): boolean {
+  return (
+    sig.mode === route.mode &&
+    sig.distance === route.distance &&
+    sig.speed === route.speed &&
+    sig.hours === route.hours &&
+    sig.minutes === route.minutes &&
+    sig.useGpx === route.useGpx &&
+    sig.trackId === (route.gpxTrack ? route.gpxTrack.id : null) &&
+    sig.trackLen === (route.gpxTrack ? route.gpxTrack.ele.length : 0)
+  );
 }
 
 export function prof(route: RouteInput): Profile {
-  const sig = profSig(route);
   const cached = profCache.get(route);
-  if (cached && cached.sig === sig) return cached.profile;
+  if (cached && sameProfSig(cached.sig, route)) return cached.profile;
   const built = buildProf(route);
-  profCache.set(route, { sig, profile: built });
+  profCache.set(route, { sig: profSig(route), profile: built });
   return built;
 }
 
@@ -793,26 +812,49 @@ export function partArray(fill: Fill, gear: Vessel[]): number[] {
   return arr;
 }
 
-export function fracFill(fill: Fill, x: number, gear: Vessel[], route: RouteInput): number {
+/**
+ * How much of `fill` has been taken by `x`, as a function of `x` and `eff(route, x)` — everything
+ * that does not depend on `x` worked out once. `samples()` asks this once per fill per sample, and
+ * repeating the two endpoint `eff` lookups (and `x`'s own, once per fill) there was most of
+ * autoplan's running time. `fracFill` is the same answer for a single `x`, so there is one
+ * definition.
+ */
+function fillProgress(
+  fill: Fill,
+  gear: Vessel[],
+  route: RouteInput,
+): (x: number, effX: number) => number {
   const n = partsOf(fill, gear);
   if (n > 1) {
-    let c = 0;
-    for (let k = 0; k < n; k++) if (x >= partPos(fill, k, gear)) c++;
-    return c / n;
+    const parts = partArray(fill, gear);
+    return (x) => {
+      let c = 0;
+      for (const p of parts) if (x >= p) c++;
+      return c / n;
+    };
   }
-  if (fill.to <= fill.from) return x >= fill.from ? 1 : 0;
+  if (fill.to <= fill.from) return (x) => (x >= fill.from ? 1 : 0);
   const a = eff(route, fill.from);
   const b = eff(route, fill.to);
-  if (b <= a) return x >= fill.from ? 1 : 0;
-  return Math.max(0, Math.min(1, (eff(route, x) - a) / (b - a)));
+  if (b <= a) return (x) => (x >= fill.from ? 1 : 0);
+  return (_x, effX) => Math.max(0, Math.min(1, (effX - a) / (b - a)));
+}
+
+export function fracFill(fill: Fill, x: number, gear: Vessel[], route: RouteInput): number {
+  return fillProgress(fill, gear, route)(x, eff(route, x));
+}
+
+/** `fillProgress` for a product. */
+function foodProgress(food: FoodItem, route: RouteInput): (x: number, effX: number) => number {
+  if (!food.cont || food.to <= food.from) return (x) => (x >= food.from ? 1 : 0);
+  const a = eff(route, food.from);
+  const b = eff(route, food.to);
+  if (b <= a) return (x) => (x >= food.from ? 1 : 0);
+  return (_x, effX) => Math.max(0, Math.min(1, (effX - a) / (b - a)));
 }
 
 export function fracFood(food: FoodItem, x: number, route: RouteInput): number {
-  if (!food.cont || food.to <= food.from) return x >= food.from ? 1 : 0;
-  const a = eff(route, food.from);
-  const b = eff(route, food.to);
-  if (b <= a) return x >= food.from ? 1 : 0;
-  return Math.max(0, Math.min(1, (eff(route, x) - a) / (b - a)));
+  return foodProgress(food, route)(x, eff(route, x));
 }
 
 /**
@@ -883,18 +925,30 @@ export function samples(state: PlanState): Sample[] {
   let mlAbsorbed = 0;
   let prevMl = 0;
 
+  // What each fill and product contributes depends on `x` only through its progress; the rest is
+  // the same at every sample, so it is worked out once here rather than 161 times.
+  const fillTerms = fills.map((f) => ({
+    f,
+    carbs: carbsFill(f, gear, mix),
+    vol: volOf(f, gear),
+    progress: fillProgress(f, gear, route),
+  }));
+  const foodTerms = foods.map((fd) => ({ fd, progress: foodProgress(fd, route) }));
+
   for (let i = 0; i <= N; i++) {
     const x = (D * i) / N;
+    const effX = eff(route, x);
     let intake = 0;
     let ml = 0;
     let rateAtX = 0;
     let active: ActiveSource = null;
 
-    fills.forEach((f) => {
-      intake += carbsFill(f, gear, mix) * fracFill(f, x, gear, route);
-      if (f.content !== 'gel') ml += volOf(f, gear) * fracFill(f, x, gear, route);
+    fillTerms.forEach(({ f, carbs, vol, progress }) => {
+      const p = progress(x, effX);
+      intake += carbs * p;
+      if (f.content !== 'gel') ml += vol * p;
       if (x >= f.from - D * 0.004 && x <= f.to + D * 0.004) {
-        const r = carbsFill(f, gear, mix) / Math.max(0.1, f.to - f.from);
+        const r = carbs / Math.max(0.1, f.to - f.from);
         if (r > rateAtX) {
           rateAtX = r;
           active = f.content;
@@ -902,9 +956,10 @@ export function samples(state: PlanState): Sample[] {
       }
     });
 
-    foods.forEach((fd) => {
-      intake += fd.carbs * fracFood(fd, x, route);
-      ml += (fd.ml || 0) * fracFood(fd, x, route);
+    foodTerms.forEach(({ fd, progress }) => {
+      const p = progress(x, effX);
+      intake += fd.carbs * p;
+      ml += (fd.ml || 0) * p;
       if (x >= fd.from - D * 0.004 && x <= fd.to + D * 0.004) {
         const r = fd.carbs / Math.max(0.1, fd.to - fd.from);
         if (r > rateAtX) {
@@ -940,12 +995,12 @@ export function samples(state: PlanState): Sample[] {
       gut,
       ml,
       mlAbsorbed,
-      need: target * (eff(route, x) / tot),
+      need: target * (effX / tot),
       active,
       rate: 0,
       needRate: 0,
       fluidRate: 0,
-      fluidNeed: totalFluidNeed * (eff(route, x) / tot),
+      fluidNeed: totalFluidNeed * (effX / tot),
       fluidNeedRate: 0,
     });
   }

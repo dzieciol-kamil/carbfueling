@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { autoplanGate, finishPhase, holdMs, needsReplaceConfirm } from './AutoplanFlow';
+import {
+  autoplanGate,
+  finishPhase,
+  holdMs,
+  needsReplaceConfirm,
+  workerCount,
+} from './AutoplanFlow';
 import type { Fill, FoodItem, RouteInput, ShopStop } from '../../domain/types';
 
 function makeRoute(overrides: Partial<RouteInput> = {}): RouteInput {
@@ -111,5 +117,20 @@ describe('holdMs', () => {
   });
   test('a long run closes at once', () => {
     expect(holdMs(0, 5000)).toBe(0);
+  });
+});
+
+describe('workerCount', () => {
+  test('one worker per core, less one left to the page', () => {
+    expect(workerCount(4)).toBe(3);
+  });
+
+  test('a single core, or a browser that does not say, still gets one', () => {
+    expect(workerCount(1)).toBe(1);
+    expect(workerCount(undefined)).toBe(1);
+  });
+
+  test('never more than eight', () => {
+    expect(workerCount(32)).toBe(8);
   });
 });

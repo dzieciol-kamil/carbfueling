@@ -13,10 +13,13 @@ import { planSummary } from '../fuel';
 import { LEGACY_TEST_MIX } from '../__fixtures__/legacyMix';
 import type { Content, FoodLibEntry, PlanState, RouteInput, Vessel } from '../types';
 import { improve, packedCaps } from './exhaustive';
+import type { Found } from './exhaustive';
 import { oracle } from './oracle';
+import { CLIMB_ORDER, replaces } from './run';
 import { compareScore } from './score';
 import { climb, decisionAt, evaluate, space } from './search';
 import type { Decision, Evaluated } from './search';
+import { FREE_STOPS } from './types';
 import type { FoodSelectionEntry } from './types';
 
 function makeRoute(o: Partial<RouteInput> = {}): RouteInput {
@@ -373,6 +376,47 @@ describe("the rider's own stops", () => {
       let best = start;
       for (const e of improve(st, sel, start, { n: 0 }, rules)) best = e;
       expect(compareScore(best.score, oracle(st, sel, 1e6, undefined, rules)!.best.score)).toBe(0);
+    },
+    60000,
+  );
+});
+
+/**
+ * A run spread over several workers, each searching every `count`-th Decision, has to end on
+ * exactly the plan one search over the whole space ends on — the same draft, not merely an equal
+ * score — once the shares' posts are merged by `replaces` (run.ts), whatever order they arrive in.
+ * From the worst start as well as the climb's, so that every share has plans of its own to post.
+ */
+describe('shares', () => {
+  const SHARE_CASES = FIXTURES.flatMap(([name, st, sel]) =>
+    (['climb', 'worst'] as const).map((from) => [`${name}, ${from} start`, st, sel, from] as const),
+  );
+
+  test.each(SHARE_CASES)(
+    '%s: three shares end where the whole space does',
+    (_, st, sel, from) => {
+      const s = space(st, sel);
+      const start = from === 'climb' ? climb(st, sel) : evaluate(st, s.offers, decisionAt(s, 0));
+      const posted: Found = { ...start, order: CLIMB_ORDER };
+      let whole = posted;
+      for (const e of improve(st, sel, start)) whole = e;
+
+      const count = 3;
+      const posts: Found[] = [];
+      for (let index = 0; index < count; index++) {
+        for (const e of improve(st, sel, start, { n: 0 }, FREE_STOPS, { index, count })) {
+          expect(e.order % count).toBe(index);
+          posts.push(e);
+        }
+      }
+      // Not vacuous: from the worst start, the shares have plenty to merge.
+      if (from === 'worst') expect(posts.length).toBeGreaterThan(count);
+      for (const arrival of [posts, [...posts].reverse()]) {
+        let shown: Found | null = null;
+        for (const p of [posted, ...arrival]) if (replaces(p, shown)) shown = p;
+        expect(shown!.order).toBe(whole.order);
+        expect(shown!.draft).toEqual(whole.draft);
+      }
     },
     60000,
   );

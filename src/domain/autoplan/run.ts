@@ -2,15 +2,43 @@
  * The engine's own entry point for the thinking modal: runs the climb, then `improve()`'s
  * strictly-better plans, posting each one as it arrives rather than returning a single answer.
  * Framework-free — `autoplan.worker.ts` is the only caller that knows this runs inside a Worker.
+ *
+ * A run is spread over several workers, each searching its own `Share` of the space, so each plan
+ * is posted with its score and its place in the search's order: that is what `replaces` needs to
+ * merge them back into the answer a single worker would have given.
  */
 import type { PlanState } from '../types';
-import { improve } from './exhaustive';
+import { improve, WHOLE } from './exhaustive';
+import type { Share } from './exhaustive';
+import { compareScore } from './score';
+import type { Score } from './score';
 import { climb } from './search';
 import type { Evaluated } from './search';
 import { FREE_STOPS } from './types';
 import type { AutoplanResult, FoodSelectionEntry, StopRules } from './types';
 
-export type AutoplanMessage = { type: 'plan'; result: AutoplanResult } | { type: 'done' };
+/** `order` is the plan's place in `improve()`'s order; the climb, which every worker posts first,
+ *  comes before all of them. */
+export type AutoplanMessage =
+  { type: 'plan'; result: AutoplanResult; score: Score; order: number } | { type: 'done' };
+
+export const CLIMB_ORDER = -1;
+
+/**
+ * Whether a posted plan takes the place of the one already shown: strictly better, or tied and
+ * earlier in the search's order. A single search over the whole space ends on exactly that plan —
+ * it keeps the climb's answer on a tie, and otherwise the first plan to reach the best score, since
+ * a later tie is not an improvement — so however the shares' posts interleave, the run ends where
+ * one worker would have.
+ */
+export function replaces(
+  candidate: { score: Score; order: number },
+  shown: { score: Score; order: number } | null,
+): boolean {
+  if (shown === null) return true;
+  const c = compareScore(candidate.score, shown.score);
+  return c < 0 || (c === 0 && candidate.order < shown.order);
+}
 
 const toResult = (e: Evaluated): AutoplanResult => ({
   fills: e.draft.fills,
@@ -34,12 +62,13 @@ export function runAutoplan(
   post: (m: AutoplanMessage) => void,
   deps: { improve: typeof improve } = { improve },
   rules: StopRules = FREE_STOPS,
+  share: Share = WHOLE,
 ): void {
   try {
     const start = climb(state, selection, rules);
-    post({ type: 'plan', result: toResult(start) });
-    for (const e of deps.improve(state, selection, start, { n: 0 }, rules)) {
-      post({ type: 'plan', result: toResult(e) });
+    post({ type: 'plan', result: toResult(start), score: start.score, order: CLIMB_ORDER });
+    for (const e of deps.improve(state, selection, start, { n: 0 }, rules, share)) {
+      post({ type: 'plan', result: toResult(e), score: e.score, order: e.order });
     }
   } catch (err) {
     // The plan(s) already posted stay on the chart; `done` below is what tells the modal to stop.

@@ -1026,7 +1026,7 @@ export const STR: Record<Lang, StringTable> = {
     autoplanAppliedNote: 'To propozycja bazowa — dostosuj do własnych doświadczeń i preferencji.',
     autoplanAppliedDismiss: 'OK',
     autoplanThinkingTitle: 'Szukam lepszego planu…',
-    autoplanThinkingCancel: 'Anuluj',
+    autoplanThinkingCancel: 'Nie szukaj dalej',
     autoplanThinkingShared: [
       'Sprawdzam, czy da się bez postoju. Nie da się. Sprawdzam jeszcze raz.',
       'Właśnie odrzuciłem plan z czterema colami. Dla Twojego dobra.',
@@ -1604,7 +1604,7 @@ export const STR: Record<Lang, StringTable> = {
       'This is a starting suggestion — adjust it to your own experience and preferences.',
     autoplanAppliedDismiss: 'OK',
     autoplanThinkingTitle: 'Looking for a better plan…',
-    autoplanThinkingCancel: 'Cancel',
+    autoplanThinkingCancel: 'Stop looking',
     autoplanThinkingShared: [
       "Checking if we can skip a stop. We can't. Checking again, just to be sure.",
       'Just binned a plan with four colas. For your own good.',
@@ -2053,7 +2053,7 @@ export const STR: Record<Lang, StringTable> = {
       'Das ist ein Vorschlag zum Start — passe ihn an deine eigene Erfahrung und Vorlieben an.',
     autoplanAppliedDismiss: 'OK',
     autoplanThinkingTitle: 'Ich suche einen besseren Plan…',
-    autoplanThinkingCancel: 'Abbrechen',
+    autoplanThinkingCancel: 'Nicht weiter suchen',
     autoplanThinkingShared: [
       'Ich prüfe, ob es ohne Stopp geht. Geht nicht. Ich prüfe noch mal.',
       'Habe gerade einen Plan mit vier Colas verworfen. Zu deinem Besten.',
@@ -2639,7 +2639,7 @@ export const STR: Record<Lang, StringTable> = {
       'Questo è un suggerimento di partenza — adattalo alla tua esperienza e alle tue preferenze.',
     autoplanAppliedDismiss: 'OK',
     autoplanThinkingTitle: 'Sto cercando un piano migliore…',
-    autoplanThinkingCancel: 'Annulla',
+    autoplanThinkingCancel: 'Smetti di cercare',
     autoplanThinkingShared: [
       'Controllo se si può evitare una sosta. Non si può. Controllo di nuovo.',
       'Ho appena scartato un piano con quattro cole. Per il tuo bene.',

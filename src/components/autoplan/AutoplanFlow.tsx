@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { replaces } from '../../domain/autoplan/run';
 import type { AutoplanMessage } from '../../domain/autoplan/run';
+import type { Score } from '../../domain/autoplan/score';
 import type { FoodSelectionEntry } from '../../domain/autoplan/types';
 import { totalHours } from '../../domain/fuel';
 import type { RouteInput } from '../../domain/types';
@@ -14,8 +16,21 @@ import { AutoplanThinkingModal } from './AutoplanThinkingModal';
 type Phase = 'idle' | 'preflight' | 'thinking' | 'appliedNote';
 
 /** Owner's hard stop (2026-09-24): after this the search ends as if it had finished on its own —
- *  the best plan so far stays on the chart. 194 km runs ~89M points at ~70/s, so it would not. */
+ *  the best plan so far stays on the chart. The 194 km pacing kit is ~89M points at a few hundred
+ *  a second per worker, so it would not. */
 export const THINKING_LIMIT_MS = 5 * 60_000;
+
+/** More workers than this stops paying for the memory and start-up each one costs. */
+const MAX_WORKERS = 8;
+
+/**
+ * How many workers share a run (each searches its own share of the space — see `Share` in
+ * exhaustive.ts): one per core the browser reports, less one left to the page, which keeps the
+ * thinking window's animation smooth. A browser that does not say gets one, as before.
+ */
+export function workerCount(cores: number | undefined): number {
+  return Math.max(1, Math.min(MAX_WORKERS, (cores ?? 2) - 1));
+}
 
 /** Where the thinking modal lands once the run ends — by `done`, the time limit, a worker error or
  *  Cancel. With no plan posted yet (Cancel during the climb) the chart is untouched, so there is
@@ -223,9 +238,9 @@ export function AutoplanFlow({
   const gate = autoplanGate(route);
 
   // One run at a time. `runId` is bumped whenever a run ends (done, limit, error, Cancel,
-  // unmount), so anything its worker or timers still deliver afterwards is recognised and ignored.
+  // unmount), so anything its workers or timers still deliver afterwards is recognised and ignored.
   const runId = useRef(0);
-  const worker = useRef<Worker | null>(null);
+  const workers = useRef<Worker[]>([]);
   const limitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const holdingHistory = useRef(false);
@@ -240,8 +255,8 @@ export function AutoplanFlow({
       planHistory.release();
     }
     runId.current++;
-    worker.current?.terminate();
-    worker.current = null;
+    workers.current.forEach((w) => w.terminate());
+    workers.current = [];
     clearTimeout(limitTimer.current);
     clearTimeout(holdTimer.current);
   }
@@ -269,30 +284,42 @@ export function AutoplanFlow({
       );
     };
 
-    const w = new Worker(new URL('../../domain/autoplan/autoplan.worker.ts', import.meta.url), {
-      type: 'module',
-    });
-    worker.current = w;
-    w.onmessage = (e: MessageEvent<AutoplanMessage>) => {
+    // Each worker searches its own share and posts what beats its own best; `replaces` keeps only
+    // what beats the plan already on the chart, so the run ends on the plan a single worker would
+    // have. The run is done when the last of them is.
+    const count = workerCount(navigator.hardwareConcurrency);
+    let running = count;
+    let shown: { score: Score; order: number } | null = null;
+    const onMessage = (e: MessageEvent<AutoplanMessage>) => {
       if (runId.current !== id) return;
       if (e.data.type === 'plan') {
+        if (!replaces(e.data, shown)) return;
+        shown = e.data;
         insertAutoplan(e.data.result, options);
         received.current = true;
-      } else {
+      } else if (--running === 0) {
         finish();
       }
     };
-    w.onerror = finish;
-    w.onmessageerror = finish;
+    workers.current = Array.from({ length: count }, () => {
+      const w = new Worker(new URL('../../domain/autoplan/autoplan.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+      w.onmessage = onMessage;
+      w.onerror = finish;
+      w.onmessageerror = finish;
+      return w;
+    });
     limitTimer.current = setTimeout(finish, THINKING_LIMIT_MS);
 
     setPhase('thinking');
     const now = useAppStore.getState();
-    w.postMessage({
+    const input = {
       state: autoplanInput(now, options),
       selection,
       rules: autoplanStopRules(now, options),
-    });
+    };
+    workers.current.forEach((w, index) => w.postMessage({ ...input, share: { index, count } }));
   }
 
   function cancelThinking() {

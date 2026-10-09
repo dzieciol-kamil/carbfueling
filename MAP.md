@@ -25,9 +25,11 @@ moved, trust the filesystem over this file and update it.
   - `autoplan/` — **autoplan v3** (greedy loop): `index.ts` (entry), `search.ts` (the only module
     that chooses), `layout.ts` (a decision → fills/stops), `spans.ts` (fill reach from the need
     curve), `score.ts` (distance to both green badges), `exhaustive.ts` (`improve()` — pruned
-    exhaustive search yielding each strictly-better plan, for the thinking modal), `run.ts`
-    (`runAutoplan()` — posts the climb then every `improve()` plan then `done`, engine exception
-    or not; the framework-free body of the Worker below), `autoplan.worker.ts` (the Web Worker
+    exhaustive search yielding each strictly-better plan, for the thinking modal; over the whole
+    space or one worker's `Share` of it), `run.ts` (`runAutoplan()` — posts the climb then every
+    `improve()` plan then `done`, engine exception or not, each plan with its score and place in
+    the search order so `replaces()` can merge several workers' shares into one answer; the
+    framework-free body of the Worker below), `autoplan.worker.ts` (the Web Worker
     entry point the thinking modal's UI spawns — a thin `postMessage`/`onmessage` wrapper around
     `run.ts`, typed against only the slice of the worker global scope it uses since the app
     tsconfig has no WebWorker lib), `types.ts`;
@@ -58,10 +60,11 @@ moved, trust the filesystem over this file and update it.
     "Edit route": autoplan, start over, save/load, share, print; etc.) — this is the primary UI surface.
   - `panels/` — desktop side panels (`RoutePanel.tsx`, `FoodPanel.tsx`, `GearPanel.tsx`,
     `MixPanel.tsx`, `SettingsPanel.tsx`, `PanelShell.tsx`).
-  - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx` — runs the engine in the Web Worker
-    and applies each plan it posts, `AutoplanPreflightModal.tsx`, `autoplanOptions.ts`,
-    `listReorderHandler.ts`), `AutoplanThinkingModal.tsx` (the spinner + rotating-text window
-    shown while the worker searches; Cancel keeps the best plan so far) and `thinkingTexts.ts` —
+  - `autoplan/` — the autoplan flow/UI (`AutoplanFlow.tsx` — runs the engine in one Web Worker
+    per spare core, each on its share of the space, and applies each plan that beats the one
+    shown, `AutoplanPreflightModal.tsx`, `autoplanOptions.ts`, `listReorderHandler.ts`),
+    `AutoplanThinkingModal.tsx` (the spinner + rotating-text window shown while the workers
+    search; "Nie szukaj dalej" keeps the best plan so far) and `thinkingTexts.ts` —
     the rotating-joke text pool/queue (Fisher–Yates, no immediate repeat) that window shows.
   - `chart/` — the main fuel/elevation chart (`Chart.tsx`, `ElevationLayer.tsx`, `StopMarkers.tsx`, `theme.ts`).
   - `lanes/` — fill/food lane bars and drag handlers (`FillBar.tsx`, `FoodBar.tsx`, `dragHandlers.ts`).
