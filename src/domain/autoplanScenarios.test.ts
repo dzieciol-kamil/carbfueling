@@ -58,6 +58,7 @@ const FOOD_LIB: FoodLibEntry[] = [
     pl: 'Żel energetyczny',
     en: 'Energy gel',
     de: 'Energiegel',
+    es: 'Gel energético',
     it: 'Gel energetico',
     carbs: 22,
   },
@@ -66,13 +67,22 @@ const FOOD_LIB: FoodLibEntry[] = [
     pl: 'Żelki',
     en: 'Chews',
     de: 'Kaubonbons',
+    es: 'Gominolas',
     it: 'Caramelle gommose',
     carbs: 30,
     cont: true,
     span: 18,
   },
-  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', it: 'Cola', carbs: 35, ml: 330 },
-  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
+  { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', es: 'Cola', it: 'Cola', carbs: 35, ml: 330 },
+  {
+    key: 'banana',
+    pl: 'Banan',
+    en: 'Banana',
+    de: 'Banane',
+    es: 'Plátano',
+    it: 'Banana',
+    carbs: 23,
+  },
 ];
 
 /** The `then` every scenario states, in the shape the rider asked for. */

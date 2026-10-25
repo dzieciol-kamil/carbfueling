@@ -181,6 +181,7 @@ function SetMeUpForm() {
       pl: name,
       en: name,
       de: name,
+      es: name,
       it: name,
       carbs: Math.max(0, ownCarbs),
     };

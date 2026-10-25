@@ -373,7 +373,15 @@ describe('Set me up', () => {
       ],
       foodLib: [
         gel,
-        { key: 'new:1', pl: 'Daktyle', en: 'Daktyle', de: 'Daktyle', it: 'Daktyle', carbs: 18 },
+        {
+          key: 'new:1',
+          pl: 'Daktyle',
+          en: 'Daktyle',
+          de: 'Daktyle',
+          es: 'Daktyle',
+          it: 'Daktyle',
+          carbs: 18,
+        },
       ],
     });
     const s = useAppStore.getState();
@@ -1187,9 +1195,9 @@ describe('persisted ui merge — HTML-seeded language precedence', () => {
 
   // Chrome's "always translate this page" rewrites <html lang> to the translation's language,
   // so this attribute is not ours to trust. An unchecked value would be pushed into the URL by
-  // nextLangPath() — /es/planner/ 404s on reload — and written straight back to localStorage.
+  // nextLangPath() — /fr/planner/ 404s on reload — and written straight back to localStorage.
   test('a language we do not ship is ignored, and the persisted one survives', () => {
-    vi.stubGlobal('document', { documentElement: { lang: 'es' } });
+    vi.stubGlobal('document', { documentElement: { lang: 'fr' } });
     const merge = useAppStore.persist.getOptions().merge!;
     const currentState = useAppStore.getState();
     const merged = merge(
@@ -1342,8 +1350,17 @@ describe('autoplanStopRules', () => {
 });
 
 describe('cola is a stop by default (v5 -> v6, and on import)', () => {
-  const cola = { key: 'cola', pl: 'Cola', en: 'Cola', de: 'Cola', it: 'Cola', carbs: 35, ml: 330 };
-  const gel = { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 };
+  const cola = {
+    key: 'cola',
+    pl: 'Cola',
+    en: 'Cola',
+    de: 'Cola',
+    es: 'Cola',
+    it: 'Cola',
+    carbs: 35,
+    ml: 330,
+  };
+  const gel = { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', es: 'Gel', it: 'Gel', carbs: 22 };
 
   test('a library saved before needsStop gets cola as a stop, and nothing else changes', () => {
     const migrate = useAppStore.persist.getOptions().migrate!;

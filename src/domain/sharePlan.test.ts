@@ -58,12 +58,13 @@ function baseData(overrides: Partial<SettingsExportData> = {}): SettingsExportDa
     ],
     shops: [{ id: 1, at: 45, name: 'Żabka' }],
     foodLib: [
-      { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 },
+      { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', es: 'Gel', it: 'Gel', carbs: 22 },
       {
         key: 'chew',
         pl: 'Żelki',
         en: 'Chews',
         de: 'Kau',
+        es: 'Gomi',
         it: 'Cara',
         carbs: 30,
         cont: true,
@@ -401,7 +402,7 @@ describe('decodeSharedPlan rejects plans that type-check but are nonsense', () =
 describe('sharedPlanToSettingsData', () => {
   test('keeps the recipient foodLib, ui prefs and nextFoodKey', () => {
     const recipient = baseData({
-      foodLib: [{ key: 'own', pl: 'X', en: 'X', de: 'X', it: 'X', carbs: 5 }],
+      foodLib: [{ key: 'own', pl: 'X', en: 'X', de: 'X', es: 'X', it: 'X', carbs: 5 }],
       ui: { lang: 'en', viewMode: 'desktop', themeMode: 'dark', xUnit: 'h', yMode: 'fluid' },
       nextFoodKey: 9,
     });

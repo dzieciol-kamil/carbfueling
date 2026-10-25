@@ -23,6 +23,12 @@ const CHROME: Record<Lang, { back: string; index: string; brand: string; open: s
     brand: 'Carb Fueling',
     open: 'Planer öffnen →',
   },
+  es: {
+    back: '← Volver al planificador',
+    index: 'Más artículos de preguntas frecuentes',
+    brand: 'Carb Fueling',
+    open: 'Abrir el planificador →',
+  },
   it: {
     back: '← Torna al pianificatore',
     index: 'Altri articoli FAQ',
@@ -47,6 +53,11 @@ export const FAQ_INDEX_META: Record<Lang, { title: string; description: string }
   de: {
     title: 'FAQ — Carb Fueling',
     description: 'Antworten zu Kohlenhydrat- und Flüssigkeitsstrategie auf langen Radtouren.',
+  },
+  es: {
+    title: 'Preguntas frecuentes — Carb Fueling',
+    description:
+      'Respuestas sobre la estrategia de carbohidratos e hidratación en salidas largas en bici.',
   },
   it: {
     title: 'FAQ — Carb Fueling',
@@ -77,6 +88,15 @@ const MT_NOTICE: Partial<Record<Lang, ReactNode>> = {
       <a href="mailto:carbfueling@gmail.com">Schreib mir</a> oder{' '}
       <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">öffne ein Issue</a> — schon
       zwei korrigierte Sätze helfen.
+    </>
+  ),
+  es: (
+    <>
+      Esta página se ha traducido automáticamente y todavía no la ha revisado un hablante nativo de
+      español. Las cifras están verificadas — la redacción, quizá no. ¿Algo suena raro?{' '}
+      <a href="mailto:carbfueling@gmail.com">Escríbeme</a> o{' '}
+      <a href="https://github.com/dzieciol-kamil/carbfueling/issues/new">abre una issue</a> —
+      incluso dos frases corregidas ayudan.
     </>
   ),
   it: (

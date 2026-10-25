@@ -37,7 +37,7 @@ test('texts change every 10 to 15 seconds', () => {
   expect(nextTextDelayMs(() => 0.999)).toBeLessThan(15_000);
 });
 
-test.each(['pl', 'en', 'de', 'it'] as const)('%s has 20-30 texts per sport', (lang) => {
+test.each(['pl', 'en', 'de', 'es', 'it'] as const)('%s has 20-30 texts per sport', (lang) => {
   const s = t(lang);
   for (const sport of ['cycling', 'running'] as const) {
     const n = textPool(s, sport).length;

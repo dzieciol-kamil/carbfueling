@@ -70,6 +70,7 @@ const FOOD_LIB: FoodLibEntry[] = [
     pl: 'Żel energetyczny',
     en: 'Energy gel',
     de: 'Energiegel',
+    es: 'Gel energético',
     it: 'Gel energetico',
     carbs: 22,
   },
@@ -78,6 +79,7 @@ const FOOD_LIB: FoodLibEntry[] = [
     pl: 'Żelki',
     en: 'Chews',
     de: 'Kaubonbons',
+    es: 'Gominolas',
     it: 'Caramelle gommose',
     carbs: 30,
     cont: true,
@@ -89,12 +91,21 @@ const FOOD_LIB: FoodLibEntry[] = [
     pl: 'Cola',
     en: 'Cola',
     de: 'Cola',
+    es: 'Cola',
     it: 'Cola',
     carbs: 35,
     ml: 330,
     needsStop: true,
   },
-  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
+  {
+    key: 'banana',
+    pl: 'Banan',
+    en: 'Banana',
+    de: 'Banane',
+    es: 'Plátano',
+    it: 'Banana',
+    carbs: 23,
+  },
 ];
 
 interface Then {

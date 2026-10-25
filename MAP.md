@@ -10,10 +10,10 @@ moved, trust the filesystem over this file and update it.
 - `docs/` — **gitignored**, local-only spec/planning docs (see `docs/backlog.md` for open epics/ideas,
   `docs/adr/` for architecture decisions, `docs/superpowers/` for plans/specs, `docs/tests/` for autoplan
   scenario fixtures).
-- `en/`, `pl/`, `de/`, `it/` — prerendered static output (e.g. `en/planner/index.html`) committed by
+- `en/`, `pl/`, `de/`, `es/`, `it/` — prerendered static output (e.g. `en/planner/index.html`) committed by
   `scripts/build-static.mjs`, per ADR 0001 (language-prefixed static routing). Generated, but tracked in git.
 - `public/` — static assets served as-is by Vite.
-- `scripts/` — `dev.sh` (start dev server), `build-static.mjs` (prerender `en/`/`pl/`/`de/`/`it/`), `renderPage.mjs`.
+- `scripts/` — `dev.sh` (start dev server), `build-static.mjs` (prerender `en/`/`pl/`/`de/`/`es/`/`it/`), `renderPage.mjs`.
 - `.github/` — CI workflows.
 
 ## src/
@@ -84,8 +84,8 @@ moved, trust the filesystem over this file and update it.
     opens a short action menu, `planIcons.tsx` — the Planning row's shared icons, etc.).
   - `Header.tsx`, `Footer.tsx`, `SummaryCards.tsx`, `FoodLibraryChips.tsx`, `RoutePanel.tsx`,
     `SharedPlanPrompt.tsx`, `usePlanFileTransfer.ts` — top-level shared components.
-- `faq/` — FAQ pages (`FaqIndex.en/pl/de/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
-- `landing/` — marketing landing pages (`Landing.en/pl/de/it.tsx`, `SiteFooter.tsx`).
+- `faq/` — FAQ pages (`FaqIndex.en/pl/de/es/it.tsx`, `FaqLayout.tsx`, `registry.ts`, `articles/`).
+- `landing/` — marketing landing pages (`Landing.en/pl/de/es/it.tsx`, `SiteFooter.tsx`).
 - `utils/` — `fileSave.ts`, `fileSystemAccess.d.ts`.
 - `static/` — components shared by the prerendered static pages (`LangMenu.tsx`, `ThemeToggle.tsx`).
 - `styles/`, `assets/` — CSS and static assets bundled into the app.

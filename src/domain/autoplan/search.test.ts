@@ -54,12 +54,13 @@ function vessel(gid: string, vol: number, allowed: Content[]): Vessel {
 }
 
 const FOOD_LIB: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 },
+  { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', es: 'Gel', it: 'Gel', carbs: 22 },
   {
     key: 'cola',
     pl: 'Cola',
     en: 'Cola',
     de: 'Cola',
+    es: 'Cola',
     it: 'Cola',
     carbs: 35,
     ml: 330,
@@ -397,6 +398,7 @@ describe('the selection is an offer', () => {
         pl: 'Obiad',
         en: 'Meal',
         de: 'Mittagessen',
+        es: 'Comida',
         it: 'Pranzo',
         carbs: 60,
         needsStop: true,

@@ -15,6 +15,7 @@ export default defineConfig({
         en: 'en/planner/index.html',
         pl: 'pl/planner/index.html',
         de: 'de/planner/index.html',
+        es: 'es/planner/index.html',
         it: 'it/planner/index.html',
       },
     },

@@ -113,6 +113,7 @@ export interface FoodLibEntry {
   pl: string;
   en: string;
   de: string;
+  es: string;
   it: string;
   carbs: number;
   ml?: number;
