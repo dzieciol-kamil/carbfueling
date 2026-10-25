@@ -278,6 +278,17 @@ export function parseSettingsImport(raw: string): ParseSettingsResult {
   if (isRecord(parsed.data) && isRecord(parsed.data.ui) && parsed.data.ui.themeMode === undefined) {
     parsed.data.ui.themeMode = 'auto';
   }
+  // A file exported before a language shipped has no name for it in its food library — fill it
+  // from the English name (what the UI falls back to anyway) rather than rejecting the whole
+  // backup every time a language is added.
+  if (isRecord(parsed.data) && Array.isArray(parsed.data.foodLib)) {
+    for (const entry of parsed.data.foodLib) {
+      if (!isRecord(entry) || typeof entry.en !== 'string') continue;
+      for (const lang of LANGS) {
+        if (entry[lang] === undefined) entry[lang] = entry.en;
+      }
+    }
+  }
   if (!isValidSettingsExportData(parsed.data)) return { ok: false, reason: 'wrong-shape' };
   return {
     ok: true,
