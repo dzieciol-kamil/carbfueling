@@ -14,6 +14,7 @@ describe('faqHref', () => {
     expect(faqHref('en')).toBe('__BASE__/en/faq/');
     expect(faqHref('pl')).toBe('__BASE__/pl/faq/');
     expect(faqHref('de')).toBe('__BASE__/de/faq/');
+    expect(faqHref('es')).toBe('__BASE__/es/faq/');
     expect(faqHref('it')).toBe('__BASE__/it/faq/');
   });
 
@@ -21,6 +22,7 @@ describe('faqHref', () => {
     expect(faqHref('en', 'bonk-crisis')).toBe('__BASE__/en/faq/bonk-crisis/');
     expect(faqHref('pl', 'bonk-crisis')).toBe('__BASE__/pl/faq/bonk-crisis/');
     expect(faqHref('de', 'bonk-crisis')).toBe('__BASE__/de/faq/bonk-crisis/');
+    expect(faqHref('es', 'bonk-crisis')).toBe('__BASE__/es/faq/bonk-crisis/');
     expect(faqHref('it', 'bonk-crisis')).toBe('__BASE__/it/faq/bonk-crisis/');
   });
 });
@@ -30,6 +32,7 @@ describe('appHref', () => {
     expect(appHref('en')).toBe('__BASE__/en/planner/');
     expect(appHref('pl')).toBe('__BASE__/pl/planner/');
     expect(appHref('de')).toBe('__BASE__/de/planner/');
+    expect(appHref('es')).toBe('__BASE__/es/planner/');
     expect(appHref('it')).toBe('__BASE__/it/planner/');
   });
 });
@@ -39,6 +42,7 @@ describe('landingHref', () => {
     expect(landingHref('en')).toBe('__BASE__/en/');
     expect(landingHref('pl')).toBe('__BASE__/pl/');
     expect(landingHref('de')).toBe('__BASE__/de/');
+    expect(landingHref('es')).toBe('__BASE__/es/');
     expect(landingHref('it')).toBe('__BASE__/it/');
   });
 });

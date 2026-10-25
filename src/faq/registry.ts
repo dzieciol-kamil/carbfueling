@@ -31,6 +31,10 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Come una miscela di glucosio e fruttosio alza la soglia di assorbimento intestinale.',
     },
+    es: {
+      title: '¿Por qué no puedes absorber más de ~90 g de carbohidratos por hora?',
+      description: 'Cómo mezclar glucosa y fructosa eleva el techo de absorción de tu intestino.',
+    },
   },
   {
     slug: 'bonk-crisis',
@@ -53,6 +57,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         "Il divario tra carboidrati bruciati e carboidrati forniti, e come tenerlo d'occhio.",
     },
+    es: {
+      title: 'Qué pasa realmente cuando te da la pájara — y cómo verla venir',
+      description:
+        'La brecha entre los carbohidratos que quemas y los que aportas, y cómo vigilarla.',
+    },
   },
   {
     slug: 'bottle-refill-planning',
@@ -73,6 +82,10 @@ export const ARTICLES: FaqArticleMeta[] = [
     it: {
       title: 'Pianificare le ricariche delle borracce su un giro lungo',
       description: 'Dove posizionare le tappe di rifornimento per non restare mai a secco.',
+    },
+    es: {
+      title: 'Cómo planificar las recargas de bidones en una salida larga',
+      description: 'Dónde situar las paradas en tiendas para no quedarte nunca sin combustible.',
     },
   },
   {
@@ -98,6 +111,12 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Perché la sola maltodestrina si ferma a ca. 60 g/h e il fruttosio apre una seconda via di assorbimento.',
     },
+    es: {
+      title:
+        'Maltodextrina + fructosa: por qué una mezcla de transportadores supera a la glucosa sola',
+      description:
+        'Para tu intestino, la maltodextrina sigue siendo solo glucosa — por qué añadir fructosa cambia lo que realmente puedes absorber.',
+    },
   },
   {
     slug: 'carbs-per-hour-by-intensity',
@@ -121,6 +140,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: "Quanti carboidrati all'ora servono davvero?",
       description:
         'Una guida pratica per intensità e durata del giro, dalle uscite leggere agli sforzi di più ore.',
+    },
+    es: {
+      title: '¿Cuántos carbohidratos por hora necesitas de verdad?',
+      description:
+        'Una guía práctica por intensidad y duración, desde rodajes suaves hasta esfuerzos de varias horas.',
     },
   },
   {
@@ -146,6 +170,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         "Un piano progressivo per gestire più carboidrati all'ora senza gonfiore e crampi.",
     },
+    es: {
+      title: 'Entrenar el intestino: cómo aumentar con seguridad tu tolerancia a los carbohidratos',
+      description:
+        'Un plan progresivo para tolerar más carbohidratos por hora sin hinchazón ni retortijones.',
+    },
   },
   {
     slug: 'bottle-vs-gel',
@@ -166,6 +195,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Borraccia o gel? Quando e cosa scegliere',
       description:
         'Confronto tra borracce, gel e cibo solido per assumere carboidrati durante un giro.',
+    },
+    es: {
+      title: '¿Bidón o gel? Cuándo y qué elegir',
+      description:
+        'Comparativa de bidones, geles y comida sólida para tomar carbohidratos durante una salida.',
     },
   },
   {
@@ -190,6 +224,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Perché il fabbisogno di liquidi varia tanto da persona a persona — e come stimare il tuo.',
     },
+    es: {
+      title: '¿Cuánta agua por hora? Hidratación, calor y tasa de sudoración',
+      description:
+        'Por qué las necesidades de líquido varían tanto entre ciclistas — y cómo estimar las tuyas.',
+    },
   },
   {
     slug: 'sodium-electrolytes-cycling',
@@ -213,6 +252,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Sodio in bici: quando gli elettroliti extra fanno davvero la differenza',
       description:
         'Le perdite di sodio col sudore variano molto da persona a persona — ecco quando conviene integrarlo.',
+    },
+    es: {
+      title: 'Sodio en la bici: cuándo los electrolitos extra marcan la diferencia',
+      description:
+        'Las pérdidas de sodio por el sudor varían mucho entre personas — cuándo merece la pena reponerlo.',
     },
   },
   {
@@ -239,6 +283,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'La scienza dietro le miscele di carboidrati fatte in casa, a confronto con le polveri isotoniche commerciali.',
     },
+    es: {
+      title: 'Miel o azúcar común en lugar de un preparado comercial — ¿funciona igual de bien?',
+      description:
+        'La ciencia detrás de las mezclas caseras de carbohidratos, comparadas con los polvos isotónicos comerciales.',
+    },
   },
   {
     slug: 'heat-carb-plan',
@@ -261,6 +310,10 @@ export const ARTICLES: FaqArticleMeta[] = [
     it: {
       title: 'Come il caldo cambia il tuo piano di carboidrati (non basta «bevi di più»)',
       description: 'Perché il caldo cambia cosa e quanto dovresti assumere, non solo quanto bevi.',
+    },
+    es: {
+      title: 'Cómo cambia el calor tu plan de carbohidratos (no basta con «bebe más»)',
+      description: 'Por qué rodar con calor cambia qué y cuánto debes tomar, no solo cuánto bebes.',
     },
   },
   {
@@ -285,6 +338,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         "Perché la strategia cambia man mano che il giro passa da poche ore a un'intera giornata e oltre.",
     },
+    es: {
+      title: 'Alimentarse en 100 km frente a 300+ km: qué cambia realmente',
+      description:
+        'Por qué la estrategia cambia a medida que la salida pasa de unas horas a todo el día o más.',
+    },
   },
   {
     slug: 'pace-power-absorption',
@@ -308,6 +366,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Ritmo o potenza influenzano quanto puoi assorbire?',
       description:
         "Fabbisogno e capacità di assorbimento non sono la stessa cosa — finché l'intensità non diventa estrema.",
+    },
+    es: {
+      title: '¿Influyen tu ritmo o tus vatios en cuánto puedes absorber?',
+      description:
+        'La demanda y la capacidad de absorción no son lo mismo — hasta que la intensidad se vuelve extrema.',
     },
   },
   {
@@ -336,6 +399,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'Aromi in gocce, frutta liofilizzata, ibisco e altri modi facili per risolvere una borraccia noiosa.',
     },
+    es: {
+      title: 'Aditivos de sabor caseros: formas sencillas de mejorar el sabor de tu bidón o gel',
+      description:
+        'Aromas en gotas, fruta liofilizada, hibisco y otras formas fáciles de arreglar un bidón aburrido.',
+    },
   },
   {
     slug: 'what-the-chart-shows',
@@ -358,6 +426,10 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Cosa mostra davvero il grafico: dalla borraccia al flusso sanguigno',
       description:
         'Il grafico spiegato riga per riga — apporto, stomaco, soglia di assorbimento e deficit.',
+    },
+    es: {
+      title: 'Qué muestra realmente el gráfico: del bidón a la sangre',
+      description: 'El gráfico línea a línea — ingesta, estómago, techo de absorción y déficit.',
     },
   },
   {
@@ -384,6 +456,12 @@ export const ARTICLES: FaqArticleMeta[] = [
       description:
         'La soglia di assorbimento intestinale non cambia tra corsa e bici — ma il tuo obiettivo pratico sì. Ecco perché.',
     },
+    es: {
+      title:
+        'Correr frente a pedalear: en qué se diferencian realmente la necesidad y la absorción de carbohidratos',
+      description:
+        'El techo de absorción de tu intestino no cambia entre correr y pedalear — pero tu objetivo práctico sí debería. Te explicamos por qué.',
+    },
   },
   {
     slug: 'rice-cake-bars',
@@ -407,6 +485,11 @@ export const ARTICLES: FaqArticleMeta[] = [
       title: 'Rice cake fatti in casa: una ricetta di cibo vero per quando i gel stancano',
       description:
         "Una barretta semplice di riso, cocco e datteri — i carboidrati per pezzo, e perché il cibo vero batte l'ennesimo gel a fine giornata su un giro lungo.",
+    },
+    es: {
+      title: 'Rice cakes caseros: una receta de comida real para cuando ya no entran más geles',
+      description:
+        'Una barrita sencilla de arroz, coco y dátiles — los carbohidratos por porción, y por qué la comida real gana a otro gel al final de una salida larga.',
     },
   },
 ];

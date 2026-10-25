@@ -51,6 +51,8 @@ function defaultLang(): Lang {
       return 'pl';
     case 'de':
       return 'de';
+    case 'es':
+      return 'es';
     case 'it':
       return 'it';
     default:
@@ -368,6 +370,7 @@ export const DEFAULT_FOOD_LIB: FoodLibEntry[] = [
     pl: 'Żel energetyczny',
     en: 'Energy gel',
     de: 'Energiegel',
+    es: 'Gel energético',
     it: 'Gel energetico',
     carbs: 22,
   },
@@ -376,6 +379,7 @@ export const DEFAULT_FOOD_LIB: FoodLibEntry[] = [
     pl: 'Żelki',
     en: 'Chews',
     de: 'Kaubonbons',
+    es: 'Gominolas',
     it: 'Caramelle gommose',
     carbs: 30,
     cont: true,
@@ -386,17 +390,27 @@ export const DEFAULT_FOOD_LIB: FoodLibEntry[] = [
     pl: 'Cola',
     en: 'Cola',
     de: 'Cola',
+    es: 'Cola',
     it: 'Cola',
     carbs: 35,
     ml: 330,
     needsStop: true,
   },
-  { key: 'banana', pl: 'Banan', en: 'Banana', de: 'Banane', it: 'Banana', carbs: 23 },
+  {
+    key: 'banana',
+    pl: 'Banan',
+    en: 'Banana',
+    de: 'Banane',
+    es: 'Plátano',
+    it: 'Banana',
+    carbs: 23,
+  },
   {
     key: 'ricecake',
     pl: 'Rice cake',
     en: 'Rice cake',
     de: 'Rice Cake',
+    es: 'Rice cake',
     it: 'Rice Cake',
     carbs: 30,
   },
@@ -927,7 +941,15 @@ export const useAppStore = create<AppState>()(
           return {
             foodLib: [
               ...s.foodLib,
-              { key: 'u' + s.nextFoodKey, pl: name, en: name, de: name, it: name, carbs: 25 },
+              {
+                key: 'u' + s.nextFoodKey,
+                pl: name,
+                en: name,
+                de: name,
+                es: name,
+                it: name,
+                carbs: 25,
+              },
             ],
             nextFoodKey: s.nextFoodKey + 1,
           };
@@ -1104,8 +1126,8 @@ export const useAppStore = create<AppState>()(
         // undefined there — this guard mirrors defaultLang()'s own `typeof navigator`
         // check above rather than requiring every test file to stub a DOM.
         // The attribute is not ours alone: Chrome's "always translate this page" rewrites it to
-        // the translation's language. Accepting it unchecked would put e.g. `es` into ui.lang,
-        // which nextLangPath() then pushes into the address bar as /es/planner/ — a URL that
+        // the translation's language. Accepting it unchecked would put e.g. `fr` into ui.lang,
+        // which nextLangPath() then pushes into the address bar as /fr/planner/ — a URL that
         // 404s on reload — and merge's result goes straight back to localStorage, so it sticks.
         const attrLang = typeof document !== 'undefined' ? document.documentElement.lang : '';
         const htmlLang = LANGS.includes(attrLang as Lang) ? (attrLang as Lang) : undefined;

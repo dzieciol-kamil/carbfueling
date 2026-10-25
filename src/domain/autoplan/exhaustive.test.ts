@@ -48,12 +48,13 @@ function vessel(gid: string, vol: number, allowed: Content[], gelParts = 1): Ves
 }
 
 const FOOD_LIB: FoodLibEntry[] = [
-  { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', it: 'Gel', carbs: 22 },
+  { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', es: 'Gel', it: 'Gel', carbs: 22 },
   {
     key: 'cola',
     pl: 'Cola',
     en: 'Cola',
     de: 'Cola',
+    es: 'Cola',
     it: 'Cola',
     carbs: 35,
     ml: 330,

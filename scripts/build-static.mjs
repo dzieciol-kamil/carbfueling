@@ -57,6 +57,13 @@ const LANDING_META = {
     jsonLdDescription:
       "Pianifica quanti carboidrati e quanto liquido portare su un giro, e come distribuirli tra borracce, flask e cibo nel tempo.",
   },
+  es: {
+    title: 'Carb Fueling — planificador de carbohidratos e hidratación',
+    description:
+      'Planifica cuántos carbohidratos y cuánto líquido llevar en una salida, y cómo repartirlos en el tiempo entre bidones, flasks y comida. Gratis, sin cuenta, funciona en tu navegador.',
+    jsonLdDescription:
+      'Planifica cuántos carbohidratos y cuánto líquido llevar en una salida, y cómo repartirlos entre bidones, flasks y comida a lo largo del tiempo.',
+  },
 };
 
 async function writeSitemap(pages, sitemapPriority) {
