@@ -65,7 +65,7 @@ export default function GutTrainingCarbToleranceEs() {
         osmolalidad de la bebida, lo que atrae agua al intestino y puede provocar retortijones.
         Comer mucha grasa, fibra o proteína justo antes o durante un ejercicio intenso ralentiza la
         digestión y compite por el mismo flujo sanguíneo limitado. Estar deshidratado empeora además
-        la absorción de carbohidratos. Y tomar sin más más carbohidratos por hora de los que tu
+        la absorción de carbohidratos. Y simplemente tomar más carbohidratos por hora de los que tu
         intestino tiene entrenados dará problemas por muy bien formulado que esté el producto.
       </p>
       <p style={articleTextStyle}>
@@ -73,7 +73,7 @@ export default function GutTrainingCarbToleranceEs() {
         Carb Fueling muestra tu límite de absorción en directo mientras ajustas la proporción de la
         mezcla del bidón y del gel, así que puedes hacerlo coincidir con lo que tu intestino ha
         practicado de verdad, y luego crear un plan de alimentación que se mantenga por debajo en
-        lugar de pasarte el día de la carrera. Una salvedad: ajustes como ajustes la proporción de
+        lugar de pasarte el día de la carrera. Una salvedad: por mucho que ajustes la proporción de
         la mezcla del bidón y del gel, el límite de absorción de Carb Fueling no pasa de unos 92
         g/h. Es un valor por defecto prudente a propósito, no un muro fisiológico — unos pocos
         intestinos muy bien entrenados pueden superarlo — pero es un techo sensato para la gran

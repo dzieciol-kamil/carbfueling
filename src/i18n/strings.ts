@@ -3165,7 +3165,7 @@ export const STR: Record<Lang, StringTable> = {
     chartHelpNeedBody:
       'Esto es cuántos carbohidratos te exige la ruta en esa hora — durante el esfuerzo deberías ingerir esa cantidad.',
     chartHelpCapBody:
-      'Lo máximo que tu intestino puede absorber por hora, comas o bebas lo que comas o bebas.',
+      'Lo máximo que tu intestino puede absorber por hora, sin importar cuánto comas o bebas.',
     chartHelpGutBody: 'Lo que comes o bebes llega al estómago, donde se digiere poco a poco.',
     chartHelpDeficitLabel: 'Déficit',
     chartHelpDeficitBody:

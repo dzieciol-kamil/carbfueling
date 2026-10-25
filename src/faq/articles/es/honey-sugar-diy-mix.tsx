@@ -42,8 +42,8 @@ export default function HoneySugarDiyMixEs() {
       <p style={articleTextStyle}>
         Lo que sí pierdes con una mezcla casera es comodidad y regularidad. Un cacito ya medido de
         un producto comercial te da la misma dosis cada vez; pesar azúcar o miel a mano es más fácil
-        de hacer con algún error. Además, los preparados comerciales suelen estar probados en cuanto
-        a osmolalidad — lo concentrada que está la solución — para que el intestino no tenga que
+        equivocarse un poco. Además, los preparados comerciales suelen estar probados en cuanto a
+        osmolalidad — lo concentrada que está la solución — para que el intestino no tenga que
         atraer agua extra para absorberla. Una mezcla casera demasiado concentrada puede causar la
         misma hinchazón y los mismos retortijones que intentas evitar, así que mantenla moderada y
         pruébala en los entrenamientos antes de confiar en ella en una salida larga o en una
