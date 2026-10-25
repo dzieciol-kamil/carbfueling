@@ -3010,7 +3010,7 @@ export const STR: Record<Lang, StringTable> = {
     addFoodItem: 'Añadir producto',
     newFood: 'Nuevo producto',
     fName: 'producto',
-    fCarbs: 'carbohidratos (g)',
+    fCarbs: 'hidratos (g)',
     fMl: 'líquido (ml)',
     fCont: 'gradual',
     fNeedsStop: 'en una parada',

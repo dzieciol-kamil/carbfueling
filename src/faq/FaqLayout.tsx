@@ -27,7 +27,7 @@ const CHROME: Record<Lang, { back: string; index: string; brand: string; open: s
     back: '← Volver al planificador',
     index: 'Más artículos de preguntas frecuentes',
     brand: 'Carb Fueling',
-    open: 'Abrir el planificador →',
+    open: 'Abrir planificador →',
   },
   it: {
     back: '← Torna al pianificatore',

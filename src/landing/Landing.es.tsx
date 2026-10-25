@@ -467,10 +467,10 @@ export default function LandingEs() {
           <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h1 className="landing-q">
-              ¿Montas en bici, corres o haces <br />
-              otro deporte en el que tienes que <br />
-              comer y beber durante <br />
-              el esfuerzo?
+              ¿Vas en bici, corres o haces <br />
+              otro deporte en el que hay <br />
+              que comer y beber <br />
+              sobre la marcha?
             </h1>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
@@ -504,10 +504,10 @@ export default function LandingEs() {
           <span className="landing-cue" aria-hidden="true" />
           <div className="landing-cluster">
             <h2 className="landing-q">
-              ¿Los geles y las bebidas isotónicas <br />
-              te vacían la cartera sin hacer <br />
-              ruido, aunque no quieras <br />
-              dejarlos?
+              ¿Los geles y los isotónicos <br />
+              te vacían el bolsillo sin <br />
+              que lo notes, pero no <br />
+              quieres dejarlos?
             </h2>
             <figure className="landing-shot">
               <figcaption className="landing-cap">
