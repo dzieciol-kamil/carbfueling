@@ -9,6 +9,7 @@ import {
   type SettingsExportData,
 } from './settingsExport';
 import { WEIGHT_MAX_KG, WEIGHT_MIN_KG } from './fuel';
+import type { FoodLibEntry } from './types';
 
 function makeData(overrides: Partial<SettingsExportData> = {}): SettingsExportData {
   return {
@@ -248,5 +249,14 @@ describe('settingsExport', () => {
     const result = parseSettingsImport(serializeSettingsExport(file));
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.ui.themeMode).toBe('auto');
+  });
+
+  test('imports an old export whose food library lacks names for newer languages', () => {
+    const legacyEntry = { key: 'gel', pl: 'Żel', en: 'Gel', de: 'Gel', carbs: 22 };
+    const data = makeData({ foodLib: [legacyEntry as unknown as FoodLibEntry] });
+    const file = buildSettingsExport(data);
+    const result = parseSettingsImport(serializeSettingsExport(file));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.foodLib[0]).toMatchObject({ es: 'Gel', it: 'Gel' });
   });
 });
